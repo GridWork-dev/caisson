@@ -1,14 +1,14 @@
 {
   "name": "@caisson/admin",
   "version": "0.1.3",
-  "license": "LicenseRef-Caisson-Commercial",
   "private": true,
+  "license": "LicenseRef-Caisson-Commercial",
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3020",
     "build": "next build",
     "start": "next start -p 3020",
-    "lint": "eslint .",
+    "lint": "oxlint .",
     "test": "bun test --timeout 60000 ./src",
     "test:live": "bun test ./live"
   },
@@ -42,7 +42,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@types/culori": "catalog:",
@@ -50,7 +49,6 @@
     "@types/pg": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }

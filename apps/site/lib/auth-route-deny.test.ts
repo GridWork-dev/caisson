@@ -39,7 +39,7 @@ async function buildSignedInRouteAuth() {
     body: { email: "buyer@example.com" },
     headers: new Headers(),
   });
-  const url = String((emailer.sent[0]?.data as { url?: unknown }).url);
+  const url = String((emailer.sent[0]!.data as { url?: unknown }).url);
   const verifyRes = await auth.handler(new Request(url, { method: "GET" }));
   const cookieHeader = verifyRes.headers
     .getSetCookie()

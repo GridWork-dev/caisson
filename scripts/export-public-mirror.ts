@@ -50,11 +50,11 @@ export const MIRROR_WORKSPACES = {
 
 /** Tooling packages the Apache set needs to install / build / test / lint standalone. Restamped
  *  Apache-2.0 in the mirror — internal scaffolding with no commercial IP (a strict tsconfig base,
- *  the shared eslint config, and the PGlite RLS / golden-file test harness). Shipping them keeps the
+ *  the shared lint policy + slop plugin, and the PGlite RLS / golden-file test harness). Shipping them keeps the
  *  packages faithful (unmodified) and the `@caisson/kernel` standards gate green. */
 const BUILD_SUPPORT = new Set([
   "@caisson/tsconfig",
-  "@caisson/eslint-config",
+  "@caisson/lint-policy",
   "@caisson/testing",
 ]);
 
@@ -68,10 +68,6 @@ export const EXCLUDE_TEST_FILES: ReadonlyMap<string, string> = new Map([
   [
     "packages/kernel/src/gate.test.ts",
     "asserts the private monorepo's @caisson/-scope + full-tooling-composition invariant, which the @caisson-sh/ scope-renamed open mirror intentionally diverges from",
-  ],
-  [
-    "tooling/eslint-config/boundaries.test.ts",
-    "eslint-driven boundary test lints the COMMERCIAL @caisson/ai-kit provider fixture (PROVIDER_EXEMPT carve-out); ai-kit is excluded from the open mirror",
   ],
   [
     "packages/cli/src/sample-templates.test.ts",
@@ -131,7 +127,7 @@ export const DROP_COMMERCIAL_DEV_DEPS: ReadonlyMap<
 
 /** Packages whose `test` script is dropped in the mirror (their only test is excluded above, so
  *  turbo skips the package rather than erroring on a now-empty glob). */
-const DROP_TEST_SCRIPT = new Set(["@caisson/eslint-config"]);
+const DROP_TEST_SCRIPT = new Set(["@caisson/lint-policy"]);
 
 /** Test-script overrides (keyed by ORIGINAL @caisson name) for packages whose default glob would
  *  hit an excluded test file. cli's `bun test ./src ./scripts` loses ./scripts once bundle-migrations
@@ -485,7 +481,7 @@ function rewriteTsconfigRefs(pkgDir: string): void {
     const abs = join(pkgDir, entry.name);
     const before = readFileSync(abs, "utf8");
     const after = before.replace(
-      /@caisson\/(tsconfig|eslint-config|testing)/g,
+      /@caisson\/(tsconfig|lint-policy|testing)/g,
       `${NEW_SCOPE}$1`,
     );
     if (after !== before) writeFileSync(abs, after);
@@ -513,7 +509,7 @@ export const MIRROR_ASSET_FILES: ReadonlyArray<{
   { src: "SECURITY.md", dest: "SECURITY.md" },
   { src: "SUPPORT.md", dest: "SUPPORT.md" },
   { src: "CODE_OF_CONDUCT.md", dest: "CODE_OF_CONDUCT.md" },
-  { src: "eslint.config.js", dest: "eslint.config.js" },
+  { src: "oxlintrc.json", dest: ".oxlintrc.json" },
   { src: ".prettierignore", dest: ".prettierignore" },
   { src: "ci.yml", dest: ".github/workflows/ci.yml" },
   { src: "publish.yml", dest: ".github/workflows/publish.yml" },
@@ -839,7 +835,7 @@ export function stripAdrIds(text: string): string {
  *  containing a raw `/*`/`*\/`-lookalike sequence (e.g. a comment-injection test fixture) gets
  *  misread as spanning into the next real comment closer, and the blanket empty-parens cleanup in
  *  `sanitizeAdrCitations` then strips `()` out of real code caught in that false span (found via
- *  the mirror's own `bunx eslint .`: `packages/cli/src/demo.test.ts`'s hostile-string fixture
+ *  the mirror's own lint leg: `packages/cli/src/demo.test.ts`'s hostile-string fixture
  *  turned `expect(stub).toBeDefined();` into `expect(stub).toBeDefined;` — a silently no-op
  *  assertion). ponytail: a regex scan, not a real parser — string-literal-aware is the floor this
  *  bug needs; nested `${}` template-literal expressions are not specially handled (none in this
@@ -1212,18 +1208,25 @@ function main(): void {
     scripts: {
       build: "turbo run build --no-daemon",
       test: "turbo run test --no-daemon",
+      // ci.yml calls these two by name rather than inlining a binary, so the mirror's lint and
+      // format commands stay in one place and match the source repo's shape (ADR-0408).
+      lint: "oxlint .",
+      "format:check": "oxfmt --check .",
     },
     devDependencies: {
       "@types/bun": "^1.1.14",
       turbo: "~2.5.6",
       typescript: "^5.6.3",
-      // Root eslint.config.js (shipped below) imports @caisson-sh/eslint-config — a `workspace:*`
-      // reference resolves as a per-consumer symlink, not a root hoist, so root needs its own
-      // entry for `bunx eslint .` to resolve it. eslint itself is that config's peerDependency;
-      // pin it here too so the mirror's CI lint leg doesn't rely on bunx's on-the-fly install.
-      "@caisson-sh/eslint-config": "workspace:*",
-      eslint: "^10.0.0",
-      prettier: "^3.3.3",
+      // The mirror lints and formats with oxc (ADR-0408), same as the source repo. The shipped
+      // root `.oxlintrc.json` names `./tooling/lint-policy/slop-plugin.js` as a jsPlugin and
+      // `eslint-plugin-storybook` as the other, so root needs a `workspace:*` entry for the policy
+      // package plus the plugin itself — a `workspace:*` reference resolves as a per-consumer
+      // symlink, not a root hoist. oxlint/oxfmt are pinned (not bunx'd) so the CI lint + format
+      // legs never depend on an on-the-fly install.
+      "@caisson-sh/lint-policy": "workspace:*",
+      "eslint-plugin-storybook": "^10.5.6",
+      oxfmt: "0.63.0",
+      oxlint: "1.78.0",
     },
     packageManager: "bun@1.3.14",
   };
@@ -1347,23 +1350,22 @@ function main(): void {
     ) + "\n",
   );
 
-  // Strip internal decision-log ids from the whole tree. Runs BEFORE prettier so that the residue
+  // Strip internal decision-log ids from the whole tree. Runs BEFORE oxfmt so that the residue
   // a removal leaves in a wrapped comment — a short line, an orphaned continuation — gets reflowed
   // in the same pass that formats everything else, instead of shipping as ragged prose.
   stripAdrIdsInTree(outDir);
 
-  // Reformat the exported tree with the SOURCE repo's own installed prettier (`.prettierignore`
-  // above exempts golden fixtures + the drift-guarded tokens.css, same as the source repo's own
-  // ignore file). The npm scope rename (`@caisson/` → `@caisson-sh/`, 3 chars longer) sometimes
-  // pushes an import specifier that fit the source file's print width over it — reformatting once,
-  // here, keeps the mirror `prettier --check` clean regardless of how any future rename or export
-  // transform happens to interact with a source file's pre-existing wrap width, rather than chasing
-  // individual source files by hand every time the scope shifts a line length.
-  execFileSync(
-    resolve(repoRoot, "node_modules/.bin/prettier"),
-    ["--write", "--log-level", "warn", "."],
-    { cwd: outDir, stdio: "inherit" },
-  );
+  // Reformat the exported tree with the SOURCE repo's own installed oxfmt (ADR-0408; oxfmt reads
+  // the shipped `.prettierignore` natively, so golden fixtures + the drift-guarded tokens.css stay
+  // exempt exactly as before). The npm scope rename (`@caisson/` → `@caisson-sh/`, 3 chars longer)
+  // sometimes pushes an import specifier that fit the source file's print width over it —
+  // reformatting once, here, keeps the mirror's `oxfmt --check` leg clean regardless of how any
+  // future rename or export transform happens to interact with a source file's pre-existing wrap
+  // width, rather than chasing individual source files by hand every time the scope shifts a line.
+  execFileSync(resolve(repoRoot, "node_modules/.bin/oxfmt"), ["."], {
+    cwd: outDir,
+    stdio: "inherit",
+  });
 
   // --- entitlement-token gate: nothing shaped like a license token ships unless dev-signed ---
   const tokenHits: string[] = [];

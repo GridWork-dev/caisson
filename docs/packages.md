@@ -28,7 +28,7 @@ Shared/cross-edition packages (`cli`, `mcp-server`, `license-verify`, `ui`, `ema
 composed by multiple bundles and never depend "up" on one.
 
 Not in `packages/` (referenced as `@caisson/*` deps, resolved from sibling workspaces
-`tooling/*`, `registry`, `services/*`): `tooling/eslint-config` / `tooling/tsconfig` /
+`tooling/*`, `registry`, `services/*`): `tooling/lint-policy` / `tooling/tsconfig` /
 `tooling/testing` (the single standards gate, `ADR-0002`/`0022`), `tooling/standards-gate`
 (dependency-cruiser boundary enforcement, `ADR-0022`/`0016`), `registry/` (`@caisson/registry` —
 CI-built index + allowlist + Worker read seam + publish ledger, `ADR-0021`/`0047`/`0071`).

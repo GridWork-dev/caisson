@@ -1,13 +1,9 @@
 {
   "name": "@caisson/billing",
   "version": "0.6.7",
-  "type": "module",
-  "license": "Apache-2.0",
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  },
   "description": "Open billing seam: raw-body HMAC webhook signature verification (Stripe, Paddle, LemonSqueezy, Polar), the BillingProvider port + config-type contracts, and the provider-agnostic DomainBillingEvent schema. Drivers/parsers/idempotency live in the commercial @caisson/billing-orchestration.",
+  "license": "Apache-2.0",
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -15,9 +11,13 @@
       "default": "./dist/index.js"
     }
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
@@ -25,10 +25,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }

@@ -1,17 +1,13 @@
 {
   "name": "@caisson/audit-worm",
   "version": "2.2.2",
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
-  "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
-  },
   "description": "Write-once (WORM) artifact store with an S3 Object-Lock backend, a SHA-256 append-only audit chain with a trusted WORM anchor, and an append-only locked-version database with a derived current version.",
+  "license": "LicenseRef-Caisson-Commercial",
   "files": [
     "dist",
     "src/ui"
   ],
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -20,9 +16,13 @@
     },
     "./ui": "./src/ui/index.ts"
   },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "scripts": {
     "build": "tscn -p tsconfig.json && tscn -p tsconfig.ui.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src",
     "test:live": "bun test ./live"
   },
@@ -35,6 +35,17 @@
     "asn1js": "3.0.10",
     "pkijs": "3.4.0",
     "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "@caisson/ui": "workspace:*",
+    "@caisson/ui-pro": "workspace:*",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
     "@caisson/ui": "workspace:^",
@@ -55,18 +66,5 @@
     "react-dom": {
       "optional": true
     }
-  },
-  "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
-    "@caisson/ui": "workspace:*",
-    "@caisson/ui-pro": "workspace:*",
-    "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
-    "eslint": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:",
-    "typescript": "catalog:"
   }
 }

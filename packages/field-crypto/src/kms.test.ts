@@ -372,7 +372,7 @@ describe("KmsKeyProvider (envelope encryption, ADR-0043)", () => {
     ).toHaveLength(1);
     const rejected = outcomes.find((outcome) => outcome.status === "rejected");
     expect(rejected?.reason).toBeInstanceOf(Error);
-    expect((rejected?.reason as Error).message).toMatch(
+    expect((rejected!.reason as Error).message).toMatch(
       /concurrent rotation|append-only/i,
     );
     expect(await store.currentVersion("acct_a")).toBe(2);

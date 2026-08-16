@@ -2,16 +2,16 @@
   "name": "@caisson/platform-migrations",
   "version": "0.3.3",
   "private": true,
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
   "description": "The ONE ordered platform migration chain. Extracted from apps/site/lib/deploy-migrate.ts's platformPackage(), which used to be the sole owner, hand-mirrored by apps/admin's PGlite bootstrap by SQL-constant name — a drift class that already bit. Both consumers now assemble/apply the SAME ordered array via `platformMigrationsPackage`/`applyAll`, so a new migration lands for both or neither. Never published — private, internal engineering plumbing.",
+  "license": "LicenseRef-Caisson-Commercial",
+  "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./pglite": "./src/pglite-applier.ts"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
@@ -23,6 +23,12 @@
     "@caisson/migrate": "workspace:*",
     "@caisson/service-license": "workspace:*"
   },
+  "devDependencies": {
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "@electric-sql/pglite": "catalog:",
+    "typescript": "catalog:"
+  },
   "peerDependencies": {
     "@electric-sql/pglite": "*"
   },
@@ -30,13 +36,5 @@
     "@electric-sql/pglite": {
       "optional": true
     }
-  },
-  "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
-    "@electric-sql/pglite": "catalog:",
-    "eslint": "catalog:",
-    "typescript": "catalog:"
   }
 }
