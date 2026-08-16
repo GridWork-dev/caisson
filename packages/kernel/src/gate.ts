@@ -1,6 +1,6 @@
 // The standards gate (ADR-0016 / ADR-0004). The single enforcement of the ADR-0002 "one
-// standard" invariant: every active package extends @caisson/tsconfig + @caisson/eslint-config +
-// @caisson/testing, declares build/lint/test, and is @caisson/-scoped. It is also the sole registry
+// standard" invariant: every active package extends @caisson/tsconfig + @caisson/testing,
+// declares build/lint/test, and is @caisson/-scoped. It is also the sole registry
 // ingress — no `registry/` module may land without a golden fixture + a gate stamp.
 //
 // Run from the repo root: `bun run gate` (CI job + a fast slice in the pre-commit hook).
@@ -11,10 +11,7 @@ import { join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dir, "../../..");
 
-const CONFIG_PACKAGES = new Set([
-  "@caisson/tsconfig",
-  "@caisson/eslint-config",
-]);
+const CONFIG_PACKAGES = new Set(["@caisson/tsconfig", "@caisson/lint-policy"]);
 const REQUIRED_SCRIPTS = ["build", "lint", "test"] as const;
 
 export interface Violation {
@@ -73,12 +70,6 @@ function hasRealCode(absDir: string): boolean {
   return walk(src);
 }
 
-function hasEslintConfig(absDir: string): boolean {
-  return ["eslint.config.js", "eslint.config.mjs", "eslint.config.cjs"].some(
-    (f) => existsSync(join(absDir, f)),
-  );
-}
-
 function extendsBaseTsconfig(absDir: string): boolean {
   const path = join(absDir, "tsconfig.json");
   if (!existsSync(path)) return false;
@@ -100,7 +91,7 @@ function checkPackage(rel: string): {
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };
   const v: Violation[] = [];
 
-  // Pure config packages (tsconfig/eslint-config) are exempt from the code rules.
+  // Pure config/policy packages (tsconfig, lint-policy) are exempt from the code rules.
   if (name !== undefined && CONFIG_PACKAGES.has(name)) {
     if (!name.startsWith("@caisson/")) {
       v.push({
@@ -138,15 +129,17 @@ function checkPackage(rel: string): {
       detail: 'must extend "@caisson/tsconfig/base.json"',
     });
   }
-  if (!hasEslintConfig(absDir)) {
-    v.push({ pkg: name, rule: "eslint", detail: "missing eslint.config.js" });
-  }
   for (const s of REQUIRED_SCRIPTS) {
     if (pkg.scripts?.[s] === undefined) {
       v.push({ pkg: name, rule: "scripts", detail: `missing "${s}" script` });
     }
   }
-  for (const required of ["@caisson/tsconfig", "@caisson/eslint-config"]) {
+  // Lint is no longer a per-package concern: ADR-0409 replaced the 72 per-package eslint configs
+  // (and the shared config package every one of them depended on) with a single root
+  // .oxlintrc.json whose globs anchor to the repo root. There is nothing left for a package to
+  // declare or extend, so the old "has an eslint.config.js" and "depends on the lint config"
+  // rules are gone rather than repointed — a per-package lint config would now be the violation.
+  for (const required of ["@caisson/tsconfig"]) {
     if (deps[required] === undefined) {
       v.push({ pkg: name, rule: "deps", detail: `must depend on ${required}` });
     }

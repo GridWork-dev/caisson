@@ -38,13 +38,14 @@ const IGNORE_GLOBS: readonly string[] = [
   "registry/ledger.jsonl",
   "registry/tarballs.json",
   "registry/package.json",
-  "registry/eslint.config.js",
   "registry/tsconfig.json",
   // root build/lint config + lockfile — no buyer- or audit-relevant content
   "package.json",
   "tsconfig.json",
   "turbo.json",
-  "eslint.config.js",
+  // the oxc lint + format configs (ADR-0409) that replaced eslint.config.js / prettier's defaults
+  ".oxlintrc.json",
+  ".oxfmtrc.json",
   "knip.json",
   "renovate.json",
   "bunfig.toml",
