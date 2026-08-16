@@ -1,13 +1,9 @@
 {
   "name": "@caisson/agent-dev",
   "version": "0.6.8",
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
-  "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
-  },
   "description": "Agentic-Dev edition: the composition of the governed engine-neutral agent kernel + local hybrid memory + a thin multi-harness emitter. Composes base seams down-only — no vendor SDK, no LLM call, no harness substrate.",
+  "license": "LicenseRef-Caisson-Commercial",
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -15,9 +11,13 @@
       "default": "./dist/index.js"
     }
   },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
@@ -29,10 +29,8 @@
     "@caisson/tool-exec": "workspace:*"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }

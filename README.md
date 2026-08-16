@@ -48,7 +48,7 @@ What is actually on disk (verify against `packages/*/src` + `*.test.ts`; live pe
 ## Layout
 
 ```
-tooling/      # the one standards gate (eslint/tsconfig/testing)
+tooling/      # the one standards gate (lint-policy/tsconfig/testing)
 packages/     # 61 packages: kernel + base substrate + bundle packages + shared/harvest packages + cli
 registry/     # versioned module sources the generator + buyer's agent pull from
 apps/         # 7 apps: 5 Next.js (ADR-0044) — site (marketing+docs) · admin (control-plane, absorbed studio) · compliance/ai-kit/local-ai reference; base + agent-dev = plain-TS consumers

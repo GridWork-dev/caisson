@@ -1,13 +1,9 @@
 {
   "name": "@caisson/local-privacy",
   "version": "0.1.9",
-  "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
-  },
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
   "description": "Local-first privacy gate: strict zero-egress policy parsing and the EgressGuard wrapper over the kernel fetchWithTimeout chokepoint.",
+  "license": "LicenseRef-Caisson-Commercial",
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -20,9 +16,13 @@
       "default": "./dist/browser.js"
     }
   },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
@@ -30,10 +30,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }

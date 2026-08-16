@@ -2,8 +2,8 @@
   "name": "@caisson/testing",
   "version": "0.0.3",
   "private": true,
-  "type": "module",
   "description": "Shared test harness: golden-file regression (BLESS) + the PGlite fail-closed-RLS harness, plus a module golden-fixture contract (golden-module.ts).",
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -19,18 +19,16 @@
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@electric-sql/pglite": "catalog:",
     "@types/jsdom": "^28.0.3",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "axe-core": "^4.12.1",
-    "eslint": "catalog:",
     "jsdom": "^30.0.0",
     "react": "catalog:",
     "react-dom": "catalog:",

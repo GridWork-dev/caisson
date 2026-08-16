@@ -38,7 +38,7 @@ test("a valid magic link establishes a session (capture transport)", async () =>
     headers: new Headers(),
   });
   expect(capture.sent).toHaveLength(1);
-  const url = String((capture.sent[0]?.data as { url?: unknown }).url);
+  const url = String((capture.sent[0]!.data as { url?: unknown }).url);
   expect(new URL(url).searchParams.get("token")).not.toBeNull();
 
   // 2. Click the link (the exact URL better-auth generated) → verifies + issues a session cookie.
@@ -102,7 +102,7 @@ test("password sign-up requires verification; forgot/reset-password then resolve
   });
   expect(capture.sent).toHaveLength(1);
   expect(capture.sent[0]?.template).toBe("verify-email");
-  const verifyUrl = String((capture.sent[0]?.data as { url?: unknown }).url);
+  const verifyUrl = String((capture.sent[0]!.data as { url?: unknown }).url);
 
   // An unverified account cannot sign in yet.
   await expect(
@@ -133,7 +133,7 @@ test("password sign-up requires verification; forgot/reset-password then resolve
   // which a real browser click 302-redirects onward to `callbackURL?token=...` (the app's actual
   // `/reset-password` page — same shape as the query-param token the magic-link flow carries).
   // The token is the path's last segment here.
-  const resetUrl = String((capture.sent[1]?.data as { url?: unknown }).url);
+  const resetUrl = String((capture.sent[1]!.data as { url?: unknown }).url);
   const token = new URL(resetUrl).pathname.split("/").pop();
   expect(token).toBeTruthy();
 

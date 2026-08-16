@@ -13,7 +13,7 @@ Install from `registry.caisson.sh` with your license token in `CAISSON_LICENSE_T
 
 - `bun install` — install the `@caisson/*` modules you composed in.
 - `bun run build` — typecheck and emit to `dist/`.
-- `bun run lint` — eslint.
+- `bun run lint` — oxlint.
 - `bun test` — unit tests + golden-file regression for the installed modules.
 
 ## CI

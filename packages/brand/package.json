@@ -2,9 +2,9 @@
   "name": "@caisson/brand",
   "version": "0.1.5",
   "private": true,
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
   "description": "The private Caisson brand layer: the wordmark + glyph lockup and the 37 bespoke domain glyphs, kept out of the Apache-2.0 @caisson/ui floor so the kit stays brand-neutral. Never published; apps consume it directly and register the glyphs into the kit icon surface via registerIcons(brandGlyphs).",
+  "license": "LicenseRef-Caisson-Commercial",
+  "type": "module",
   "sideEffects": [
     "*.css"
   ],
@@ -13,23 +13,21 @@
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src"
   },
-  "peerDependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@caisson/ui": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "eslint": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }

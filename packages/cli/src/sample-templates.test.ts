@@ -64,10 +64,10 @@ describe("eu-ai-act-sample (ADR-0095 W3) — free Apache-2.0 evidence-path sampl
     expect(paths).toEqual([
       ".github/workflows/ci.yml",
       ".gitignore",
+      ".oxlintrc.json",
       "AGENTS.md",
       "LICENSE",
       "README.md",
-      "eslint.config.js",
       "package.json",
       "src/evidence-path.test.ts",
       "src/evidence-path.ts",
@@ -105,7 +105,9 @@ describe("eu-ai-act-sample (ADR-0095 W3) — free Apache-2.0 evidence-path sampl
         await Bun.file(
           join(import.meta.dir, "../../kernel/package.json"),
         ).text(),
-      ) as { version: string }
+      ) as {
+        version: string;
+      }
     ).version;
     expect(parsed.dependencies).toEqual({
       "@caisson/kernel": `^${kernelVersion}`,

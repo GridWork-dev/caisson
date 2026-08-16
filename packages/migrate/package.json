@@ -1,13 +1,9 @@
 {
   "name": "@caisson/migrate",
   "version": "0.2.12",
-  "type": "module",
-  "license": "Apache-2.0",
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  },
   "description": "The base migration assembler + runner: reads each selected package's on-disk migrations/NNNN_*.sql, merges them via the kernel into ONE renumbered sequence + single schema_version ledger, emits the generated-app file set, and applies the sequence forward-only through an injected runner port. Owned here so @caisson/cli and @caisson/compliance import it, never copy it.",
+  "license": "Apache-2.0",
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -20,13 +16,23 @@
       "default": "./dist/pg-applier.js"
     }
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
     "@caisson/kernel": "workspace:*"
+  },
+  "devDependencies": {
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "@types/pg": "catalog:",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
     "pg": "^8.0.0"
@@ -35,13 +41,5 @@
     "pg": {
       "optional": true
     }
-  },
-  "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
-    "@types/pg": "catalog:",
-    "eslint": "catalog:",
-    "typescript": "catalog:"
   }
 }

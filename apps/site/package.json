@@ -1,14 +1,14 @@
 {
   "name": "@caisson/site",
   "version": "0.3.3",
-  "license": "LicenseRef-Caisson-Commercial",
   "private": true,
+  "license": "LicenseRef-Caisson-Commercial",
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3030",
     "build": "next build",
     "start": "next start -p 3030",
-    "lint": "eslint .",
+    "lint": "oxlint .",
     "typecheck": "fumadocs-mdx && next typegen && tscn -p tsconfig.json",
     "test": "fumadocs-mdx && bun test --timeout 60000 ./lib ./emails ./components ./app",
     "eval": "bun test ./lib/ask-ai/grounding.eval.test.ts",
@@ -75,7 +75,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@remotion/cli": "^4.0.499",
@@ -87,7 +86,6 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@types/three": "^0.185.1",
-    "eslint": "catalog:",
     "playwright": "^1.62.0",
     "remotion": "^4.0.499",
     "tailwindcss": "^4.3.1",

@@ -2,9 +2,9 @@
   "name": "@caisson/service-license",
   "version": "0.1.3",
   "private": true,
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
   "description": "Merchant-of-Record billing webhook + idempotent credit grants + account-entitlement store/resolver + the Ed25519 offline-license ISSUER HTTP surface (ADR-0089/0017/0071/0108). A gated invoice.paid grants cycle credits AND the plan's entitlements; resolveAccountEntitlements expands stored purchased ids to member slugs against the registry index; the lazy bearer-gated POST /issue signs an account's resolved entitlements into a license token via @caisson/license-issue.",
+  "license": "LicenseRef-Caisson-Commercial",
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src",
     "test:live": "bun test ./live",
     "start": "bun run src/deploy.ts"
@@ -43,12 +43,10 @@
   },
   "devDependencies": {
     "@caisson/auth": "workspace:*",
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@types/bun": "catalog:",
     "@types/pg": "catalog:",
-    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }

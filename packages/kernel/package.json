@@ -1,13 +1,12 @@
 {
   "name": "@caisson/kernel",
   "version": "0.8.0",
-  "type": "module",
-  "license": "Apache-2.0",
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  },
   "description": "Governance kernel: typed config loader, the CaissonError model, security primitives (constant-time compare, SSRF guard), and the standards gate.",
+  "license": "Apache-2.0",
+  "bin": {
+    "caisson-gate": "./src/gate.ts"
+  },
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -50,22 +49,21 @@
       "default": "./dist/evidence/index.js"
     }
   },
-  "bin": {
-    "caisson-gate": "./src/gate.ts"
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }

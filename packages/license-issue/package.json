@@ -2,9 +2,9 @@
   "name": "@caisson/license-issue",
   "version": "1.0.7",
   "private": true,
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
   "description": "Ed25519 offline-license issuer: the private counterpart to @caisson/license-verify. Holds the signing key behind a Signer port (default Ed25519Signer over a node:crypto PKCS8 env key; KMS is an un-wired seam) and mints signed license tokens by signing exactly canonicalize(parse(claims)) - the byte-identical payload @caisson/license-verify re-derives. Never published; the signing code lives only with the issuer service.",
+  "license": "LicenseRef-Caisson-Commercial",
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -15,7 +15,7 @@
   },
   "scripts": {
     "build": "tscn -p tsconfig.json && tscn -p tsconfig.ui.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
@@ -23,14 +23,12 @@
     "@caisson/license-verify": "workspace:*"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@caisson/ui": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "eslint": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:"

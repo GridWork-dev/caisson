@@ -188,11 +188,11 @@ describe("createGcpKmsClient (ADR-0171 GCP driver, per-tenant CryptoKey)", () =>
     );
 
     expect(seen[0]?.method).toBe("listCryptoKeyVersions");
-    expect((seen[0]?.request as { parent: string }).parent).toBe(
+    expect((seen[0]!.request as { parent: string }).parent).toBe(
       "projects/p/locations/l/keyRings/r/cryptoKeys/tenant-a",
     );
     expect(seen[1]?.method).toBe("destroyCryptoKeyVersion");
-    expect((seen[1]?.request as { name: string }).name).toBe(
+    expect((seen[1]!.request as { name: string }).name).toBe(
       "projects/p/locations/l/keyRings/r/cryptoKeys/tenant-a/cryptoKeyVersions/1",
     );
     expect(receipt).toEqual({

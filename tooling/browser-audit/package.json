@@ -2,20 +2,18 @@
   "name": "@caisson/browser-audit",
   "version": "0.0.2",
   "private": true,
-  "type": "module",
   "description": "Advisory reconciliation for Codex production browser audit findings.",
+  "type": "module",
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
     "@caisson/testing": "workspace:*"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }

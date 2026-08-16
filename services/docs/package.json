@@ -2,9 +2,9 @@
   "name": "@caisson/service-docs",
   "version": "0.0.14",
   "private": true,
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
   "description": "AI-native docs corpus + retrieval service. Builds a chunked, agent-queryable corpus from the repo's authoritative docs, emits a canonical llms.txt, and serves a typed POST /query retrieval contract that the (Python) support-bot and buyer agents consume cross-language. Read-by-agents — distinct from apps/site's read-by-humans Fumadocs site.",
+  "license": "LicenseRef-Caisson-Commercial",
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src",
     "test:live": "bun test ./live",
     "start": "bun run src/server.ts"
@@ -28,11 +28,9 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@types/bun": "catalog:",
-    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }

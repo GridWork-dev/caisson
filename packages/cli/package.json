@@ -1,26 +1,11 @@
 {
   "name": "@caisson/cli",
   "version": "0.7.9",
-  "type": "module",
-  "license": "Apache-2.0",
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  },
   "description": "create-caisson generator: composes a tailored repo from the versioned registry; agent-drivable; codegen-credit metered.",
-  "engines": {
-    "node": ">=20.12.0"
-  },
-  "exports": {
-    ".": {
-      "bun": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
-  },
+  "license": "Apache-2.0",
   "bin": {
-    "create-caisson": "./dist/cli.js",
-    "caisson": "./dist/caisson.js"
+    "caisson": "./dist/caisson.js",
+    "create-caisson": "./dist/cli.js"
   },
   "files": [
     "dist",
@@ -28,9 +13,21 @@
     "migrations-bundle",
     "registry-index.json"
   ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "bun run scripts/bundle-migrations.ts && bun run scripts/bundle-registry-index.ts && tscn -p tsconfig.json && tscn -p tsconfig.scripts.json && bun run scripts/add-shebang.ts",
-    "lint": "eslint src scripts",
+    "lint": "oxlint src scripts",
     "test": "bun test --timeout 60000 ./src ./scripts"
   },
   "dependencies": {
@@ -52,7 +49,6 @@
     "@caisson/billing": "workspace:*",
     "@caisson/credits": "workspace:*",
     "@caisson/email": "workspace:*",
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/mcp-server": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
@@ -61,10 +57,12 @@
     "@types/pg": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "eslint": "catalog:",
     "next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=20.12.0"
   }
 }

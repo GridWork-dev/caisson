@@ -1,13 +1,9 @@
 {
   "name": "@caisson/ai-kit",
   "version": "0.6.3",
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
-  "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
-  },
   "description": "AI Production Kit edition: metered inference, streaming, and embeddings composing prompt-registry + ai-meter + guardrails + ai-config behind Vercel AI SDK v7.",
+  "license": "LicenseRef-Caisson-Commercial",
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -15,9 +11,13 @@
       "default": "./dist/index.js"
     }
   },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src",
     "test:live": "bun test ./live"
   },
@@ -45,13 +45,11 @@
   "devDependencies": {
     "@caisson/ai-evals": "workspace:*",
     "@caisson/cli": "workspace:*",
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/mcp-server": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "eslint": "catalog:",
     "msw": "^2.14.6",
     "typescript": "catalog:"
   }

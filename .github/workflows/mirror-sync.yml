@@ -103,11 +103,11 @@ jobs:
       - name: verify export — lint
         if: steps.guard.outputs.armed == 'true'
         working-directory: mirror-out
-        run: bunx eslint .
+        run: bun run lint
       - name: verify export — format
         if: steps.guard.outputs.armed == 'true'
         working-directory: mirror-out
-        run: bunx prettier --check "**/*.{ts,tsx,js,mjs,json,md,css}"
+        run: bun run format:check
       # Remove what the five verification steps just built, so the tree copied below is the tree
       # the exporter produced and nothing more. The mirror's own shipped .gitignore already lists
       # all five of these, so they could not be COMMITTED either way — what this actually prevents
