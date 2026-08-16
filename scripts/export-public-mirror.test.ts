@@ -367,6 +367,32 @@ describe("MIRROR_ASSET_FILES", () => {
     expect(mirror.rules).toEqual(root.rules);
     expect(MIRROR_ASSET_FILES.map((f) => f.dest)).toContain(".oxlintrc.json");
   });
+
+  test("the shipped mirror formatter config matches the source repo's settings", () => {
+    // The exporter formats the tree with THIS repo's oxfmt at THIS repo's settings, and the
+    // mirror's CI then runs `oxfmt --check .` against the result. If the shipped config drifts
+    // from the root one — or goes missing — the mirror checks at different settings than it was
+    // written with and fails on every file.
+    const readJsonc = (p: string) =>
+      JSON.parse(
+        readFileSync(p, "utf8").replace(/^\s*\/\/.*$/gm, ""),
+      ) as Record<string, unknown>;
+    const {
+      $schema: _rs,
+      ignorePatterns: rootIgnores,
+      ...root
+    } = readJsonc(join(REPO_ROOT, ".oxfmtrc.json"));
+    const { ignorePatterns: mirrorIgnores, ...mirror } = readJsonc(
+      join(MIRROR_ASSETS_DIR, "oxfmtrc.json"),
+    );
+    expect(mirror).toEqual(root);
+    // The mirror drops only the source-repo-specific paths (outputs/ never ships); every file-type
+    // scope pin must carry over, or the mirror would newly format types this repo excluded.
+    const typePins = (v: unknown) =>
+      (v as string[]).filter((p) => p.startsWith("**/*."));
+    expect(typePins(mirrorIgnores)).toEqual(typePins(rootIgnores));
+    expect(MIRROR_ASSET_FILES.map((f) => f.dest)).toContain(".oxfmtrc.json");
+  });
 });
 
 describe("stripAdrIds", () => {

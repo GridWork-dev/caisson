@@ -510,6 +510,7 @@ export const MIRROR_ASSET_FILES: ReadonlyArray<{
   { src: "SUPPORT.md", dest: "SUPPORT.md" },
   { src: "CODE_OF_CONDUCT.md", dest: "CODE_OF_CONDUCT.md" },
   { src: "oxlintrc.json", dest: ".oxlintrc.json" },
+  { src: "oxfmtrc.json", dest: ".oxfmtrc.json" },
   { src: ".prettierignore", dest: ".prettierignore" },
   { src: "ci.yml", dest: ".github/workflows/ci.yml" },
   { src: "publish.yml", dest: ".github/workflows/publish.yml" },
@@ -1217,14 +1218,14 @@ function main(): void {
       "@types/bun": "^1.1.14",
       turbo: "~2.5.6",
       typescript: "^5.6.3",
-      // The mirror lints and formats with oxc (ADR-0408), same as the source repo. The shipped
-      // root `.oxlintrc.json` names `./tooling/lint-policy/slop-plugin.js` as a jsPlugin and
-      // `eslint-plugin-storybook` as the other, so root needs a `workspace:*` entry for the policy
-      // package plus the plugin itself — a `workspace:*` reference resolves as a per-consumer
-      // symlink, not a root hoist. oxlint/oxfmt are pinned (not bunx'd) so the CI lint + format
-      // legs never depend on an on-the-fly install.
-      "@caisson-sh/lint-policy": "workspace:*",
-      "eslint-plugin-storybook": "^10.5.6",
+      // The mirror lints and formats with oxc (ADR-0409), same as the source repo. Pinned rather
+      // than bunx'd so the CI lint + format legs never depend on an on-the-fly install.
+      //
+      // No jsPlugins here on purpose: the shipped `.oxlintrc.json` is the root config minus the
+      // overrides whose targets do not ship (no packages/ui means no caisson-slop scope and no
+      // stories), so the mirror needs neither `eslint-plugin-storybook` nor a root dependency on
+      // the policy package. `@caisson-sh/lint-policy` still ships as a workspace member because
+      // it carries the boundary-policy data, it just is not a root devDep.
       oxfmt: "0.63.0",
       oxlint: "1.78.0",
     },
@@ -1362,10 +1363,26 @@ function main(): void {
   // reformatting once, here, keeps the mirror's `oxfmt --check` leg clean regardless of how any
   // future rename or export transform happens to interact with a source file's pre-existing wrap
   // width, rather than chasing individual source files by hand every time the scope shifts a line.
-  execFileSync(resolve(repoRoot, "node_modules/.bin/oxfmt"), ["."], {
-    cwd: outDir,
-    stdio: "inherit",
-  });
+  // The empty `.git` marker is load-bearing, not tidiness. oxfmt discovers ignore files by walking
+  // UP from its cwd until a repository boundary, and outDir sits inside THIS repo, whose root
+  // .gitignore lists `mirror-out/` — so without a boundary every file in the export reads as
+  // ignored and oxfmt exits 2 on "no target files". `--ignore-path` does not help: it replaces the
+  // current directory's ignore files, not the parent walk (measured, contradicting the docs' claim
+  // that an explicitly-named path is formatted anyway — an explicit file path is refused too).
+  // A `.git` entry stops the walk, which is also what the real mirror clone provides, so this
+  // makes the local export behave the way the synced repo already does. Removed in `finally` so a
+  // crash mid-format cannot ship a stray marker into the copied tree.
+  const gitBoundary = join(outDir, ".git");
+  const hadBoundary = existsSync(gitBoundary);
+  if (!hadBoundary) mkdirSync(gitBoundary);
+  try {
+    execFileSync(resolve(repoRoot, "node_modules/.bin/oxfmt"), ["."], {
+      cwd: outDir,
+      stdio: "inherit",
+    });
+  } finally {
+    if (!hadBoundary) rmSync(gitBoundary, { recursive: true, force: true });
+  }
 
   // --- entitlement-token gate: nothing shaped like a license token ships unless dev-signed ---
   const tokenHits: string[] = [];

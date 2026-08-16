@@ -109,6 +109,15 @@ clean assertion failure. ESLint's core `no-unsafe-optional-chaining` does not tr
 - **oxfmt honors `// prettier-ignore` and `.prettierignore` natively** (constraint 5, verified on a
   real probe: a `prettier-ignore`'d statement was left untouched while an unguarded sibling on the
   next line was reformatted). No ignore file or inline span had to change.
+- **oxfmt's ignore discovery walks UP past the directory it is pointed at**, to the nearest
+  repository boundary. The mirror exporter writes to `mirror-out/`, which this repo's own root
+  `.gitignore` lists — so `oxfmt .` there matched zero files and exited 2, and would have failed in
+  armed CI, not just locally. `--ignore-path` does not fix it (it replaces the current directory's
+  ignore files, not the parent walk), and neither does naming a file explicitly, which contradicts
+  the documented "files ignored by .gitignore can still be formatted if explicitly specified" —
+  measured, an explicit file path is refused too. The fix is a temporary empty `.git` marker in the
+  output directory, removed in a `finally`: it stops the walk, and it is what the real mirror clone
+  provides anyway. Found by running the export end to end rather than trusting its unit tests.
 - **oxlint's override globs anchor to the config file**, so the ESLint `basePath` hand-pins in the
   old `boundaries.js`/`anti-slop.js` are gone. Verified with a two-arm discriminator rather than
   assumed: a provider-SDK import probe in an exempt package (`ai-config`) reports 0 findings and
