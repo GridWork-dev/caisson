@@ -92,9 +92,9 @@ describe("generate — allowlist gate (ADR-0021/0048)", () => {
       ".github/workflows/ci.yml",
       ".gitignore",
       ".npmrc",
+      ".oxlintrc.json",
       "AGENTS.md",
       "README.md",
-      "eslint.config.js",
       "package.json",
       "src/__golden__/smoke.json",
       "src/golden.test.ts",
@@ -419,9 +419,9 @@ describe("generate — framework templates (ADR-0287)", () => {
       ".github/workflows/ci.yml",
       ".gitignore",
       ".npmrc",
+      ".oxlintrc.json",
       "AGENTS.md",
       "README.md",
-      "eslint.config.js",
       "package.json",
       "src/__golden__/smoke.json",
       "src/golden.test.ts",
@@ -453,7 +453,7 @@ describe("generate — framework templates (ADR-0287)", () => {
     };
     // base's scripts survive (lint/test); the framework fragment adds dev/build/start.
     expect(parsed.scripts).toMatchObject({
-      lint: "eslint .",
+      lint: "oxlint .",
       test: "bun test ./src",
       dev: "next dev",
       build: "next build",
