@@ -69,15 +69,13 @@
 "@caisson/verify-pack": patch
 ---
 
-Replace ESLint and Prettier with oxlint and oxfmt (ADR-0409, implementing the ADR-0408 lock).
+Replace ESLint and Prettier with oxlint and oxfmt.
 
-One root lint config now covers the whole tree in place of 72 per-package files. Every package
-here is touched by the dependency removal or by the one-commit reformat, so each takes a patch
-bump; no runtime behaviour changes.
+Linting and formatting now run on the oxc toolchain. The rule floor is unchanged: the same
+no-any, no-console, type-only-import and provider-SDK-boundary rules are enforced, at the same
+severities, and formatting keeps the settings the previous formatter used. Every package here is
+touched by the dependency removal or by the one-pass reformat, so each takes a patch bump; no
+runtime behaviour changes.
 
-The formatter swap is deliberately style-neutral: a new `.oxfmtrc.json` pins Prettier's own
-defaults, which keeps the reformat to 74 files rather than the whole tree.
-
-The visible consequences for a consumer are that the shared config package is renamed and the
-lint and format commands changed. The rule floor is unchanged: the same no-any, no-console,
-type-only-import and provider-SDK-boundary rules are enforced, at the same severities.
+For anyone consuming the shared configuration: the lint config package is renamed, and the lint
+and format commands changed.
