@@ -47,8 +47,8 @@ guarantee.
 | `fetchWithTimeout`       | every outbound `fetch` is timeout-wrapped                             | review (no bare `fetch(`)                           | ADR-0002                  |
 | `crypto.timingSafeEqual` | every secret/token/license compare                                    | review (no `===` on secrets)                        | ADR-0002 / security floor |
 | `crypto.randomUUID()`    | all IDs                                                               | review                                              | ADR-0002                  |
-| No `any`                 | no `any` in product code                                              | eslint (typescript-eslint strict)                   | ADR-0002                  |
-| No `console.log`         | no `console.log` in product code                                      | eslint                                              | ADR-0002                  |
+| No `any`                 | no `any` in product code                                              | oxlint (`typescript/no-explicit-any`)               | ADR-0002                  |
+| No `console.log`         | no `console.log` in product code                                      | oxlint (`eslint/no-console`)                        | ADR-0002                  |
 | Fail-closed              | RLS denies by default; credit gate -> 402; license check fails closed | tenancy-rls tests + review                          | ADR-0005                  |
 | Down-only deps           | a package never depends "up" on an edition                            | standards gate + dependency-cruiser                 | ADR-0003                  |
 
@@ -57,12 +57,12 @@ live in the gridwork-core security rule and `CLAUDE.md`; do not re-derive them h
 
 ## The one standards gate
 
-`tooling/` is the SINGLE source for eslint, tsconfig, and the test harness. A package
+`tooling/` is the SINGLE source for lint policy, tsconfig, and the test harness. A package
 ships only by conforming to it - this is the ADR-0002 "one standard" invariant, enforced by
 two cooperating gates:
 
 - **`bun run gate`** (`packages/kernel/src/gate.ts`) - asserts every active package extends
-  `@caisson/tsconfig` + `@caisson/eslint-config` + `@caisson/testing`, declares
+  `@caisson/tsconfig` + `@caisson/lint-policy` + `@caisson/testing`, declares
   `build`/`lint`/`test` scripts, and is `@caisson/`-scoped. Scaffold packages (no `.ts`,
   no tsconfig) are skipped until they grow code; a package with `.ts` files but no tsconfig
   is a hard violation, not a skip.
@@ -72,12 +72,12 @@ two cooperating gates:
 
 `tooling/` layout:
 
-| Dir                       | Owns                                                                                                                          |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `tooling/tsconfig/`       | `base.json` - the one strict tsconfig every package extends                                                                   |
-| `tooling/eslint-config/`  | `index.js` strict base + `boundaries.js` (provider-SDK denylist)                                                              |
-| `tooling/testing/`        | shared harness: golden-file (`golden.ts`, BLESS) + PGlite RLS harness (`pg.ts`) + module golden contract (`golden-module.ts`) |
-| `tooling/standards-gate/` | `checks.ts` - AGPL boundary, down-only, license/manifest declarations, manifest<->package.json agreement                      |
+| Dir                       | Owns                                                                                                                                                                                     |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tooling/tsconfig/`       | `base.json` - the one strict tsconfig every package extends                                                                                                                              |
+| `tooling/lint-policy/`    | `boundary-policy.cjs` (the ONE provider-SDK / bundle-meta data source) + `slop-plugin.js` (loaded by oxlint via jsPlugins). Rule severities live in the root `.oxlintrc.json` (ADR-0408) |
+| `tooling/testing/`        | shared harness: golden-file (`golden.ts`, BLESS) + PGlite RLS harness (`pg.ts`) + module golden contract (`golden-module.ts`)                                                            |
+| `tooling/standards-gate/` | `checks.ts` - AGPL boundary, down-only, license/manifest declarations, manifest<->package.json agreement                                                                                 |
 
 **Golden-file-first for compliance logic:** a module's golden fixture is the serialized
 deterministic output for a fixed input (ADR-0013 harness, ADR-0021 contract). The fixture
@@ -88,7 +88,7 @@ regression before the logic is trusted.
 
 The composable base/edition rule (ADR-0003) and the provider-SDK confinement (ADR-0011) are
 enforced by three independent layers, all blocking on merge. No single layer is sufficient -
-ESLint is static-only, the gate is license/declaration-scoped, dependency-cruiser is the
+oxlint is static-only, the gate is license/declaration-scoped, dependency-cruiser is the
 authoritative module graph.
 
 | Layer                        | Tool                                           | Catches                                                                                                                                | Config                                                                             |

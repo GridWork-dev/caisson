@@ -1,13 +1,9 @@
 {
   "name": "@caisson/license-verify",
   "version": "0.3.8",
-  "type": "module",
-  "license": "Apache-2.0",
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  },
   "description": "Offline license-token verification: a signed wire codec (PREFIX-TIER-base64url(payload+sig)) plus offline Ed25519 verify (crypto.verify over kernel canonicalize) with a baked-in public key, entitlements[]+tier+expiry claims, fail-safe-to-community, perpetual-per-major. Only offline verify lives here; issuance is a separate private service.",
+  "license": "Apache-2.0",
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -15,9 +11,13 @@
       "default": "./dist/index.js"
     }
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
@@ -25,10 +25,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }

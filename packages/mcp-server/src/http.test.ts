@@ -342,7 +342,7 @@ describe("HTTP transport binding (ADR-0161)", () => {
       arguments: { module_id: "@caisson/auth" },
     });
     expect(got.messages).toHaveLength(1);
-    expect((got.messages[0]?.content as { text: string }).text).toContain(
+    expect((got.messages[0]!.content as { text: string }).text).toContain(
       "@caisson/auth",
     );
 

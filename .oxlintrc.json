@@ -1,0 +1,233 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // The ONE lint standards source (ADR-0002 + ADR-0022 Gate 2), replacing @caisson/eslint-config
+  // and the 72 per-package eslint.config.js files (ADR-0408).
+  //
+  // SEMANTICS THAT DIFFER FROM ESLINT FLAT CONFIG (ADR-0408 constraint 2): `plugins`,
+  // `overrides` and `ignorePatterns` REPLACE rather than merge across an `extends` chain, and
+  // every glob here anchors to THIS FILE's directory, not to cwd. That anchoring is the whole
+  // reason the wave happened: the ESLint `basePath` hand-pins in boundaries.js/anti-slop.js
+  // existed to stop a per-package `eslint src` (cwd inside the package) from silently dropping a
+  // repo-root-relative scope. Under oxlint that class cannot occur, so the pins are gone.
+  //
+  // There is exactly one config for the whole monorepo — no per-package file to drift.
+
+  "plugins": ["eslint", "typescript", "jsx-a11y"],
+  "categories": { "correctness": "error" },
+
+  "rules": {
+    "typescript/no-explicit-any": "error",
+    "eslint/no-console": "error",
+    "typescript/consistent-type-imports": [
+      "error",
+      { "prefer": "type-imports", "fixStyle": "separate-type-imports" }
+    ],
+    "typescript/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }
+    ],
+
+    "eslint/no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": [
+              "openai",
+              "openai/*",
+              "@azure/openai",
+              "@azure/openai/*",
+              "@anthropic-ai/sdk",
+              "@anthropic-ai/sdk/*",
+              "@anthropic-ai/bedrock",
+              "@anthropic-ai/bedrock/*",
+              "@anthropic-ai/vertex-sdk",
+              "@anthropic-ai/vertex-sdk/*",
+              "@google/genai",
+              "@google/genai/*",
+              "@google/generative-ai",
+              "@google/generative-ai/*",
+              "@aws-sdk/client-bedrock-runtime",
+              "@aws-sdk/client-bedrock-runtime/*",
+              "@mistralai/mistralai",
+              "@mistralai/mistralai/*",
+              "cohere-ai",
+              "cohere-ai/*",
+              "groq-sdk",
+              "groq-sdk/*",
+              "replicate",
+              "replicate/*",
+              "together-ai",
+              "together-ai/*",
+              "ollama",
+              "ollama/*",
+              "ai",
+              "ai/*",
+              "@ai-sdk/openai",
+              "@ai-sdk/openai/*",
+              "@ai-sdk/openai-compatible",
+              "@ai-sdk/openai-compatible/*",
+              "@ai-sdk/anthropic",
+              "@ai-sdk/anthropic/*",
+              "@ai-sdk/google",
+              "@ai-sdk/google/*",
+              "@ai-sdk/openrouter",
+              "@ai-sdk/openrouter/*",
+              "@ai-sdk/amazon-bedrock",
+              "@ai-sdk/amazon-bedrock/*",
+              "@ai-sdk/azure",
+              "@ai-sdk/azure/*"
+            ],
+            "message": "Provider SDKs may only be imported by @caisson/ai-config and @caisson/ai-kit (ADR-0011). Route inference through @caisson/ai-config. (dependency-cruiser backstops dynamic/transitive imports.)"
+          }
+        ]
+      }
+    ]
+  },
+
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/.turbo/**",
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/out/**",
+    "**/.source/**",
+    "**/coverage/**",
+    "**/.venv/**",
+    "**/.pytest_cache/**",
+    "**/*.d.ts",
+    "outputs/**",
+    "infra/**",
+    "**/*.cjs",
+    // Deliberate negative-test fixtures exist to VIOLATE the rules they test; they are exercised
+    // by the canary + boundary tests that invoke the linter directly, never by the repo-wide run.
+    "**/__fixtures__/**",
+    "tools/security/semgrep-rules/**",
+    "apps/site/scripts/anti-slop/detector/**",
+    "scripts/mirror-assets/**",
+    "**/migrations/**",
+    "**/__golden__/**"
+  ],
+
+  "overrides": [
+    {
+      // The provider-SDK exemption: the AI config seam itself (ADR-0011). Anchored to this file, so it holds identically from a repo-root run and a per-package `oxlint src`.
+      "files": ["packages/ai-config/**", "packages/ai-kit/**"],
+      "rules": { "eslint/no-restricted-imports": "off" }
+    },
+    {
+      // Tests may use console for harness diagnostics.
+      "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.integration.test.ts"],
+      "rules": { "eslint/no-console": "off" }
+    },
+    {
+      // CLI entrypoints and build/gen scripts legitimately print to stdout.
+      "files": [
+        "**/gate.ts",
+        "**/bin/**",
+        "**/*.cli.ts",
+        "**/scripts/**",
+        "tooling/scripts/**",
+        "registry/scripts/**"
+      ],
+      "rules": { "eslint/no-console": "off" }
+    },
+    {
+      // jsx-a11y on JSX surfaces, at exact ESLint parity (ADR-0408). The 31 rules of the plugin's
+      // RECOMMENDED set stay at the RAMP severity the ESLint config pinned on 2026-07-13 (warn,
+      // because the remaining violations live in packages/ui and apps/site; reconcile = fix those,
+      // then raise to error). The 5 rules oxlint carries BEYOND recommended are explicitly "off"
+      // rather than omitted: `categories.correctness` would otherwise turn them on at ERROR and
+      // widen the gate this wave promised to hold flat. Turning them on is a separate decision.
+      "files": ["**/*.tsx", "**/*.jsx"],
+      "rules": {
+        "jsx-a11y/alt-text": "warn",
+        "jsx-a11y/anchor-has-content": "warn",
+        "jsx-a11y/anchor-is-valid": "warn",
+        "jsx-a11y/aria-activedescendant-has-tabindex": "warn",
+        "jsx-a11y/aria-props": "warn",
+        "jsx-a11y/aria-proptypes": "warn",
+        "jsx-a11y/aria-role": "warn",
+        "jsx-a11y/aria-unsupported-elements": "warn",
+        "jsx-a11y/autocomplete-valid": "warn",
+        "jsx-a11y/click-events-have-key-events": "warn",
+        "jsx-a11y/heading-has-content": "warn",
+        "jsx-a11y/html-has-lang": "warn",
+        "jsx-a11y/iframe-has-title": "warn",
+        "jsx-a11y/img-redundant-alt": "warn",
+        "jsx-a11y/interactive-supports-focus": "warn",
+        "jsx-a11y/label-has-associated-control": "warn",
+        "jsx-a11y/media-has-caption": "warn",
+        "jsx-a11y/mouse-events-have-key-events": "warn",
+        "jsx-a11y/no-access-key": "warn",
+        "jsx-a11y/no-autofocus": "warn",
+        "jsx-a11y/no-distracting-elements": "warn",
+        "jsx-a11y/no-interactive-element-to-noninteractive-role": "warn",
+        "jsx-a11y/no-noninteractive-element-interactions": "warn",
+        "jsx-a11y/no-noninteractive-element-to-interactive-role": "warn",
+        "jsx-a11y/no-noninteractive-tabindex": "warn",
+        "jsx-a11y/no-redundant-roles": "warn",
+        "jsx-a11y/no-static-element-interactions": "warn",
+        "jsx-a11y/role-has-required-aria-props": "warn",
+        "jsx-a11y/role-supports-aria-props": "warn",
+        "jsx-a11y/scope": "warn",
+        "jsx-a11y/tabindex-no-positive": "warn",
+        "jsx-a11y/anchor-ambiguous-text": "off",
+        "jsx-a11y/control-has-associated-label": "off",
+        "jsx-a11y/lang": "off",
+        "jsx-a11y/no-aria-hidden-on-focusable": "off",
+        "jsx-a11y/prefer-tag-over-role": "off"
+      }
+    },
+    {
+      // JS-PLUGIN ARM 1 — the local `caisson-slop` rule (ADR-0101 gate #3), loaded through the
+      // alpha `jsPlugins` API. Scope is the kit's component tree, exactly as the ESLint era, plus
+      // the canary fixture dir so `lint-canary.ts` has something the rule MUST flag. reveal.tsx
+      // keeps its one sanctioned dynamic inline style.
+      "files": [
+        "packages/ui/src/components/**/*.ts",
+        "packages/ui/src/components/**/*.tsx",
+        "tooling/lint-policy/__fixtures__/canary/**/*.tsx"
+      ],
+      "excludeFiles": ["packages/ui/src/components/reveal.tsx"],
+      "jsPlugins": [
+        {
+          "name": "caisson-slop",
+          "specifier": "./tooling/lint-policy/slop-plugin.js"
+        }
+      ],
+      "rules": { "caisson-slop/no-slop": "error" }
+    },
+    {
+      // JS-PLUGIN ARM 2 — eslint-plugin-storybook, unmodified from npm. Only the `storybook/*`
+      // rules are enabled: `flat/recommended` also pulls `react-hooks/*` and `import-x/*`, whose
+      // plugins are not loaded here, and naming a rule from an absent plugin is a config error.
+      // Severities are the plugin's own recommended values.
+      "files": [
+        "**/*.stories.ts",
+        "**/*.stories.tsx",
+        "**/*.story.ts",
+        "**/*.story.tsx"
+      ],
+      "jsPlugins": [
+        { "name": "storybook", "specifier": "eslint-plugin-storybook" }
+      ],
+      "rules": {
+        "storybook/await-interactions": "error",
+        "storybook/context-in-play-function": "error",
+        "storybook/default-exports": "error",
+        "storybook/hierarchy-separator": "warn",
+        "storybook/no-redundant-story-name": "warn",
+        "storybook/no-renderer-packages": "error",
+        "storybook/prefer-pascal-case": "warn",
+        "storybook/story-exports": "error",
+        "storybook/use-storybook-expect": "error",
+        "storybook/use-storybook-testing-library": "error"
+      }
+    }
+  ]
+}

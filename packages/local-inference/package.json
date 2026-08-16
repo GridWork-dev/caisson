@@ -1,16 +1,9 @@
 {
   "name": "@caisson/local-inference",
   "version": "0.1.9",
-  "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
-  },
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
-  "engines": {
-    "node": ">=20.12.0"
-  },
   "description": "Local-first inference seam: deterministic stub, guarded ONNX embeddings, and rented transport drivers sharing the local privacy gate.",
+  "license": "LicenseRef-Caisson-Commercial",
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -23,9 +16,13 @@
       "default": "./dist/browser.js"
     }
   },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src",
     "test:live": "bun test ./live"
   },
@@ -35,11 +32,12 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/local-store": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "eslint": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=20.12.0"
   }
 }

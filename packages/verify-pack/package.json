@@ -2,16 +2,8 @@
   "name": "@caisson/verify-pack",
   "version": "0.2.2",
   "private": true,
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
   "description": "Out-of-band verifier for Caisson audit evidence packs: validates the signed complete-file manifest, pack seal, receipt chain, and per-row anchor signatures without trusting executable code from the pack.",
-  "exports": {
-    ".": {
-      "bun": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
-  },
+  "license": "LicenseRef-Caisson-Commercial",
   "bin": {
     "verify-pack": "./dist/cli.js"
   },
@@ -20,9 +12,17 @@
     "README.md",
     "CHANGELOG.md"
   ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
@@ -30,10 +30,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }

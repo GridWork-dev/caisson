@@ -1,0 +1,58 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  // THE SILENT-FAILURE CANARY CONFIG (ADR-0408 constraint 1). Driven only by
+  // tooling/scripts/lint-canary.ts — never by a repo-wide run.
+  //
+  // Why a SECOND config instead of reusing the root one: the canary's whole job is to lint files
+  // that deliberately violate, and the root config must ignore those same files or the normal gate
+  // would fail on them. `ignorePatterns` ACCUMULATE down an `extends` chain (unlike `plugins` /
+  // `overrides`, which replace), so an ignore in the root cannot be lifted by extending it — and
+  // oxlint applies `ignorePatterns` even to an explicitly-named file path. A standalone config is
+  // the only way to reach the fixtures.
+  //
+  // The duplication that buys is guarded, not trusted: `lint-policy.test.ts` asserts this file's
+  // jsPlugins specifiers and rule ids match the root `.oxlintrc.json`, so a plugin renamed or a
+  // rule disabled there cannot leave a canary that still passes against a stale copy.
+  //
+  // Every glob below anchors to THIS file's directory (tooling/lint-policy/).
+
+  "plugins": ["eslint"],
+  "categories": {},
+
+  "rules": {
+    "eslint/no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["@ai-sdk/openai"],
+            "message": "Provider SDKs may only be imported by @caisson/ai-config and @caisson/ai-kit (ADR-0011)."
+          }
+        ]
+      }
+    ]
+  },
+
+  "overrides": [
+    {
+      // ARM 1 — the LOCAL plugin file still loads and its visitors still fire.
+      "files": ["__fixtures__/canary/**/*.tsx"],
+      "jsPlugins": [
+        { "name": "caisson-slop", "specifier": "./slop-plugin.js" }
+      ],
+      "rules": { "caisson-slop/no-slop": "error" }
+    },
+    {
+      // ARM 2 — an NPM plugin package still resolves and its rules still fire. A different
+      // failure mode from arm 1, hence a second fixture.
+      "files": ["__fixtures__/canary/**/*.stories.tsx"],
+      "jsPlugins": [
+        { "name": "storybook", "specifier": "eslint-plugin-storybook" }
+      ],
+      "rules": {
+        "storybook/default-exports": "error",
+        "storybook/story-exports": "error"
+      }
+    }
+  ]
+}

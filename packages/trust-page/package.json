@@ -1,13 +1,9 @@
 {
   "name": "@caisson/trust-page",
   "version": "0.3.3",
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
-  "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
-  },
   "description": "Buyer trust-page generator: a self-contained static HTML + JSON page, built from an evidence pack + its crosswalk rollup through allowlist-based redaction, that a buyer hosts anywhere to show prospects their compliance posture.",
+  "license": "LicenseRef-Caisson-Commercial",
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -15,9 +11,13 @@
       "default": "./dist/index.js"
     }
   },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
@@ -26,10 +26,8 @@
     "@caisson/kernel": "workspace:*"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "eslint": "catalog:",
     "typescript": "catalog:"
   }
 }

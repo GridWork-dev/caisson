@@ -24,6 +24,7 @@ import {
 } from "./export-public-mirror.ts";
 
 const MIRROR_ASSETS_DIR = join(import.meta.dir, "mirror-assets");
+const REPO_ROOT = join(import.meta.dir, "..");
 
 describe("resolveMirrorOutDir", () => {
   const repoRoot = "/workspace/caisson";
@@ -340,7 +341,9 @@ describe("MIRROR_ASSET_FILES", () => {
     expect(dests).toContain(".github/ISSUE_TEMPLATE/bug_report.md");
   });
 
-  test("keeps generator-owned artifacts out of mirror Prettier", () => {
+  test("keeps generator-owned artifacts out of mirror formatting", () => {
+    // oxfmt reads .prettierignore natively (ADR-0408), so the exemption file is unchanged even
+    // though the formatter behind it swapped.
     const prettierIgnore = readFileSync(
       join(MIRROR_ASSETS_DIR, ".prettierignore"),
       "utf8",
@@ -348,6 +351,21 @@ describe("MIRROR_ASSET_FILES", () => {
     expect(prettierIgnore).toContain(
       "packages/ds-manifest/src/base-manifest.json",
     );
+  });
+
+  test("the shipped mirror lint config carries the source repo's rule floor verbatim", () => {
+    // The mirror config is the root config minus the overrides whose targets do not ship. Its
+    // `rules` block must stay byte-equal to the root's, or the open packages would be linted to a
+    // quietly weaker standard than the private tree that produced them — and the provider-SDK
+    // denylist in particular is the one rule a base package can violate.
+    const readJsonc = (p: string) =>
+      JSON.parse(readFileSync(p, "utf8").replace(/^\s*\/\/.*$/gm, "")) as {
+        rules: Record<string, unknown>;
+      };
+    const root = readJsonc(join(REPO_ROOT, ".oxlintrc.json"));
+    const mirror = readJsonc(join(MIRROR_ASSETS_DIR, "oxlintrc.json"));
+    expect(mirror.rules).toEqual(root.rules);
+    expect(MIRROR_ASSET_FILES.map((f) => f.dest)).toContain(".oxlintrc.json");
   });
 });
 

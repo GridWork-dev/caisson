@@ -1,7 +1,6 @@
 {
   "name": "caisson",
   "private": true,
-  "type": "module",
   "license": "LicenseRef-Caisson-Commercial",
   "workspaces": {
     "packages": [
@@ -17,7 +16,6 @@
     "catalog": {
       "zod": "^4.0.0",
       "typescript": "^6.0.3",
-      "eslint": "^10.0.0",
       "react": "^19.2.0",
       "react-dom": "^19.2.0",
       "@types/react": "^19.2.0",
@@ -36,9 +34,11 @@
       "drizzle-orm": "^0.45.0"
     }
   },
+  "type": "module",
   "scripts": {
     "build": "turbo run build --no-daemon",
     "lint": "turbo run lint --no-daemon",
+    "lint:repo": "oxlint .",
     "test": "turbo run test --no-daemon",
     "test:e2e": "turbo run test:e2e --no-daemon",
     "test:live": "turbo run test:live --no-daemon --env-mode=loose",
@@ -47,40 +47,40 @@
     "gate": "bun packages/kernel/src/gate.ts",
     "check": "turbo run build lint typecheck test --no-daemon && bun run gate",
     "sot": "bun tooling/scripts/sot-check.ts",
-    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,json,md,css}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,json,md,css}\"",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
     "knip": "knip",
     "security:scan": "bash tools/security/scan.sh --layer ci",
-    "security:test": "semgrep test tools/security/semgrep-rules/"
+    "security:test": "semgrep test tools/security/semgrep-rules/",
+    "lint:canary": "bun tooling/scripts/lint-canary.ts"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.1075.0",
-    "@caisson/eslint-config": "workspace:*",
+    "@caisson/lint-policy": "workspace:*",
     "@changesets/cli": "^2.27.9",
-    "@eslint/js": "^10.0.0",
     "@types/bun": "^1.1.14",
     "dependency-cruiser": "^18.0.0",
-    "eslint": "^10.8.0",
+    "eslint-plugin-storybook": "10.5.6",
     "knip": "^6.24.0",
-    "prettier": "^3.9.6",
+    "oxfmt": "0.63.0",
+    "oxlint": "1.78.0",
     "turbo": "~2.10.0",
     "typescript": "catalog:",
-    "typescript-eslint": "^8.65.0",
     "zod": "catalog:",
     "zod-to-json-schema": "^3.24.1"
   },
   "overrides": {
-    "systeminformation": "^5.31.6",
-    "ws": "^8.21.0",
-    "sharp": "^0.35.0",
     "@hono/node-server": "^2.0.10",
     "engine.io": "^6.6.9",
     "fast-uri": "^4.0.0",
+    "ip-address": "^10.3.1",
     "nanoid": "^3.3.18",
     "postcss": "^8.5.18",
+    "sharp": "^0.35.0",
+    "systeminformation": "^5.31.6",
     "undici": "^7.29.0",
-    "ip-address": "^10.3.1",
-    "valibot": "^1.4.2"
+    "valibot": "^1.4.2",
+    "ws": "^8.21.0"
   },
   "packageManager": "bun@1.3.14",
   "patchedDependencies": {

@@ -190,7 +190,7 @@ describe("stdio transport binding", () => {
     expect(got.messages).toHaveLength(1);
     const msg = got.messages[0];
     expect(msg?.content.type).toBe("text");
-    expect((msg?.content as { text: string }).text).toContain("@caisson/auth");
+    expect((msg!.content as { text: string }).text).toContain("@caisson/auth");
 
     // An unknown prompt surfaces as a rejected JSON-RPC error (the mapped not-found).
     await expect(

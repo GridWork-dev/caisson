@@ -13,14 +13,14 @@
  */
 
 // One boundary-policy data source (consolidation C24): the provider denylist regex and the
-// bundle/edition meta-package dir list come from tooling/eslint-config/boundary-policy.cjs —
+// bundle/edition meta-package dir list come from tooling/lint-policy/boundary-policy.cjs —
 // this stays the authoritative dynamic/transitive graph layer (ADR-0022 Gate 2), it just no
 // longer hand-mirrors the data. (The previous hand-copy had drifted: it still named the deleted
 // `local-ai` and missed the five ADR-0257 bundle roots entirely — a live false-green class.)
 const {
   PROVIDER_SDK_RE,
   BUNDLE_META_DIRS,
-} = require("./tooling/eslint-config/boundary-policy.cjs");
+} = require("./tooling/lint-policy/boundary-policy.cjs");
 
 const EDITIONS = BUNDLE_META_DIRS;
 // Trailing slash is load-bearing: without it `packages/compliance` also matches

@@ -1,13 +1,9 @@
 {
   "name": "@caisson/frameworks-pack",
   "version": "0.8.0",
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
-  "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
-  },
   "description": "Compliance framework catalogs as config-as-code: the typed canonical-control model plus own-authored SOC2-TSC, HIPAA-Security, and EU-AI-Act control packs with crosswalk references to each framework's requirement ids.",
+  "license": "LicenseRef-Caisson-Commercial",
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -25,12 +21,13 @@
       "default": "./dist/browser.js"
     }
   },
-  "engines": {
-    "node": ">=20.12.0"
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src scripts",
+    "lint": "oxlint src scripts",
     "test": "bun test --timeout 60000 ./src ./scripts"
   },
   "dependencies": {
@@ -39,10 +36,11 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "eslint": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=20.12.0"
   }
 }

@@ -23,12 +23,12 @@ bun run check               # the one command: build + lint + test + standards g
 | Script                    | Command                                                 | Notes                                                          |
 | ------------------------- | ------------------------------------------------------- | -------------------------------------------------------------- |
 | `build`                   | `turbo run build --no-daemon`                           | tsc strict, emits `dist/**`                                    |
-| `lint`                    | `turbo run lint --no-daemon`                            | `@caisson/eslint-config` (no-any, no-console, boundary rules)  |
+| `lint`                    | `turbo run lint --no-daemon`                            | root `.oxlintrc.json` (no-any, no-console, boundary rules)     |
 | `test`                    | `turbo run test --no-daemon`                            | unit + PGlite integration + golden-file, in one task           |
 | `eval`                    | `turbo run eval --no-daemon`                            | distinct `eval` turbo task (ADR-0062), offline cassette replay |
 | `gate`                    | `bun packages/kernel/src/gate.ts`                       | the standards gate (ADR-0016/0021)                             |
 | `check`                   | `turbo run build lint test --no-daemon && bun run gate` | the full local gate; mirrors CI                                |
-| `format` / `format:check` | `prettier ... "**/*.{ts,tsx,js,mjs,json,md,css}"`       | `format:check` is a CI step                                    |
+| `format` / `format:check` | `oxfmt .` / `oxfmt --check .`                           | `format:check` is a CI step                                    |
 
 **Turbo is pinned `~2.5.6`** (`package.json` devDeps). Do NOT bump to 2.10.x: it
 SIGBUS-crashes locally (project memory `caisson-reconcile-merged`). The `~` keeps it on the
@@ -259,7 +259,7 @@ path-skip never blocks a PR forever).
 
 | Job                 | Runner (timeout)                 | Does                                                                                                                                                                                                                                                                            |
 | ------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `standards-gate`    | **Blacksmith** 4vcpu VM (15m)    | The sole registry ingress (ADR-0021/0022). Runs `tooling/standards-gate` pre-install (SPDX/AGPL/down-only/declarations) AND post-install (external-AGPL + manifest agreement), then `eslint .` (provider-SDK boundaries) + `depcruise` graph boundaries                         |
+| `standards-gate`    | **Blacksmith** 4vcpu VM (15m)    | The sole registry ingress (ADR-0021/0022). Runs `tooling/standards-gate` pre-install (SPDX/AGPL/down-only/declarations) AND post-install (external-AGPL + manifest agreement), then `oxlint .` (provider-SDK boundaries) + the lint canary + `depcruise` graph boundaries       |
 | `check`             | **Blacksmith** 4vcpu VM (30m)    | `format:check` then `bunx turbo run build lint test --no-daemon --concurrency=50% && bun run gate`. `--concurrency=50%` avoids PGlite `beforeAll` starvation under fan-out. The heaviest job → biggest fleet-compute win                                                        |
 | `registry-index`    | **Blacksmith** 4vcpu VM (15m)    | Registry schema/builder/worker tests, then rebuilds `registry/index.json` from the ledger and `git diff --exit-code` -- proves the index is CI-built, not hand-edited                                                                                                           |
 | `oscal-conformance` | **hosted** `ubuntu-latest` (15m) | NIST OSCAL v1.2.2 conformance gate (ADR-0179/0180): the JSON→XML→schema-validate round-trip via `oscal-cli` (installs a JDK + oscal-cli from Maven Central). Hosted because the fleet `check` job skips oscal-cli entirely — this is where NIST schema validation actually runs |

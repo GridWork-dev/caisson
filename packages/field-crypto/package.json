@@ -1,13 +1,9 @@
 {
   "name": "@caisson/field-crypto",
   "version": "1.1.0",
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
-  "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
-  },
   "description": "Per-tenant authenticated field encryption: HKDF key derivation, AES-256-GCM, a versioned envelope, a Drizzle column type, and a pluggable FieldKeyProvider with a KMS seam.",
+  "license": "LicenseRef-Caisson-Commercial",
+  "type": "module",
   "exports": {
     ".": {
       "bun": "./src/index.ts",
@@ -20,12 +16,13 @@
       "default": "./dist/browser.js"
     }
   },
-  "engines": {
-    "node": ">=20.12.0"
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src",
     "test:live": "bun test ./live"
   },
@@ -38,11 +35,12 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
+    "@caisson/tenancy-rls": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*",
-    "eslint": "catalog:",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=20.12.0"
   }
 }

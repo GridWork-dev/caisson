@@ -1,13 +1,9 @@
 {
   "name": "@caisson/ui-pro",
   "version": "0.3.6",
-  "type": "module",
-  "license": "LicenseRef-Caisson-Commercial",
-  "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
-  },
   "description": "Premium data-ops and compliance UI components layered on the open @caisson/ui base: an advanced data grid, a virtualized tree, an operations matrix, a hash-chain audit timeline, a redaction-aware payload viewer, a type-to-confirm dialog, an advanced date-range picker, a dependency-free charts pack, a command palette, a redaction-aware diff viewer, and a kanban board.",
+  "license": "LicenseRef-Caisson-Commercial",
+  "type": "module",
   "sideEffects": [
     "*.css"
   ],
@@ -20,31 +16,33 @@
     "./components": "./src/components/index.ts",
     "./components/*": "./src/components/*"
   },
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://npm.pkg.github.com"
+  },
   "scripts": {
     "build": "tscn -p tsconfig.json && mkdir -p dist/components && cp src/components/*.css dist/components/",
-    "lint": "eslint src",
+    "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
     "@caisson/kernel": "workspace:*",
     "@caisson/ui": "workspace:*"
   },
-  "peerDependencies": {
-    "lucide-react": "^1.21.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  },
   "devDependencies": {
-    "@caisson/eslint-config": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "eslint": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "lucide-react": "^1.21.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }

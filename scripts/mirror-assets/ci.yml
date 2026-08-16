@@ -23,9 +23,9 @@ jobs:
       - name: Test (all workspaces)
         run: bun test
       - name: Lint
-        run: bunx eslint .
+        run: bun run lint
       - name: Format check
-        run: bunx prettier --check "**/*.{ts,tsx,js,mjs,json,md,css}"
+        run: bun run format:check
 
 # NOT re-run on the mirror (need commercial content or the private registry ledger, absent by
 # design): the standards-gate (@caisson/kernel gate — asserts over COMMERCIAL packages + the full

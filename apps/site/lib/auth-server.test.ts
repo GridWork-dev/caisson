@@ -42,7 +42,7 @@ async function buildSignedInAuth() {
     body: { email: "buyer@example.com" },
     headers: new Headers(),
   });
-  const url = String((emailer.sent[0]?.data as { url?: unknown }).url);
+  const url = String((emailer.sent[0]!.data as { url?: unknown }).url);
   const verifyRes = await auth.handler(new Request(url, { method: "GET" }));
   return { auth, verifyRes, rawDb: rawDb as unknown as Database };
 }
