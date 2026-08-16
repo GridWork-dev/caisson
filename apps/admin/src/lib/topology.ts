@@ -10,7 +10,11 @@ import { fileURLToPath } from "node:url";
 // `force-static` so the build-time result is what ships. A missing manifest is simply an absent node.
 
 export type ServiceKind =
-  "app" | "service" | "worker" | "datastore" | "observability";
+  | "app"
+  | "service"
+  | "worker"
+  | "datastore"
+  | "observability";
 
 export interface ServiceNode {
   id: string;

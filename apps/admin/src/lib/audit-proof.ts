@@ -118,7 +118,8 @@ export interface ProofSuccess {
 }
 
 export type ProofResponse =
-  ProofSuccess | z.infer<typeof ProofUnverifiableSchema>;
+  | ProofSuccess
+  | z.infer<typeof ProofUnverifiableSchema>;
 
 /**
  * Strictly parse the wire shape and normalize Zod's optional-property inference into the kernel's

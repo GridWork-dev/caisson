@@ -158,7 +158,8 @@ for (const lane of LANES) {
     expect(reasons(evs)).toEqual([]);
     expect(evs.some((e) => e.event === "token")).toBe(true);
     const cites = evs.find((e) => e.event === "citations")?.data.citations as
-      { source: string; url: string | null }[] | undefined;
+      | { source: string; url: string | null }[]
+      | undefined;
     expect(cites?.map((c) => c.source).sort()).toEqual([DOC, OTHER].sort());
   });
 }

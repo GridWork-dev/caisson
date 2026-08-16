@@ -84,7 +84,8 @@ const PROVIDER_PROBES: Record<ByokProvider, ProviderProbe> = {
 };
 
 export type ValidationResult =
-  { readonly ok: true } | { readonly ok: false; readonly reason: string };
+  | { readonly ok: true }
+  | { readonly ok: false; readonly reason: string };
 
 /**
  * Fire ONE minimal-scope live call to confirm the key works before we persist it (ADR-0183). Never

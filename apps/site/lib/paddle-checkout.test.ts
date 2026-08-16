@@ -65,7 +65,8 @@ describe("abandoned-checkout discount fork (SPEC-abandoned-checkout-email.md, 20
 
     expect(fakeCheckoutOpen).toHaveBeenCalledTimes(1);
     const openArgs = fakeCheckoutOpen.mock.calls[0]?.[0] as
-      { discountCode?: string } | undefined;
+      | { discountCode?: string }
+      | undefined;
     expect(openArgs?.discountCode).toBe("SAVE10");
   });
 
@@ -76,7 +77,8 @@ describe("abandoned-checkout discount fork (SPEC-abandoned-checkout-email.md, 20
     await openCartCheckout([{ priceId: "pri_x" }], "acct_1");
 
     const openArgs = fakeCheckoutOpen.mock.calls[0]?.[0] as
-      Record<string, unknown> | undefined;
+      | Record<string, unknown>
+      | undefined;
     expect(openArgs).toBeDefined();
     expect("discountCode" in (openArgs ?? {})).toBe(false);
   });

@@ -10,7 +10,9 @@ import "./ops-matrix.css";
  * labelled), or free text (a note, scope, or value).
  */
 export type OpsCell =
-  boolean | string | { state: "yes" | "partial" | "no"; label?: string };
+  | boolean
+  | string
+  | { state: "yes" | "partial" | "no"; label?: string };
 
 export interface OpsMatrixRow {
   /** Row label (the row-header cell). */

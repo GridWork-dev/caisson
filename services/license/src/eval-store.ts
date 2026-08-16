@@ -28,7 +28,10 @@ export const EVAL_ACTIVE_STATUSES = [
   "issued",
 ] as const;
 export type EvalStatus =
-  (typeof EVAL_ACTIVE_STATUSES)[number] | "rejected" | "revoked" | "expired";
+  | (typeof EVAL_ACTIVE_STATUSES)[number]
+  | "rejected"
+  | "revoked"
+  | "expired";
 
 // No RLS: an operator table, role-gated by GRANT to admin_write (mirrors license_revocation). The
 // partial unique index enforces "one ACTIVE eval per org domain" (ADR-0274 floor) — a rejected /
