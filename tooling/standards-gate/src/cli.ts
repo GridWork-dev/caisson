@@ -77,7 +77,7 @@ async function main(): Promise<number> {
     `\nstandards-gate: ${pkgs.length} packages · ${errors.length} error(s) · ${warns.length} warn(s)\n`,
   );
   process.stderr.write(
-    `  alongside in CI (ADR-0022): ESLint provider-SDK signal + dependency-cruiser graph reach + golden (ADR-0013).\n`,
+    `  alongside in CI (ADR-0022): oxlint provider-SDK signal + the lint canary + dependency-cruiser graph reach + golden (ADR-0013).\n`,
   );
   return errors.length > 0 ? 1 : 0;
 }
