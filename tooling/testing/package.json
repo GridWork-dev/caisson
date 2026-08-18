@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@caisson/tsconfig": "workspace:*",
-    "@electric-sql/pglite": "catalog:",
+    "@electric-sql/pglite": "0.5.4",
     "@types/jsdom": "^28.0.3",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

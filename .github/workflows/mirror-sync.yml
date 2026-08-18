@@ -79,6 +79,12 @@ jobs:
           bun scripts/export-public-mirror.ts \
             --out mirror-out \
             --generated-at "$(git log -1 --format=%cs)"
+          # Repository-boundary marker for the verify legs below: oxlint/oxfmt discover ignore
+          # files by walking UP until a repo boundary, and mirror-out sits inside THIS repo whose
+          # root .gitignore lists it — markerless, both tools match ZERO files (oxlint exit 1,
+          # oxfmt exit 2). The real public clone has a .git; this makes the gate see what a
+          # stranger's checkout sees. Stripped with the other verification artifacts before push.
+          mkdir mirror-out/.git
       # PRE-PUSH VERIFICATION GATE. Everything below this comment runs against the EXPORTED
       # ARTIFACT, in `mirror-out`, before a single byte reaches the public repo — the mirror's own
       # ci.yml (scripts/mirror-assets/ci.yml) runs the same five legs, but only AFTER the push, so
@@ -122,6 +128,7 @@ jobs:
           find mirror-out -name '.turbo' -type d -prune -exec rm -rf {} +
           find mirror-out -name '*.tsbuildinfo' -delete
           rm -f mirror-out/bun.lock
+          rm -rf mirror-out/.git
       - name: append sync commit to caisson-sh/caisson-oss (never force)
         if: steps.guard.outputs.armed == 'true'
         env:
