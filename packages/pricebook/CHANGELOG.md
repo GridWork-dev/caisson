@@ -1,5 +1,35 @@
 # @caisson/pricebook
 
+## 0.8.4
+
+### Patch Changes
+
+- 2405d9e: Remove unused dependencies and unreferenced internal helpers, relocate integration coverage to the package seams it verifies, and consolidate repeated build and test plumbing. The CLI no longer exports the obsolete minimal `defaultEngine`; use `templatesEngine` or inject a `GeneratorEngine`.
+- b0e66b6: Clarify the internal module boundaries for local embed scrubbing and AI token-rate normalization. Public exports and runtime behavior are unchanged.
+- 886e1e7: Strip internal decision-log citations from the public mirror export, and gate the sync on the exported artifact building, testing, linting and formatting clean before a byte reaches the public repo.
+
+  The ThemeToggle summary no longer repeats its own component name: every other component's manifest summary has that prefix removed by the generator, and this one kept it only because a parenthetical sat between the name and the em dash the generator matches on. Two comments where a decision id was the grammatical subject of a sentence are reworded so the sentence still stands once the id is gone.
+
+- 87275f6: Replace ESLint and Prettier with oxlint and oxfmt.
+
+  Linting and formatting now run on the oxc toolchain. The rule floor is unchanged: the same
+  no-any, no-console, type-only-import and provider-SDK-boundary rules are enforced, at the same
+  severities, and formatting keeps the settings the previous formatter used. Every package here is
+  touched by the dependency removal or by the one-pass reformat, so each takes a patch bump; no
+  runtime behaviour changes.
+
+  For anyone consuming the shared configuration: the lint config package is renamed, and the lint
+  and format commands changed.
+
+- Updated dependencies [f669d4a]
+- Updated dependencies [b0e66b6]
+- Updated dependencies [2609293]
+- Updated dependencies [886e1e7]
+- Updated dependencies [87275f6]
+- Updated dependencies [c10e3b6]
+  - @caisson/kernel@0.9.0
+  - @caisson/registry-schema@0.5.11
+
 ## 0.8.3
 
 ### Patch Changes
