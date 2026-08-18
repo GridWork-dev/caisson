@@ -1,5 +1,47 @@
 # @caisson/registry-schema
 
+## 0.5.11
+
+### Patch Changes
+
+- 2609293: Consolidation wave one: the eighteen refutation-verified cuts from the August consolidation audit.
+
+  New public API: `@caisson/kernel` gains the narrow `./crypto` subpath (node:crypto-only graph,
+  so a Cloudflare Worker can import the timing-safe compare without the wide `./node` barrel's
+  `node:dns` reach), and `@caisson/tenancy-rls` exports `createPgTransactor(pool)` — the canonical
+  node-postgres BEGIN/COMMIT/best-effort-ROLLBACK/release adapter previously copy-pasted across the
+  site, admin, the license deploy entry, the CLI, and the generated Next starter (which also gains
+  the best-effort rollback it lacked). Everything else is deletion or internal consolidation with
+  behavior pinned by tests: dead marketplace/build residue and dead nav derivation out of the site,
+  the unused account-entitlement resolver and 111 unreachable barrel exports out of the license
+  service, the orphan EU AI Act manifest out of compliance (it was being packed while unreachable),
+  an unused trust-page devDependency, shared task-registry lookup across the five jobs drivers,
+  shared exact byte-identical parser readers in billing-orchestration, the kernel browser-graph
+  walker folded onto the shared testing module-graph, the intel OpenRouter transport shared between
+  enrichment and its eval judge, license scheduler test fixtures consolidated, the dependency graph
+  guard moved into standards-gate ownership (its test now runs in the package suite), the Better
+  Stack adapter's unauthenticated dev bypass deleted and its secret compare folded onto the kernel
+  primitive, and one boundary-policy data source feeding ESLint, dependency-cruiser, and the
+  standards gate — closing a drifted cruiser hand-copy that had silently stopped guarding the five
+  current bundle roots.
+
+- 886e1e7: Strip internal decision-log citations from the public mirror export, and gate the sync on the exported artifact building, testing, linting and formatting clean before a byte reaches the public repo.
+
+  The ThemeToggle summary no longer repeats its own component name: every other component's manifest summary has that prefix removed by the generator, and this one kept it only because a parenthetical sat between the name and the em dash the generator matches on. Two comments where a decision id was the grammatical subject of a sentence are reworded so the sentence still stands once the id is gone.
+
+- 87275f6: Replace ESLint and Prettier with oxlint and oxfmt.
+
+  Linting and formatting now run on the oxc toolchain. The rule floor is unchanged: the same
+  no-any, no-console, type-only-import and provider-SDK-boundary rules are enforced, at the same
+  severities, and formatting keeps the settings the previous formatter used. Every package here is
+  touched by the dependency removal or by the one-pass reformat, so each takes a patch bump; no
+  runtime behaviour changes.
+
+  For anyone consuming the shared configuration: the lint config package is renamed, and the lint
+  and format commands changed.
+
+- c10e3b6: Update the entitlement graduation notes for the delisted agent-usage id; no runtime behavior changes.
+
 ## 0.5.10
 
 ### Patch Changes

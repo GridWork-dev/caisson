@@ -1,5 +1,28 @@
 # @caisson/platform-reads
 
+## 0.3.0
+
+### Minor Changes
+
+- b0e66b6: Export the canonical license-platform read expressions for updates windows, subscription and order history, license grants, and refund-net charge calculations. Existing typed readers keep their behavior while the license service now consumes the same SQL bytes.
+
+### Patch Changes
+
+- 87275f6: Replace ESLint and Prettier with oxlint and oxfmt.
+
+  Linting and formatting now run on the oxc toolchain. The rule floor is unchanged: the same
+  no-any, no-console, type-only-import and provider-SDK-boundary rules are enforced, at the same
+  severities, and formatting keeps the settings the previous formatter used. Every package here is
+  touched by the dependency removal or by the one-pass reformat, so each takes a patch bump; no
+  runtime behaviour changes.
+
+  For anyone consuming the shared configuration: the lint config package is renamed, and the lint
+  and format commands changed.
+
+- Updated dependencies [2609293]
+- Updated dependencies [87275f6]
+  - @caisson/tenancy-rls@0.6.0
+
 ## 0.2.11
 
 ### Patch Changes
@@ -13,6 +36,7 @@
 - a5f9ea8: The figure behind an upgrade credit can now be read net of refunds: a partial refund is subtracted from what the buyer was charged, a charge in another currency can no longer outrank a dollar one on its raw number alone, and the read is checked against the licensing service's own arithmetic so the two cannot drift apart. What buyers are credited today is unchanged.
 
   A refund notice that names the same purchased line twice is now rejected outright instead of being partly applied. Only the first mention was ever recorded, which quietly left the buyer holding more credit than their refund had left them; the provider is now asked to send the notice again rather than have it half-recorded.
+
   - @caisson/tenancy-rls@0.5.7
 
 ## 0.2.9

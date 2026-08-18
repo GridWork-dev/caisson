@@ -1,5 +1,31 @@
 # @caisson/registry
 
+## 0.0.25
+
+### Patch Changes
+
+- e190797: Routine non-major dependency refresh. `better-auth` and its Kysely adapter move
+  `1.6.25` to `1.6.26` in the site; Storybook `10.5.0` to `10.5.6` and Vite `8.1.4`
+  to `8.2.0` in the UI kit; `wrangler` `4.106.0` to `4.119.0` in the registry
+  worker. Everything but the better-auth pair is a devDependency. No API or
+  behaviour change in any of the three packages.
+- c10e3b6: Delist the published-never-sold agent-usage module: an append-only ledger delist row removes it from every index rebuild; publish history and tarball provenance are retained. The worker filter allowlist for unbundled non-sellable modules is now empty.
+- c577330: Deployment documentation now matches the deployed reality. The `apps/site` service
+  env block is regenerated from the live variable list — names only, verified for exact
+  parity in both directions — and the stale scaffold comments that described live
+  infrastructure as not-yet-created are removed from the demos service config, the
+  registry Worker config, and the Railway deploy workflow. No runtime behaviour changes
+  in these packages.
+- Updated dependencies [2405d9e]
+- Updated dependencies [b0e66b6]
+- Updated dependencies [2609293]
+- Updated dependencies [886e1e7]
+- Updated dependencies [87275f6]
+- Updated dependencies [c10e3b6]
+  - @caisson/pricebook@0.8.4
+  - @caisson/registry-schema@0.5.11
+  - @caisson/license-verify@0.3.9
+
 ## 0.0.24
 
 ### Patch Changes

@@ -1,5 +1,46 @@
 # @caisson/guardrails
 
+## 0.5.0
+
+### Minor Changes
+
+- f669d4a: Add a browser-safe entry with the shared PII detector and mask, WebCrypto-based async hash and field-tokenization twins, and the fail-closed guard. The browser seam requires WebCrypto globals and now declares Node.js 20.12 or newer for supported server runtimes.
+
+  Note: this code already shipped in the packages published with v2026.08.06.1 — the version cut was
+  taken from a base that predated the merge, so this changeset records the bump only.
+
+- e6866e5: Harden the guard against denial-of-service and verdict-swallowing failure modes. Both guard
+  entries now reject text over the 100k-code-unit work ceiling and unsafe caller-configured
+  cheap-deny patterns (backreferences, lookarounds, nested quantifiers and multiply-repeated
+  alternation groups at any nesting depth, more than one unbounded wide-atom quantifier, and
+  excessive bounded repetition — while open-ended `{n,}` repetition and once-only `?` groups stay
+  allowed) before any regex or moderator work; a malformed moderator verdict is parsed strictly
+  and fails closed even under an explicit failOpen policy, which covers outages and timeouts
+  only; a PII field-crypto context bound to a different tenant than the guard
+  runtime is rejected before moderation or telemetry; and a synchronously throwing event sink can
+  no longer replace the block error. PII placeholder restoration is growth-bounded, and guardOutput
+  on both entries now accepts the same PII-bearing policy shape as the input leg.
+
+### Patch Changes
+
+- 87275f6: Replace ESLint and Prettier with oxlint and oxfmt.
+
+  Linting and formatting now run on the oxc toolchain. The rule floor is unchanged: the same
+  no-any, no-console, type-only-import and provider-SDK-boundary rules are enforced, at the same
+  severities, and formatting keeps the settings the previous formatter used. Every package here is
+  touched by the dependency removal or by the one-pass reformat, so each takes a patch bump; no
+  runtime behaviour changes.
+
+  For anyone consuming the shared configuration: the lint config package is renamed, and the lint
+  and format commands changed.
+
+- Updated dependencies [f669d4a]
+- Updated dependencies [b0e66b6]
+- Updated dependencies [2609293]
+- Updated dependencies [87275f6]
+  - @caisson/kernel@0.9.0
+  - @caisson/field-crypto@1.1.1
+
 ## 0.4.12
 
 ### Patch Changes

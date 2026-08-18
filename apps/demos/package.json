@@ -1,6 +1,6 @@
 {
   "name": "@caisson/demos",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "license": "LicenseRef-Caisson-Commercial",
   "type": "module",

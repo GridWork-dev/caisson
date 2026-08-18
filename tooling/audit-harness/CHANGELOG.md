@@ -1,5 +1,28 @@
 # @caisson/audit-harness
 
+## 1.0.2
+
+### Patch Changes
+
+- 2405d9e: Remove unused dependencies and unreferenced internal helpers, relocate integration coverage to the package seams it verifies, and consolidate repeated build and test plumbing. The CLI no longer exports the obsolete minimal `defaultEngine`; use `templatesEngine` or inject a `GeneratorEngine`.
+- 87275f6: Replace ESLint and Prettier with oxlint and oxfmt.
+
+  Linting and formatting now run on the oxc toolchain. The rule floor is unchanged: the same
+  no-any, no-console, type-only-import and provider-SDK-boundary rules are enforced, at the same
+  severities, and formatting keeps the settings the previous formatter used. Every package here is
+  touched by the dependency removal or by the one-pass reformat, so each takes a patch bump; no
+  runtime behaviour changes.
+
+  For anyone consuming the shared configuration: the lint config package is renamed, and the lint
+  and format commands changed.
+
+- b0e66b6: Move the internal audit harness and shared component demo catalog into the tooling workspace namespace. Package names and import paths are unchanged.
+- Updated dependencies [2405d9e]
+- Updated dependencies [886e1e7]
+- Updated dependencies [e190797]
+- Updated dependencies [87275f6]
+  - @caisson/ui@0.6.6
+
 ## 1.0.1
 
 ### Patch Changes

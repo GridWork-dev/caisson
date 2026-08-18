@@ -1,5 +1,65 @@
 # @caisson/jobs
 
+## 0.7.3
+
+### Patch Changes
+
+- 2405d9e: Remove unused dependencies and unreferenced internal helpers, relocate integration coverage to the package seams it verifies, and consolidate repeated build and test plumbing. The CLI no longer exports the obsolete minimal `defaultEngine`; use `templatesEngine` or inject a `GeneratorEngine`.
+- 2609293: Consolidation wave one: the eighteen refutation-verified cuts from the August consolidation audit.
+
+  New public API: `@caisson/kernel` gains the narrow `./crypto` subpath (node:crypto-only graph,
+  so a Cloudflare Worker can import the timing-safe compare without the wide `./node` barrel's
+  `node:dns` reach), and `@caisson/tenancy-rls` exports `createPgTransactor(pool)` — the canonical
+  node-postgres BEGIN/COMMIT/best-effort-ROLLBACK/release adapter previously copy-pasted across the
+  site, admin, the license deploy entry, the CLI, and the generated Next starter (which also gains
+  the best-effort rollback it lacked). Everything else is deletion or internal consolidation with
+  behavior pinned by tests: dead marketplace/build residue and dead nav derivation out of the site,
+  the unused account-entitlement resolver and 111 unreachable barrel exports out of the license
+  service, the orphan EU AI Act manifest out of compliance (it was being packed while unreachable),
+  an unused trust-page devDependency, shared task-registry lookup across the five jobs drivers,
+  shared exact byte-identical parser readers in billing-orchestration, the kernel browser-graph
+  walker folded onto the shared testing module-graph, the intel OpenRouter transport shared between
+  enrichment and its eval judge, license scheduler test fixtures consolidated, the dependency graph
+  guard moved into standards-gate ownership (its test now runs in the package suite), the Better
+  Stack adapter's unauthenticated dev bypass deleted and its secret compare folded onto the kernel
+  primitive, and one boundary-policy data source feeding ESLint, dependency-cruiser, and the
+  standards gate — closing a drifted cruiser hand-copy that had silently stopped guarding the five
+  current bundle roots.
+
+- 8993cf7: Bump the supplied ioredis runtime dependency to v6. BullMQ declares ioredis as an optional peer with range >=5.0.0, so the driver contract is unchanged; the connection is still built by the caller and passed through. Reviewed against the v6 release notes (RESP3 by default with RESP2-compatible reply shapes) with the full jobs suite green.
+- 1964e9d: Clear two dependency advisories.
+
+  `nanoid` moves to 3.3.18 via the root override (custom generators loop indefinitely when
+  size is zero). It is a single hoisted resolution, so the one override covers every consumer
+  — including the exact `3.3.8` that `@trigger.dev/core` pins.
+
+  `@trigger.dev/core` moves to 4.5.10 (prototype pollution through run-metadata operations,
+  escalating to a process-wide cross-tenant denial of service). Core is not declared anywhere
+  in this repo; it is pinned exactly by `@trigger.dev/sdk`, so the fix is a floor on the SDK
+  range rather than an override — an override would desync the pair. The range now starts at
+  the first fixed release so a future lockfile regeneration cannot resolve back under it.
+
+  The resolver stopped at 4.5.10 rather than the newest 4.5.11 because the seven-day
+  release-age floor held it back, which is the floor doing its job.
+
+- 87275f6: Replace ESLint and Prettier with oxlint and oxfmt.
+
+  Linting and formatting now run on the oxc toolchain. The rule floor is unchanged: the same
+  no-any, no-console, type-only-import and provider-SDK-boundary rules are enforced, at the same
+  severities, and formatting keeps the settings the previous formatter used. Every package here is
+  touched by the dependency removal or by the one-pass reformat, so each takes a patch bump; no
+  runtime behaviour changes.
+
+  For anyone consuming the shared configuration: the lint config package is renamed, and the lint
+  and format commands changed.
+
+- Updated dependencies [f669d4a]
+- Updated dependencies [b0e66b6]
+- Updated dependencies [2609293]
+- Updated dependencies [87275f6]
+  - @caisson/kernel@0.9.0
+  - @caisson/tenancy-rls@0.6.0
+
 ## 0.7.2
 
 ### Patch Changes

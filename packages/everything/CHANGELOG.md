@@ -1,5 +1,11 @@
 # @caisson/everything
 
+## 0.3.2
+
+### Patch Changes
+
+- c10e3b6: Update the members-map note for the delisted agent-usage id; the pin map itself is unchanged.
+
 ## 0.3.1
 
 ### Patch Changes
