@@ -53,6 +53,7 @@ const IGNORE_GLOBS: readonly string[] = [
   "bun.lock",
   // dotfiles — no audit value
   ".gitignore",
+  ".git-blame-ignore-revs",
   ".gitattributes",
   ".dockerignore",
   ".prettierignore",
