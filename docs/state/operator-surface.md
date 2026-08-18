@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-16
+updated: 2026-08-18
 status: live
 grounds:
   - docs/state/production-readiness.md
