@@ -18,6 +18,12 @@
   "rules": {
     "typescript/no-explicit-any": "error",
     "eslint/no-console": "error",
+    // the four tseslint-recommended rules outside oxlint's correctness category — the R4
+    // v2026.08.18 audit found the swap dropped them despite ADR-0409's rule-parity claim
+    "typescript/ban-ts-comment": "error",
+    "typescript/no-unsafe-function-type": "error",
+    "typescript/no-empty-object-type": "error",
+    "typescript/no-require-imports": "error",
     "typescript/consistent-type-imports": [
       "error",
       { "prefer": "type-imports", "fixStyle": "separate-type-imports" }
