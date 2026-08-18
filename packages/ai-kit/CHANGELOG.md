@@ -1,5 +1,41 @@
 # @caisson/ai-kit
 
+## 0.6.4
+
+### Patch Changes
+
+- 87275f6: Replace ESLint and Prettier with oxlint and oxfmt.
+
+  Linting and formatting now run on the oxc toolchain. The rule floor is unchanged: the same
+  no-any, no-console, type-only-import and provider-SDK-boundary rules are enforced, at the same
+  severities, and formatting keeps the settings the previous formatter used. Every package here is
+  touched by the dependency removal or by the one-pass reformat, so each takes a patch bump; no
+  runtime behaviour changes.
+
+  For anyone consuming the shared configuration: the lint config package is renamed, and the lint
+  and format commands changed.
+
+- Updated dependencies [f669d4a]
+- Updated dependencies [f669d4a]
+- Updated dependencies [2405d9e]
+- Updated dependencies [b0e66b6]
+- Updated dependencies [2609293]
+- Updated dependencies [8993cf7]
+- Updated dependencies [1964e9d]
+- Updated dependencies [87275f6]
+- Updated dependencies [e6866e5]
+- Updated dependencies [c10e3b6]
+  - @caisson/guardrails@0.5.0
+  - @caisson/kernel@0.9.0
+  - @caisson/field-crypto@1.1.1
+  - @caisson/jobs@0.7.3
+  - @caisson/ai-meter@1.1.2
+  - @caisson/tenancy-rls@0.6.0
+  - @caisson/agent-trajectory@0.6.0
+  - @caisson/ai-config@0.3.9
+  - @caisson/credits@0.6.2
+  - @caisson/prompt-registry@1.1.1
+
 ## 0.6.3
 
 ### Patch Changes

@@ -1,5 +1,119 @@
 # @caisson/site
 
+## 0.4.0
+
+### Minor Changes
+
+- 0f3f5e2: The interactive module demos now ship as their own application instead of being compiled into the
+  marketing site. They are served from the same address as before — a module page still shows its
+  demo inline, and nothing about the page's address or analytics changes — but the demos are now
+  built and deployed independently of the site.
+
+  The response headers pick up one narrow change to allow this. Pages may now embed a frame from
+  caisson.sh itself, and the demo surface may be framed by caisson.sh itself. Every other page is
+  still refused to every framer, including this one, and no third-party origin was added anywhere.
+
+  The practical effect is that changing a module no longer rebuilds and redeploys the storefront: the
+  site's internal dependency list drops from 46 workspace packages to 27, and the packages that exist
+  purely to power a demo move with the demos. A page whose demo is temporarily unavailable now says
+  so in place of the demo, rather than failing the surrounding page.
+
+### Patch Changes
+
+- 2609293: Consolidation wave one: the eighteen refutation-verified cuts from the August consolidation audit.
+
+  New public API: `@caisson/kernel` gains the narrow `./crypto` subpath (node:crypto-only graph,
+  so a Cloudflare Worker can import the timing-safe compare without the wide `./node` barrel's
+  `node:dns` reach), and `@caisson/tenancy-rls` exports `createPgTransactor(pool)` — the canonical
+  node-postgres BEGIN/COMMIT/best-effort-ROLLBACK/release adapter previously copy-pasted across the
+  site, admin, the license deploy entry, the CLI, and the generated Next starter (which also gains
+  the best-effort rollback it lacked). Everything else is deletion or internal consolidation with
+  behavior pinned by tests: dead marketplace/build residue and dead nav derivation out of the site,
+  the unused account-entitlement resolver and 111 unreachable barrel exports out of the license
+  service, the orphan EU AI Act manifest out of compliance (it was being packed while unreachable),
+  an unused trust-page devDependency, shared task-registry lookup across the five jobs drivers,
+  shared exact byte-identical parser readers in billing-orchestration, the kernel browser-graph
+  walker folded onto the shared testing module-graph, the intel OpenRouter transport shared between
+  enrichment and its eval judge, license scheduler test fixtures consolidated, the dependency graph
+  guard moved into standards-gate ownership (its test now runs in the package suite), the Better
+  Stack adapter's unauthenticated dev bypass deleted and its secret compare folded onto the kernel
+  primitive, and one boundary-policy data source feeding ESLint, dependency-cruiser, and the
+  standards gate — closing a drifted cruiser hand-copy that had silently stopped guarding the five
+  current bundle roots.
+
+- f669d4a: The guardrails and local-inference interactive demos now execute the shipped browser-safe package
+  surfaces instead of maintaining site-local copies. PII handling, moderation decisions, deterministic
+  embeddings, model-host policy, and egress checks therefore stay pinned to the same code buyers run.
+  The local-inference demo also stops claiming a metered egress request it never makes — it now reports
+  zero requests and no recorded usage — and both demos surface a bounded error state instead of an
+  indefinite spinner when the in-browser guard or embedding computation fails.
+
+  Note: this code already shipped in the packages published with v2026.08.06.1 — the version cut was
+  taken from a base that predated the merge, so this changeset records the bump only.
+
+- e190797: Routine non-major dependency refresh. `better-auth` and its Kysely adapter move
+  `1.6.25` to `1.6.26` in the site; Storybook `10.5.0` to `10.5.6` and Vite `8.1.4`
+  to `8.2.0` in the UI kit; `wrangler` `4.106.0` to `4.119.0` in the registry
+  worker. Everything but the better-auth pair is a devDependency. No API or
+  behaviour change in any of the three packages.
+- 87275f6: Replace ESLint and Prettier with oxlint and oxfmt.
+
+  Linting and formatting now run on the oxc toolchain. The rule floor is unchanged: the same
+  no-any, no-console, type-only-import and provider-SDK-boundary rules are enforced, at the same
+  severities, and formatting keeps the settings the previous formatter used. Every package here is
+  touched by the dependency removal or by the one-pass reformat, so each takes a patch bump; no
+  runtime behaviour changes.
+
+  For anyone consuming the shared configuration: the lint config package is renamed, and the lint
+  and format commands changed.
+
+- c10e3b6: Correct the next.config.ts CSP note: the builder emits the pre-split policy plus frame-src 'self', not a byte-identical policy.
+- 581cb2d: Message-match copy pass on the marketing surface. The homepage hero now names ISO 27001 and NIST 800-53 alongside SOC 2 and HIPAA, so buyers searching for the framework they actually have to satisfy see it on the first screen. The after-year-one question is answered where the buying decision happens — beside the price on the Compliance page and in the cart and its drawer, next to checkout — instead of only on the plans tab. The price footnotes now state the Compliance figure as the committed one-time price and make clear the interviewed-buyer estimate is of the in-house build, not of the price. Design-partner application links fire a cookieless click event while remaining plain `mailto:` links that work with JavaScript disabled. Two comparison pages join the set, Probo and Sentrik, with every competitor claim read from the vendor's live site and stamped with the date it was read.
+- c577330: Deployment documentation now matches the deployed reality. The `apps/site` service
+  env block is regenerated from the live variable list — names only, verified for exact
+  parity in both directions — and the stale scaffold comments that described live
+  infrastructure as not-yet-created are removed from the demos service config, the
+  registry Worker config, and the Railway deploy workflow. No runtime behaviour changes
+  in these packages.
+- Updated dependencies [f669d4a]
+- Updated dependencies [2405d9e]
+- Updated dependencies [b0e66b6]
+- Updated dependencies [2609293]
+- Updated dependencies [886e1e7]
+- Updated dependencies [e190797]
+- Updated dependencies [87275f6]
+- Updated dependencies [2405d9e]
+- Updated dependencies [c10e3b6]
+- Updated dependencies [b0e66b6]
+- Updated dependencies [b0e66b6]
+  - @caisson/kernel@0.9.0
+  - @caisson/field-crypto@1.1.1
+  - @caisson/billing@0.6.8
+  - @caisson/cli@0.8.0
+  - @caisson/demo-registry@0.2.15
+  - @caisson/local-store@1.1.1
+  - @caisson/pricebook@0.8.4
+  - @caisson/ui@0.6.6
+  - @caisson/ui-pro@0.3.7
+  - @caisson/ai-meter@1.1.2
+  - @caisson/tenancy-rls@0.6.0
+  - @caisson/registry-schema@0.5.11
+  - @caisson/service-license@0.1.4
+  - @caisson/ai-kit@0.6.4
+  - @caisson/audit-worm@2.2.3
+  - @caisson/auth@0.4.4
+  - @caisson/brand@0.1.6
+  - @caisson/compliance-core@0.7.1
+  - @caisson/credits@0.6.2
+  - @caisson/email@0.5.7
+  - @caisson/migrate@0.2.13
+  - @caisson/observability@0.3.8
+  - @caisson/org-controls@0.4.1
+  - @caisson/platform-migrations@0.3.4
+  - @caisson/platform-reads@0.3.0
+  - @caisson/prompt-registry@1.1.1
+  - @caisson/rate-limit@0.2.0
+
 ## 0.3.3
 
 ### Patch Changes

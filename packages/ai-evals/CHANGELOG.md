@@ -1,5 +1,24 @@
 # @caisson/ai-evals
 
+## 0.5.1
+
+### Patch Changes
+
+- 87275f6: Replace ESLint and Prettier with oxlint and oxfmt.
+
+  Linting and formatting now run on the oxc toolchain. The rule floor is unchanged: the same
+  no-any, no-console, type-only-import and provider-SDK-boundary rules are enforced, at the same
+  severities, and formatting keeps the settings the previous formatter used. Every package here is
+  touched by the dependency removal or by the one-pass reformat, so each takes a patch bump; no
+  runtime behaviour changes.
+
+  For anyone consuming the shared configuration: the lint config package is renamed, and the lint
+  and format commands changed.
+
+- Updated dependencies [87275f6]
+- Updated dependencies [c10e3b6]
+  - @caisson/agent-trajectory@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes

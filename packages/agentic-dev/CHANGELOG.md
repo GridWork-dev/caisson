@@ -1,5 +1,13 @@
 # @caisson/agentic-dev
 
+## 0.2.5
+
+### Patch Changes
+
+- 9bf7b23: Repack refresh for the four bundle packages: the lint-tooling swap churned every workspace
+  manifest, so the previously recorded tarball rows no longer re-pack byte-identical from this
+  tree. Bumping each bundle records a fresh row at the true bytes; no runtime behavior changes.
+
 ## 0.2.4
 
 ### Patch Changes
