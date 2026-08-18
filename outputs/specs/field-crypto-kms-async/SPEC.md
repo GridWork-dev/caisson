@@ -1,5 +1,5 @@
 ---
-status: locked (ready to build)
+status: shipped (T8 merged #353 13e814da, T8b #354 0d878553; see ADR-0392/0393 supersessions + the tracker T8 rows)
 owner: operator
 ---
 
