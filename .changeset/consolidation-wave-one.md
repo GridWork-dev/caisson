@@ -12,7 +12,7 @@
 "@caisson/service-betterstack-adapter": patch
 "@caisson/service-intel": patch
 "@caisson/service-license": patch
-"@caisson/eslint-config": patch
+"@caisson/lint-policy": patch
 "@caisson/standards-gate": patch
 "@caisson/testing": patch
 ---
