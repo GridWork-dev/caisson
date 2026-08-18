@@ -2425,9 +2425,9 @@
     },
     "@caisson/cli@0.8.0": {
       "key": "cli/cli-0.8.0.tgz",
-      "shasum": "cf7a8c9bed25b7d9d36ea07f8891a92b4bf92639",
-      "integrity": "sha512-bMQ7bI1sj6u0BiOEvsaLyWnvc0irsWghLMcNgReikTenLgHFB0AupVTdK54b65CnItdHNNgQGwo1e1hIC3M+nQ==",
-      "size": 193081,
+      "shasum": "6f4b59aad3844389fb4eb015947d72c62b1824bd",
+      "integrity": "sha512-1X9TarBA7lnOglLlu8G1mYfal2x4/aaYJv3M9F9XVbuqdNxuGrDLNdvglwLKfNNU0wwCJzEq7+KnqoAFR0JEVQ==",
+      "size": 24408,
       "meta": {
         "dependencies": {
           "@caisson/ds-manifest": "0.3.3",
