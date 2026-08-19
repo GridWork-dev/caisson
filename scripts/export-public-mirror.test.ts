@@ -357,8 +357,6 @@ describe("MIRROR_ASSET_FILES", () => {
   // "public copy names a package the artifact does not ship" class counsel already flagged from the
   // other direction. Caught for real: the ADR-0410 analytics retirement left this row behind, and
   // every other gate stayed green.
-  const REPO_ROOT = join(import.meta.dir, "..");
-
   /** Mirrors the exporter's own two-armed selection (MIRROR_WORKSPACES): every Apache-2.0 package
    *  under packages/, plus the build-support tooling it pulls in by name. Shared by both direction
    *  tests below — a set guard is only sound if both halves agree on what "exported" means. */
