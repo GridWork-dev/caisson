@@ -11,6 +11,56 @@ grounds:
 
 # Deploy log
 
+## 2026-08-19 — the first automated docs + support-bot ride (run 32285889495)
+
+ADR-0414 merged as `cb33fdd7`, and **the merge was itself the first ride** — `deploy-railway.yml` is
+a line in its own `paths:` filter, so the merge commit matched and the workflow fired on the merge
+push, running the merged version with both new legs. All five legs SUCCESS; license correctly
+skipped (dispatch-only).
+
+| Leg             | Window              | Duration  |
+| --------------- | ------------------- | --------- |
+| admin           | 18:11:39 → 18:12:52 | 1m13s     |
+| demos           | 18:12:52 → 18:13:51 | 0m59s     |
+| site            | 18:13:51 → 18:15:35 | 1m44s     |
+| **docs**        | 18:15:35 → 18:17:49 | **2m14s** |
+| **support-bot** | 18:17:49 → 18:18:53 | **1m04s** |
+
+Whole job 7m43s against the raised 125-minute cap. **The docs leg took 2m14s, not the 20+ minutes its
+`--wait-minutes 40` budget allows for** — the cold-boot full re-embed is the worst case, not the
+normal one. Keep the budget: the point of a budget is the bad day, and the 1500s `healthcheckTimeout`
+is still the ceiling Railway itself will wait.
+
+Live read-back: `docs-api.caisson.sh/health` → `{"ok":true,"chunks":562}`, down from **576**
+at the pre-ride baseline (`d9a56601`, 2026-08-15). The count changing is the proof a new image is
+serving — the old one cannot report a different number. The delta is explained by the corpus source:
+it indexes `apps/site/content/docs` **plus each package's README**, and the baseline predates the
+`@caisson/analytics` retirement (ADR-0410), which removed a package README from the corpus.
+
+**Not verified: whether the new `ds-manifest` prose is in the LIVE index.** Rebuilding the corpus
+locally at `main` shows 4 chunks mentioning it, so it is in the source — but confirming it in the
+served index needs a query against `DOCS_SERVICE_TOKEN`, which is an operator-held secret. The
+one-command check, if it's ever worth running: a `/search` call with that Bearer for `ds-manifest`.
+
+### The receipt ledger now goes stale for these two, and the collision gate narrows with it
+
+`railway-deploy.ts` appends `docs/deploy/receipts/<service>.json` inside its checkout, and a CI
+checkout is discarded — so this run committed nothing. `caisson-docs.json` still records
+`d9a56601` (2026-08-15) and `caisson-support-bot.json` `26092936` (2026-08-16), while both services
+are now on `cb33fdd7`.
+
+This is a **second-order effect of ADR-0414 itself**, and worth stating because it inverts a
+property these two used to have: they were the only services whose receipts were reliable, precisely
+because they were the only ones deployed exclusively by hand. They now join site (last committed
+receipt `886e1e7c`, 2026-08-15, many CI rides ago) in the stale column.
+
+It also narrows the correction ADR-0414 made to the single-use collision gate. That correction is
+still right — receipts are tracked, so a CI checkout does read them and the gate does fire — but the
+gate can only ever see **operator hand-committed rows**. It will block a dispatch at a sha the
+operator once deployed by hand; it cannot block a re-deploy of a sha only CI has shipped, because no
+row was ever written for it. Read the deployment ledger or the workflow run ids for truth, never the
+receipt files.
+
 ## 2026-08-19 — the last two services get an automated deploy path (ADR-0414)
 
 `caisson-docs` and `caisson-support-bot` are now deployed by `deploy-railway.yml` like the rest of
