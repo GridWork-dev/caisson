@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0413** (0335-0339 reserved unused; 0334 = Kickoff-S motion language v2). The full
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0414** (0335-0339 reserved unused; 0334 = Kickoff-S motion language v2). The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate
    it here. The per-sitting lock narratives formerly inlined in this clause are archived verbatim
    in `docs/archive/build-history.md`.
@@ -133,7 +133,8 @@ The review gate is the **in-session SHIP audit lane** per gridwork doctrine: `gw
 the branch diff before the PR opens, findings adversarially verified and fixed in-session — the
 lane that caught and fixed 12 findings on PR #128, including three P1 money bugs. CI required
 checks: `check` · `standards-gate` · `registry-index` · `oscal-conformance` · `deterministic`
-(the pinned security-scan gate, ADR-0327/CAISSON-95) (convention:
+(the pinned security-scan gate, ADR-0327/CAISSON-95) · `support-bot` (the Python gate, promoted out
+of advisory by ADR-0414 and unconditional since) (convention:
 the private free-plan repo has no enforced branch protection, so "required" is discipline, not a
 GitHub gate). History: the gate's design lives in git (PRs #51/#60) and the retired
 `greptile-gate.yml` is recoverable from history if a future external reviewer is wired.

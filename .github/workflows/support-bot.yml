@@ -1,22 +1,29 @@
 name: support-bot
 
-# Python gate for services/support-bot (the repo's only Python surface — ADR-0105). Path-scoped so it
-# runs ONLY when the bot changes; deliberately NOT one of the ADR-0016 required checks (advisory until
-# the lane is proven). Runs on the same Blacksmith VM-per-job lane as the TS gates (ADR-0326,
-# docs/operations.md); setup-uv installs uv and uv fetches Python 3.12 + the locked deps inside the
-# throwaway container, so no interpreter needs to pre-exist on the runner.
+# Python gate for services/support-bot (the repo's only Python surface — ADR-0105). Runs on the same
+# Blacksmith VM-per-job lane as the TS gates (ADR-0326, docs/operations.md); setup-uv installs uv and
+# uv fetches Python 3.12 + the locked deps inside the throwaway container, so no interpreter needs to
+# pre-exist on the runner.
+#
+# REQUIRED since ADR-0414 — `support-bot` joins the set: check · standards-gate · registry-index ·
+# oscal-conformance · deterministic · support-bot. The promotion is sequenced BEFORE this service
+# gained an automated Railway deploy in the same ADR: an advisory gate in front of an automatic
+# deploy means a red bot lands in production and nothing blocks it. As with the other five,
+# "required" is discipline on this free-plan private repo (no enforced branch protection): the
+# convention is enforced by scripts/release-readiness.ts (REQUIRED_CHECKS) and review practice.
+#
+# THE PATHS FILTER IS GONE, and its removal is what makes the promotion sound. ci.yml's header
+# states the rule: a required job stays UNCONDITIONAL, because a path-skipped required job never
+# reports and the PR blocks forever. release-readiness.ts enforces the same thing from the other
+# side — it counts a check that never reported as `missing`, so a path-scoped required check would
+# red the readiness gate on every release whose diff happened not to touch the bot. The only
+# permitted `if:` is the CAISSON-96 draft guard below, exactly as in ci.yml.
 on:
   push:
     branches: [main]
-    paths:
-      - "services/support-bot/**"
-      - ".github/workflows/support-bot.yml"
   pull_request:
     # Defaults plus ready_for_review — flipping a draft to ready fires the full run (CAISSON-96).
     types: [opened, synchronize, reopened, ready_for_review]
-    paths:
-      - "services/support-bot/**"
-      - ".github/workflows/support-bot.yml"
 
 concurrency:
   group: "support-bot-${{ github.event.pull_request.number || github.ref }}"
