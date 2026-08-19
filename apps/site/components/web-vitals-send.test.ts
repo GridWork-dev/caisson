@@ -55,7 +55,7 @@ const saved = new Map<string, PropertyDescriptor | undefined>();
 
 /** Minimal stand-ins for the three browser globals this module touches — no jsdom needed, the unit
  * under test is a batch-and-beacon closure, not a DOM tree. */
-function stubBrowser(): Browser {
+function stubBrowser(host = "caisson.sh"): Browser {
   const beacons: { url: string; body: string }[] = [];
   const listeners = new Map<string, (() => void)[]>();
   const addEventListener = (type: string, fn: () => void): void => {
@@ -68,8 +68,9 @@ function stubBrowser(): Browser {
     window: {
       addEventListener,
       location: {
-        href: "https://caisson.sh/pricing?ref=x",
+        href: `https://${host}/pricing?ref=x`,
         pathname: "/pricing",
+        host,
       },
     },
     navigator: {
@@ -143,6 +144,7 @@ test("registers all five reporters and beacons the batch once at pagehide", () =
     $web_vitals_CLS_value: 0.42,
     $web_vitals_CLS_rating: "poor",
     $process_person_profile: false,
+    $host: "caisson.sh",
     $pathname: "/pricing",
     $lib: "caisson-web-vitals",
   });
@@ -183,4 +185,37 @@ test("env gate: no PostHog key means no reporter is ever registered", () => {
 
   startWebVitals();
   expect(reporters).toHaveLength(0);
+});
+
+test("origin gate: a non-production host registers no reporter and sends nothing", () => {
+  // The regression this pins: NEXT_PUBLIC_POSTHOG_KEY is inlined at build time, so a dev server or
+  // any other build on a box that exports it used to beacon straight into caisson-prod. Key
+  // present + wrong origin must be inert, not merely quieter.
+  process.env[KEY_VAR] = "phc_test";
+  process.env[HOST_VAR] = "https://ph.example";
+  const browser = stubBrowser("localhost:3000");
+
+  startWebVitals();
+  expect(reporters).toHaveLength(0);
+
+  browser.fire("pagehide");
+  expect(browser.beacons).toHaveLength(0);
+});
+
+test("origin gate: www is production too and still reports", () => {
+  // Both apex and www answer 200 directly (no redirect), so gating them differently would blind
+  // real traffic rather than only blocking noise.
+  process.env[KEY_VAR] = "phc_test";
+  process.env[HOST_VAR] = "https://ph.example";
+  const browser = stubBrowser("www.caisson.sh");
+
+  startWebVitals();
+  reporters[0]!(metric("LCP", 1000, "good"));
+  browser.fire("pagehide");
+
+  expect(browser.beacons).toHaveLength(1);
+  const payload = JSON.parse(browser.beacons[0]!.body) as {
+    properties: Record<string, unknown>;
+  };
+  expect(payload.properties.$host).toBe("www.caisson.sh");
 });

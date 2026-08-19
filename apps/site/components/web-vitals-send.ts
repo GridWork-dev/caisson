@@ -12,6 +12,7 @@
 // anonymous fire-and-forget beacon per metric batch to the PostHog capture endpoint the CSP
 // already allowlists, with $process_person_profile:false (no person profile is ever created).
 import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from "web-vitals";
+import { isProductionAnalyticsHost } from "../lib/analytics-host";
 
 interface VitalsBatch {
   [key: string]: string | number | boolean;
@@ -20,6 +21,11 @@ interface VitalsBatch {
 export function startWebVitals(): void {
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   if (!key) return; // env-gated, same contract as posthog-init.tsx
+  // Origin-gated too: the key is inlined at build time, so its presence proves only that SOME
+  // machine had the env set — not that this page should report into caisson-prod. See
+  // lib/analytics-host.ts. Without this, `bun run dev` and any other build on the same box beacon
+  // straight into production.
+  if (!isProductionAnalyticsHost(window.location.host)) return;
   const host =
     process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com";
 
@@ -45,6 +51,9 @@ export function startWebVitals(): void {
         ...batch,
         $process_person_profile: false,
         $current_url: window.location.href,
+        // PostHog's web surfaces segment on $host; omitting it left every batch unattributable to
+        // a domain, which is what made prod and non-prod traffic indistinguishable in the UI.
+        $host: window.location.host,
         $pathname: window.location.pathname,
         $lib: "caisson-web-vitals",
       },

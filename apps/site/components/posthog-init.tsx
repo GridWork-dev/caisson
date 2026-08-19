@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
+import { isProductionAnalyticsHost } from "@/lib/analytics-host";
 import {
   clearSignupIntentCookie,
   parseSignupIntentCookie,
@@ -69,6 +70,14 @@ export function PostHogInit({ accountId }: { accountId: string }) {
     const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
     if (key === undefined || key.length === 0) {
       initialized.current = true; // signup handled; nothing more to do without PostHog
+      return;
+    }
+    // Same origin gate as the web-vitals beacon (lib/analytics-host.ts): the inlined key travels
+    // with any bundle built on a box that exports it, so a dashboard opened on localhost would
+    // otherwise identify() a real account into caisson-prod. Mirror the branch above and mark the
+    // effect initialized so route changes stop re-reading the one-shot signup cookie.
+    if (!isProductionAnalyticsHost(window.location.host)) {
+      initialized.current = true;
       return;
     }
     let cancelled = false;
