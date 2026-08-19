@@ -44,8 +44,11 @@ const runSchema = z
     advisory: z.literal(true).optional(),
     runId: z.string().trim().min(1),
     rootDir: z.string().trim().min(1),
+    // Explicit key schema (zod 4): with the 1-arg form the enum is inferred as the KEY type, so
+    // this field typed as Record<"new"|"unchanged"|"regressed"|"closed", unknown> when it is in
+    // fact keyed by finding id. Runtime validation was already correct; only the type was wrong.
     classes: z
-      .record(z.enum(["new", "unchanged", "regressed", "closed"]))
+      .record(z.string(), z.enum(["new", "unchanged", "regressed", "closed"]))
       .optional(),
     findings: z.array(findingSchema),
   })

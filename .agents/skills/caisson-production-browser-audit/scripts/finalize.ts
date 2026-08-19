@@ -2,7 +2,7 @@ import {
   reconcileFindings,
   type CurrentFinding,
   type LedgerFinding,
-} from "../../../../tooling/browser-audit/src/reconcile";
+} from "./reconcile";
 import type { MutationJournal } from "./journal";
 
 export interface AuditFork {

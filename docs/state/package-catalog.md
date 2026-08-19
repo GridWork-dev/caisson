@@ -21,15 +21,15 @@ and the standards gate are the executable sources. Build depth remains in
 
 ## Workspace inventory
 
-| Surface              |  Count | Members                                                                                |
-| -------------------- | -----: | -------------------------------------------------------------------------------------- |
-| Packages             |     58 | 16 Apache-2.0; 42 commercial                                                           |
-| Apps                 |      3 | `admin`, `demos`, and `site`                                                           |
-| Bun services         |      4 | `betterstack-adapter`, `docs`, `intel`, `license`                                      |
-| Registry             |      1 | `@caisson/registry` plus its Worker                                                    |
-| Tooling workspaces   |      7 | audit harness, browser audit, demo registry, lint policy, standards, testing, tsconfig |
-| Python projects      |      2 | `services/support-bot`, `tools/assert-lane` — frozen at two                            |
-| Bun workspaces total | **73** | root `workspaces` discovery                                                            |
+| Surface              |  Count | Members                                                                 |
+| -------------------- | -----: | ----------------------------------------------------------------------- |
+| Packages             |     58 | 16 Apache-2.0; 42 commercial                                            |
+| Apps                 |      3 | `admin`, `demos`, and `site`                                            |
+| Bun services         |      4 | `betterstack-adapter`, `docs`, `intel`, `license`                       |
+| Registry             |      1 | `@caisson/registry` plus its Worker                                     |
+| Tooling workspaces   |      6 | audit harness, demo registry, lint policy, standards, testing, tsconfig |
+| Python projects      |      2 | `services/support-bot`, `tools/assert-lane` — frozen at two             |
+| Bun workspaces total | **72** | root `workspaces` discovery                                             |
 
 ## Open Base — 16 Apache-2.0 packages
 
@@ -122,13 +122,13 @@ commercial where their code is proprietary and are not independently purchasable
 
 ## Applications, services, registry, and tooling
 
-| Surface      | Members                                                                                                   | Sale posture                                         |
-| ------------ | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| Apps         | `site`, `admin`, `demos`                                                                                  | storefront, control-plane, and demo apps; never SKUs |
-| Bun services | `license`, `docs`, `intel`, `betterstack-adapter`                                                         | operator infrastructure; never SKUs                  |
-| Python       | `support-bot`, `assert-lane`                                                                              | one service and one verification tool; no expansion  |
-| Registry     | `@caisson/registry` and Worker                                                                            | commercial fulfillment infrastructure                |
-| Tooling      | `audit-harness`, `browser-audit`, `demo-registry`, `lint-policy`, `standards-gate`, `testing`, `tsconfig` | private build-time infrastructure                    |
+| Surface      | Members                                                                                  | Sale posture                                         |
+| ------------ | ---------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Apps         | `site`, `admin`, `demos`                                                                 | storefront, control-plane, and demo apps; never SKUs |
+| Bun services | `license`, `docs`, `intel`, `betterstack-adapter`                                        | operator infrastructure; never SKUs                  |
+| Python       | `support-bot`, `assert-lane`                                                             | one service and one verification tool; no expansion  |
+| Registry     | `@caisson/registry` and Worker                                                           | commercial fulfillment infrastructure                |
+| Tooling      | `audit-harness`, `demo-registry`, `lint-policy`, `standards-gate`, `testing`, `tsconfig` | private build-time infrastructure                    |
 
 ## Enforced invariants
 
