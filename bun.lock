@@ -1364,20 +1364,6 @@
         "react-dom": "^19.0.0",
       },
     },
-    "tooling/design-critic": {
-      "name": "@caisson/design-critic",
-      "version": "0.0.4",
-      "bin": {
-        "design-critic-reconcile": "./src/cli.ts",
-      },
-      "dependencies": {
-        "@caisson/testing": "workspace:*",
-      },
-      "devDependencies": {
-        "@caisson/tsconfig": "workspace:*",
-        "typescript": "catalog:",
-      },
-    },
     "tooling/lint-policy": {
       "name": "@caisson/lint-policy",
       "version": "0.2.1",
@@ -1682,8 +1668,6 @@
     "@caisson/demo-registry": ["@caisson/demo-registry@workspace:tooling/demo-registry"],
 
     "@caisson/demos": ["@caisson/demos@workspace:apps/demos"],
-
-    "@caisson/design-critic": ["@caisson/design-critic@workspace:tooling/design-critic"],
 
     "@caisson/ds-manifest": ["@caisson/ds-manifest@workspace:packages/ds-manifest"],
 

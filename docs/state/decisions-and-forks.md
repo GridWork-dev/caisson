@@ -1,7 +1,7 @@
 ---
-updated: 2026-08-18
+updated: 2026-08-19
 status: live
-adr_ceiling: 0410
+adr_ceiling: 0411
 ---
 
 # Decisions & Forks — live board
@@ -191,6 +191,8 @@ additional active queue.
 | Fork         | Why it remains open                                                                                                                                                                                                                                                                                                             |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Railway PITR | Reopen only when real commerce data raises the recovery-point requirement beyond snapshots plus rehearsed logical restore. Declined 2026-07-11, reconfirmed 2026-07-18 and again at the 2026-07-29 forks picker — nothing has changed the input: commerce is still sandbox, so there is no production transaction data to lose. |
+
+_Closed 2026-08-19 → **ADR-0411**: **C04** — retire `tooling/design-critic`. The second of the six decision-gated consolidation rows to re-enter through a fresh operator decision. The FOLD the audit card proposed was refused on inspection: its premise that both packages "already use the shared reconciler" is false, and the two stable-ID formulas are hash-space incompatible (design-critic hashes three fields, audit-harness four), so a fold would have silently rewritten the identity of 729 resolved findings. Retirement instead: the ledger — closed, every row `fixed` — is archived byte-verbatim under its own formula at `outputs/archive/audit/design-critic-findings-2026-08-18.toml` with a provenance README, the package is deleted, and `@caisson/audit-harness` gains a **D8 `visual-quality`** dimension (Nielsen rubric, `gw-frontend-designer` lane, keyed on `apps/*` domains rather than surface class — `apps/admin` is `internal-only` but is still a rendered UI, and `services/*` are `buyer-runtime` but render nothing) as the successor lens. Historical rows are never re-keyed. Supersedes the ADR-0134 "generalized without replacing" clause._
 
 _Closed 2026-08-18 → **ADR-0410**: **C01** — retire `@caisson/analytics`. The first of the six decision-gated consolidation rows to re-enter through a fresh operator decision, as ADR-0407 required. The package is deleted and module-delisted append-only (ADR-0402 mechanics), publish and tarball provenance retained. The external-usage check the card demanded cleared every channel — the `@caisson` npm scope is unpublished, `caisson-oss` is still private behind the launch gate, and the registry serves it but commerce is Paddle SANDBOX — and counsel had independently asked for "a keep-or-remove decision for `analytics`". Open Base 17 → 16. **Not decided here:** `@caisson/ds-manifest` is a second Apache-2.0 module the registry serves and the site's 15-package list does not name; same class, own decision._
 

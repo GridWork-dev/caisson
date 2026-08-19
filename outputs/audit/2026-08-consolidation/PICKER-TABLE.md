@@ -36,6 +36,11 @@ LOC is net reduction unless marked exact/gross.
 - _C01 disposed 2026-08-18 → **ADR-0410** (retire `@caisson/analytics`). The Status column above is
   left at its audit-time value: this table is a frozen audit artifact, not a live tracker._
 
+- _C04 disposed 2026-08-19 → **ADR-0411**, but NOT as the fold this row proposes. The card's
+  "both already use the shared reconciler" premise is false and the two stable-ID formulas are
+  hash-space incompatible, so the package was RETIRED and its closed ledger archived verbatim
+  instead; audit-harness took over the lens as dimension D8. Row text left at its audit-time value._
+
 - Choosing C01 requires a superseding ADR, append-only module delist, retained tarball history,
   Open Base/public-doc cleanup, and an external-usage check. It has no paid grandfathering burden.
 - Choosing C04 requires a visual audit-harness dimension, a superseding ADR, and verbatim archival
