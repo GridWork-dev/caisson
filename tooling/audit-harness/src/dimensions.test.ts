@@ -8,10 +8,10 @@ import {
 } from "./dimensions.ts";
 import type { SurfaceClass } from "./domains.ts";
 
-describe("DIMENSIONS — the seven fixed audit lenses (ADR-0233, task 2)", () => {
-  test("exactly D1..D7, unique ids, each with a checker + hunts", () => {
+describe("DIMENSIONS — the eight fixed audit lenses (ADR-0233 task 2; D8 added by ADR-0411)", () => {
+  test("exactly D1..D8, unique ids, each with a checker + hunts", () => {
     const ids = DIMENSIONS.map((d) => d.id);
-    expect(ids).toEqual(["D1", "D2", "D3", "D4", "D5", "D6", "D7"]);
+    expect(ids).toEqual(["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"]);
     expect(new Set(ids).size).toBe(ids.length);
     for (const d of DIMENSIONS) {
       expect(d.checker.length).toBeGreaterThan(0);
@@ -22,11 +22,16 @@ describe("DIMENSIONS — the seven fixed audit lenses (ADR-0233, task 2)", () =>
 
   test("dimension() looks up by id and throws on an unknown id", () => {
     expect(dimension("D3").slug).toBe("customer-facing-quality");
-    expect(() => dimension("D9" as DimensionId)).toThrow(/unknown dimension/);
+    expect(() => dimension("D99" as DimensionId)).toThrow(/unknown dimension/);
   });
 
   test("D7's checker matches the SPEC runbook lane (haiku recon + standards-gate, not gw-code-reviewer)", () => {
     expect(dimension("D7").checker).toBe("haiku recon + standards-gate");
+  });
+
+  test("D8 routes to the design lane — the retired design-critic's lens, not a reviewer's (ADR-0411)", () => {
+    expect(dimension("D8").slug).toBe("visual-quality");
+    expect(dimension("D8").checker).toBe("gw-frontend-designer");
   });
 });
 
@@ -44,11 +49,16 @@ describe("applicableDimensions — the sparse class → lens matrix", () => {
     }
   });
 
-  test("oss-source ⊇ {D1..D7} (buyers read the source — every lens applies)", () => {
-    const oss = new Set(applicableDimensions("oss-source"));
+  test("oss-source = {D1..D7} — every SOURCE lens applies, but not the rendered-surface one", () => {
+    const oss = new Set(applicableDimensions("oss-source", "packages/kernel"));
     for (const id of ["D1", "D2", "D3", "D4", "D5", "D6", "D7"] as const) {
       expect(oss.has(id)).toBe(true);
     }
+    // D8 grades a rendered surface; a package tree has nothing to render (ADR-0411).
+    expect(oss.has("D8")).toBe(false);
+    expect(
+      applicableDimensions("sold-source", "packages/field-crypto"),
+    ).not.toContain("D8");
   });
 
   test("buyer-runtime has the buyer lenses but not the package-only license lens (D5)", () => {
@@ -56,6 +66,52 @@ describe("applicableDimensions — the sparse class → lens matrix", () => {
     expect(set.has("D3")).toBe(true); // customer-facing
     expect(set.has("D6")).toBe(true); // docs-vs-code
     expect(set.has("D5")).toBe(false); // not a distributed package
+  });
+
+  test("D8 keys on the DOMAIN (apps/*), not the class — it crosses the class line both ways (ADR-0411)", () => {
+    // apps/site + apps/demos are buyer-runtime; apps/admin is internal-only (domains.ts classifies
+    // the operator control-plane that way) — but all three are rendered UIs, so all three carry D8.
+    expect(applicableDimensions("buyer-runtime", "apps/site")).toContain("D8");
+    expect(applicableDimensions("buyer-runtime", "apps/demos")).toContain("D8");
+    expect(applicableDimensions("internal-only", "apps/admin")).toContain("D8");
+    // services/* ARE buyer-runtime but are backend APIs with nothing to render — a class-keyed D8
+    // would have manufactured dead cells here while silently dropping admin.
+    for (const svc of [
+      "services/license",
+      "services/docs",
+      "services/intel",
+      "services/betterstack-adapter",
+    ]) {
+      expect(applicableDimensions("buyer-runtime", svc)).not.toContain("D8");
+    }
+    // No package tree, no tooling dir, and no bare call picks it up.
+    expect(
+      applicableDimensions("internal-only", "packages/license-issue"),
+    ).not.toContain("D8");
+    expect(
+      applicableDimensions("internal-only", "tooling/audit-harness"),
+    ).not.toContain("D8");
+    for (const c of classes)
+      expect(applicableDimensions(c)).not.toContain("D8");
+  });
+
+  test("D8 is never the only lens a domain carries — apps/* keeps its full base set", () => {
+    expect(applicableDimensions("internal-only", "apps/admin")).toEqual([
+      "D1",
+      "D2",
+      "D6",
+      "D7",
+      "D8",
+    ]);
+    expect(applicableDimensions("buyer-runtime", "apps/site")).toEqual([
+      "D1",
+      "D2",
+      "D3",
+      "D4",
+      "D6",
+      "D7",
+      "D8",
+    ]);
   });
 
   test("internal-only carries no buyer-facing lens (no D3/D4 — nothing ships)", () => {

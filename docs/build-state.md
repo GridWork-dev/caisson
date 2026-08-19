@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-18
+updated: 2026-08-19
 status: live
 ---
 
@@ -58,7 +58,7 @@ sandbox purchase/renewal rows. The parallel field-crypto KMS wave has since merg
 #353) after four review rounds and is no longer separate, followed by the scoped-key change
 (`0d878553`, #354) that closed the raw-DEK fork ADR-0392 deferred.
 
-- **58 packages:** 16 Apache-2.0 and 42 commercial; 74 Bun workspaces total.
+- **58 packages:** 16 Apache-2.0 and 42 commercial; 73 Bun workspaces total.
 - **Safety wave complete locally:** TypeScript-aware dependency graph (`c236681f`), total price
   authority (`f6122de8`, follow-up `92d930b6`), split limiter failure policy (`014ac4de`), and
   dependency-patch audit ownership (`3e384bc5`).

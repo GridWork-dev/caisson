@@ -1,8 +1,10 @@
 /**
- * Cross-domain reconciling ledger (ADR-0134 §2). Generalizes `tooling/design-critic/src/findings.ts`
- * from design-only to EVERY declared domain (./domains.ts) — one append-only ledger instead of N
- * siloed reports, so a security finding and a design finding reconcile against the same source of
- * truth. The reconcile/stable-id/status semantics are UNCHANGED from design-critic:
+ * Cross-domain reconciling ledger (ADR-0134 §2). Generalizes the retired `tooling/design-critic`
+ * (ADR-0411) from design-only to EVERY declared domain (./domains.ts) — one append-only ledger
+ * instead of N siloed reports, so a security finding and a design finding reconcile against the
+ * same source of truth. The reconcile/stable-id/status semantics came over unchanged, EXCEPT the
+ * stable-id arity: design-critic hashed three fields, this hashes four (see below), which is why
+ * its archived ledger is read as history and never re-keyed into this one.
  *
  *   - id = sha256(domain ∷ subject ∷ normalized-title)[:16] — rewording a title never forks a finding.
  *   - reconcile() classifies every id this run: new / unchanged / regressed / closed. A fixed
