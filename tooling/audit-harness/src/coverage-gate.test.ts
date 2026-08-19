@@ -57,6 +57,9 @@ const IGNORE_GLOBS: readonly string[] = [
   ".gitattributes",
   ".dockerignore",
   ".prettierignore",
+  // graphify's scan-scope list — keeps the code-graph indexer off the archived audit ledgers and
+  // the browser-audit dumps. Same class as the other ignore-dotfiles: a tool's scope config.
+  ".graphifyignore",
   // semgrep scan-scope config (tools/security stack) — a lint-tool ignore list, same class as the
   // other ignore-dotfiles; its own audit lives in the tools/security domain + the security playbook.
   ".semgrepignore",
