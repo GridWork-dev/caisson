@@ -324,6 +324,14 @@ describe("sanitizeSourceComments", () => {
   });
 });
 
+// The exporter's BUILD_SUPPORT set is module-private; this mirrors it, and the mirror README guard
+// below would go vacuously green if it silently drifted — so the names are asserted, not assumed.
+const BUILD_SUPPORT_NAMES = new Set([
+  "@caisson/tsconfig",
+  "@caisson/lint-policy",
+  "@caisson/testing",
+]);
+
 describe("MIRROR_ASSET_FILES", () => {
   test("every listed source file exists under scripts/mirror-assets/", () => {
     for (const { src } of MIRROR_ASSET_FILES) {
@@ -339,6 +347,44 @@ describe("MIRROR_ASSET_FILES", () => {
     expect(dests).toContain("SUPPORT.md");
     expect(dests).toContain("CODE_OF_CONDUCT.md");
     expect(dests).toContain(".github/ISSUE_TEMPLATE/bug_report.md");
+  });
+
+  // The mirror README is the PUBLIC front page of caisson-sh/caisson-oss, and the exporter selects
+  // packages purely on the SPDX `license` field — it never reads this table. So a package that is
+  // deleted or flipped commercial vanishes from the exported tree while its row keeps advertising
+  // it, and a visitor runs `bun add` against something that is not there. That is exactly the
+  // "public copy names a package the artifact does not ship" class counsel already flagged from the
+  // other direction. Caught for real: the ADR-0410 analytics retirement left this row behind, and
+  // every other gate stayed green.
+  test("every package the mirror README advertises is actually exported", () => {
+    const readme = readFileSync(join(MIRROR_ASSETS_DIR, "README.md"), "utf8");
+    const advertised = [
+      ...new Set(
+        [...readme.matchAll(/`@caisson-sh\/([a-z0-9-]+)`/g)].map(
+          (m) => m[1] as string,
+        ),
+      ),
+    ];
+    // Non-empty guard: a regex that silently stops matching would make this test vacuously pass.
+    expect(advertised.length).toBeGreaterThan(5);
+    const repoRoot = join(import.meta.dir, "..");
+    // Mirrors the exporter's own two-armed selection: every Apache-2.0 package under packages/,
+    // plus the build-support tooling it pulls in by name.
+    const isExported = (slug: string): boolean => {
+      const pkg = join(repoRoot, "packages", slug, "package.json");
+      if (existsSync(pkg)) {
+        const json = JSON.parse(readFileSync(pkg, "utf8")) as {
+          license?: string;
+        };
+        return json.license === "Apache-2.0";
+      }
+      const tool = join(repoRoot, "tooling", slug, "package.json");
+      if (!existsSync(tool)) return false;
+      const json = JSON.parse(readFileSync(tool, "utf8")) as { name?: string };
+      return BUILD_SUPPORT_NAMES.has(json.name ?? "");
+    };
+    const notExported = advertised.filter((slug) => !isExported(slug));
+    expect(notExported).toEqual([]);
   });
 
   test("keeps generator-owned artifacts out of mirror formatting", () => {

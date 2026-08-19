@@ -26,9 +26,9 @@ AI agent drives + a custom AI support service. Sold as whole bundles (one-time),
 | **Everything**        | every bundle + every à-la-carte module, one purchase                                      | $2,259 | commercial                           |
 | **Base**              | auth + fail-closed RLS + billing + design floor + buyer MCP (auth) + AGENTS.md            | free   | Apache-2.0 core + commercial modules |
 
-Licensing is **open-core**: the Base set is 17 Apache-2.0 packages (kernel, auth, tenancy-rls, ui,
+Licensing is **open-core**: the Base set is 16 Apache-2.0 packages (kernel, auth, tenancy-rls, ui,
 billing, jobs, email, ai-config, mcp-server, registry-schema, observability, cli, migrate,
-rate-limit, analytics, license-verify, ds-manifest); bundles + à-la-carte modules + pricebook stay commercial
+rate-limit, license-verify, ds-manifest); bundles + à-la-carte modules + pricebook stay commercial
 (`LicenseRef-Caisson-Commercial`). The AGPL Local-first flank was removed (ADR-0083, reaffirms
 ADR-0050); the permissive open tier is Apache-2.0, not copyleft. Full catalog + pricing detail:
 `docs/state/package-catalog.md`.
