@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-01
+updated: 2026-08-19
 status: live
 grounds:
   - knowledge/decisions/ADR-0382-upgrade-credit-floor-and-tag-signing.md

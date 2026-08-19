@@ -21,7 +21,11 @@ on:
 # run before merge is possible. Every other job (eval · native-ext · token-drift ·
 # publish-and-index · the Railway deploy) has moved to its own workflow file
 # (quality.yml / publish.yml / deploy-railway.yml) where path-filtering and main-only gating are
-# safe because those jobs are not required checks.
+# safe because those jobs are not required checks. ONE required check lives outside this file:
+# `support-bot` (support-bot.yml), promoted by ADR-0414 — and it obeys the same rule, having had
+# its paths filter removed in that same change. The full required set is therefore
+# standards-gate · check · registry-index · oscal-conformance (here) · deterministic
+# (security-scan.yml) · support-bot (support-bot.yml); scripts/release-readiness.ts is the list.
 #
 # BLACKSMITH RUNNERS (2026-07-11, ADR-0326): the pure-compute gate jobs run on Blacksmith
 # Firecracker microVMs (`runs-on: blacksmith-4vcpu-ubuntu-2404`) — one throwaway VM per job,
@@ -142,7 +146,14 @@ jobs:
         # used to own (its package was folded in), so they run here or they run nowhere.
         # The `./` prefix is load-bearing: bun's discovery skips dot-directories, and a bare
         # `.agents/...` arg is read as a name FILTER (matches nothing, exit 1) rather than a path.
-        run: bun test tools/demo-excerpts tools/demo-preview tools/paddle-catalog-recreate.test.ts scripts/export-public-mirror.test.ts ./.agents/skills/caisson-production-browser-audit/scripts/
+        #
+        # `tooling/scripts/` and `scripts/` have NO package.json, so the `tooling/*` workspace glob
+        # skips them and turbo never runs their tests — they are only covered by being named here.
+        # ADR-0414 named railway-deploy + release-readiness because it changed both. The other SIX
+        # suites under tooling/scripts/ (sot-check, dts-drift-check, tsgo-agreement, railway-env-sync,
+        # vault-parity-check, aeo-probe) are STILL uncovered; tracked in docs/state/outstanding-work.md
+        # rather than added blind, because an unproven leg on a required check reds main, not a PR.
+        run: bun test tools/demo-excerpts tools/demo-preview tools/paddle-catalog-recreate.test.ts scripts/export-public-mirror.test.ts ./.agents/skills/caisson-production-browser-audit/scripts/ scripts/release-readiness.test.ts tooling/scripts/railway-deploy.test.ts
       - name: typecheck the browser-audit skill (.agents sits outside the workspaces)
         # ADR-0413 / C13. The deleted tooling/browser-audit manifest's `build: tscn -p tsconfig.json`
         # was the only thing typechecking this code. Nothing else reaches it: the root tsconfig is

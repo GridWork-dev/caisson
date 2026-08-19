@@ -11,6 +11,42 @@ grounds:
 
 # Deploy log
 
+## 2026-08-19 — the last two services get an automated deploy path (ADR-0414)
+
+`caisson-docs` and `caisson-support-bot` are now deployed by `deploy-railway.yml` like the rest of
+the fleet. Until this change **no workflow deployed either service** — not the release train, whose
+leg 4 is a dispatch of that same workflow. Their only path was an operator hand-run of
+`tooling/scripts/railway-deploy.ts`, which is why both drifted (`docs` at `d9a56601`, `support-bot`
+at `26092936`) while the other four rode every merge.
+
+Shape of the change:
+
+- `services/docs/**` and `services/support-bot/**` join the push-path filter, and two steps append
+  after `site` in the order **docs → support-bot** — the bot is a client of the docs API
+  (`DOCS_SERVICE_URL`), so the API must serve the release before the client restarts against it.
+- One guard each (`armed`), no second `CAISSON_DEMOS_ARMED`-style gate: both services have existed
+  and been Online since 2026-06-30, so the missing-service hazard that earned demos its extra gate
+  does not apply.
+- `railway-deploy.ts` gains `--wait-minutes` (default 15, unchanged behaviour) and the docs step
+  passes **40**. Its poll budget was a fixed 15 minutes; docs answers `/health` with a warming 503
+  while it re-embeds its whole corpus on every cold boot, bounded by a 20-minute deadline under a
+  1500s `healthcheckTimeout`. At the default this step would have reported "timed out waiting" on a
+  deploy that was still succeeding, and taken the support-bot step down with it.
+- The job's `timeout-minutes` goes 25 → 70. **25 was already exactly equal to docs'
+  `healthcheckTimeout`** — adding the docs leg without raising it would have guaranteed a job-level
+  kill on any cold-boot re-embed, before counting the four legs that run ahead of it.
+
+**The gate was promoted first, on purpose.** `support-bot` (ruff · pyright · pytest · the offline
+eval gate) was an advisory, path-scoped workflow. An advisory gate in front of an automatic deploy
+means a red bot reaches production and nothing blocks it, so this change makes it the sixth required
+check — and removes its `paths:` filter in the same commit, because `release-readiness.ts` counts a
+check that never reported as `missing` and ci.yml's rule is that a required job stays unconditional.
+
+**The merge itself is the first ride.** `.github/workflows/deploy-railway.yml` is a line in its own
+`paths:` filter, so the merge commit matches and the workflow fires on the merge push — running the
+merged version, with the two new legs, armed and unattended. Expect
+admin → demos → site → docs (up to 40 min on a cold re-embed) → support-bot, and watch it.
+
 ## 2026-08-19 — leg 4 cleared, and the fleet brought to one revision
 
 Railway's snapshot stage recovered between 01:48Z and 08:03Z (dev-profile proved it on
