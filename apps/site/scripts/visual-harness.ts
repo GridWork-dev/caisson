@@ -5,7 +5,8 @@
  * Captures every visual surface at mobile + desktop widths, each in light + dark mode, with
  * `fullPage: true` (viewport WIDTH stays a real device width; height captures the whole page):
  *
- *   - every page route (marketing, marketplace, module depth, compare, glossary, docs, legal, auth)
+ *   - every page route (marketing, marketplace, module depth, compare, glossary, writing, docs,
+ *     legal, auth) — the public ones derived from the canonical `lib/routes.ts` registry
  *   - the marketplace card-viewer pop-outs (`?view=bundle:<slug>` / `?view=module:<slug>` deep links)
  *   - every branded email template (`@caisson/email` rendered with EMAIL_SAMPLE_DATA)
  *   - interaction states (mobile nav drawer, docs search, marketplace search, add-to-cart → cart,
@@ -39,8 +40,13 @@ import { signInProbeAccount } from "../live/probe-session.ts";
 import { BUNDLE_PAGES } from "../lib/bundle-pages.ts";
 import { COMPARISONS } from "../lib/comparisons.ts";
 import { GLOSSARY_TERMS } from "../lib/glossary.tsx";
-import { LEGAL_ROUTES } from "../lib/routes.ts";
+import {
+  LEGAL_ROUTES,
+  MARKETING_ROUTES,
+  MARKETPLACE_TAB_ROUTES,
+} from "../lib/routes.ts";
 import { MODULE_PAGES } from "../lib/module-pages.ts";
+import { WRITING_PIECES } from "../lib/writing.tsx";
 
 interface Viewport {
   name: string;
@@ -65,6 +71,7 @@ export type ShotCategory =
   | "popout"
   | "compare"
   | "glossary"
+  | "writing"
   | "docs"
   | "legal"
   | "auth"
@@ -107,32 +114,42 @@ interface ShotResult {
   skipped?: string | undefined;
 }
 
-const MARKETING_ROUTES: readonly string[] = [
-  "/",
-  "/compliance",
-  "/ai-kit",
-  "/local-first",
-  "/agentic-dev",
-  "/provenance",
-  "/procurement",
-  "/build-vs-buy",
-  "/evidence",
-  "/partners",
-  "/affiliates",
-  "/stack-fit",
-  "/security",
-  "/updates",
-  "/ui",
-  "/frameworks/eu-ai-act",
-];
+// Public page routes DERIVE from the canonical marketing registry (`lib/routes.ts`) — the same
+// list the sitemap, nav, and footer read. They used to be literal arrays here, and drifted: by
+// C25 the harness had silently stopped shooting /writing, /trust, /support and
+// /frameworks/eu-ai-act/article-50. A registry row is now a shot by construction.
+// Stateful surfaces (/cart, auth, dashboard) have no registry row and stay explicit below.
 
-const MARKETPLACE_ROUTES: readonly string[] = [
-  "/marketplace",
-  "/marketplace/plans",
-  "/cart",
+/** Every canonical public path, `""` normalized to `/`. Legal rows come out via LEGAL_ROUTES. */
+const PUBLIC_ROUTES: readonly string[] = MARKETING_ROUTES.filter(
+  (r) => r.group !== "legal",
+).map((r) => r.path || "/");
+
+/** Which public paths shoot as `marketplace` rather than `marketing` — a category judgement the
+ *  registry does not encode, so it is a membership test, never a route list: a new registry row
+ *  is still captured (as `marketing`) whether or not it is named here. */
+const COMMERCE_PATHS: ReadonlySet<string> = new Set([
+  ...MARKETPLACE_TAB_ROUTES.map((r) => r.path),
   "/compare",
   "/glossary",
+]);
+
+const MARKETING_PAGE_ROUTES: readonly string[] = PUBLIC_ROUTES.filter(
+  (p) => !COMMERCE_PATHS.has(p),
+);
+
+/** `/cart` is the one commerce surface with no registry row — it is stateful (an item has to be
+ *  added first), the same reason auth and dashboard routes stay hand-written. */
+const MARKETPLACE_ROUTES: readonly string[] = [
+  ...PUBLIC_ROUTES.filter((p) => COMMERCE_PATHS.has(p)),
+  "/cart",
 ];
+
+/** Dated-commentary spokes, derived exactly as `app/sitemap.ts` derives them. WRITING_DRAFTS is
+ *  deliberately unpublished and has no route, so it is deliberately not read here. */
+const WRITING_ROUTES: readonly string[] = WRITING_PIECES.map(
+  (piece) => `/writing/${piece.slug}`,
+);
 
 const AUTH_ROUTES: readonly string[] = [
   "/login",
@@ -140,7 +157,7 @@ const AUTH_ROUTES: readonly string[] = [
   "/reset-password",
 ];
 
-const DASHBOARD_ROUTES: readonly string[] = [
+export const DASHBOARD_ROUTES: readonly string[] = [
   "/dashboard",
   "/dashboard/activity",
   "/dashboard/ai-keys",
@@ -175,13 +192,14 @@ export function docsRoutes(): readonly string[] {
 
 export function allRoutes(): readonly string[] {
   return [
-    ...MARKETING_ROUTES,
+    ...MARKETING_PAGE_ROUTES,
     ...MARKETPLACE_ROUTES,
     ...AUTH_ROUTES,
     ...LEGAL_ROUTES.map((r) => r.path),
     ...MODULE_PAGES.map((m) => `/marketplace/modules/${m.slug}`),
     ...COMPARISONS.map((c) => `/compare/${c.slug}`),
     ...GLOSSARY_TERMS.map((g) => `/glossary/${g.slug}`),
+    ...WRITING_ROUTES,
     ...docsRoutes(),
   ];
 }
@@ -633,7 +651,7 @@ async function main(): Promise<void> {
   }
 
   const shots: Shot[] = [
-    ...pageShots("marketing", MARKETING_ROUTES),
+    ...pageShots("marketing", MARKETING_PAGE_ROUTES),
     ...pageShots("marketplace", MARKETPLACE_ROUTES),
     ...pageShots("auth", AUTH_ROUTES),
     ...pageShots(
@@ -652,6 +670,7 @@ async function main(): Promise<void> {
       "glossary",
       GLOSSARY_TERMS.map((g) => `/glossary/${g.slug}`),
     ),
+    ...pageShots("writing", WRITING_ROUTES),
     ...pageShots("docs", docsRoutes()),
     // Card-viewer pop-outs: every bundle (the `everything` bundle has NO standalone page — the
     // pop-out is its only surface) + every module's pop-out variant.

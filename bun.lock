@@ -1325,17 +1325,6 @@
         "react-dom",
       ],
     },
-    "tooling/browser-audit": {
-      "name": "@caisson/browser-audit",
-      "version": "0.0.3",
-      "dependencies": {
-        "@caisson/testing": "workspace:*",
-      },
-      "devDependencies": {
-        "@caisson/tsconfig": "workspace:*",
-        "typescript": "catalog:",
-      },
-    },
     "tooling/demo-registry": {
       "name": "@caisson/demo-registry",
       "version": "0.2.15",
@@ -1654,8 +1643,6 @@
     "@caisson/billing-orchestration": ["@caisson/billing-orchestration@workspace:packages/billing-orchestration"],
 
     "@caisson/brand": ["@caisson/brand@workspace:packages/brand"],
-
-    "@caisson/browser-audit": ["@caisson/browser-audit@workspace:tooling/browser-audit"],
 
     "@caisson/cli": ["@caisson/cli@workspace:packages/cli"],
 
