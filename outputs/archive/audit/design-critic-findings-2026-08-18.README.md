@@ -32,9 +32,12 @@ findings. They stay here, under their original IDs, with the formula that produc
 ## Where visual findings go now
 
 Future visual/Nielsen findings are recorded by `@caisson/audit-harness` under dimension **D8**,
-against the `apps/*` domains — `apps/site`, `apps/admin`, and `apps/demos`. Every surface root this
-ledger covers (marketplace, glossary, admin, dashboard, legal, docs, compare) is a route in one of
-those three, including the admin ones: D8 is keyed on the domain rather than the surface class
+against the `apps/*` domains — `apps/site`, `apps/admin`, and `apps/demos`. Of this ledger's 126
+distinct `surface` roots, the route-backed ones (marketplace, glossary, dashboard, legal, docs,
+compare, and the eighteen `admin__*` roots) all live under `apps/site` or `apps/admin`; the rest are
+audit pseudo-surfaces that were never routes at all (`cross-surface`, the `motion__*`,
+`interaction__*`, and `popout__*` families, `preview__emails`) or roots whose route has since been
+renamed (`changelog` is now `/updates`). D8 is keyed on the domain rather than on the surface class
 precisely so `apps/admin`, which audit-harness classifies `internal-only`, still gets the lens. The
 screen name this ledger stored in `surface` becomes audit-harness's `subject`.
 

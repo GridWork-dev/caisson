@@ -109,10 +109,15 @@ export function dimension(id: DimensionId): Dimension {
  *    it grades a RENDERED surface, and surface class does not track "has a UI". It applies to
  *    `apps/*` and nothing else — which deliberately CROSSES the class boundary in both directions.
  *    `apps/admin` is `internal-only` (operator control-plane) but is a real rendered UI the retired
- *    design-critic ledger audited, so it keeps the lens; `services/*` are `buyer-runtime` but are
- *    backend APIs with nothing to render, so a class-keyed D8 would have manufactured four dead
- *    cells there while silently dropping admin. A package tree has nothing to render either.
+ *    design-critic ledger audited, so it keeps the lens; all FIVE `services/*` domains are
+ *    `buyer-runtime` (readDirs sweeps the dir — the Python support-bot is a domain too) but are
+ *    backend APIs with nothing to render, so a class-keyed D8 would have manufactured five dead
+ *    cells there while silently dropping admin. `packages/ui`/`ui-pro` DO render components, but a
+ *    component is graded through the app route that hosts it (the archived ledger's admin catalog
+ *    surfaces), never as a standalone package surface — so packages stay out too.
  * Every class resolves to a NON-EMPTY set. D8 is never the only lens a domain carries.
+ * NOTE: both riders read `domainId`. A caller that omits it silently loses D5 AND D8 — pass the
+ * domain's id at every call site.
  */
 export function applicableDimensions(
   cls: SurfaceClass,

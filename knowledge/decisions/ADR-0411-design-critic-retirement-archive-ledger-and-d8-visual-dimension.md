@@ -57,10 +57,14 @@ visual work has a live home.
    on the **domain**, not the surface class — `apps/*` and nothing else — for the same reason D5
    already is. Surface class does not track "has a UI", and keying D8 on `buyer-runtime` would have
    been wrong in both directions: `apps/admin` is classified `internal-only` (operator
-   control-plane) yet is a real rendered UI the retired ledger audited, while the four `services/*`
-   domains are classified `buyer-runtime` yet are backend APIs with nothing to render. A
-   class-keyed D8 would therefore have manufactured four dead service cells while silently dropping
-   admin — the one non-obvious call in this ADR, and the reason the applicability is a domain rider.
+   control-plane) yet is a real rendered UI the retired ledger audited, while all five `services/*`
+   domains are classified `buyer-runtime` yet are backend APIs with nothing to render. (Five, not
+   the four Bun services the catalog counts — `deriveDomains` sweeps the directory, so the Python
+   `services/support-bot` is a domain too.) A class-keyed D8 would therefore have manufactured five
+   dead service cells while silently dropping admin — the one non-obvious call in this ADR, and the
+   reason the applicability is a domain rider. `packages/ui`/`ui-pro` do render components, but the
+   archived ledger graded them through the admin catalog routes that host them, so the `apps/*` key
+   preserves the retired tool's actual behavior rather than narrowing it.
 4. **Historical rows are never re-keyed.** No backfill, no id migration, no import of the archived
    ledger by audit-harness. The archive is read as history; D8 starts empty.
 

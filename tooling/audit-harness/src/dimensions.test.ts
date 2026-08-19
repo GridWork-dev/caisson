@@ -6,7 +6,7 @@ import {
   dimension,
   type DimensionId,
 } from "./dimensions.ts";
-import type { SurfaceClass } from "./domains.ts";
+import { deriveDomains, type SurfaceClass } from "./domains.ts";
 
 describe("DIMENSIONS — the eight fixed audit lenses (ADR-0233 task 2; D8 added by ADR-0411)", () => {
   test("exactly D1..D8, unique ids, each with a checker + hunts", () => {
@@ -74,14 +74,18 @@ describe("applicableDimensions — the sparse class → lens matrix", () => {
     expect(applicableDimensions("buyer-runtime", "apps/site")).toContain("D8");
     expect(applicableDimensions("buyer-runtime", "apps/demos")).toContain("D8");
     expect(applicableDimensions("internal-only", "apps/admin")).toContain("D8");
-    // services/* ARE buyer-runtime but are backend APIs with nothing to render — a class-keyed D8
-    // would have manufactured dead cells here while silently dropping admin.
-    for (const svc of [
-      "services/license",
-      "services/docs",
-      "services/intel",
-      "services/betterstack-adapter",
-    ]) {
+    // All FIVE services/* ARE buyer-runtime but are backend APIs with nothing to render — a
+    // class-keyed D8 would have manufactured five dead cells here while silently dropping admin.
+    // Enumerated from deriveDomains rather than hand-typed: the hand-typed four missed the Python
+    // support-bot, which readDirs sweeps in like any other service dir.
+    const services = deriveDomains()
+      .filter(
+        (d) => d.class === "buyer-runtime" && d.id.startsWith("services/"),
+      )
+      .map((d) => d.id);
+    expect(services).toHaveLength(5);
+    expect(services).toContain("services/support-bot");
+    for (const svc of services) {
       expect(applicableDimensions("buyer-runtime", svc)).not.toContain("D8");
     }
     // No package tree, no tooling dir, and no bare call picks it up.

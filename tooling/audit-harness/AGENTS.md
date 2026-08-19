@@ -46,7 +46,7 @@ convention) — wire it in the calling CLI/skill, not inside this package. Tests
 
 No checker implementations (the `checker` field in `./dimensions.ts` is a lane name, not code). No
 dispatch, no loop, no completeness critic, no finder prompts — those live in the driver
-(`outputs/specs/lift-phase/AUDIT-RUNBOOK.md`). The package adds only pure pieces: `deriveDomains`,
+(`outputs/archive/specs/lift-phase/AUDIT-RUNBOOK.md`). The package adds only pure pieces: `deriveDomains`,
 `applicableDimensions`, the coverage ledger shape (`serializeCoverage`/`isRoundDry`), and the
 dimension-keyed id. No scheduling/CI wiring for the scope guard. No registry `manifest.ts` — this is
 internal, unsold tooling (`package.json` is already `"private": true`).
