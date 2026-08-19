@@ -194,7 +194,7 @@ Do not use a standard custodial arrangement merely because it is familiar if its
 | Designs, logos, and brand assets | Caisson brand materials exist; authorship and account ownership need scheduling. | Assignment, source-file custody, trademark-use rules, and registrant/account inventory. | **REQUIRED BEFORE FIRST SALE** |
 | Name, domain, package names, and social handles | Caisson, caisson.sh, and the @caisson package scope appear in the product materials. | Ownership, registrant, renewal, recovery, and transfer records. | **REQUIRED BEFORE FIRST SALE** |
 | Open-source dependencies | Third-party code is licensed, not owned by Caisson. | Dependency inventory, license/notice compliance, source-offer duties if any, and boundary tests. | **REQUIRED BEFORE FIRST SALE** |
-| Open Base packages | Current product record identifies 15 Caisson-authored packages intended for Apache-2.0 distribution. | Confirm copyright ownership before public release and preserve LICENSE/NOTICE/SPDX controls. | **UNDER LEGAL REVIEW** |
+| Open Base packages | Current product record identifies 16 Caisson-authored packages intended for Apache-2.0 distribution (15 until ADR-0412 named `ds-manifest`; see the enumerated set below). | Confirm copyright ownership before public release and preserve LICENSE/NOTICE/SPDX controls. | **UNDER LEGAL REVIEW** |
 | Prior public releases | This packet does not establish whether any Base code, package, documentation, or example is already public, or under whose account, license, notice, and represented copyright holder it was released. | Inventory every public URL, repository/tag, release date, license/notice snapshot, account owner, and whether publication preceded an assignment to the LLC. | **UNDER LEGAL REVIEW** |
 | Commercial modules and services | Intended to be proprietary under LicenseRef-Caisson-Commercial. | Confirm chain of title, package boundary, entitlement terms, and no accidental public distribution. | **UNDER LEGAL REVIEW** |
 | Tools, subscriptions, equipment, and accounts paid by father | Payment alone does not settle ownership of code, equipment, domains, or accounts. | Inventory payer, account holder, user, asset location, desired owner, reimbursement/funding treatment, and any transfer. | **UNDER CPA REVIEW** |
@@ -375,7 +375,7 @@ The current packed catalog identifies these 16 packages as Apache-2.0 open Base 
 
 `kernel`, `auth`, `tenancy-rls`, `billing`, `jobs`, `email`, `ai-config`, `mcp-server`, `ui`, `registry-schema`, `observability`, `cli`, `migrate`, `license-verify`, `rate-limit`, and `ds-manifest`.
 
-**This is the INTENDED set** counsel's drafting memorandum left as a blank (its §"[PUBLIC SITE… INTENDED 15-PACKAGE SET…]" placeholder). It is sixteen, not fifteen. The count counsel cited was correct for 2026-07-11 and has since been reconciled twice: `@caisson/analytics` was retired (ADR-0410) and `@caisson/ds-manifest`, first published 2026-07-17 and therefore never seen by counsel, is now named publicly (ADR-0412).
+**This is the INTENDED set** counsel's drafting memorandum left as a blank (its §"[PUBLIC SITE… INTENDED 15-PACKAGE SET…]" placeholder). It is sixteen. Counsel's memo cited two numbers — the site's 15 and the registry's 16 — and flagged the gap between them; the 16 was right and the 15 was the misstatement. The gap has since been closed from both ends: `@caisson/analytics` was retired from the registry (ADR-0410), and `@caisson/ds-manifest` — first published 2026-07-13, two days after the memo, and therefore never seen by counsel — is now named on the public surfaces (ADR-0412). Site and registry both read sixteen, and the set above is that sixteen.
 
 **Boundary control:** `credits` is commercial, not part of the 16-package open Base. Older corpus passages describing Local-first as AGPL or a four-edition catalog are stale and superseded by the six-bundle catalog. The actual package manifests, pricing source, license files, and release artifacts must agree before launch.
 
@@ -477,7 +477,7 @@ The current catalog also lists 27 individually priced commercial modules:
 | Commercial paper | EULA, Terms, Privacy, license summary, refund policy, and Paddle disclosure approved and synchronized. | Lawyer / Liam | **REQUIRED BEFORE FIRST SALE** |
 | Buyer-audience posture | B2B-only versus consumer eligibility is decided and reflected in checkout, authority attestations, EULA, refund, warranty, and regional-rights operations. | Lawyer / Liam | **REQUIRED BEFORE FIRST SALE** |
 | Export controls and sanctions | Artifact-by-artifact encryption classification, any BIS/ENC filing or notification, and destination/end-user/sanctions controls approved or referred to specialist counsel. | Lawyer / Liam | **REQUIRED BEFORE FIRST SALE** |
-| Open-source boundary | 15-package Apache Base and commercial modules match manifests, releases, notices, site copy, and entitlement service. | Liam / Lawyer | **REQUIRED BEFORE FIRST SALE** |
+| Open-source boundary | 16-package Apache Base and commercial modules match manifests, releases, notices, site copy, and entitlement service. | Liam / Lawyer | **REQUIRED BEFORE FIRST SALE** |
 | Production commerce test | Test order through payout-ready flow; webhook idempotency; entitlement; refund/revocation; receipts and support tested. | Liam | **REQUIRED BEFORE FIRST SALE** |
 | Account and key continuity | Admin inventory, recovery, backups, signing-key controls, no credential sharing, and emergency access documented. | Liam / Lakshmi | **REQUIRED BEFORE FIRST SALE** |
 | Final go/no-go record | Dated checklist signed off by the responsible internal owner after advisor gates close. | Lakshmi / Liam | **REQUIRED BEFORE FIRST SALE** |
@@ -526,7 +526,7 @@ The transfer package should include a dated pre-trigger review, automatic transf
 | Mercury | Application beginning. | Approval, account structure, role evidence, limits. | **APPLICATION PENDING** |
 | Paddle | Application beginning. | Business verification, production approval, catalog and payout evidence. | **APPLICATION PENDING** |
 | EULA / Terms / Privacy | Draft product documents exist; final legal review pending. | Counsel-approved synchronized versions. | **UNDER LEGAL REVIEW** |
-| Open-source release boundary | Current 15-package Apache Base documented in product corpus. | Manifest/release/notice audit and IP ownership confirmation. | **REQUIRED BEFORE FIRST SALE** |
+| Open-source release boundary | Current 16-package Apache Base documented in product corpus (ADR-0412). | Manifest/release/notice audit and IP ownership confirmation. | **REQUIRED BEFORE FIRST SALE** |
 | Trademark filing | Policy exists; registration not part of first phase. | Counsel recommendation and later filing decision. | **DEFERRED** |
 | Trademark clearance scope | No clearance result is supplied. | Counsel decides whether a bounded pre-launch search is required and scopes it separately from registration filing. | **UNDER LEGAL REVIEW** |
 | DPA | No final form supplied. | Counsel/customer-demand decision. | **DEFERRED** |

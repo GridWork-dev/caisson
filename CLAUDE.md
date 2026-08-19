@@ -86,7 +86,7 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
   mcp-server) is now **Apache-2.0**; editions + field-crypto + audit-worm + registry-service + updates
   stay commercial. Re-licensing is **DONE in code** (work item W1, ADR-0094 + **ADR-0097**):
   the open registry contract split into Apache-2.0 `@caisson/registry-schema` (the commercial
-  `@caisson/registry` service re-exports it); 15 base pkgs flipped to Apache-2.0/oss + Apache `LICENSE`
+  `@caisson/registry` service re-exports it); 15 base pkgs flipped to Apache-2.0/oss (the open set is **16** since ADR-0412 named `ds-manifest`) + Apache `LICENSE`
   files (ADR-0136 added cli·migrate·license-verify — incl. the generator — to the open Base set); the
   standards-gate enforces the license split + the open↔commercial no-depend-up boundary.
   Remaining W1 tail: `apps/site` licensing copy (design track owns that tree).

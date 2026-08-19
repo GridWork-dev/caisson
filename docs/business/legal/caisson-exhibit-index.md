@@ -7,7 +7,7 @@ source: caisson-docs-2026-07-12.zip (MacBook scp intake)
 
 # Caisson Software LLC - Shared Exhibit and Source Index
 
-**As of:** July 11, 2026  
+**As of:** July 11, 2026, except where a row is dated later (the open-Base count was reconciled to sixteen on August 19, 2026 — ADR-0410/ADR-0412)  
 **Classification:** Confidential  
 **Applies to:** Lawyer packet, CPA/bookkeeping packet, and internal master map
 
