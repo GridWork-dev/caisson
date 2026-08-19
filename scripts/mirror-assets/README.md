@@ -70,6 +70,7 @@ commercial bundle.
 | `@caisson-sh/registry-schema` | Open registry contract: module-manifest + index schema + allowlist helpers.                                | Apache-2.0 |
 | `@caisson-sh/observability`   | Vendor-neutral OpenTelemetry bootstrap: env-gated NodeSDK + OTLP/HTTP exporter.                            | Apache-2.0 |
 | `@caisson-sh/rate-limit`      | Token-bucket rate limiting: per-key + global ceilings, injectable clock.                                   | Apache-2.0 |
+| `@caisson-sh/ds-manifest`     | Design-system contracts: component-manifest schema + typed reader, contrast and static-usage checkers.     | Apache-2.0 |
 | `@caisson-sh/ui`              | Design-system kit: OKLCH token floor + the component recipe.                                               | Apache-2.0 |
 | `@caisson-sh/tsconfig`        | Shared strict TypeScript base config.                                                                      | Apache-2.0 |
 | `@caisson-sh/lint-policy`     | Shared oxlint policy: lint rules + package-boundary enforcement.                                           | Apache-2.0 |

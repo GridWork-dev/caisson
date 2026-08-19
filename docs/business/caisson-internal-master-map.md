@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-08-19
 status: intake (session Q, 2026-07-12 — ADR-0328 D3)
 owner: operator (business track, cross-cutting)
 source: caisson-docs-2026-07-12.zip (MacBook scp intake)
@@ -371,11 +371,13 @@ Paddle approval does not validate Caisson's IP title, the family transfer design
 
 ### Current open Base boundary
 
-The current packed catalog identifies these 15 packages as Apache-2.0 open Base substrate:
+The current packed catalog identifies these 16 packages as Apache-2.0 open Base substrate:
 
-`kernel`, `auth`, `tenancy-rls`, `billing`, `jobs`, `email`, `ai-config`, `mcp-server`, `ui`, `registry-schema`, `observability`, `cli`, `migrate`, `license-verify`, and `rate-limit`.
+`kernel`, `auth`, `tenancy-rls`, `billing`, `jobs`, `email`, `ai-config`, `mcp-server`, `ui`, `registry-schema`, `observability`, `cli`, `migrate`, `license-verify`, `rate-limit`, and `ds-manifest`.
 
-**Boundary control:** `credits` is commercial, not part of the 15-package open Base. Older corpus passages describing Local-first as AGPL or a four-edition catalog are stale and superseded by the six-bundle catalog. The actual package manifests, pricing source, license files, and release artifacts must agree before launch.
+**This is the INTENDED set** counsel's drafting memorandum left as a blank (its §"[PUBLIC SITE… INTENDED 15-PACKAGE SET…]" placeholder). It is sixteen, not fifteen. The count counsel cited was correct for 2026-07-11 and has since been reconciled twice: `@caisson/analytics` was retired (ADR-0410) and `@caisson/ds-manifest`, first published 2026-07-17 and therefore never seen by counsel, is now named publicly (ADR-0412).
+
+**Boundary control:** `credits` is commercial, not part of the 16-package open Base. Older corpus passages describing Local-first as AGPL or a four-edition catalog are stale and superseded by the six-bundle catalog. The actual package manifests, pricing source, license files, and release artifacts must agree before launch.
 
 ### Commercial catalog
 

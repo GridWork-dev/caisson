@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-08-19
 status: intake (session Q, 2026-07-12 — ADR-0328 D3)
 owner: operator (business/legal track)
 source: caisson-docs-2026-07-12.zip (MacBook scp intake)
@@ -226,7 +226,7 @@ Do not send the entire packed corpus as if every passage is current. Assemble a 
 
 ### Current product facts to preserve in the extract cover sheet
 
-- Current open Base: 15 Apache-2.0 packages.
+- Current open Base: 16 Apache-2.0 packages (ADR-0412 reconciled the public lists to disk truth; the 15 counsel saw predates `@caisson/ds-manifest` and postdates nothing else).
 - Current commercial catalog: six bundles - Compliance, AI-Production, Local-first, Agentic-Dev, Provenance, and Everything.
 - Current bundle prices: $1,649; $739; $629; $329; $399; and $2,259, respectively.
 - Current individually priced commercial catalog: 27 modules.
