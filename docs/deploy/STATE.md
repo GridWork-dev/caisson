@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-18
+updated: 2026-08-19
 status: live
 grounds:
   - docs/build-state.md
@@ -10,6 +10,63 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-08-18 — v2026.08.18 release train: four legs landed, leg 4 blocked on a Railway platform incident
+
+The train fired off the `v2026.08.18` Release (published 23:11:30Z; the tag targets `5ac7d9ca`).
+Four of the five legs are done and verified; the deploy leg is the one exception and it never
+reached a build.
+
+- **Leg 1 publish** (run 32196175743) SUCCESS — 53 tarballs uploaded to R2 at the tag, 0 already
+  present.
+- **Leg 1b deploy-worker** (run 32196860140) SUCCESS — `registry.caisson.sh` serving 17 entries,
+  matching the repo's recorded latest.
+- **Leg 2 mirror-sync** SUCCESS on the second pass. The first (run 32196950131) went red on two
+  independent breaks the train was the first thing to exercise: upstream `@electric-sql/pglite`
+  0.5.5 exits the process 99 on a clean close, and the gate installs WITHOUT a lockfile by design
+  (it resolves as a stranger cloning the public repo would), so it picked up the bad release the
+  main repo's lockfile was shielding us from; and the oxc toolchain swap had left the gate's lint
+  and format legs matching ZERO files, because oxlint/oxfmt discover ignore files by walking UP and
+  `mirror-out` is gitignored by this repo. Repaired in `7128ea74` (pin 0.5.4 in `tooling/testing`,
+  not the root catalog — a catalog range change would churn packed manifest bytes through
+  `platform-migrations`; plus a `.git` boundary marker created after export and stripped before
+  push). Re-dispatched at the repair sha (run 32198658645): `caisson-oss` main is now `1e9d110a`.
+  **Disclosed ADR-0325 deviation:** the mirror is anchored one commit ahead of the tag, at the
+  repair sha, because the tag's tree could not pass its own gate.
+- **Leg 3 npm** — skipped this ride, still operator-gated (CAISSON-179).
+- **Leg 4 deploy-railway** — NOT DEPLOYED. Five attempts, every one failing on Railway's side:
+
+  | Attempt                                                                     | Result                                                                                                                 |
+  | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+  | run 32198636015 (push)                                                      | `railway deployment list` returned an HTML error page; died on the pre-deploy ledger read                              |
+  | run 32198660264 (dispatch)                                                  | same                                                                                                                   |
+  | run 32198809238 (dispatch, `ref=v2026.08.18`)                               | deployment `4bdbd1af` FAILED — snapshot timeout, ~16 min to terminal, so the script's 15-min poll budget expired first |
+  | run 32201188780 (dispatch, `ref=v2026.08.18`)                               | deployment `0eaedbfc` FAILED — same error in ~60s                                                                      |
+  | operator box, `railway-deploy.ts --service caisson-admin --ref v2026.08.18` | deployment `26ae1771` FAILED — same error                                                                              |
+
+  Every deployment record carries the identical `meta.configErrors`: _"Repository snapshot
+  operation timed out. This may be due to a large repository size or network issues."_ — and
+  `railway logs --build <id>` answers _"Deployment does not have an associated build"_. Upload
+  accepted, no build ever scheduled: a Railway snapshot-stage failure, not ours.
+
+  Two things rule out the payload. The `git archive` of the tag is 58 MB, the same size as
+  `30919cae` — which deployed fine at 20:44Z the same day — so "large repository size" is
+  excluded. And the operator-box attempt reproduces it from an entirely different client and
+  network path, so the runner is excluded. Independently, the `gridwork-dev-site` Railway project
+  hit the identical `configError` in the same window; two unrelated projects failing the same way
+  is a platform incident, and the last attempt failing in 60s where the first took 16 min reads as
+  a degrading subsystem. Railway's public status page showed UP throughout.
+
+**Fleet as it stands:** caisson-admin / caisson-demos / caisson-site on `30919cae` (the auto ride,
+run 32183926543, 20:44Z); caisson-license on `886e1e7c` (2026-08-12 — dispatch-only, so it does not
+ride the path filter). The gap between `30919cae` and the tag is documentation plus lint config
+only, so nothing buyer-facing is waiting on this; the fleet simply is not unified on one sha yet.
+Leg 4 is the free retry once the incident clears — either a dispatch at the tag, or the next
+push that trips the deploy path filter.
+
+**No receipts were written for this ride.** Nothing deployed, so `docs/deploy/receipts/` is
+deliberately unchanged rather than carrying a row for a deploy that failed. The 20:44Z auto ride's
+receipts live in that run's job summary, per the tool's CI behavior.
 
 ## 2026-08-15 — consolidation wave 1: auto ride + the two hand-deployed post-merge obligations
 
