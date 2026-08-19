@@ -11,6 +11,35 @@ grounds:
 
 # Deploy log
 
+## 2026-08-19 — analytics origin gate shipped, verified in the served bundle (run 32294345876)
+
+PR #447 (`8b1ab7ca`) merged and took the automatic path. All five legs SUCCESS in **6m39s**
+(19:40:44 → 19:47:23Z); `services/license` correctly skipped — it stays dispatch-only because it
+carries migrations.
+
+**What shipped.** Both client analytics senders were gated on `NEXT_PUBLIC_POSTHOG_KEY` being
+present, which is the wrong gate: Next inlines `NEXT_PUBLIC_*` at build time, so every artifact
+built on a box exporting that env carries the caisson-prod key and beacons into production from
+wherever it is served. `apps/site/lib/analytics-host.ts` now gates both senders on the runtime
+origin instead, which makes the inlining harmless by construction.
+
+**Verified against the served bundle, not the deploy's exit code.** The sender is a lazy chunk
+pulled after `load`, so it is invisible to a plain fetch of the HTML; a browser was needed to reach
+it. In `2ptzaa4bqh75c.js` as served from caisson.sh:
+
+- the gate is the **first statement** of `startWebVitals` — `if(!(0,H.isProductionAnalyticsHost)(window.location.host))return;`
+- the batch carries `$host:window.location.host`
+- the allowlist module resolves to `[e,` + "`www.${e}`" + `]` over `new URL("https://caisson.sh").host` — i.e. **both** apex and `www`, which is the half that matters, since too narrow an allowlist would silently blind real traffic rather than only blocking noise
+
+**A detail worth keeping.** The old `if (!key) return` guard is _absent_ from the minified output:
+the key is a build-time string literal, so that branch was statically dead and eliminated. That is
+direct evidence of the inlining behaviour the fix addresses — the key gate could never have
+discriminated anything at runtime, because by the time the code runs the key is a constant.
+
+**Receipts.** Unchanged from the ADR-0414 note below: a CI deploy commits no receipt (the deploy
+script writes into a discarded checkout), so `outputs/deploy/receipts/*.json` continues to lag for
+every service on the automatic path. The deployment ledger remains the truth.
+
 ## 2026-08-19 — the first automated docs + support-bot ride (run 32285889495)
 
 ADR-0414 merged as `cb33fdd7`, and **the merge was itself the first ride** — `deploy-railway.yml` is
