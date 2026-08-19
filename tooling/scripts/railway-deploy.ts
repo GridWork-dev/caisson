@@ -16,6 +16,7 @@
 // this inert, not an absent credential.
 //
 // Usage: bun tooling/scripts/railway-deploy.ts --service <name> --ref <git-ref> [--force] [--dry-run]
+//        [--wait-minutes <n>]  (default 15; raise it above the service's railway.toml healthcheckTimeout)
 import { execFileSync } from "node:child_process";
 import {
   appendFileSync,
@@ -52,6 +53,12 @@ const ArgsSchema = z
     ref: z.string().min(1),
     force: z.boolean(),
     dryRun: z.boolean(),
+    // How long to wait for the deployment to reach a terminal state. MUST exceed the service's
+    // own `healthcheckTimeout` in its railway.toml plus build time, or a service that is still
+    // legitimately warming is reported as a deploy failure. The 15-minute default fits every
+    // fast service; caisson-docs needs far more (healthcheckTimeout = 1500s, and it re-embeds
+    // its whole corpus on every cold boot), so its caller passes an explicit value.
+    waitMinutes: z.number().int().min(1).max(120),
   })
   .strict();
 export type Args = z.infer<typeof ArgsSchema>;
@@ -61,19 +68,23 @@ export function parseArgv(argv: readonly string[]): Args {
   let ref: string | undefined;
   let force = false;
   let dryRun = false;
+  let waitMinutes = DEFAULT_WAIT_MINUTES;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i] as string;
     if (arg === "--service") service = argv[++i];
     else if (arg.startsWith("--service=")) service = arg.slice(10);
     else if (arg === "--ref") ref = argv[++i];
     else if (arg.startsWith("--ref=")) ref = arg.slice(6);
+    else if (arg === "--wait-minutes") waitMinutes = Number(argv[++i]);
+    else if (arg.startsWith("--wait-minutes="))
+      waitMinutes = Number(arg.slice(15));
     else if (arg === "--force") force = true;
     else if (arg === "--dry-run") dryRun = true;
     else throw new Error(`railway-deploy: unrecognized argument "${arg}"`);
   }
   if (!service) throw new Error("railway-deploy: --service <name> is required");
   if (!ref) throw new Error("railway-deploy: --ref <git-ref> is required");
-  return ArgsSchema.parse({ service, ref, force, dryRun });
+  return ArgsSchema.parse({ service, ref, force, dryRun, waitMinutes });
 }
 
 // ============================================================================================
@@ -283,6 +294,25 @@ export function latestDeployment(
   return DeploymentListSchema.parse(JSON.parse(out))[0] ?? null;
 }
 
+/** Poll cadence for `awaitDeployment`, and the wait budget `--wait-minutes` defaults to.
+ *  15 minutes covers every service whose railway.toml `healthcheckTimeout` is short
+ *  (admin/license/demos/site/support-bot are all 30s-300s). */
+export const POLL_MS = 10_000;
+export const DEFAULT_WAIT_MINUTES = 15;
+
+/** Pure: wait budget in minutes -> poll count at the fixed cadence. Rounds UP: rounding down
+ *  would shave the tail off exactly the long-warmup deploy this exists for. Fails loud on a
+ *  non-finite budget -- NaN would make `poll < maxPolls` false on the first iteration, skipping
+ *  the poll loop entirely and reporting a timeout on a deploy nobody ever looked at. */
+export function pollsForWait(waitMinutes: number, pollMs = POLL_MS): number {
+  if (!Number.isFinite(waitMinutes) || waitMinutes <= 0) {
+    throw new Error(
+      `railway-deploy: --wait-minutes must be a positive number, got ${String(waitMinutes)}`,
+    );
+  }
+  return Math.ceil((waitMinutes * 60_000) / pollMs);
+}
+
 export const realSleep = (ms: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -295,8 +325,8 @@ export async function awaitDeployment(
   priorId: string | null,
   exec: ExecFileSyncFn = execFileSync,
   sleep: (ms: number) => Promise<void> = realSleep,
-  pollMs = 10_000,
-  maxPolls = 90,
+  pollMs = POLL_MS,
+  maxPolls = pollsForWait(DEFAULT_WAIT_MINUTES),
   appearGrace = 6,
 ): Promise<void> {
   for (let poll = 0; poll < maxPolls; poll++) {
@@ -370,11 +400,20 @@ export async function main(
     const existing = parseReceipts(
       existsSync(path) ? readFileSync(path, "utf8") : null,
     );
-    // ponytail: single-use gate holds only on the operator's on-box persistent checkout --
-    // receipts are a local uncommitted ledger (never git-committed by this tool, see file
-    // header), so a fresh clone/CI checkout reads empty here and the gate is a no-op there.
-    // RAILWAY_TOKEN is armed in CI as of 2026-07-30, so the gate no longer holds where it now
-    // matters most. Upgrade path: read from committed git state, or an O_EXCL lock.
+    // Single-use gate. This tool never COMMITS a receipt (see the file header -- it prints a
+    // suggested `git add`), but the operator does, and all six `docs/deploy/receipts/*.json` are
+    // tracked. So a CI checkout does NOT read empty here, and the gate holds in CI against every
+    // hand-committed row -- correcting a stale comment that claimed the opposite (ADR-0414).
+    //
+    // The live consequence, worth knowing before dispatching: a `workflow_dispatch` at a ref whose
+    // sha ALREADY has a committed receipt for one of the fleet's services throws on that service,
+    // and every later service in the job is skipped. Reachable in practice -- the services the
+    // operator historically deployed by hand (docs, support-bot) carry the most committed rows.
+    // Pass --force for a deliberate same-sha redeploy; a same-sha redeploy applies config and
+    // ships no code, so know which one you want.
+    //
+    // Still not airtight: two concurrent runs on different machines can both read the pre-append
+    // state. Upgrade path if that ever bites: an O_EXCL lock, or a Railway-side check.
     checkReceiptCollision(existing, sha, args.force);
 
     // Captured BEFORE the deploy so the verification below can tell OUR deployment from the
@@ -392,7 +431,15 @@ export async function main(
         `[railway-deploy] railway up exited non-zero (${upExit.message}) -- adjudicating against the deployment status\n`,
       );
     }
-    await awaitDeployment(args.service, stageDir, priorId, exec, sleep);
+    await awaitDeployment(
+      args.service,
+      stageDir,
+      priorId,
+      exec,
+      sleep,
+      POLL_MS,
+      pollsForWait(args.waitMinutes),
+    );
     if (upExit) {
       process.stdout.write(
         "[railway-deploy] deployment reached SUCCESS despite that exit -- the CLI lost its log stream, the deploy landed\n",

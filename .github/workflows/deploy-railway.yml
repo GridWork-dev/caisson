@@ -1,6 +1,8 @@
 name: deploy-railway
-# Automated redeploy of the apps/site Next app (marketing + docs + /dashboard) and, since
-# ADR-0400, the apps/demos service it rewrites /demos/* to — to Railway.
+# Automated redeploy of the apps/site Next app (marketing + docs + /dashboard), the apps/demos
+# service it rewrites /demos/* to (ADR-0400), apps/admin, and — since ADR-0414 — the two services
+# that had NO automated deploy path at all: services/docs (the RAG API) and services/support-bot
+# (the Discord bot). Plus services/license on dispatch. This is the whole Railway fleet.
 # Build-on-Railway via the service's RAILWAY_DOCKERFILE_PATH=apps/site/Dockerfile env var (set on the
 # Railway service, not here). Touches NO DNS and NO CF Access.
 #
@@ -16,7 +18,8 @@ name: deploy-railway
 on:
   push:
     branches: [main]
-    # These paths gate the AUTOMATIC path only, which deploys admin + demos + site.
+    # These paths gate the AUTOMATIC path only, which deploys admin + demos + site + docs +
+    # support-bot (everything except license, which is dispatch-only — see its step).
     # `services/license/**` is deliberately absent: the license step is dispatch-only (it runs
     # migrations — see the step). `apps/admin/**` is present because this job deploys admin and an
     # admin-only change previously did not trigger it at all, so admin could drift behind main
@@ -28,6 +31,13 @@ on:
       - "apps/site/**"
       - "apps/admin/**"
       - "apps/demos/**"
+      # ADR-0414: both had NO automated deploy path — no workflow referenced either service, so
+      # the only way either shipped was an operator hand-run of tooling/scripts/railway-deploy.ts.
+      # docs/deploy/STATE.md and docs/state/production-readiness.md both claimed they "deploy only
+      # via the release train", which was never true: leg 4 dispatches THIS workflow, and this
+      # workflow did not know they existed.
+      - "services/docs/**"
+      - "services/support-bot/**"
       - "packages/**"
       - "tooling/audit-harness/**"
       - "tooling/demo-registry/**"
@@ -63,7 +73,11 @@ jobs:
     # red. Operator lock ADR-0367: this job STAYS on Blacksmith even once RAILWAY_TOKEN arms —
     # VM-per-job isolation + a Railway-scoped revocable deploy credential is the accepted posture.
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    timeout-minutes: 25
+    # 25 was already EXACTLY equal to caisson-docs' railway.toml healthcheckTimeout (1500s), so
+    # adding the docs leg at 25 would have guaranteed a job-level kill on any cold-boot re-embed —
+    # before counting the four legs that run ahead of it. 70 covers the realistic serial worst
+    # case: five fast services plus one docs boot that re-embeds the full corpus (ADR-0414).
+    timeout-minutes: 70
     steps:
       # Inert-until-armed guard: `secrets` can't be referenced in a job/step `if:`, so map RAILWAY_TOKEN
       # to an env here and publish an `armed` output. Absent token → armed=false → every step below skips
@@ -147,6 +161,16 @@ jobs:
       # launch runbook's "license issuer last" was only safe because its step 5 applies the
       # migration chain BY HAND before step 6 — this workflow has no hand-applied step 5, so the
       # migration carrier cannot go last here.
+      #
+      # 3. ADR-0414 appends docs -> support-bot AFTER site, in that order, on the same
+      #    dependency-before-dependent rule that puts demos before site: the bot READS the docs
+      #    service (DOCS_SERVICE_URL=https://docs-api.caisson.sh, DOCS_SERVICE_TOKEN shared —
+      #    services/support-bot/railway.toml), so the API it queries must already be serving this
+      #    release before the client that queries it goes live. They go after site rather than
+      #    before it because nothing in the site image points at either, and because docs is the
+      #    slowest leg by an order of magnitude — putting a 20-minute cold-boot re-embed ahead of
+      #    the buyer-facing site deploy would delay every release's most visible surface behind
+      #    the least visible one.
       - name: deploy apps/admin to Railway (verifier — MUST precede both issuers)
         if: steps.guard.outputs.armed == 'true'
         env:
@@ -210,4 +234,38 @@ jobs:
         run: |
           bun tooling/scripts/railway-deploy.ts \
             --service caisson-site \
+            --ref "$DEPLOY_REF"
+      # services/docs — the RAG API behind docs-api.caisson.sh (ADR-0096/0105). ONE guard only,
+      # the same `armed` check every other step uses: the service has existed and been Online
+      # since 2026-06-30, so there is no missing-service hazard of the kind that earned demos its
+      # second CAISSON_DEMOS_ARMED gate.
+      #
+      # --wait-minutes 40 is load-bearing, not padding. This service answers /health with a 503
+      # {"warming":true} while it embeds its corpus, its railway.toml sets healthcheckTimeout=1500
+      # (25 min), and DOCS_EMBED_PHASE_DEADLINE_MS is 20 min in the service env because the volume
+      # embed-cache does not persist across boots — so a cold boot legitimately re-embeds from
+      # scratch. railway-deploy.ts's default poll budget is 15 minutes; at the default this step
+      # would throw "timed out waiting for the deployment to reach a terminal state" on a deploy
+      # that was still succeeding, and take the support-bot step down with it.
+      - name: deploy services/docs to Railway (RAG API — slow cold boot, see --wait-minutes)
+        if: steps.guard.outputs.armed == 'true'
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          DEPLOY_REF: ${{ steps.resolve-ref.outputs.ref }}
+        run: |
+          bun tooling/scripts/railway-deploy.ts \
+            --service caisson-docs \
+            --ref "$DEPLOY_REF" \
+            --wait-minutes 40
+      # services/support-bot — the Discord bot (ADR-0009/0105), the repo's only Python service.
+      # LAST, and after docs on purpose: it is a CLIENT of the docs service above, so the API must
+      # already serve this release before the bot that calls it restarts against it.
+      - name: deploy services/support-bot to Railway (docs client — MUST follow docs)
+        if: steps.guard.outputs.armed == 'true'
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          DEPLOY_REF: ${{ steps.resolve-ref.outputs.ref }}
+        run: |
+          bun tooling/scripts/railway-deploy.ts \
+            --service caisson-support-bot \
             --ref "$DEPLOY_REF"

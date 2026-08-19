@@ -14,7 +14,9 @@ import {
   classifyDeployStatus,
   latestDeployment,
   main,
+  DEFAULT_WAIT_MINUTES,
   parseArgv,
+  pollsForWait,
   parseReceipts,
   receiptEvidenceMarkdown,
   receiptsPath,
@@ -55,13 +57,20 @@ describe("parseArgv", () => {
       ref: "HEAD",
       force: false,
       dryRun: false,
+      waitMinutes: DEFAULT_WAIT_MINUTES,
     });
   });
 
   test("accepts --force and --dry-run flags", () => {
     expect(
       parseArgv(["--service", "s", "--ref", "abc", "--force", "--dry-run"]),
-    ).toEqual({ service: "s", ref: "abc", force: true, dryRun: true });
+    ).toEqual({
+      service: "s",
+      ref: "abc",
+      force: true,
+      dryRun: true,
+      waitMinutes: DEFAULT_WAIT_MINUTES,
+    });
   });
 
   test("accepts --key=value form", () => {
@@ -70,6 +79,7 @@ describe("parseArgv", () => {
       ref: "abc",
       force: false,
       dryRun: false,
+      waitMinutes: DEFAULT_WAIT_MINUTES,
     });
   });
 
@@ -81,10 +91,53 @@ describe("parseArgv", () => {
     expect(() => parseArgv(["--service", "s"])).toThrow(/--ref/);
   });
 
+  // The docs service is why this flag exists: its railway.toml sets healthcheckTimeout = 1500s
+  // and it re-embeds the whole corpus on a cold boot, so the 15-minute default poll budget would
+  // throw "timed out waiting" on a deploy that is still legitimately warming — a false RED that
+  // would then skip every step after it in the fleet job.
+  test("accepts --wait-minutes in both forms and rejects a non-positive one", () => {
+    expect(
+      parseArgv(["--service", "s", "--ref", "abc", "--wait-minutes", "40"])
+        .waitMinutes,
+    ).toBe(40);
+    expect(
+      parseArgv(["--service=s", "--ref=abc", "--wait-minutes=40"]).waitMinutes,
+    ).toBe(40);
+    expect(() =>
+      parseArgv(["--service", "s", "--ref", "abc", "--wait-minutes", "0"]),
+    ).toThrow();
+    expect(() =>
+      parseArgv(["--service", "s", "--ref", "abc", "--wait-minutes", "x"]),
+    ).toThrow();
+  });
+
   test("throws on an unrecognized argument", () => {
     expect(() =>
       parseArgv(["--service", "s", "--ref", "abc", "--bogus"]),
     ).toThrow(/unrecognized argument/);
+  });
+});
+
+describe("pollsForWait -- the wait budget the docs service needs", () => {
+  test("the default budget reproduces the historical 90-poll ceiling exactly", () => {
+    expect(pollsForWait(DEFAULT_WAIT_MINUTES)).toBe(90);
+  });
+
+  // Mutation-relevant: without the Number.isFinite guard this returns NaN, `poll < NaN` is
+  // false on the first iteration, the poll loop never executes, and every deploy reports
+  // "timed out" without ever asking Railway a single question.
+  test("refuses a non-finite or non-positive budget instead of returning NaN", () => {
+    expect(() => pollsForWait(Number.NaN)).toThrow(/positive number/);
+    expect(() => pollsForWait(0)).toThrow(/positive number/);
+    expect(() => pollsForWait(-5)).toThrow(/positive number/);
+  });
+
+  test("a raised budget scales at the fixed 10s cadence and always rounds UP", () => {
+    // 40 minutes covers docs' 1500s healthcheckTimeout plus build; rounding down would
+    // reintroduce the exact false-RED this flag exists to prevent.
+    expect(pollsForWait(40)).toBe(240);
+    expect(pollsForWait(1)).toBe(6);
+    expect(pollsForWait(1, 7000)).toBe(9);
   });
 });
 
@@ -434,7 +487,13 @@ describe("main -- a dropped log stream is not a failed deploy", () => {
     upAnswer, // railway up
     deploymentsJson([{ id: "dep-2", status: "SUCCESS" }]), // awaitDeployment
   ];
-  const args: Args = { service, ref: "HEAD", force: false, dryRun: false };
+  const args: Args = {
+    service,
+    ref: "HEAD",
+    force: false,
+    dryRun: false,
+    waitMinutes: DEFAULT_WAIT_MINUTES,
+  };
 
   test("succeeds and still writes the receipt when railway up exits non-zero", async () => {
     const { fn } = fakeExec(

@@ -1,7 +1,7 @@
 ---
 updated: 2026-08-19
 status: live
-adr_ceiling: 0413
+adr_ceiling: 0414
 ---
 
 # Decisions & Forks — live board
@@ -191,6 +191,8 @@ additional active queue.
 | Fork         | Why it remains open                                                                                                                                                                                                                                                                                                             |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Railway PITR | Reopen only when real commerce data raises the recovery-point requirement beyond snapshots plus rehearsed logical restore. Declined 2026-07-11, reconfirmed 2026-07-18 and again at the 2026-07-29 forks picker — nothing has changed the input: commerce is still sandbox, so there is no production transaction data to lose. |
+
+_Closed 2026-08-19 → **ADR-0414**: **the docs + support-bot deploy path**. Both services had no automated deploy of any kind — no workflow referenced either, and the release train did not carry them because leg 4 is a dispatch of the same `deploy-railway.yml` that never knew they existed. Two live state docs recorded the train as their deploy path, and that wrong sentence is why the drift was never treated as a gap. Both now ride the push path, docs before support-bot (the bot is a client of the docs API). Sequenced with it and ruled on separately: the `support-bot` Python gate is promoted from advisory to the **sixth required check**, with its `paths:` filter removed in the same commit — an advisory gate in front of an automatic deploy blocks nothing, and a path-scoped required check never reports, which `release-readiness.ts` counts as missing. Two live-failure defects were fixed on the way: the job timeout exactly equalled docs' healthcheck timeout, and the deploy script's fixed 15-minute poll budget would have called a still-succeeding cold boot a timeout. Drafted as ADR-0413 and renumbered per ADR-0088._
 
 _Closed 2026-08-19 → **ADR-0413**: **C13** (fold `tooling/browser-audit` into its only consumer skill) and **C25** (derive the visual harness's public routes from the canonical registries) — the third and fourth of the six decision-gated consolidation rows to re-enter through a fresh operator decision. Both were `CONDITIONAL`, and in each case the condition is the substance. C13's was "a deletion-only patch is invalid": `.agents/` is outside the root Bun workspaces, so the deleted package was the only turbo-owned build/lint/test home and a straight delete drops required coverage silently — the skill's tests AND its typecheck now run in the required `check` job. C25's was the refuted total-derivation: `/cart`, the auth routes and the dashboard routes stay explicit because they need setup no registry describes; only the public marketing/legal/writing set derives, recovering five stale routes and dropping none. Two dead-coverage findings fell out of one row — `apps/site`'s test script also omitted `./scripts`, so the pre-existing `visual-harness.test.ts` ran nowhere. **C10 and C16 stay parked** and still require their own decisions._
 

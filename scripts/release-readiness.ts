@@ -38,7 +38,7 @@ import { join, resolve } from "node:path";
 import { checkRegistryCoverage } from "../registry/scripts/coverage-invariants";
 
 const REPO = resolve(import.meta.dir, "..");
-const REQUIRED_CHECKS = [
+export const REQUIRED_CHECKS = [
   "check",
   "standards-gate",
   "registry-index",
@@ -46,6 +46,11 @@ const REQUIRED_CHECKS = [
   // ADR-0327 scan-gate flip (CAISSON-95): the deterministic security layer joins the required
   // set once its installers are pinned — which landed in the same change as this line.
   "deterministic",
+  // ADR-0414: the Python gate for services/support-bot, promoted out of advisory in the same
+  // change that gave that service an automated Railway deploy. Its paths filter was removed in
+  // the same commit — this list treats a check that never reported as `missing`, so a
+  // path-scoped required check would red readiness on every release that did not touch the bot.
+  "support-bot",
 ] as const;
 
 interface Args {
@@ -350,23 +355,29 @@ function checkLiveHybrid(): void {
   }
 }
 
-const { tag, sha, local } = parseArgs(Bun.argv.slice(2));
-console.log(
-  `release-readiness — tag ${tag}, sha ${sha.slice(0, 12)}${local ? ", local" : ""}\n`,
-);
-checkTagOnMain(sha);
-checkTagSigned(tag);
-checkCi(sha);
-checkChangesetsDrained();
-checkChangelogs();
-checkSot();
-checkRegistryCoverageGate();
-checkAuditArtifact(tag);
-checkChecklist(tag);
-if (local) checkLiveHybrid();
+// Entry point guard (ADR-0414). Everything above is importable; only a direct
+// `bun scripts/release-readiness.ts` runs the gate. Without this, importing the module to test
+// REQUIRED_CHECKS parses argv, prints "FATAL: --tag is required", and exits the test process.
+// release-train.yml's R3 job invokes this file directly, so `import.meta.main` is true there.
+if (import.meta.main) {
+  const { tag, sha, local } = parseArgs(Bun.argv.slice(2));
+  console.log(
+    `release-readiness — tag ${tag}, sha ${sha.slice(0, 12)}${local ? ", local" : ""}\n`,
+  );
+  checkTagOnMain(sha);
+  checkTagSigned(tag);
+  checkCi(sha);
+  checkChangesetsDrained();
+  checkChangelogs();
+  checkSot();
+  checkRegistryCoverageGate();
+  checkAuditArtifact(tag);
+  checkChecklist(tag);
+  if (local) checkLiveHybrid();
 
-const failed = results.filter((r) => !r.ok);
-console.log(
-  `\n${failed.length === 0 ? "READY" : "NOT READY"} — ${String(results.length - failed.length)}/${String(results.length)} checks green`,
-);
-process.exit(failed.length === 0 ? 0 : 1);
+  const failed = results.filter((r) => !r.ok);
+  console.log(
+    `\n${failed.length === 0 ? "READY" : "NOT READY"} — ${String(results.length - failed.length)}/${String(results.length)} checks green`,
+  );
+  process.exit(failed.length === 0 ? 0 : 1);
+}

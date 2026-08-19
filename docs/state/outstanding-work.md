@@ -235,8 +235,16 @@ to the closed section below. The `caisson-license` index-drift entry closed 2026
 redeploy at `d9ae893e` (Railway `dd6af196`), full four-leg probe `PARITY OK`, and leg 4 now carries
 the license service structurally — see the closed section and [deploy state](../deploy/STATE.md)._
 
-_Empty since 2026-08-09 — the last entry (poke-mirror retirement) completed and moved to
-Recently closed below._
+- **CI coverage for the remaining `tooling/scripts/` suites.** `tooling/scripts/` and `scripts/`
+  carry no `package.json`, so the `tooling/*` workspace glob skips them and turbo never runs their
+  tests — they are covered only by being named explicitly in `.github/workflows/ci.yml`'s
+  outside-turbo `bun test` line. ADR-0414 named `railway-deploy.test.ts` and
+  `release-readiness.test.ts` because it changed both. Six suites are still uncovered:
+  `sot-check` (100+ tests guarding the drift tool this repo runs every session), `dts-drift-check`,
+  `tsgo-agreement`, `railway-env-sync`, `vault-parity-check`, `aeo-probe`. All six pass locally
+  (196 tests, 344ms, no network); they were not added blind because that line runs inside the
+  required `check` job, where an unproven leg reds `main` rather than a PR. Add them one at a time,
+  or give the two directories a `package.json` so turbo owns them like every other workspace.
 
 ## Trigger-parked
 
