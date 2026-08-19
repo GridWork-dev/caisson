@@ -382,18 +382,6 @@
         "typescript": "catalog:",
       },
     },
-    "packages/analytics": {
-      "name": "@caisson/analytics",
-      "version": "0.2.8",
-      "dependencies": {
-        "@caisson/kernel": "workspace:*",
-      },
-      "devDependencies": {
-        "@caisson/testing": "workspace:*",
-        "@caisson/tsconfig": "workspace:*",
-        "typescript": "catalog:",
-      },
-    },
     "packages/artifact-render": {
       "name": "@caisson/artifact-render",
       "version": "0.2.4",
@@ -1666,8 +1654,6 @@
     "@caisson/ai-production": ["@caisson/ai-production@workspace:packages/ai-production"],
 
     "@caisson/alerting": ["@caisson/alerting@workspace:packages/alerting"],
-
-    "@caisson/analytics": ["@caisson/analytics@workspace:packages/analytics"],
 
     "@caisson/artifact-render": ["@caisson/artifact-render@workspace:packages/artifact-render"],
 

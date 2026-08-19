@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-09
+updated: 2026-08-18
 status: live
 ---
 
@@ -16,38 +16,37 @@ distribution reality (§3–4, forks CLOSED by ADR-0222/0223 on 2026-07-02).
 
 **Method:** every `packages/*/package.json` `license`/`private`/`publishConfig` field read
 directly off disk, cross-checked against `tooling/standards-gate/src/checks.ts`
-(`OPEN_BASE_NAMES`), `registry/index.json` (54 modules, schema v1, current as of 2026-07-30), `.github/workflows/publish.yml`,
+(`OPEN_BASE_NAMES`), `registry/index.json` (52 modules, schema v1, current as of 2026-08-18), `.github/workflows/publish.yml`,
 and ADR-0094 (open-core split), ADR-0097 (registry-schema split), ADR-0136 (license-keyed gate +
 tooling-open), ADR-0111 (publish-readiness split plan), ADR-0069 (publish credential).
 
 ---
 
-## 1. Apache-2.0 PUBLIC set (17 packages)
+## 1. Apache-2.0 PUBLIC set (16 packages)
 
 The `OPEN_BASE_NAMES` set the standards-gate enforces (`checkOpenCoreLicensing`). Every package
 below carries `license: "Apache-2.0"`, no `private` flag, and `publishConfig.registry:
 "https://registry.npmjs.org/"` in its own `package.json` — that registry target is the **plan**
 (ADR-0111), not where the code lands today; see §3.
 
-| Package                    | Purpose                                                                                                                           | License    | Distributed TODAY                                                                             |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------- |
-| `@caisson/kernel`          | Governance kernel: typed config loader, `CaissonError` model, security primitives, the standards gate                             | Apache-2.0 | Not published. Metadata served unauthenticated by the registry Worker (base floor, ADR-0136). |
-| `@caisson/auth`            | Auth seam: EdDSA-JWT account tokens (RLS seam) + session contract, better-auth provider                                           | Apache-2.0 | same                                                                                          |
-| `@caisson/tenancy-rls`     | Fail-closed multi-tenant Postgres RLS (FORCE policies + `withTenant`)                                                             | Apache-2.0 | same                                                                                          |
-| `@caisson/ui`              | Design-system kit: OKLCH token floor + Radix-behavior component recipes                                                           | Apache-2.0 | same                                                                                          |
-| `@caisson/billing`         | Stripe + Paddle billing behind a `BillingProvider` port                                                                           | Apache-2.0 | same                                                                                          |
-| `@caisson/analytics`       | Vendor-neutral `AnalyticsProvider` port: capture driver for tests + Plausible/PostHog/GA4 drivers (ADR-0287), fail-open by design | Apache-2.0 | same                                                                                          |
-| `@caisson/jobs`            | Provider-agnostic background-job queue port                                                                                       | Apache-2.0 | same                                                                                          |
-| `@caisson/email`           | Transactional email port (Resend/Postmark/SMTP/SES drivers)                                                                       | Apache-2.0 | same                                                                                          |
-| `@caisson/ai-config`       | Provider-agnostic AI config resolver + buyer settings file                                                                        | Apache-2.0 | same                                                                                          |
-| `@caisson/mcp-server`      | Auth-gated buyer MCP transport: timing-safe Bearer, entitlement-scoped reads, credit-gated `generate`                             | Apache-2.0 | same                                                                                          |
-| `@caisson/registry-schema` | Open registry contract: module-manifest schema, index schema, allowlist helpers, feature-tags, entitlement-expansion math         | Apache-2.0 | same                                                                                          |
-| `@caisson/observability`   | Vendor-neutral OTel bootstrap (env-gated, inert until `OTEL_EXPORTER_OTLP_ENDPOINT` is set)                                       | Apache-2.0 | same                                                                                          |
-| `@caisson/cli`             | `create-caisson` generator: composes a tailored repo from the versioned registry                                                  | Apache-2.0 | same                                                                                          |
-| `@caisson/migrate`         | Base migration assembler/runner (merges per-package `migrations/*.sql` into one sequence)                                         | Apache-2.0 | same                                                                                          |
-| `@caisson/license-verify`  | Offline Ed25519 license-token verification (tessera wire format, baked-in public key)                                             | Apache-2.0 | same                                                                                          |
-| `@caisson/rate-limit`      | Per-IP token-bucket limiter + per-account store (extracted from services/docs + services/license, PR #119)                        | Apache-2.0 | same                                                                                          |
-| `@caisson/ds-manifest`     | Design-system manifest schema, reader, and pure static-check library (zero `@caisson` runtime deps)                               | Apache-2.0 | same                                                                                          |
+| Package                    | Purpose                                                                                                                   | License    | Distributed TODAY                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------- |
+| `@caisson/kernel`          | Governance kernel: typed config loader, `CaissonError` model, security primitives, the standards gate                     | Apache-2.0 | Not published. Metadata served unauthenticated by the registry Worker (base floor, ADR-0136). |
+| `@caisson/auth`            | Auth seam: EdDSA-JWT account tokens (RLS seam) + session contract, better-auth provider                                   | Apache-2.0 | same                                                                                          |
+| `@caisson/tenancy-rls`     | Fail-closed multi-tenant Postgres RLS (FORCE policies + `withTenant`)                                                     | Apache-2.0 | same                                                                                          |
+| `@caisson/ui`              | Design-system kit: OKLCH token floor + Radix-behavior component recipes                                                   | Apache-2.0 | same                                                                                          |
+| `@caisson/billing`         | Stripe + Paddle billing behind a `BillingProvider` port                                                                   | Apache-2.0 | same                                                                                          |
+| `@caisson/jobs`            | Provider-agnostic background-job queue port                                                                               | Apache-2.0 | same                                                                                          |
+| `@caisson/email`           | Transactional email port (Resend/Postmark/SMTP/SES drivers)                                                               | Apache-2.0 | same                                                                                          |
+| `@caisson/ai-config`       | Provider-agnostic AI config resolver + buyer settings file                                                                | Apache-2.0 | same                                                                                          |
+| `@caisson/mcp-server`      | Auth-gated buyer MCP transport: timing-safe Bearer, entitlement-scoped reads, credit-gated `generate`                     | Apache-2.0 | same                                                                                          |
+| `@caisson/registry-schema` | Open registry contract: module-manifest schema, index schema, allowlist helpers, feature-tags, entitlement-expansion math | Apache-2.0 | same                                                                                          |
+| `@caisson/observability`   | Vendor-neutral OTel bootstrap (env-gated, inert until `OTEL_EXPORTER_OTLP_ENDPOINT` is set)                               | Apache-2.0 | same                                                                                          |
+| `@caisson/cli`             | `create-caisson` generator: composes a tailored repo from the versioned registry                                          | Apache-2.0 | same                                                                                          |
+| `@caisson/migrate`         | Base migration assembler/runner (merges per-package `migrations/*.sql` into one sequence)                                 | Apache-2.0 | same                                                                                          |
+| `@caisson/license-verify`  | Offline Ed25519 license-token verification (tessera wire format, baked-in public key)                                     | Apache-2.0 | same                                                                                          |
+| `@caisson/rate-limit`      | Per-IP token-bucket limiter + per-account store (extracted from services/docs + services/license, PR #119)                | Apache-2.0 | same                                                                                          |
+| `@caisson/ds-manifest`     | Design-system manifest schema, reader, and pure static-check library (zero `@caisson` runtime deps)                       | Apache-2.0 | same                                                                                          |
 
 Composition: the ADR-0094 original ten (`kernel` through `mcp-server`), plus `registry-schema`
 (ADR-0097), plus `observability` (ADR-0117), plus the ships-with-generator trio
@@ -169,6 +168,6 @@ The plan this section previously flagged as "not yet executed" is now **executed
   workflow dispatch** — armed, not auto-firing. The exporter is `scripts/export-public-mirror.ts`
   (Apache-set only, `@caisson-sh/*` scope rename, provenance `MIRROR-MANIFEST.json` whose
   `sourceRepo` is `caisson-sh/caisson`).
-- **Scope:** the 17 Apache-2.0 packages (§1) only; the commercial set never mirrors (ADR-0094
+- **Scope:** the 16 Apache-2.0 packages (§1) only; the commercial set never mirrors (ADR-0094
   open-core boundary). Sync cadence + git-subtree-vs-snapshot mechanics live with the mirror
   pipeline (PR #64), not this doc.

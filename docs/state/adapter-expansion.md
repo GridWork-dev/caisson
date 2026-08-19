@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-09
+updated: 2026-08-18
 status: live
 ---
 
@@ -54,7 +54,6 @@ pattern) — never a fork of the port contract.
 | `Emailer`                      | `packages/email/src/email.ts:15`                                                  | Resend (`:53`), Capture (test)                                                                                  | **SMTP-generic**, **AWS SES**, Postmark                                                                                                 | 1        |
 | `KmsClient` + license `Signer` | `packages/field-crypto/src/kms.ts:30` · `packages/license-issue/src/signer.ts:47` | Local; **AWS, GCP, and Azure Key Vault SHIPPED** (AWS live-proven; Azure is the hosted-site production backend) | HashiCorp Vault                                                                                                                         | 1 (seam) |
 | `SessionProvider`              | `packages/auth/src/session.ts:17`                                                 | better-auth; **WorkOS** SSO + **Clerk** session-verification (`org-controls/src/{workos,clerk}.ts`)             | Auth0/Okta                                                                                                                              | 1        |
-| `AnalyticsProvider`            | `packages/analytics/src/analytics.ts:27`                                          | Capture (test); **Plausible, PostHog, GA4** (`analytics/src/{plausible,posthog,ga4}.ts`, ADR-0287)              | (fully coded — this was the 1D scope)                                                                                                   | 1        |
 | `ArtifactStore`                | `packages/audit-worm/src/store.ts:35`                                             | S3 (`store.s3.ts`), Local                                                                                       | GCS Bucket Lock + R2 bucket-locks per **ADR-0267** (the old "R2 S3-compat ~trivial" claim was WRONG — no Object Lock on R2), Azure Blob | 2        |
 | `JobQueue`                     | `packages/jobs/src/queue.ts:26`                                                   | Trigger.dev (`trigger-driver.ts:52`), pg-boss, **BullMQ** (`bullmq.ts`, ADR-0287), InMemory                     | Inngest                                                                                                                                 | 2        |
 | AI inference                   | `packages/ai-config/src/config.ts:11` · `packages/ai-kit/src/providers.ts:20`     | openai, anthropic, google, openrouter, local                                                                    | **AWS Bedrock**, **Azure OpenAI**, **Ollama**                                                                                           | 2        |
@@ -103,7 +102,8 @@ _(Real lock: **ADR-0170**, not the `0119` pencil in this heading — see
 
 - The env-gate **DONE** (`apps/site/components/plausible-init.tsx` reads
   `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`, no-ops when unset — `936f54f`).
-- The port **SHIPPED 2026-07-07** (`packages/analytics`, ADR-0287): `AnalyticsProvider.capture`
+- The port **SHIPPED 2026-07-07** and was **RETIRED 2026-08-18** (ADR-0410 — never acquired a
+  consumer; the package is deleted and module-delisted). Historical shape: `AnalyticsProvider.capture`
   with a capture (test) driver plus Plausible / PostHog / GA4 production drivers — server-side
   event capture, fail-open by design. This is a distinct surface from `apps/site`'s own
   client-side Plausible/PostHog page-tracking init, which is unchanged.
