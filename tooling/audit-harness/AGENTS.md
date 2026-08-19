@@ -29,9 +29,11 @@ subject ∷ normalized-title)[:16]` via `stableId()`/`withId()`. The `dimension`
   verdict present and explicitly `refuted: false`) survives.
 - **Only `severity: "high"` findings are `/validate`-eligible.** Routine `info`/`warn` findings are
   unaffected by the escalation spine — don't wire `validateHighRisk` into the reconcile path itself.
-- **This package does not touch `tooling/design-critic`.** It is a standalone, generalized copy —
-  never import from or mutate `design-critic`'s ledger/module. Adopting the harness in place of
-  `design-critic` is a separate, future integration (ADR-0134 Downstream), not implied here.
+- **`tooling/design-critic` is RETIRED (ADR-0411)** — the package is deleted and its 729-finding
+  ledger is archived verbatim at `outputs/archive/audit/design-critic-findings-2026-08-18.toml`.
+  This harness is the only ledger now; visual/Nielsen findings land under dimension **D8**. Do NOT
+  attempt to import, re-key, or backfill the archived rows: its stable ids are a three-field hash
+  (`workflow ∷ surface ∷ title`) and this package's are four-field, so no id survives the move.
 
 ## Wiring the real `Challenger`
 
@@ -44,7 +46,7 @@ convention) — wire it in the calling CLI/skill, not inside this package. Tests
 
 No checker implementations (the `checker` field in `./dimensions.ts` is a lane name, not code). No
 dispatch, no loop, no completeness critic, no finder prompts — those live in the driver
-(`outputs/specs/lift-phase/AUDIT-RUNBOOK.md`). The package adds only pure pieces: `deriveDomains`,
+(`outputs/archive/specs/lift-phase/AUDIT-RUNBOOK.md`). The package adds only pure pieces: `deriveDomains`,
 `applicableDimensions`, the coverage ledger shape (`serializeCoverage`/`isRoundDry`), and the
 dimension-keyed id. No scheduling/CI wiring for the scope guard. No registry `manifest.ts` — this is
 internal, unsold tooling (`package.json` is already `"private": true`).

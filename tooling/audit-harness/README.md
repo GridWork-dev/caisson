@@ -3,7 +3,7 @@
 The cross-domain audit/validate harness (ADR-0134 · v2: ADR-0233) — the pure library behind the
 whole-repo audit. Internal engineering tooling: **not sellable**, no registry `manifest.ts`,
 **non-blocking to a merge** (it never gates `bun run check` or a commit). The loop, fan-out, and
-critics live in the driver (`outputs/specs/lift-phase/AUDIT-RUNBOOK.md`), never in-package.
+critics live in the driver (`outputs/archive/specs/lift-phase/AUDIT-RUNBOOK.md`), never in-package.
 
 ## What it gives you
 
@@ -14,9 +14,13 @@ critics live in the driver (`outputs/specs/lift-phase/AUDIT-RUNBOOK.md`), never 
     `docs/state/public-surface.md` + package license. Derived, never hand-typed;
     `coverage-gate.test.ts` fails loud on any unclaimed or double-claimed tree unit. `domainForPath`
     resolves the single owner of any path (longest-root match).
-  - `DIMENSIONS` (D1..D7: security-floor · secret-leakage · customer-facing quality · internal-vs-sold
-    leak · license-tier · docs-vs-code · hygiene) + `applicableDimensions(class)` — the sparse cell
-    matrix (a lens applies to a domain only if its class warrants it; `oss-source ⊇ {D1..D7}`).
+  - `DIMENSIONS` (D1..D8: security-floor · secret-leakage · customer-facing quality · internal-vs-sold
+    leak · license-tier · docs-vs-code · hygiene · visual-quality) + `applicableDimensions(class,
+domainId)` — the sparse cell matrix. Mostly class-keyed (`oss-source`/`sold-source` = {D1..D7}),
+    with two DOMAIN-keyed riders where class is the wrong axis: **D5** re-applies to an
+    `internal-only` domain only when it is a `packages/*` unit, and **D8** applies to `apps/*` and
+    nothing else (ADR-0411). **Always pass `domainId`** — omit it and both riders silently drop, so
+    D8 never fires at all.
 - **One cross-domain reconciling ledger.** `Finding`/`RawFinding`/`reconcile()` — new/unchanged/
   regressed/closed semantics keyed on a dimension-aware stable id
   `sha256(domain ∷ dimension ∷ subject ∷ normalized-title)[:16]`; rewording a title never forks a
@@ -50,7 +54,8 @@ import {
 // derive the domain partition + build the cell list (domain × applicable dimension):
 const domains = deriveDomains();
 const cells = domains.flatMap((d) =>
-  applicableDimensions(d.class).map((dimension) => ({
+  // pass d.id — the D5 and D8 riders are domain-keyed and vanish without it.
+  applicableDimensions(d.class, d.id).map((dimension) => ({
     domain: d.id,
     dimension,
   })),
@@ -89,6 +94,6 @@ with a fake challenger and free of any network call.
 round-trip, the scope guard (flags out-of-domain, passes in-domain), and the `majorityKills` truth
 table. No live network.
 
-> Rebuild-clean, generalized from the local `tooling/design-critic` pattern (ADR-0101). Does not
-> touch or import `design-critic` — a standalone copy. Adopting the harness in place of
-> `design-critic` is an integration follow-up (ADR-0134), not part of this package.
+> Rebuild-clean, generalized from the `design-critic` pattern (ADR-0101). That package was retired
+> by ADR-0411 and this harness took over its lens as dimension **D8**; its closed ledger is archived
+> at `outputs/archive/audit/design-critic-findings-2026-08-18.toml` and is never re-keyed here.
