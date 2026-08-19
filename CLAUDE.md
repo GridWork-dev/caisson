@@ -22,7 +22,7 @@ edited — supersede with a later ADR).
 
 1. `docs/state/decisions-and-forks.md` — live board (locked + open)
 2. `knowledge/decisions/` — the ADRs themselves. Append-only (`ADR-NNNN-slug.md`, never edited — supersede
-   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0411** (0335-0339 reserved unused; 0334 = Kickoff-S motion language v2). The full
+   with a later ADR; collisions at merge renumber per ADR-0088). **Ceiling: ADR-0412** (0335-0339 reserved unused; 0334 = Kickoff-S motion language v2). The full
    catalog — every number, title, and supersession chain — is `docs/adr-index.md`; do NOT restate
    it here. The per-sitting lock narratives formerly inlined in this clause are archived verbatim
    in `docs/archive/build-history.md`.
@@ -86,7 +86,7 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
   mcp-server) is now **Apache-2.0**; editions + field-crypto + audit-worm + registry-service + updates
   stay commercial. Re-licensing is **DONE in code** (work item W1, ADR-0094 + **ADR-0097**):
   the open registry contract split into Apache-2.0 `@caisson/registry-schema` (the commercial
-  `@caisson/registry` service re-exports it); 15 base pkgs flipped to Apache-2.0/oss + Apache `LICENSE`
+  `@caisson/registry` service re-exports it); 15 base pkgs flipped to Apache-2.0/oss (the open set is **16** since ADR-0412 named `ds-manifest`) + Apache `LICENSE`
   files (ADR-0136 added cli·migrate·license-verify — incl. the generator — to the open Base set); the
   standards-gate enforces the license split + the open↔commercial no-depend-up boundary.
   Remaining W1 tail: `apps/site` licensing copy (design track owns that tree).

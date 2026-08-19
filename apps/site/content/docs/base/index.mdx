@@ -1,6 +1,6 @@
 ---
 title: Base substrate
-description: The open-core Apache-2.0 substrate every bundle sits on (kernel, auth, tenancy RLS, billing, UI tokens, jobs, email, AI config, and the MCP server) plus the commercial Platform tier.
+description: The sixteen Apache-2.0 packages every bundle sits on — kernel, auth, tenancy RLS, UI tokens, billing, jobs, email, AI config, the MCP server, registry-schema, observability, rate-limit, ds-manifest, and the generator tooling (cli, migrate, license-verify) — plus the commercial Platform tier.
 ---
 
 The **Base substrate** is the open-core floor every Caisson bundle composes on. It is Apache-2.0,
@@ -27,10 +27,21 @@ never fork.
 - **[jobs](/docs/base/jobs)**: a Trigger.dev job port with test drivers; billing and credit
   side-effects are enqueued, not inline.
 - **[email](/docs/base/email)**: a Resend email port with a test driver.
+- **`registry-schema`**: the open module-manifest and index schema plus the allowlist helpers —
+  the contract the commercial registry service implements.
+- **`observability`**: a vendor-neutral OpenTelemetry bootstrap; env-gated NodeSDK with an
+  OTLP/HTTP exporter.
+- **`rate-limit`**: token-bucket rate limiting with per-key and global ceilings and an injectable
+  clock.
+- **`ds-manifest`**: the design-system contracts an agent reasons over — the component-manifest
+  schema, its typed reader, and the pure contrast and static-usage checkers.
 
 The generator and its tooling, `create-caisson`, the CLI, `@caisson/migrate`, and
 `license-verify`: are part of the same open set; start at
 [create-caisson](/docs/cli/create-caisson).
+
+That is the whole open set: **sixteen** Apache-2.0 packages, thirteen substrate plus three
+generator tooling. Nothing else in the catalog is Apache-2.0.
 
 ## The Platform tier
 

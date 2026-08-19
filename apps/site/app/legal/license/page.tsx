@@ -291,8 +291,7 @@ export default function LicensePage() {
                 (including field-crypto, audit-worm, signing-primitive, credits,
                 and the local-first modules), the registry service, and the six
                 bundles that compose them: Compliance, AI-Production,
-                Local-first, Agentic-Dev, Provenance, and Everything. A handful
-                of modules outside the Base set are nonetheless Apache-2.0 — the{" "}
+                Local-first, Agentic-Dev, Provenance, and Everything. The{" "}
                 <code className="mono">license</code> field in each
                 package&rsquo;s own manifest is what binds, not this summary.
               </span>
