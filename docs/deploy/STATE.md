@@ -11,6 +11,40 @@ grounds:
 
 # Deploy log
 
+## 2026-08-19 — leg 4 cleared, and the fleet brought to one revision
+
+Railway's snapshot stage recovered between 01:48Z and 08:03Z (dev-profile proved it on
+`gridwork.dev` with a live health read-back). Four green deploys followed, in this order:
+
+| Run                    | Ref                     | Services                       | Result                                       |
+| ---------------------- | ----------------------- | ------------------------------ | -------------------------------------------- |
+| 32256561340 (push)     | `1ca11b8e` (#443 merge) | admin · demos · site           | SUCCESS — 8th attempt overall, first success |
+| 32256783788 (push)     | `aee4285e`              | admin · demos · site           | SUCCESS                                      |
+| 32258237983 (dispatch) | `v2026.08.18`           | admin · license · demos · site | SUCCESS — **this is leg 4**                  |
+| 32258937690 (dispatch) | `main`                  | admin · license · demos · site | SUCCESS                                      |
+
+**Leg 4 landed at the tag with `require_armed=true`, as ADR-0325 requires.** It was run under an
+explicit operator ruling after this session raised, and the operator overrode, two objections: at
+dispatch time the tag was six commits behind main, so the tagged deploy briefly reverted
+admin/demos/site (both retirements plus the leg-2 mirror-gate repair), and it baked the tag's
+53-entry `registry/index.json` against a Worker already re-baked at main's 52-entry index. The
+main dispatch seven minutes later was ordered in the same picker and closed both windows — the
+sequence was chosen tag-first precisely so the fleet would end on main.
+
+**The fleet is no longer split.** admin, demos, site and license all deployed from `main` at
+13:35–13:40Z. `caisson-license` had been stranded on 2026-08-12 — its leg is dispatch-only because
+it carries migrations, and nothing had dispatched it since; no new migration had been added under
+`packages/platform-migrations/src/` in that window, so it shipped as a pure code redeploy.
+Post-deploy probe: `registry.caisson.sh/index.json` → 200, 16 anonymous modules, `@caisson/analytics`
+absent — parity with main's committed index holds.
+
+**No receipts were committed for these four.** `railway-deploy.ts` appends to
+`docs/deploy/receipts/<service>.json`, but a CI checkout is discarded, so only operator-box runs
+ever produce a committed receipt. The run ids above are the record for this ride.
+
+**`caisson-docs` and `caisson-support-bot` did not move** — they are at `d9a56601` (2026-08-15, a
+forced re-application of bytes already live) and `26092936` (2026-08-16). See the correction below.
+
 ## 2026-08-18 — v2026.08.18 release train: four legs landed, leg 4 blocked on a Railway platform incident
 
 The train fired off the `v2026.08.18` Release (published 23:11:30Z; the tag targets `5ac7d9ca`).
@@ -136,7 +170,11 @@ for:
   coordinator-completed on the Renovate branch (merge-from-main, lockfile regen, pin test moved to
   `^6.0.0` after verifying bullmq's `>=5.0.0` optional-peer range, changeset) — no force-push.
 - `ab8d89a4` (#415 python:3.14-slim digest for support-bot): no fleet ride by design — support-bot
-  deploys only via the release train, so the digest reaches prod on the next train. Its
+  deploys only via the release train, so the digest reaches prod on the next train.
+  **[Corrected 2026-08-19: that reason is false. No workflow deploys `caisson-support-bot` — not
+  the train, not `deploy-railway.yml`, which has only ever covered admin/license/demos/site. Its
+  only deploy path is a hand-run `railway-deploy.ts --service caisson-support-bot`. The digest
+  reached prod on 2026-08-16 that way, not on a train.]** Its
   support-bot workflow run (test) passed; the superseded ci/quality/security-scan cancellations on
   this sha are the benign concurrency-group class (the tip's runs are green).
 - Held, not merged: #418 (non-major batch) + #422 (jsdom 30) are red only on the bun 7-day
