@@ -589,7 +589,7 @@ export default function HomePage() {
               Open Apache-2.0 Base
             </div>
             <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
-              15 base packages (the kernel, auth, tenant isolation, billing, and
+              16 base packages (the kernel, auth, tenant isolation, billing, and
               the generator tooling) ship under Apache-2.0. Read them, audit
               them, and share them: the base is peer-reviewable by the license
               every buyer receives it under.

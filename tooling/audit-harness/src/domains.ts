@@ -238,7 +238,7 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
     class: "internal-only",
   });
 
-  // Fork D — the exporter's OUTPUT view of the 15 Apache packages as it lands on public GitHub
+  // Fork D — the exporter's OUTPUT view of the 16 Apache packages as it lands on public GitHub
   // (@caisson/ → @caisson-sh/ rename, dropped tests, restamped licenses). Synthetic: no in-repo root;
   // the driver runs scripts/export-public-mirror.ts and audits the produced diff, so a dangling
   // internal specifier the source view cannot see gets caught.

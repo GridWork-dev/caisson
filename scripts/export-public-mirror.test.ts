@@ -3,6 +3,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   symlinkSync,
@@ -11,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   assertMirrorOutDirHasNoSymlinkAncestors,
+  BUILD_SUPPORT,
   DROP_COMMERCIAL_DEV_DEPS,
   EXCLUDE_TEST_FILES,
   MIRROR_ASSET_FILES,
@@ -324,14 +326,6 @@ describe("sanitizeSourceComments", () => {
   });
 });
 
-// The exporter's BUILD_SUPPORT set is module-private; this mirrors it, and the mirror README guard
-// below would go vacuously green if it silently drifted — so the names are asserted, not assumed.
-const BUILD_SUPPORT_NAMES = new Set([
-  "@caisson/tsconfig",
-  "@caisson/lint-policy",
-  "@caisson/testing",
-]);
-
 describe("MIRROR_ASSET_FILES", () => {
   test("every listed source file exists under scripts/mirror-assets/", () => {
     for (const { src } of MIRROR_ASSET_FILES) {
@@ -356,6 +350,31 @@ describe("MIRROR_ASSET_FILES", () => {
   // "public copy names a package the artifact does not ship" class counsel already flagged from the
   // other direction. Caught for real: the ADR-0410 analytics retirement left this row behind, and
   // every other gate stayed green.
+  /** The exporter's own two-armed selection (MIRROR_WORKSPACES): every Apache-2.0 package under
+   *  packages/, plus the build-support tooling it pulls in by name. Shared by both direction tests
+   *  below — a set guard is only sound if both halves agree on what "exported" means.
+   *
+   *  The tooling arm imports the exporter's real `BUILD_SUPPORT` rather than re-listing it. A
+   *  hand-copy used to sit here: add a fourth build-support tool to the exporter and the mirror
+   *  would ship it, this helper would answer false for it, the converse test below would not
+   *  require the README to name it, and BOTH directions would stay green — reintroducing exactly
+   *  the shipped-but-unnamed class through the shared helper (ADR-0412 SHIP review). A shared
+   *  helper's bug breaks both directions at once, which is what makes importing the real set
+   *  non-optional rather than tidier. */
+  const isExported = (slug: string): boolean => {
+    const pkg = join(REPO_ROOT, "packages", slug, "package.json");
+    if (existsSync(pkg)) {
+      const json = JSON.parse(readFileSync(pkg, "utf8")) as {
+        license?: string;
+      };
+      return json.license === "Apache-2.0";
+    }
+    const tool = join(REPO_ROOT, "tooling", slug, "package.json");
+    if (!existsSync(tool)) return false;
+    const json = JSON.parse(readFileSync(tool, "utf8")) as { name?: string };
+    return BUILD_SUPPORT.has(json.name ?? "");
+  };
+
   test("every package the mirror README advertises is actually exported", () => {
     const readme = readFileSync(join(MIRROR_ASSETS_DIR, "README.md"), "utf8");
     const advertised = [
@@ -367,24 +386,33 @@ describe("MIRROR_ASSET_FILES", () => {
     ];
     // Non-empty guard: a regex that silently stops matching would make this test vacuously pass.
     expect(advertised.length).toBeGreaterThan(5);
-    const repoRoot = join(import.meta.dir, "..");
-    // Mirrors the exporter's own two-armed selection: every Apache-2.0 package under packages/,
-    // plus the build-support tooling it pulls in by name.
-    const isExported = (slug: string): boolean => {
-      const pkg = join(repoRoot, "packages", slug, "package.json");
-      if (existsSync(pkg)) {
-        const json = JSON.parse(readFileSync(pkg, "utf8")) as {
-          license?: string;
-        };
-        return json.license === "Apache-2.0";
-      }
-      const tool = join(repoRoot, "tooling", slug, "package.json");
-      if (!existsSync(tool)) return false;
-      const json = JSON.parse(readFileSync(tool, "utf8")) as { name?: string };
-      return BUILD_SUPPORT_NAMES.has(json.name ?? "");
-    };
     const notExported = advertised.filter((slug) => !isExported(slug));
     expect(notExported).toEqual([]);
+  });
+
+  // THE CONVERSE. The test above and I both got this half-right yesterday: it asserts
+  // advertised ⊆ exported (the README never promises a package the tree lacks) and stops there,
+  // which leaves exported ⊆ advertised untested — the mirror can SHIP a package its own front page
+  // never names. That is the direction counsel actually flagged ("the site names 15, the registry
+  // exposes 16"), and it was live on this very file: @caisson/ds-manifest has been exported since
+  // 2026-07-13 and was never in the README. One-directional set guards are how a census stays
+  // wrong while every gate is green — assert both directions or neither (ADR-0412).
+  test("every exported package IS advertised in the mirror README — no shipped-but-unnamed", () => {
+    const readme = readFileSync(join(MIRROR_ASSETS_DIR, "README.md"), "utf8");
+    const advertised = new Set(
+      [...readme.matchAll(/`@caisson-sh\/([a-z0-9-]+)`/g)].map(
+        (m) => m[1] as string,
+      ),
+    );
+    const exported = (["packages", "tooling"] as const).flatMap((group) =>
+      readdirSync(join(REPO_ROOT, group), { withFileTypes: true })
+        .filter((e) => e.isDirectory())
+        .map((e) => e.name)
+        .filter(isExported),
+    );
+    // Guard the guard: an empty scan would make this vacuously green.
+    expect(exported.length).toBeGreaterThan(10);
+    expect(exported.filter((slug) => !advertised.has(slug))).toEqual([]);
   });
 
   test("keeps generator-owned artifacts out of mirror formatting", () => {

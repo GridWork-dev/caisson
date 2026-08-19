@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-11
+updated: 2026-08-19
 status: intake (session Q, 2026-07-12 — ADR-0328 D3)
 owner: operator (business/legal track)
 source: caisson-docs-2026-07-12.zip (MacBook scp intake)
@@ -113,7 +113,7 @@ The different formation-record address, registered-office address, and EIN maili
 | Item | Status | Description |
 |---|---|---|
 | Commercial stage | **CONFIRMED RECORD** | Pre-sale. No revenue is reported. |
-| Product | **CONFIRMED RECORD** | Software infrastructure product with an Apache-2.0 open base and separately licensed commercial functionality. Internal materials describe 15 open base packages, six commercial bundles, and 22 separately described commercial modules. Counsel need not validate technical completeness. |
+| Product | **CONFIRMED RECORD** | Software infrastructure product with an Apache-2.0 open base and separately licensed commercial functionality. Internal materials describe 16 open base packages, six commercial bundles, and 22 separately described commercial modules. (15 in the 2026-07-11 materials; `@caisson/analytics` was retired per ADR-0410 and `@caisson/ds-manifest` named publicly per ADR-0412, both 2026-08-18/19.) Counsel need not validate technical completeness. |
 | Build state | **CONFIRMED RECORD** | Product architecture, code, and marketing materials are built or being refined; not every commercial slice should be assumed production-complete solely from the internal materials. |
 | Contributors | **CONFIRMED RECORD** | No outside code contributors are presently known. This is a knowledge-qualified fact, not a completed repository or provenance audit. |
 | Payment platform | **CONFIRMED RECORD** | Paddle is the planned authorized reseller and Merchant of Record. Application and verification are beginning; approval is not represented. |

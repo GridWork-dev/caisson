@@ -52,7 +52,7 @@ export const MIRROR_WORKSPACES = {
  *  Apache-2.0 in the mirror — internal scaffolding with no commercial IP (a strict tsconfig base,
  *  the shared lint policy + slop plugin, and the PGlite RLS / golden-file test harness). Shipping them keeps the
  *  packages faithful (unmodified) and the `@caisson/kernel` standards gate green. */
-const BUILD_SUPPORT = new Set([
+export const BUILD_SUPPORT = new Set([
   "@caisson/tsconfig",
   "@caisson/lint-policy",
   "@caisson/testing",

@@ -140,7 +140,7 @@ The manager is directed to maintain a closing binder containing the final instru
 | Vendor operating-agreement form | Prefilled; member adoption/signature and material schedules blank | Counsel determines historical effect; final OA expressly supersedes |
 | Organizer reference to "general provisions" | Scope and legal effect unresolved | Counsel opinion and superseding clause |
 | Public marketing/docs/legal site | Public beginning July 10, 2026 under the currently documented gate scope | Preserve snapshot; review ownership and legal claims |
-| Public Apache package description | Public site says 15 packages; registry metadata exposes 16 including analytics | Reconcile before source publication |
+| Public Apache package description | Public site says 15 packages; registry metadata exposes 16 including analytics | **RESOLVED 2026-08-19, before source publication.** `@caisson/analytics` retired and module-delisted (ADR-0410); `@caisson/ds-manifest` — first published 2026-07-13, two days after this review, so not visible to it — named on every public surface (ADR-0412). Site and registry both read **16**. The intended set is enumerated in `caisson-internal-master-map.md` |
 | Package copyright notices | Stale "Copyright 2026 GridWork Digital LLC" notice appears in 16 Apache package LICENSE files | Verify title; correct prospectively; preserve history |
 | Historical IP title | Liam is principal known author; no complete assignment supplied | Instrument 9 plus independent/court review if required |
 | Platform applications | Mercury and Paddle applications have not been submitted | Do not create entries until an application is submitted; use accurate post-closing facts if later submitted |
@@ -1530,9 +1530,16 @@ As of the reviewed source snapshot, each row carries `license: Apache-2.0`, a ma
 | `@caisson/cli` | 0.4.0 | Yes | Yes | No evidence | Same; live install claim currently unresolved |
 | `@caisson/migrate` | 0.2.4 | Yes | Yes | No evidence | Same |
 | `@caisson/license-verify` | 0.3.0 | Yes | Yes | No evidence | Same |
-| `@caisson/analytics` | 0.1.0 | No | Yes | No evidence | Decide whether 16th open package; reconcile all copy |
+| `@caisson/analytics` | 0.1.0 | No | Yes | No evidence | **DECIDED 2026-08-19: retired, not the 16th.** Package deleted and module-delisted append-only (ADR-0410). The sixteenth is `@caisson/ds-manifest` (first published 2026-07-13, absent from this July-11 table), now named publicly (ADR-0412) |
 
 [TECH/COUNSEL: regenerate this table from the release commit before execution. Versions and channel status are time-sensitive.]
+
+[2026-08-19 note, deliberately appended rather than merged into the table above: the numbered
+July 11, 2026 findings and this schedule are a DATED evidentiary record of what the public
+surfaces showed on that day. They are not edited when the underlying facts change — rewriting them
+would destroy the record of the discrepancy counsel actually observed. The two rows carrying a live
+ACTION have been annotated with their resolution in place; the observations themselves stand as
+written. Current state lives in `caisson-internal-master-map.md` and ADR-0410/ADR-0412.]
 
 ## Schedule 9-C - Predecessor and pattern-source provenance
 

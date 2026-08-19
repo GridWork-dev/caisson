@@ -10,7 +10,7 @@ import type { IconName } from "@caisson/ui/components";
 // it as free-Apache is a real misrepresentation. One const kills that drift class, and
 // `base-substrate.test.ts` fails if any commercial SKU ever re-enters this list.
 
-/** The 12 substrate packages — the runtime/base half of the open set. */
+/** The 13 substrate packages — the runtime/base half of the open set. */
 export const BASE_SUBSTRATE_PACKAGES = [
   "kernel",
   "auth",
@@ -24,6 +24,7 @@ export const BASE_SUBSTRATE_PACKAGES = [
   "registry-schema",
   "observability",
   "rate-limit",
+  "ds-manifest",
 ] as const;
 
 /** The generator tooling — called out separately in prose ("…and the generator tooling: …"). */
@@ -33,7 +34,7 @@ export const BASE_GENERATOR_TOOLING = [
   "license-verify",
 ] as const;
 
-/** All 15 Apache-2.0 base packages, substrate then tooling. */
+/** All 16 Apache-2.0 base packages, substrate then tooling. */
 export const BASE_PACKAGES = [
   ...BASE_SUBSTRATE_PACKAGES,
   ...BASE_GENERATOR_TOOLING,
@@ -89,8 +90,8 @@ export const BASE_CAPABILITIES: readonly BaseCapability[] = [
   {
     icon: "server",
     title: "AI config and a governed MCP server",
-    body: "Provider-agnostic AI configuration and a Model Context Protocol server that treats agents as principals: timing-safe Bearer auth, tools invisible outside the caller's entitlements, a per-account rate limit on every dispatch. Most kits ship an MCP server now — the question is what it lets an agent do.",
-    packages: ["ai-config", "mcp-server"],
+    body: "Provider-agnostic AI configuration and a Model Context Protocol server that treats agents as principals: timing-safe Bearer auth, tools invisible outside the caller's entitlements, a per-account rate limit on every dispatch. Most kits ship an MCP server now — the question is what it lets an agent do. The design-system contracts an agent reasons over — the component manifest, its typed reader, the contrast and static-usage checkers — are open source too, in @caisson/ds-manifest.",
+    packages: ["ai-config", "mcp-server", "ds-manifest"],
   },
   {
     icon: "gauge",
