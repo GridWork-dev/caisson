@@ -69,11 +69,10 @@ commercial bundle.
 | `@caisson-sh/license-verify`  | Offline license-token verification: wire codec + Ed25519 verify.                                           | Apache-2.0 |
 | `@caisson-sh/registry-schema` | Open registry contract: module-manifest + index schema + allowlist helpers.                                | Apache-2.0 |
 | `@caisson-sh/observability`   | Vendor-neutral OpenTelemetry bootstrap: env-gated NodeSDK + OTLP/HTTP exporter.                            | Apache-2.0 |
-| `@caisson-sh/analytics`       | Product-analytics port: typed event contract + PostHog / no-op drivers.                                    | Apache-2.0 |
 | `@caisson-sh/rate-limit`      | Token-bucket rate limiting: per-key + global ceilings, injectable clock.                                   | Apache-2.0 |
 | `@caisson-sh/ui`              | Design-system kit: OKLCH token floor + the component recipe.                                               | Apache-2.0 |
 | `@caisson-sh/tsconfig`        | Shared strict TypeScript base config.                                                                      | Apache-2.0 |
-| `@caisson-sh/eslint-config`   | Shared ESLint flat-config: lint rules + package-boundary enforcement.                                      | Apache-2.0 |
+| `@caisson-sh/lint-policy`     | Shared oxlint policy: lint rules + package-boundary enforcement.                                           | Apache-2.0 |
 | `@caisson-sh/testing`         | Shared test harness: golden-file regression + the PGlite fail-closed-RLS harness.                          | Apache-2.0 |
 
 ## Copying a single UI component via shadcn

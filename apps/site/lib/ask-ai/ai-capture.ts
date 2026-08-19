@@ -51,8 +51,8 @@ export interface AiGeneration {
 
 const PROVIDER = "openrouter";
 // No stable per-user identity on the public Ask-AI lane — question-log stores no identity (anonymous by
-// construction, ADR-0236) and spend keys on the lane, not a user. The house server-side sentinel
-// (packages/analytics posthog.ts) is the consistent distinct_id.
+// construction, ADR-0236) and spend keys on the lane, not a user. "server" is the house sentinel for
+// server-side capture, the same convention services/license/src/posthog-capture.ts uses.
 const DISTINCT_ID = "server";
 
 /**
@@ -96,7 +96,7 @@ export async function captureAiGeneration(
         }),
       },
       // Fail-open side-effect, not a request the caller waits on — short so a slow ingest endpoint
-      // never holds a connection open (same 2s budget as packages/analytics posthog.ts).
+      // never holds a connection open (the house 2s server-side capture budget).
       { timeoutMs: 2000 },
     );
     if (!res.ok) {

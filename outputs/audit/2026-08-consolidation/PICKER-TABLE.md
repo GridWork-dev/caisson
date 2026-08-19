@@ -33,6 +33,9 @@ LOC is net reduction unless marked exact/gross.
 
 ## Picker notes
 
+- _C01 disposed 2026-08-18 → **ADR-0410** (retire `@caisson/analytics`). The Status column above is
+  left at its audit-time value: this table is a frozen audit artifact, not a live tracker._
+
 - Choosing C01 requires a superseding ADR, append-only module delist, retained tarball history,
   Open Base/public-doc cleanup, and an external-usage check. It has no paid grandfathering burden.
 - Choosing C04 requires a visual audit-harness dimension, a superseding ADR, and verbatim archival

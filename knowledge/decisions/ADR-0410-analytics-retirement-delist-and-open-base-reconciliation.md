@@ -67,17 +67,34 @@ Mechanically, following ADR-0402 exactly:
 ## Consequences
 
 - The Apache-2.0 open Base goes from 17 packages to 16, and Bun workspaces from 75 to 74. The
-  registry serves 16 modules where it served 17.
+  anonymous free floor serves 16 modules where it served 17; the full committed index goes 53 to 52.
 - **A registry-Worker redeploy is a required post-merge act, not an optional one.**
   `registry/worker/deploy-entry.ts` inlines `index.json` at build time and `deploy-worker.yml` is
   dispatch-only with no push trigger, so merging this change leaves the live edge still advertising
   `@caisson/analytics` until the Worker is redeployed from the merge commit. This PR carries that
-  as a deploy obligation, the way ADR-0407 carried the Better Stack one.
+  as a deploy obligation, the way ADR-0407 carried the Better Stack one. The `/demo` page's
+  release-time preview artifact (`apps/site/public/demo-preview/preview.json`) also embeds an
+  install transcript naming `@caisson/analytics@0.2.1`; it is a dated snapshot, but it should be
+  regenerated on the next release rather than left showing an unresolvable package.
+- **One operator check before the Worker redeploy** (ADR-0402 set this precedent): a live
+  `entitlement_grant` row naming `analytics` or `@caisson/analytics` with `status = 'active'` would
+  now hit the fail-closed entitlement throw, which the Worker catches by degrading that caller to
+  base-only — so a buyer holding a bundle _plus_ that id would silently lose the bundle. Repo state
+  rules this out (never sellable: `tier: oss`, `priceCents: null`, absent from every bundle members
+  map and from the pricebook), but a hand-inserted grant is the one path the repo cannot rule out,
+  and no build-time gate validates purchased ids against the index.
 - The OSS mirror drops the package automatically on its next sync. `export-public-mirror.ts` selects
   purely on the SPDX `license` field and names no package explicitly, so deleting the directory is
   the whole change.
-- Provenance survives: eleven publish rows and eight tarball rows stay in place. Installing
-  `@caisson/analytics` stops resolving; the historical bytes remain addressable.
+- Provenance survives as an ARCHIVAL record, not as availability. Ten publish rows and eight
+  tarball rows stay in place, and the R2 objects are untouched — but no route serves them any more.
+  The tarball route gates on `entitled`, which derives from the index, so dropping the id from the
+  index removes byte access as a consequence: a delisted tarball answers 401/404 before R2 is
+  reached, for anonymous AND authenticated callers alike, and no entitlement can expand to it. The
+  retired package is therefore strictly less reachable than a commercial one. That is the intended
+  posture — the provenance is for the record, not for install — and it is stated here because the
+  distinction between "retained" and "addressable" is exactly what a future reader would assume
+  wrongly.
 - **The census discrepancy is narrowed, not closed.** The live registry currently serves two
   Apache-2.0 modules that the site's 15-package `BASE_PACKAGES` list does not name: `analytics` and
   `@caisson/ds-manifest`. This ADR removes the first. `ds-manifest` remains served, Apache-2.0, and

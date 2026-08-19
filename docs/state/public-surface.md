@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-09
+updated: 2026-08-18
 status: live
 ---
 
@@ -16,7 +16,7 @@ distribution reality (§3–4, forks CLOSED by ADR-0222/0223 on 2026-07-02).
 
 **Method:** every `packages/*/package.json` `license`/`private`/`publishConfig` field read
 directly off disk, cross-checked against `tooling/standards-gate/src/checks.ts`
-(`OPEN_BASE_NAMES`), `registry/index.json` (54 modules, schema v1, current as of 2026-07-30), `.github/workflows/publish.yml`,
+(`OPEN_BASE_NAMES`), `registry/index.json` (52 modules, schema v1, current as of 2026-08-18), `.github/workflows/publish.yml`,
 and ADR-0094 (open-core split), ADR-0097 (registry-schema split), ADR-0136 (license-keyed gate +
 tooling-open), ADR-0111 (publish-readiness split plan), ADR-0069 (publish credential).
 
@@ -168,6 +168,6 @@ The plan this section previously flagged as "not yet executed" is now **executed
   workflow dispatch** — armed, not auto-firing. The exporter is `scripts/export-public-mirror.ts`
   (Apache-set only, `@caisson-sh/*` scope rename, provenance `MIRROR-MANIFEST.json` whose
   `sourceRepo` is `caisson-sh/caisson`).
-- **Scope:** the 17 Apache-2.0 packages (§1) only; the commercial set never mirrors (ADR-0094
+- **Scope:** the 16 Apache-2.0 packages (§1) only; the commercial set never mirrors (ADR-0094
   open-core boundary). Sync cadence + git-subtree-vs-snapshot mechanics live with the mirror
   pipeline (PR #64), not this doc.

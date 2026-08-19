@@ -132,7 +132,7 @@ commercial where their code is proprietary and are not independently purchasable
 
 ## Enforced invariants
 
-- `tooling/standards-gate` enforces the 17-package Apache set and blocks open→commercial
+- `tooling/standards-gate` enforces the 16-package Apache set and blocks open→commercial
   dependencies.
 - Bundle-only/runtime commercial manifests state `sellable: false`; sellable manifests use the
   schema’s default and must appear in total price authority.
