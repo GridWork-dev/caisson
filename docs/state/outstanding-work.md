@@ -239,12 +239,15 @@ the license service structurally — see the closed section and [deploy state](.
   carry no `package.json`, so the `tooling/*` workspace glob skips them and turbo never runs their
   tests — they are covered only by being named explicitly in `.github/workflows/ci.yml`'s
   outside-turbo `bun test` line. ADR-0414 named `railway-deploy.test.ts` and
-  `release-readiness.test.ts` because it changed both. Six suites are still uncovered:
-  `sot-check` (100+ tests guarding the drift tool this repo runs every session), `dts-drift-check`,
-  `tsgo-agreement`, `railway-env-sync`, `vault-parity-check`, `aeo-probe`. All six pass locally
-  (196 tests, 344ms, no network); they were not added blind because that line runs inside the
-  required `check` job, where an unproven leg reds `main` rather than a PR. Add them one at a time,
-  or give the two directories a `package.json` so turbo owns them like every other workspace.
+  `release-readiness.test.ts` because it changed both. **Seven** suites are still uncovered — six
+  under `tooling/scripts/` (`sot-check`, whose 100+ tests guard the drift tool this repo runs every
+  session, plus `dts-drift-check`, `tsgo-agreement`, `railway-env-sync`, `vault-parity-check`,
+  `aeo-probe`) and one under `scripts/` (`gen-shadcn-registry.test.ts`, 6 tests — it guards
+  `buildShadcnRegistry`, which `scripts/export-public-mirror.ts` imports, so the consumer's suite is
+  in CI while the thing it consumes is not). The six measure 151 tests / 176ms and the seventh 6
+  tests, all offline. They were not added blind because that line runs inside the required `check`
+  job, where an unproven leg reds `main` rather than a PR. Add them one at a time, or give the two
+  directories a `package.json` so turbo owns them like every other workspace.
 
 ## Trigger-parked
 

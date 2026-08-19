@@ -73,11 +73,22 @@ jobs:
     # red. Operator lock ADR-0367: this job STAYS on Blacksmith even once RAILWAY_TOKEN arms —
     # VM-per-job isolation + a Railway-scoped revocable deploy credential is the accepted posture.
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    # 25 was already EXACTLY equal to caisson-docs' railway.toml healthcheckTimeout (1500s), so
-    # adding the docs leg at 25 would have guaranteed a job-level kill on any cold-boot re-embed —
-    # before counting the four legs that run ahead of it. 70 covers the realistic serial worst
-    # case: five fast services plus one docs boot that re-embeds the full corpus (ADR-0414).
-    timeout-minutes: 70
+    # This cap MUST exceed the sum of the steps' own poll budgets, or it silently reintroduces at
+    # the JOB level the exact defect it was raised to fix at the STEP level. The budgets are 15 min
+    # each (railway-deploy.ts's default) except docs at 40:
+    #   push path      admin 15 + demos 15 + site 15 + docs 40 + bot 15  = 100 min
+    #   dispatch path  + license 15                                      = 115 min
+    # plus setup (a fetch-depth:0 checkout of a 72-workspace monorepo, setup-bun, the railway CLI
+    # install) ≈ 2-5 min. 125 covers the dispatch ceiling with headroom.
+    #
+    # 25 was the original value, already EXACTLY equal to caisson-docs' railway.toml
+    # healthcheckTimeout (1500s). A first pass raised it to 70 reasoning "five fast services plus
+    # one docs boot" — self-refuting arithmetic: five services at the 15-minute default is 75
+    # before docs' 40 is counted at all. A job-level cancel is strictly worse than a step timeout:
+    # no "timed out waiting for the X deployment" diagnostic is printed (that only fires when a
+    # STEP budget expires), and the likeliest cancellation point is the LAST step — leaving a new
+    # docs API serving an old bot, the exact skew the docs -> support-bot order exists to prevent.
+    timeout-minutes: 125
     steps:
       # Inert-until-armed guard: `secrets` can't be referenced in a job/step `if:`, so map RAILWAY_TOKEN
       # to an env here and publish an `armed` output. Absent token → armed=false → every step below skips

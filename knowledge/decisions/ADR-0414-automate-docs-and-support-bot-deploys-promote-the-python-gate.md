@@ -61,11 +61,23 @@ flag defaults to 15, so every existing caller's behaviour is byte-identical. `po
 UP and refuses a non-finite budget: `NaN` would make `poll < maxPolls` false on the first iteration,
 skipping the poll loop entirely and reporting a timeout on a deploy nobody ever asked about.
 
-### 3. The job timeout goes 25 → 70 minutes
+### 3. The job timeout goes 25 → 125 minutes
 
 `timeout-minutes: 25` was **exactly equal** to docs' `healthcheckTimeout` of 1500s. Adding the docs
 leg without raising it would have guaranteed a job-level kill on any cold-boot re-embed, before
 counting the four legs that run ahead of it.
+
+**The cap must exceed the sum of the step budgets it backstops**, and a first pass got this wrong in
+the same shape as the bug it was fixing. It raised the cap to 70 on the reasoning "five fast
+services plus one docs boot" — self-refuting arithmetic, since five services at the 15-minute
+default is 75 before docs' 40 is counted. The real sums are 100 minutes on the push path and 115 on
+dispatch (license adds a sixth leg), plus setup. Hence 125.
+
+A job-level cancel is strictly worse than a step timeout: no `timed out waiting for the X
+deployment` line is printed, because that diagnostic only fires when a _step_ budget expires — and
+the likeliest cancellation point is the last step, leaving a new docs API serving an old bot, the
+exact skew the docs → support-bot ordering exists to prevent. **A backstop set below the thing it
+backstops is not a backstop**, whichever level it sits at.
 
 ### 4. The `support-bot` gate is promoted to required — and it is sequenced FIRST
 
@@ -113,8 +125,16 @@ touch the bot. The only permitted `if:` remains the CAISSON-96 draft guard.
   zero runs as `missing`. This is correct behaviour, not a defect: the set is evaluated as it
   stands today. Every tag cut after this merge carries the check. Worth knowing before someone
   re-runs readiness on `v2026.08.18` and reads a red as a regression.
-- **This does not deploy anything.** Merging the PR arms the path; the first ride is whichever merge
-  next touches a filtered path. The two recorded shas are pre-ADR-0414 and clear on that ride.
+- **Merging this PR IS the first ride — it is not inert.** The diff changes
+  `.github/workflows/deploy-railway.yml`, and that path is itself a line in that workflow's own
+  `paths:` filter, so the merge commit matches and the workflow fires on the merge push. The
+  version that runs is the merged one: an armed (`RAILWAY_TOKEN` live since 2026-07-29),
+  unattended, five-service deploy — admin → demos → site → **docs (`--wait-minutes 40`) →
+  support-bot** — exercising the two legs that have never run automatically before. A first draft
+  of this ADR said "this does not deploy anything… the first ride is whichever merge next touches a
+  filtered path", which is exactly the sentence that would stop someone watching the run. **Watch
+  the run.** The repo's doctrine treats DEPLOY as a distinct recorded act; this one is recorded
+  here.
 - **License stays dispatch-only.** Nothing here changes that: it carries `preDeployCommand`
   migrations, and the rule that the repo never migrates production unattended is untouched.
 - The cost is real and accepted: every PR now runs a ~2-4 minute uv + pyright + pytest + eval job

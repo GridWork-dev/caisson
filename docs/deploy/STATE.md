@@ -42,8 +42,10 @@ means a red bot reaches production and nothing blocks it, so this change makes i
 check — and removes its `paths:` filter in the same commit, because `release-readiness.ts` counts a
 check that never reported as `missing` and ci.yml's rule is that a required job stays unconditional.
 
-Not yet deployed by this path: merging the PR is what arms it. The first ride is whichever merge
-next touches a filtered path.
+**The merge itself is the first ride.** `.github/workflows/deploy-railway.yml` is a line in its own
+`paths:` filter, so the merge commit matches and the workflow fires on the merge push — running the
+merged version, with the two new legs, armed and unattended. Expect
+admin → demos → site → docs (up to 40 min on a cold re-embed) → support-bot, and watch it.
 
 ## 2026-08-19 — leg 4 cleared, and the fleet brought to one revision
 
