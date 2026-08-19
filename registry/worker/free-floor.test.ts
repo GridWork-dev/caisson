@@ -73,8 +73,12 @@ describe("registry Worker free floor (CAISSON-63, ADR-0136)", () => {
     // flip); this baseline reflects the CURRENT predicate output, not any historical listing.
     // Bumped 16 -> 17: @caisson/ds-manifest published (Apache-2.0, editions: [] — a legitimate new
     // OSS base package, the agent-ready design-system surface's shared manifest/doctor layer).
+    // Lowered 17 -> 16: @caisson/analytics RETIRED (ADR-0410) — the ADR-0287 analytics port never
+    // acquired a consumer and is deleted + module-delisted. This is the first downward move of this
+    // baseline; a retirement is as legitimate a reason to change it as a publish, but it still only
+    // moves with an ADR behind it.
     expect(ids.length).toBe(baseModuleIds(COMMITTED_INDEX).length);
-    expect(ids.length).toBe(17);
+    expect(ids.length).toBe(16);
   });
 
   test("none of the 9 carve/ui-pro commercial packages ever appear in the anon set", async () => {

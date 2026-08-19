@@ -1,7 +1,7 @@
 ---
 updated: 2026-08-18
 status: live
-adr_ceiling: 0409
+adr_ceiling: 0410
 ---
 
 # Decisions & Forks — live board
@@ -191,6 +191,8 @@ additional active queue.
 | Fork         | Why it remains open                                                                                                                                                                                                                                                                                                             |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Railway PITR | Reopen only when real commerce data raises the recovery-point requirement beyond snapshots plus rehearsed logical restore. Declined 2026-07-11, reconfirmed 2026-07-18 and again at the 2026-07-29 forks picker — nothing has changed the input: commerce is still sandbox, so there is no production transaction data to lose. |
+
+_Closed 2026-08-18 → **ADR-0410**: **C01** — retire `@caisson/analytics`. The first of the six decision-gated consolidation rows to re-enter through a fresh operator decision, as ADR-0407 required. The package is deleted and module-delisted append-only (ADR-0402 mechanics), publish and tarball provenance retained. The external-usage check the card demanded cleared every channel — the `@caisson` npm scope is unpublished, `caisson-oss` is still private behind the launch gate, and the registry serves it but commerce is Paddle SANDBOX — and counsel had independently asked for "a keep-or-remove decision for `analytics`". Open Base 17 → 16. **Not decided here:** `@caisson/ds-manifest` is a second Apache-2.0 module the registry serves and the site's 15-package list does not name; same class, own decision._
 
 _Closed 2026-08-15 → **ADR-0407**: the consolidation-audit picker round pending since 2026-08-10 — the 18 refutation-verified cuts executed as one worktree wave (each evidence card re-verified against current main first); the six decision-gated rows (C01 · C04 · C10 · C13 · C16 · C25) stay parked and re-enter only through a fresh operator decision._
 

@@ -23,22 +23,21 @@ and the standards gate are the executable sources. Build depth remains in
 
 | Surface              |  Count | Members                                                                                          |
 | -------------------- | -----: | ------------------------------------------------------------------------------------------------ |
-| Packages             |     59 | 17 Apache-2.0; 42 commercial                                                                     |
+| Packages             |     58 | 16 Apache-2.0; 42 commercial                                                                     |
 | Apps                 |      3 | `admin`, `demos`, and `site`                                                                     |
 | Bun services         |      4 | `betterstack-adapter`, `docs`, `intel`, `license`                                                |
 | Registry             |      1 | `@caisson/registry` plus its Worker                                                              |
 | Tooling workspaces   |      8 | audit harness, browser audit, demo registry, design critic, eslint, standards, testing, tsconfig |
 | Python projects      |      2 | `services/support-bot`, `tools/assert-lane` — frozen at two                                      |
-| Bun workspaces total | **75** | root `workspaces` discovery                                                                      |
+| Bun workspaces total | **74** | root `workspaces` discovery                                                                      |
 
-## Open Base — 17 Apache-2.0 packages
+## Open Base — 16 Apache-2.0 packages
 
 All are free and never individually sold. Open packages may depend only on other open packages.
 
 | Package           | Role                                           |
 | ----------------- | ---------------------------------------------- |
 | `ai-config`       | provider-neutral AI configuration              |
-| `analytics`       | analytics port and drivers                     |
 | `auth`            | sessions and auth/RLS seam                     |
 | `billing`         | buyer-side billing port                        |
 | `cli`             | generator and delivery client                  |

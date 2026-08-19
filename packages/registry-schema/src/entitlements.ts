@@ -365,7 +365,7 @@ const OPEN_LICENSE = "Apache-2.0";
  * UNAUTHENTICATED (ADR-0094/0097 open-core). Returns all modules that are base-scoped
  * (`editions[] === []`) AND licensed as Apache-2.0.
  *
- * The open Base consists of: ai-config · analytics · auth · billing · cli · email · jobs · kernel ·
+ * The open Base consists of: ai-config · auth · billing · cli · email · jobs · kernel ·
  * license-verify · mcp-server · migrate · observability · rate-limit · registry-schema · tenancy-rls ·
  * ui. These are free, always discoverable/installable, and independent of any entitlement. The cli,
  * migrate, and license-verify packages ship-with-generator as part of the open Base (ADR-0136).
