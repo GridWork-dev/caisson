@@ -41,6 +41,15 @@ LOC is net reduction unless marked exact/gross.
   hash-space incompatible, so the package was RETIRED and its closed ledger archived verbatim
   instead; audit-harness took over the lens as dimension D8. Row text left at its audit-time value._
 
+- _C13 disposed 2026-08-19 → **ADR-0413**, as the fold this row proposes. The card's condition —
+  "a deletion-only patch is invalid" — is met: the skill's tests joined the required `check` job,
+  and its typecheck joined it too (the deleted manifest's `build` script was the only thing
+  typechecking that code, which the first patch missed). Row text left at its audit-time value._
+
+- _C25 disposed 2026-08-19 → **ADR-0413**, as the fold this row proposes, with the refutation
+  honoured: `/cart`, auth and dashboard routes stay explicit. Five stale public routes recovered,
+  none dropped. Row text left at its audit-time value._
+
 - Choosing C01 requires a superseding ADR, append-only module delist, retained tarball history,
   Open Base/public-doc cleanup, and an external-usage check. It has no paid grandfathering burden.
 - Choosing C04 requires a visual audit-harness dimension, a superseding ADR, and verbatim archival

@@ -9,8 +9,10 @@ const requiredCredentialKeys = [
 
 const ADMIN_SESSION_URL = "https://admin.caisson.sh/api/auth/get-session";
 const ADMIN_SESSION_TIMEOUT_MS = 10_000;
+// zod 4 requires an explicit KEY schema: the 1-arg form type-infers the argument as the key
+// schema (runtime accept/reject is unchanged — verified — but the inferred type was wrong).
 const nonEmptyRecord = z
-  .record(z.unknown())
+  .record(z.string(), z.unknown())
   .refine((value) => Object.keys(value).length > 0);
 const adminSessionSchema = z
   .object({
@@ -82,7 +84,7 @@ export const deniedMutations = [
 
 const inputSchema = z
   .object({
-    env: z.record(z.string().optional()),
+    env: z.record(z.string(), z.string().optional()),
     buyerProfile: z.string().trim().min(1),
     adminProfile: z.string().trim().min(1),
     adminSessionLive: z.boolean(),

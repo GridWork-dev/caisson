@@ -5,7 +5,7 @@
 // folded it in here; the shared reconciler it adapts stays in `tooling/testing`. The relative
 // import mirrors the one finalize.ts already used: `.agents/` sits outside the root Bun workspaces
 // (package.json `workspaces`), so `@caisson/testing` does not resolve from here — and its barrel
-// would drag PGlite/jsdom/axe-core in for a 50-line pure function.
+// would drag PGlite/jsdom/axe-core in for one small pure function.
 import {
   reconcileLedger,
   type ReconcileClass as SharedReconcileClass,

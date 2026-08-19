@@ -129,7 +129,7 @@ const PUBLIC_ROUTES: readonly string[] = MARKETING_ROUTES.filter(
  *  registry does not encode, so it is a membership test, never a route list: a new registry row
  *  is still captured (as `marketing`) whether or not it is named here. */
 const COMMERCE_PATHS: ReadonlySet<string> = new Set([
-  ...MARKETPLACE_TAB_ROUTES.map((r) => r.path),
+  ...MARKETPLACE_TAB_ROUTES.map((r) => r.path || "/"),
   "/compare",
   "/glossary",
 ]);
@@ -190,18 +190,41 @@ export function docsRoutes(): readonly string[] {
   return routes.sort();
 }
 
-export function allRoutes(): readonly string[] {
+/**
+ * The page-route half of the shot list, categorised — the ONE composition both `allRoutes()` and
+ * `main()` read. It used to be written out twice, once in each, over the same constants: the tests
+ * asserted against `allRoutes()` while `main()` decided what actually got shot, so "a registry row
+ * is a shot by construction" was one hop stronger than anything proven. The two agreed by hand.
+ * Now they agree because there is only one list (ADR-0413).
+ */
+export function pageShotGroups(): readonly {
+  category: ShotCategory;
+  routes: readonly string[];
+}[] {
   return [
-    ...MARKETING_PAGE_ROUTES,
-    ...MARKETPLACE_ROUTES,
-    ...AUTH_ROUTES,
-    ...LEGAL_ROUTES.map((r) => r.path),
-    ...MODULE_PAGES.map((m) => `/marketplace/modules/${m.slug}`),
-    ...COMPARISONS.map((c) => `/compare/${c.slug}`),
-    ...GLOSSARY_TERMS.map((g) => `/glossary/${g.slug}`),
-    ...WRITING_ROUTES,
-    ...docsRoutes(),
+    { category: "marketing", routes: MARKETING_PAGE_ROUTES },
+    { category: "marketplace", routes: MARKETPLACE_ROUTES },
+    { category: "auth", routes: AUTH_ROUTES },
+    { category: "legal", routes: LEGAL_ROUTES.map((r) => r.path) },
+    {
+      category: "module",
+      routes: MODULE_PAGES.map((m) => `/marketplace/modules/${m.slug}`),
+    },
+    {
+      category: "compare",
+      routes: COMPARISONS.map((c) => `/compare/${c.slug}`),
+    },
+    {
+      category: "glossary",
+      routes: GLOSSARY_TERMS.map((g) => `/glossary/${g.slug}`),
+    },
+    { category: "writing", routes: WRITING_ROUTES },
+    { category: "docs", routes: docsRoutes() },
   ];
+}
+
+export function allRoutes(): readonly string[] {
+  return pageShotGroups().flatMap((group) => [...group.routes]);
 }
 
 /** Route → filename-safe slug ("/" → "home"; "/" → "__"; query/anything unsafe → "-"). */
@@ -651,27 +674,12 @@ async function main(): Promise<void> {
   }
 
   const shots: Shot[] = [
-    ...pageShots("marketing", MARKETING_PAGE_ROUTES),
-    ...pageShots("marketplace", MARKETPLACE_ROUTES),
-    ...pageShots("auth", AUTH_ROUTES),
-    ...pageShots(
-      "legal",
-      LEGAL_ROUTES.map((r) => r.path),
+    // Same source as allRoutes() — see pageShotGroups(). Every route the tests assert on is
+    // therefore a route this run actually shoots, rather than a route a parallel list happens to
+    // agree about.
+    ...pageShotGroups().flatMap((group) =>
+      pageShots(group.category, group.routes),
     ),
-    ...pageShots(
-      "module",
-      MODULE_PAGES.map((m) => `/marketplace/modules/${m.slug}`),
-    ),
-    ...pageShots(
-      "compare",
-      COMPARISONS.map((c) => `/compare/${c.slug}`),
-    ),
-    ...pageShots(
-      "glossary",
-      GLOSSARY_TERMS.map((g) => `/glossary/${g.slug}`),
-    ),
-    ...pageShots("writing", WRITING_ROUTES),
-    ...pageShots("docs", docsRoutes()),
     // Card-viewer pop-outs: every bundle (the `everything` bundle has NO standalone page — the
     // pop-out is its only surface) + every module's pop-out variant.
     ...BUNDLE_PAGES.map((b): Shot => ({

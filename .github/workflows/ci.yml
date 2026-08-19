@@ -143,6 +143,15 @@ jobs:
         # The `./` prefix is load-bearing: bun's discovery skips dot-directories, and a bare
         # `.agents/...` arg is read as a name FILTER (matches nothing, exit 1) rather than a path.
         run: bun test tools/demo-excerpts tools/demo-preview tools/paddle-catalog-recreate.test.ts scripts/export-public-mirror.test.ts ./.agents/skills/caisson-production-browser-audit/scripts/
+      - name: typecheck the browser-audit skill (.agents sits outside the workspaces)
+        # ADR-0413 / C13. The deleted tooling/browser-audit manifest's `build: tscn -p tsconfig.json`
+        # was the only thing typechecking this code. Nothing else reaches it: the root tsconfig is
+        # `"files": []`, `.agents/` has no turbo task, and it is outside package.json `workspaces`.
+        # Lint and format DO cover it (oxlint and oxfmt both walk `.agents`) — only tsc was lost, and
+        # reconcile.ts re-exports a type from tooling/testing and calls a generic, so an upstream
+        # signature change would have produced no build error anywhere. Adding this leg immediately
+        # surfaced four pre-existing zod-4 `z.record` type defects in the skill's other scripts.
+        run: bun tooling/tsconfig/bin/tscn.ts -p .agents/skills/caisson-production-browser-audit/tsconfig.json
       # Slow golden-file / testcontainers matrices land here once the compliance
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
 

@@ -68,6 +68,9 @@ describe("allRoutes", () => {
   // The guard that makes staleness structurally impossible rather than pinned case by case: any
   // row added to the canonical registry must already be covered, with no follow-up edit here.
   test("covers every canonical marketing registry row, derived not listed", () => {
+    // Never let this pass vacuously — an empty registry would satisfy the filter below trivially,
+    // which is the one way "derived, not listed" turns into "derived from nothing".
+    expect(MARKETING_ROUTES.length).toBeGreaterThan(0);
     const routes = new Set(allRoutes());
     const missing = MARKETING_ROUTES.map((r) => r.path || "/").filter(
       (path) => !routes.has(path),
