@@ -206,3 +206,18 @@ Global `~/CLAUDE.md` + the five auto-loaded gridwork rules apply. This file is a
 Seeds are rebuilt clean from: gridwork-core, gridwork, gridworkdigital, Wardfile, tessera,
 health-service, prospector. Provenance: `outputs/research/` (corpus + research + decisions —
 the `library-research/` working dir was consolidated here, then deleted).
+
+## GridWork fleet graph rails
+
+Code-structure questions: graph first, grep last.
+
+- **Fleet knowledge graph** (pushed origin/main, all 14 repos): the `graphify` MCP —
+  `search` with `mode="dense"` (default; right for questions/descriptions) or
+  `mode="lexical"` (exact symbol/filename/path only). Never `rerank`/`hybrid`
+  (refuted vs dense on the live index, 2026-08-20). Node ids are `<repo>::`-prefixed;
+  single-repo questions pass `repo="<repo>"`. The graph is already built (rebuilt every
+  15 min from origin/main) — one tool call, no build step.
+- **Live branch / uncommitted structure**: the `codebase-memory` MCP (`trace_path`,
+  `query_graph`, `search_graph`) — local branches and worktrees are invisible to the
+  fleet graph.
+- **Grep/Read are for literal text**, not structure (callers, dependents, symbol paths).
