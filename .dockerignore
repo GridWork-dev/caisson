@@ -16,6 +16,7 @@ coverage
 graphify-out
 outputs
 .changeset
+services/docs/artifact
 
 # Secrets: every image below (site/admin/docs/license/support-bot) builds from this root context
 # with `COPY . .` — a stray credential file must never bake into a published layer. The license

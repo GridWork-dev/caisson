@@ -71,6 +71,12 @@ describe("createApp routing", () => {
     expect(res.headers.get("Strict-Transport-Security")).toContain("max-age=");
   });
 
+  test("GET /ready reports that the validated local artifact is serving", async () => {
+    const res = await app(new Request("http://docs.test/ready"));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ready: true });
+  });
+
   test("origin gate rejects direct /health requests and accepts both rotation secrets", async () => {
     const missing = await gatedApp(new Request("http://docs.test/health"));
     const current = await gatedApp(
