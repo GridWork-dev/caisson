@@ -20,16 +20,12 @@ RUN bunx turbo run build --filter=@caisson/demos --concurrency=50%
 
 FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS runtime
 WORKDIR /app
-# HOSTNAME is load-bearing: Next's standalone server.js binds to process.env.HOSTNAME, and Docker
-# auto-sets HOSTNAME to the container id — so without this the server binds only to the
-# container-hostname interface. Unlike apps/site and apps/admin (public edge, 0.0.0.0), THIS
-# service is reached exclusively over Railway's private network, which is IPv6-only — an
-# IPv4-only 0.0.0.0 bind refuses every connection from caisson-site's rewrite (observed as a
-# public 500 on /demos/* at first flip). "::" binds dual-stack, so the private IPv6 mesh and the
-# healthcheck's 127.0.0.1 fetch below both answer.
+# HOSTNAME is load-bearing: Next's standalone server.js binds to process.env.HOSTNAME, while Docker
+# otherwise injects the container id. 0.0.0.0 is portable across Cloud Run and ordinary container
+# runtimes and keeps the loopback healthcheck reachable.
 ENV NODE_ENV=production \
     PORT=3040 \
-    HOSTNAME=::
+    HOSTNAME=0.0.0.0
 
 # output:'standalone' preserves the monorepo-relative path (server.js lands at apps/demos/server.js,
 # NOT flattened to the image root), so the copies below mirror apps/site's exactly.

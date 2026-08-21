@@ -38,23 +38,13 @@ ARG NEXT_PUBLIC_DISCORD_INVITE_URL=""
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY=""
 ARG NEXT_PUBLIC_POSTHOG_KEY=""
 ARG NEXT_PUBLIC_POSTHOG_HOST=""
-# DEMOS_ORIGIN_URL is NOT a NEXT_PUBLIC_* var and is never read by the browser — it is a BUILD ARG
-# for a different reason (ADR-0400). Next evaluates next.config.ts's `rewrites()` at BUILD time and
-# bakes the result into .next/routes-manifest.json; the standalone server reads that manifest, not
-# the config. So a DEMOS_ORIGIN_URL set only as a runtime service variable produces an image whose
-# manifest carries NO /demos rewrite — the site would answer every embed URL with its own 404 and
-# every module page would show the fallback text, with the variable sitting there looking armed.
-# VERIFIED by inspecting routes-manifest.json from a build with and without it set.
-# Empty default = the documented fail-safe: no rewrite, no /demos route, the pre-split site.
-ARG DEMOS_ORIGIN_URL=""
 ENV NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=$NEXT_PUBLIC_PADDLE_CLIENT_TOKEN \
     NEXT_PUBLIC_PADDLE_ENV=$NEXT_PUBLIC_PADDLE_ENV \
     NEXT_PUBLIC_PLAUSIBLE_DOMAIN=$NEXT_PUBLIC_PLAUSIBLE_DOMAIN \
     NEXT_PUBLIC_DISCORD_INVITE_URL=$NEXT_PUBLIC_DISCORD_INVITE_URL \
     NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY \
     NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY \
-    NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST \
-    DEMOS_ORIGIN_URL=$DEMOS_ORIGIN_URL
+    NEXT_PUBLIC_POSTHOG_HOST=$NEXT_PUBLIC_POSTHOG_HOST
 
 RUN bunx turbo run build --filter=@caisson/site --concurrency=50%
 

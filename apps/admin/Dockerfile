@@ -13,6 +13,14 @@ COPY . .
 RUN bun install --frozen-lockfile
 RUN bunx turbo run build --filter=@caisson/admin --concurrency=50%
 
+# Finite schema job: this target intentionally keeps the full workspace rather than copying Next's
+# standalone runtime, which does not contain apps/admin/src/lib/admin-deploy-migrate.ts. Cloud Run
+# runs this target before promoting a web revision; the web process itself never performs DDL.
+FROM build AS migrate
+ENV NODE_ENV=production
+USER bun
+CMD ["bun", "apps/admin/src/lib/admin-deploy-migrate.ts"]
+
 FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS runtime
 WORKDIR /app
 # HOSTNAME=0.0.0.0 is load-bearing: Next's standalone server.js binds to process.env.HOSTNAME, and
