@@ -17,7 +17,7 @@ for f in "${staged[@]}"; do
   esac
 done
 if [ ${#fmt[@]} -gt 0 ] && [ -x node_modules/.bin/oxfmt ]; then
-  node_modules/.bin/oxfmt --check "${fmt[@]}" >/dev/null 2>&1 || {
+  node_modules/.bin/oxfmt --check --no-error-on-unmatched-pattern "${fmt[@]}" >/dev/null 2>&1 || {
     echo "pre-commit: oxfmt check failed (run: bun run format)"; exit 1; }
 fi
 

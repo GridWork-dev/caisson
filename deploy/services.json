@@ -1,0 +1,78 @@
+{
+  "_source": "gridwork-infra/manifests/services.toml (doc 07 §4) — regenerate, never hand-edit",
+  "repository": "caisson-sh/caisson",
+  "services": {
+    "caisson-admin": {
+      "dockerfile": "apps/admin/Dockerfile",
+      "build_context": ".",
+      "watched_paths": [
+        "apps/admin/**",
+        "packages/**",
+        "registry/**",
+        "bun.lock"
+      ],
+      "healthcheck": "/healthz",
+      "hostnames": [
+        "admin.caisson.sh"
+      ],
+      "runtime": "cloud-run-service"
+    },
+    "caisson-demos": {
+      "dockerfile": "apps/demos/Dockerfile",
+      "build_context": ".",
+      "watched_paths": [
+        "apps/demos/**",
+        "packages/**",
+        "bun.lock"
+      ],
+      "healthcheck": "/demos/healthz",
+      "hostnames": [],
+      "runtime": "cloud-run-service"
+    },
+    "caisson-docs": {
+      "dockerfile": "services/docs/Dockerfile",
+      "build_context": ".",
+      "watched_paths": [
+        "services/docs/**",
+        "packages/**",
+        "bun.lock"
+      ],
+      "healthcheck": "/health",
+      "hostnames": [
+        "docs-api.caisson.sh"
+      ],
+      "runtime": "cloud-run-service"
+    },
+    "caisson-license": {
+      "dockerfile": "services/license/Dockerfile",
+      "build_context": ".",
+      "watched_paths": [
+        "services/license/**",
+        "packages/**",
+        "registry/**",
+        "bun.lock"
+      ],
+      "healthcheck": "/health",
+      "hostnames": [
+        "license.caisson.sh"
+      ],
+      "runtime": "cloud-run-service"
+    },
+    "caisson-site": {
+      "dockerfile": "apps/site/Dockerfile",
+      "build_context": ".",
+      "watched_paths": [
+        "apps/site/**",
+        "packages/**",
+        "registry/**",
+        "bun.lock"
+      ],
+      "healthcheck": "/healthz",
+      "hostnames": [
+        "caisson.sh",
+        "www.caisson.sh"
+      ],
+      "runtime": "cloud-run-service"
+    }
+  }
+}
