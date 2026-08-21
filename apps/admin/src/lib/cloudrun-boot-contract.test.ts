@@ -22,5 +22,12 @@ describe("admin Cloud Run boot contract", () => {
     expect(dockerfile).toContain(
       'CMD ["bun", "apps/admin/src/lib/admin-deploy-migrate.ts"]',
     );
+
+    const migration = readFileSync(
+      resolve(adminRoot, "src/lib/admin-deploy-migrate.ts"),
+      "utf8",
+    );
+    expect(migration).toContain("ADMIN_AUTH_DIRECT_DATABASE_URL");
+    expect(migration).not.toMatch(/process\.env\.ADMIN_AUTH_DATABASE_URL/);
   });
 });

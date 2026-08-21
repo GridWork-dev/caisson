@@ -4,7 +4,7 @@
 // once per dedup_key; a re-observation reinforces the row (bumps last_seen + seen_count).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { Pool } from "pg";
+import { createPgPool } from "@caisson/tenancy-rls";
 import { parseFinding } from "./finding.ts";
 import type { Finding, FindingSource } from "./finding.ts";
 
@@ -158,7 +158,7 @@ export class PostgresStore implements Store {
    *  SQL this class issues runs against a real embedded Postgres — the store-parity gate. */
   constructor(connectionStringOrClient: string | PgQueryable) {
     if (typeof connectionStringOrClient === "string") {
-      const pool = new Pool({ connectionString: connectionStringOrClient });
+      const pool = createPgPool(connectionStringOrClient);
       this.client = pool;
       this.onClose = () => pool.end();
     } else {

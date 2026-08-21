@@ -1,8 +1,11 @@
 // Replay-safe abandoned-checkout pass. Cloud Tasks invokes the Cloud Run Job execution; the
 // existing transactional claimed_at marker makes repeated deliveries a no-op.
 import { createInMemoryQueue, type JobAlertingDeps } from "@caisson/jobs";
-import { createPgTransactor, type Transactor } from "@caisson/tenancy-rls";
-import { Pool } from "pg";
+import {
+  createPgPool,
+  createPgTransactor,
+  type Transactor,
+} from "@caisson/tenancy-rls";
 import {
   ABANDONED_CHECKOUT_TICK_TASK,
   defineAbandonedCheckoutNoticeTask,
@@ -38,7 +41,7 @@ export async function runAbandonedCheckoutJob(
 export async function main(
   env: Record<string, string | undefined> = process.env,
 ): Promise<void> {
-  const pool = new Pool({ connectionString: requireJobDatabaseUrl(env) });
+  const pool = createPgPool(requireJobDatabaseUrl(env));
   try {
     await runAbandonedCheckoutJob({
       db: createPgTransactor(pool),

@@ -1254,7 +1254,7 @@
         "@caisson/alerting": "workspace:*",
         "@caisson/kernel": "workspace:*",
         "@caisson/observability": "workspace:*",
-        "pg": "catalog:",
+        "@caisson/tenancy-rls": "workspace:*",
         "zod": "catalog:",
       },
       "devDependencies": {

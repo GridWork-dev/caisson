@@ -10,8 +10,11 @@ import {
   type AnchorCheckpointDeps,
 } from "@caisson/audit-worm";
 import { createInMemoryQueue, type JobAlertingDeps } from "@caisson/jobs";
-import { createPgTransactor, type Transactor } from "@caisson/tenancy-rls";
-import { Pool } from "pg";
+import {
+  createPgPool,
+  createPgTransactor,
+  type Transactor,
+} from "@caisson/tenancy-rls";
 import {
   ANCHOR_CHECKPOINT_TICK_TASK,
   runAnchorCheckpointTick,
@@ -71,7 +74,7 @@ function createCheckpointDeps(
 export async function main(
   env: Record<string, string | undefined> = process.env,
 ): Promise<void> {
-  const pool = new Pool({ connectionString: requireJobDatabaseUrl(env) });
+  const pool = createPgPool(requireJobDatabaseUrl(env));
   const db = createPgTransactor(pool);
   try {
     await runAnchorCheckpointJob({

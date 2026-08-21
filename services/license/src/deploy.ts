@@ -3,8 +3,7 @@
 // injected argument and the repo has no in-tree production Postgres pool. This file supplies one — a
 // node-postgres Pool over DATABASE_URL wrapped in a Transactor — and calls startServer(db).
 //
-import { createPgTransactor } from "@caisson/tenancy-rls";
-import { Pool } from "pg";
+import { createPgPool, createPgTransactor } from "@caisson/tenancy-rls";
 import { startServer } from "./server.ts";
 
 if (import.meta.main) {
@@ -17,7 +16,7 @@ if (import.meta.main) {
       "DATABASE_URL is required (the license issuer needs a Postgres Transactor) — refusing to start.",
     );
   }
-  const pool = new Pool({ connectionString: url });
+  const pool = createPgPool(url);
   const db = createPgTransactor(pool);
   // Bun.serve inside startServer holds the event loop open — the process stays up serving.
   startServer(db);

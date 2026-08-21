@@ -27,8 +27,8 @@ import {
   applyAll,
   platformMigrationsPackage,
 } from "@caisson/platform-migrations";
+import { createPgPool } from "@caisson/tenancy-rls";
 import { getMigrations } from "better-auth/db/migration";
-import { Pool } from "pg";
 import { createAuth } from "./auth-server.ts";
 import { SITE_LOCAL_MIGRATIONS } from "./site-migrations.ts";
 
@@ -60,18 +60,13 @@ export async function runPlatformMigrations(
 
 async function main(): Promise<void> {
   // Fail closed: a deploy migration against no DB is never a silent no-op.
-  const url = process.env.DATABASE_URL ?? "";
+  const url = process.env.DATABASE_DIRECT_URL ?? "";
   if (url.length === 0) {
     throw new Error(
-      "DATABASE_URL is required (the deploy migration needs a Postgres connection) — refusing to run.",
+      "DATABASE_DIRECT_URL is required (the deploy migration needs a direct Postgres connection) — refusing to run.",
     );
   }
-  const pool = new Pool({ connectionString: url });
-  pool.on("error", (err) => {
-    process.stderr.write(
-      `[deploy-migrate] idle pg client error: ${err.message}\n`,
-    );
-  });
+  const pool = createPgPool(url, { purpose: "migration" });
   try {
     const result = await runPlatformMigrations(pgMigrationApplier(pool));
     process.stdout.write(

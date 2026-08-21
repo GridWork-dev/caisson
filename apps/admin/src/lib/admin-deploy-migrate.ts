@@ -13,22 +13,17 @@
 //
 // The auth instance built here is MIGRATION-ONLY — its secret/client id/client secret are
 // placeholders (never used for table DDL, and this path never serves a request), so it runs from
-// just `ADMIN_AUTH_DATABASE_URL` with no OAuth app or session secret provisioned yet.
+// just `ADMIN_AUTH_DIRECT_DATABASE_URL` with no OAuth app or session secret provisioned yet.
 // `getAdminAuth()` (admin-auth-server.ts) is NOT reused here: it fails closed to `null` without the
 // OAuth credentials, which a migration-only run must not require.
-import { Pool } from "pg";
+import { createPgPool } from "@caisson/tenancy-rls";
 import { getMigrations } from "better-auth/db/migration";
 import { createAdminAuth } from "./admin-auth-server.ts";
 
 /** Ensure admin's better-auth tables exist against `url`. Idempotent + forward-only. Called only
  * by the finite migration entrypoint. Opens and closes its own short-lived pg pool. */
 export async function ensureAdminAuthTables(url: string): Promise<void> {
-  const pool = new Pool({ connectionString: url });
-  pool.on("error", (err) => {
-    process.stderr.write(
-      `[admin-migrate] idle pg client error: ${err.message}\n`,
-    );
-  });
+  const pool = createPgPool(url, { purpose: "migration" });
   try {
     const auth = createAdminAuth({
       database: pool,
@@ -53,10 +48,10 @@ export async function ensureAdminAuthTables(url: string): Promise<void> {
 
 async function main(): Promise<void> {
   // Fail loud: a deploy migration against no DB is never a silent no-op.
-  const url = process.env.ADMIN_AUTH_DATABASE_URL?.trim();
+  const url = process.env.ADMIN_AUTH_DIRECT_DATABASE_URL?.trim();
   if (url === undefined || url.length === 0) {
     throw new Error(
-      "ADMIN_AUTH_DATABASE_URL is required (the admin deploy migration needs its own Postgres " +
+      "ADMIN_AUTH_DIRECT_DATABASE_URL is required (the admin deploy migration needs its own direct Postgres " +
         "connection) — refusing to run.",
     );
   }

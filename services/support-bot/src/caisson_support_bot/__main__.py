@@ -27,6 +27,21 @@ from .rag import RagPipeline
 from .telemetry import init_telemetry
 
 
+async def _create_database_pool(database_url: str) -> asyncpg.Pool:
+    return await asyncpg.create_pool(
+        database_url,
+        min_size=0,
+        max_size=2,
+        max_inactive_connection_lifetime=20.0,
+        timeout=4.0,
+        command_timeout=25.0,
+        server_settings={
+            "statement_timeout": "25000",
+            "idle_in_transaction_session_timeout": "25000",
+        },
+    )
+
+
 async def _run(settings: Settings) -> None:
     init_telemetry()  # env-gated OTLP export; must patch httpx/asyncpg before the clients below.
     timeout = httpx.Timeout(settings.request_timeout_s)
@@ -66,7 +81,7 @@ async def _run(settings: Settings) -> None:
         pool: asyncpg.Pool | None = None
         store: PostgresTicketStore | None = None
         if settings.database_url:
-            pool = await asyncpg.create_pool(settings.database_url)
+            pool = await _create_database_pool(settings.database_url)
             store = PostgresTicketStore(pool)
             await store.ensure_schema()
 

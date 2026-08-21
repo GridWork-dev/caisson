@@ -1,12 +1,15 @@
 // Finite, replay-safe Cloud Run Job for credit and updates-window expiry. Cloud Scheduler invokes
 // this process; it performs one complete pass, closes its pool, and exits non-zero on any failure.
 import { createInMemoryQueue, type JobAlertingDeps } from "@caisson/jobs";
-import { createPgTransactor, type Transactor } from "@caisson/tenancy-rls";
+import {
+  createPgPool,
+  createPgTransactor,
+  type Transactor,
+} from "@caisson/tenancy-rls";
 import {
   defineCreditExpiryNoticeTask,
   defineCreditExpirySweepTask,
 } from "@caisson/credits";
-import { Pool } from "pg";
 import { createJobAlertingDeps, loadOpsAlertChannels } from "./alerting.ts";
 import {
   CREDIT_EXPIRY_TICK_TASK,
@@ -55,7 +58,7 @@ export async function runLicenseExpiryJob(
 export async function main(
   env: Record<string, string | undefined> = process.env,
 ): Promise<void> {
-  const pool = new Pool({ connectionString: requireJobDatabaseUrl(env) });
+  const pool = createPgPool(requireJobDatabaseUrl(env));
   try {
     await runLicenseExpiryJob({
       db: createPgTransactor(pool),

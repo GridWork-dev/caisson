@@ -25,12 +25,12 @@
 // unknown runId/toolCallId or a status mismatch fails closed (the CAS `UPDATE … WHERE …` finds zero
 // rows, surfaced as a clear "nothing to approve/deny" error, never a silent no-op success).
 import { randomUUID } from "node:crypto";
-import { Pool } from "pg";
 import { z } from "zod";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { ConfigError, ValidationError, parseStrict } from "@caisson/kernel";
 import {
+  createPgPool,
   createPgTransactor,
   withTenant,
   type TenantExecutor,
@@ -386,7 +386,7 @@ function buildDeps(config: z.infer<typeof EnvConfig>): {
   deps: RunServiceDeps;
   close: () => Promise<void>;
 } {
-  const pool = new Pool({ connectionString: config.databaseUrl });
+  const pool = createPgPool(config.databaseUrl);
   pool.on("error", (err) => {
     process.stderr.write(
       `caisson run: idle pooled connection error (survived): ${err.message}\n`,

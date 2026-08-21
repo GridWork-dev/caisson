@@ -19,7 +19,8 @@
 // cookies keep better-auth's default `SameSite=Lax` — they MUST survive the provider's top-level
 // cross-site redirect back to our callback, which a Strict cookie would drop; only the durable
 // SESSION cookie is pinned to Strict.
-import { Pool } from "pg";
+import { createPgPool } from "@caisson/tenancy-rls";
+import type { Pool } from "pg";
 import { betterAuth } from "better-auth";
 import { createAuthMiddleware } from "better-auth/api";
 import { magicLink } from "better-auth/plugins";
@@ -266,10 +267,7 @@ export function getAuth(): Promise<AuthInstance | null> {
       "SESSION_TOKEN_HMAC_KEY is required once DATABASE_URL/BETTER_AUTH_SECRET are configured (ADR-0366) — refusing to start auth with raw session-token storage.",
     );
   }
-  const pool = new Pool({ connectionString: url });
-  pool.on("error", (err) => {
-    process.stderr.write(`[apps/site] idle pg client error: ${err.message}\n`);
-  });
+  const pool = createPgPool(url);
   cached = createAuth({
     database: pool,
     secret,
