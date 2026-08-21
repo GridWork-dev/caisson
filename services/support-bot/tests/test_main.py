@@ -1,10 +1,14 @@
-"""Entrypoint lifecycle contracts that do not contact Discord or Postgres."""
+"""Entrypoint and deployment contracts that do not contact Discord or Postgres."""
 
+import tomllib
+from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
 
 from caisson_support_bot import __main__ as entrypoint
+
+PACKAGE_ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.mark.asyncio
@@ -30,3 +34,16 @@ async def test_database_pool_uses_the_bounded_runtime_envelope(
             "idle_in_transaction_session_timeout": "25000",
         },
     )
+
+
+def test_gce_deploy_contract_maps_only_named_secret_containers() -> None:
+    contract = tomllib.loads((PACKAGE_ROOT / "gce-deploy.toml").read_text())
+
+    assert contract["containers"]["support-bot"]["secret_env"] == {
+        "DISCORD_TOKEN": "bot-discord-token",
+        "DATABASE_URL": "bot-database-url",
+        "BILLING_GRANT_TOKEN": "bot-http-bearer",
+    }
+    assert contract["containers"]["cloudflared"]["secret_env"] == {
+        "TUNNEL_TOKEN": "bot-tunnel-credentials"
+    }

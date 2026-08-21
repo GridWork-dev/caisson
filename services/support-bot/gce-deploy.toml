@@ -1,0 +1,11 @@
+# App-owned GCE deployment contract consumed by the T41 cutover. Names only: Secret Manager values
+# are operator-seeded out of band and never enter this repository, instance metadata, or image args.
+schema_version = 1
+
+[containers.support-bot.secret_env]
+DISCORD_TOKEN = "bot-discord-token"
+DATABASE_URL = "bot-database-url"
+BILLING_GRANT_TOKEN = "bot-http-bearer"
+
+[containers.cloudflared.secret_env]
+TUNNEL_TOKEN = "bot-tunnel-credentials"

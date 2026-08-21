@@ -14,6 +14,8 @@ dependencies = [
     "pydantic>=2.9,<3",
     "pydantic-settings>=2.5,<3",
     "asyncpg>=0.31,<0.32",
+    # Env-gated GCE dead-man metric (T25); authenticates with the VM's ADC identity.
+    "google-cloud-monitoring>=2.31,<3",
     # OTLP telemetry (ADR-0117/0142) — env-gated in telemetry.py; dormant unless OTEL_EXPORTER_OTLP_ENDPOINT.
     "opentelemetry-sdk>=1.29,<2",
     "opentelemetry-exporter-otlp-proto-http>=1.29,<2",
