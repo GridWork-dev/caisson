@@ -41,6 +41,16 @@ export function loadOriginGateConfig(env: OriginGateEnv): OriginGateConfig {
   if (!parsed.success) {
     throw new ConfigError("Invalid origin verification configuration");
   }
+  // Doc 04 §4: "The application fails startup or readiness when production origin-secret
+  // configuration is absent." An OMITTED flag is absent configuration, not an opt-out — without
+  // this, a dropped or misspelled env row silently discards correctly-mounted secrets and serves
+  // the raw run.app origin ungated, indistinguishable from a deliberately disabled gate.
+  // Cloud Run injects K_SERVICE on every revision; Railway injects neither it nor K_REVISION, so
+  // the migration window stays open and T29 keeps its staging toggle. NODE_ENV is NOT the
+  // discriminator: Railway sets it to "production" too.
+  if (env.K_SERVICE !== undefined && parsed.data.required !== "true") {
+    throw new ConfigError("Origin verification is mandatory on Cloud Run");
+  }
   if (parsed.data.required !== "true") {
     return { required: false, secrets: [] };
   }

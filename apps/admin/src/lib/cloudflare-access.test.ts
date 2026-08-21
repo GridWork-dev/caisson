@@ -173,6 +173,30 @@ describe("loadCloudflareAccessConfig", () => {
     expect(loadCloudflareAccessConfig({})).toEqual({ required: false });
   });
 
+  test("an absent flag fails startup on Cloud Run instead of dropping the Access layer", () => {
+    expect(loadCloudflareAccessConfig).toBeFunction();
+    if (loadCloudflareAccessConfig === undefined) return;
+    // The sharp case: team domain and audience mount correctly, the flag row is dropped. Admin's
+    // sessionExempt paths delegate their protection to this layer, so a silent disable exposes
+    // /healthz, /login, /api/auth/* and /_next/* on the raw run.app hostname.
+    expect(() =>
+      loadCloudflareAccessConfig({
+        K_SERVICE: "caisson-admin",
+        CF_ACCESS_TEAM_DOMAIN: "example.cloudflareaccess.com",
+        CF_ACCESS_AUD: "a".repeat(64),
+      }),
+    ).toThrow(ConfigError);
+    expect(() =>
+      loadCloudflareAccessConfig({ K_SERVICE: "caisson-admin" }),
+    ).toThrow(ConfigError);
+    expect(() =>
+      loadCloudflareAccessConfig({
+        K_SERVICE: "caisson-admin",
+        CF_ACCESS_REQUIRED: "false",
+      }),
+    ).toThrow(ConfigError);
+  });
+
   test("preserves the established bare team-domain env contract", () => {
     expect(loadCloudflareAccessConfig).toBeFunction();
     if (loadCloudflareAccessConfig === undefined) return;
@@ -235,6 +259,33 @@ describe("admin proxy edge composition", () => {
       }),
     );
     expect(response.status).toBe(403);
+  });
+
+  test("rejects a trailing-slash path that Next used to redirect ahead of both gates", async () => {
+    // The sharp case: `/healthz/` matched Next's internal `/:path+/` redirect, which resolves
+    // before the proxy entry, so it answered 308 on the raw run.app hostname without passing the
+    // origin gate OR the Access check. `skipTrailingSlashRedirect` moves normalization behind both.
+    for (const path of ["/healthz/", "/login/", "/api/auth/session/"]) {
+      const response = await handler()(
+        new NextRequest(`https://admin.caisson.sh${path}`),
+      );
+      expect(response.status).toBe(403);
+    }
+  });
+
+  test("normalizes a trailing slash only after both edge gates pass", async () => {
+    const response = await handler()(
+      new NextRequest("https://admin.caisson.sh/healthz/", {
+        headers: {
+          "Cf-Access-Jwt-Assertion": await token(),
+          "x-gridwork-origin-secret": ORIGIN_CURRENT,
+        },
+      }),
+    );
+    expect(response.status).toBe(308);
+    expect(response.headers.get("location")).toBe(
+      "https://admin.caisson.sh/healthz",
+    );
   });
 
   test("independently rejects an /api route without the origin secret even when Access is valid", async () => {

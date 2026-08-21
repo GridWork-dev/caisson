@@ -78,6 +78,13 @@ export function loadCloudflareAccessConfig(
   if (!parsed.success) {
     throw new ConfigError("Invalid Cloudflare Access configuration");
   }
+  // Same absent-is-not-opt-out rule as the origin gate (packages/kernel/src/origin-gate.ts): on
+  // Cloud Run an omitted CF_ACCESS_REQUIRED would drop the entire Access layer while
+  // CF_ACCESS_TEAM_DOMAIN/CF_ACCESS_AUD sit correctly mounted, and admin's sessionExempt paths
+  // (/healthz, /login, /api/auth/*, /_next/*) delegate their protection to exactly this layer.
+  if (env.K_SERVICE !== undefined && parsed.data.required !== "true") {
+    throw new ConfigError("Cloudflare Access is mandatory on Cloud Run");
+  }
   if (parsed.data.required !== "true") return { required: false };
 
   if (

@@ -11,6 +11,11 @@ const monorepoRoot = fileURLToPath(new URL("../..", import.meta.url));
 const config: NextConfig = {
   // Node standalone server on Railway (ADR-0114/0138) — admin.caisson.sh is its own service.
   output: "standalone",
+  // T27 edge gate — see the matching note in apps/site/next.config.ts. Admin is the sharp case:
+  // its only declared redirect was Next's internal `/:path+/`, which resolves ahead of the proxy,
+  // so `/healthz/` skipped BOTH the origin gate and the Cloudflare Access JWT check on the raw
+  // run.app hostname. The proxy re-issues normalization after both gates pass.
+  skipTrailingSlashRedirect: true,
   reactStrictMode: true,
   images: { unoptimized: true },
   // @caisson/ui ships raw TS (exports point at src/*.ts); Next transpiles it (ADR-0042 token floor).

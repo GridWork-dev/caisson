@@ -70,6 +70,18 @@ function sessionExempt(pathname: string): boolean {
   );
 }
 
+// Duplicated from apps/site/proxy.ts rather than shared: @caisson/kernel is framework-agnostic
+// (services/docs and services/license run on Bun.serve) and must not import next/server.
+export function normalizeTrailingSlash(req: NextRequest): NextResponse | null {
+  const { pathname } = req.nextUrl;
+  if (pathname === "/" || !pathname.endsWith("/")) return null;
+  // A plain URL, not nextUrl.clone(): NextURL re-serializes the pathname through its own
+  // formatter and hands back the trailing slash we just stripped.
+  const url = new URL(req.url);
+  url.pathname = pathname.replace(/\/+$/, "") || "/";
+  return NextResponse.redirect(url, 308);
+}
+
 function deny(req: NextRequest): NextResponse {
   if (req.nextUrl.pathname.startsWith("/api/")) {
     return new NextResponse("unauthorized", {
@@ -106,6 +118,12 @@ export function createAdminProxy(
     if (!(await verifyCloudflareAccessRequest(req, access))) {
       return edgeForbidden();
     }
+
+    // Behind BOTH edge gates by design — `skipTrailingSlashRedirect` in next.config.ts moved this
+    // off Next's pre-proxy redirect array, where `/healthz/` had been answering 308 without
+    // passing either. Normalizing here also keeps sessionExempt's anchored patterns honest.
+    const normalized = normalizeTrailingSlash(req);
+    if (normalized !== null) return normalized;
 
     if (sessionExempt(req.nextUrl.pathname)) return NextResponse.next();
 

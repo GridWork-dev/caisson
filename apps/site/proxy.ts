@@ -26,12 +26,27 @@ function forbidden(): NextResponse {
   );
 }
 
+// `skipTrailingSlashRedirect` in next.config.ts moves this normalization off Next's pre-proxy
+// redirect array and behind the gate above, so `/anything/` can no longer answer 308 on the raw
+// origin without the secret. Behaviour for legitimate traffic is unchanged: same 308, same target.
+export function normalizeTrailingSlash(
+  request: NextRequest,
+): NextResponse | null {
+  const { pathname } = request.nextUrl;
+  if (pathname === "/" || !pathname.endsWith("/")) return null;
+  // A plain URL, not nextUrl.clone(): NextURL re-serializes the pathname through its own
+  // formatter and hands back the trailing slash we just stripped.
+  const url = new URL(request.url);
+  url.pathname = pathname.replace(/\/+$/, "") || "/";
+  return NextResponse.redirect(url, 308);
+}
+
 export function createSiteProxy(
   originGate: OriginGateConfig = loadOriginGateConfig(process.env),
 ): (request: NextRequest) => NextResponse {
   return (request: NextRequest): NextResponse => {
     if (!originRequestAuthorized(request, originGate)) return forbidden();
-    return NextResponse.next();
+    return normalizeTrailingSlash(request) ?? NextResponse.next();
   };
 }
 

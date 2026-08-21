@@ -25,6 +25,28 @@ describe("loadOriginGateConfig", () => {
     });
   });
 
+  test("an absent flag fails startup on Cloud Run instead of serving ungated", () => {
+    // K_SERVICE is present on every Cloud Run revision and on no Railway one. The first case is
+    // the sharp one: a half-applied manifest where the secrets mount correctly and the flag row
+    // is dropped — before this guard those valid secrets were silently discarded.
+    expect(() =>
+      loadOriginGateConfig({
+        K_SERVICE: "caisson-site",
+        ORIGIN_SECRET: CURRENT,
+        ORIGIN_SECRET_NEXT: NEXT,
+      }),
+    ).toThrow(ConfigError);
+    expect(() => loadOriginGateConfig({ K_SERVICE: "caisson-site" })).toThrow(
+      ConfigError,
+    );
+    expect(() =>
+      loadOriginGateConfig({
+        K_SERVICE: "caisson-site",
+        ORIGIN_SECRET_REQUIRED: "false",
+      }),
+    ).toThrow(ConfigError);
+  });
+
   test("decodes the current and next rotation secrets to fixed 32-byte buffers", () => {
     const config = loadOriginGateConfig({
       ORIGIN_SECRET_REQUIRED: "true",

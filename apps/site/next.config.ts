@@ -26,6 +26,13 @@ const config: NextConfig = {
   // ADR-0084). Marketing + docs routes still render statically (SSG / generateStaticParams) —
   // this only swaps the OUTPUT MODE so `/dashboard` can exist as a dynamic, authed route group.
   output: "standalone",
+  // T27 edge gate: Next resolves config redirects BEFORE the proxy entry
+  // (next/dist/server/lib/router-utils/resolve-routes.js orders `fsChecker.redirects` ahead of
+  // `{name:'middleware'}`), and with this flag unset Next unshifts an internal `/:path+/` rule
+  // onto that same array — so ANY path with a trailing slash answered 308 on the raw Cloud Run
+  // origin without ever reaching originRequestAuthorized. Skipping it hands `/foo/` to the proxy,
+  // which re-issues the normalization AFTER the gate. See apps/site/proxy.ts.
+  skipTrailingSlashRedirect: true,
   // Cloudflare brotli-compresses at the edge already (HTML already serves `br`); the origin's
   // own gzip pre-compression was pinning ~1.7MB of cacheable JS+CSS to gzip on every cold load
   // because CF caches whatever content-encoding the origin sent. Turning this off lets CF's
