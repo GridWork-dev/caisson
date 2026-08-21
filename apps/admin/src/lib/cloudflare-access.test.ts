@@ -26,7 +26,22 @@ const loadCloudflareAccessConfig =
     : (Reflect.get(accessModule, "loadCloudflareAccessConfig") as
         | ((env: Record<string, string | undefined>) => unknown)
         | undefined);
+const previousNodeEnv = process.env.NODE_ENV;
+const previousOriginMode = process.env.ORIGIN_SECRET_MODE;
+const previousAccessMode = process.env.CF_ACCESS_MODE;
+Reflect.set(process.env, "NODE_ENV", "test");
+Reflect.set(process.env, "ORIGIN_SECRET_MODE", "disabled");
+Reflect.set(process.env, "CF_ACCESS_MODE", "disabled");
 const proxyModule = await import("../proxy.ts");
+if (previousNodeEnv === undefined)
+  Reflect.deleteProperty(process.env, "NODE_ENV");
+else Reflect.set(process.env, "NODE_ENV", previousNodeEnv);
+if (previousOriginMode === undefined)
+  Reflect.deleteProperty(process.env, "ORIGIN_SECRET_MODE");
+else Reflect.set(process.env, "ORIGIN_SECRET_MODE", previousOriginMode);
+if (previousAccessMode === undefined)
+  Reflect.deleteProperty(process.env, "CF_ACCESS_MODE");
+else Reflect.set(process.env, "CF_ACCESS_MODE", previousAccessMode);
 const createAdminProxy = Reflect.get(proxyModule, "createAdminProxy") as
   | ((options: {
       originGate: OriginGateConfig;
@@ -167,33 +182,39 @@ describe("verifyCloudflareAccessRequest", () => {
 });
 
 describe("loadCloudflareAccessConfig", () => {
-  test("is disabled unless the Cloud Run runtime flag is true", () => {
+  test("is disabled only by the exact nonproduction opt-out", () => {
     expect(loadCloudflareAccessConfig).toBeFunction();
     if (loadCloudflareAccessConfig === undefined) return;
-    expect(loadCloudflareAccessConfig({})).toEqual({ required: false });
+    expect(
+      loadCloudflareAccessConfig({
+        NODE_ENV: "test",
+        CF_ACCESS_MODE: "disabled",
+      }),
+    ).toEqual({ required: false });
   });
 
-  test("an absent flag fails startup on Cloud Run instead of dropping the Access layer", () => {
+  test("an absent mode stays armed while a production disable cannot bypass Access", () => {
     expect(loadCloudflareAccessConfig).toBeFunction();
     if (loadCloudflareAccessConfig === undefined) return;
     // The sharp case: team domain and audience mount correctly, the flag row is dropped. Admin's
-    // sessionExempt paths delegate their protection to this layer, so a silent disable exposes
-    // /healthz, /login, /api/auth/* and /_next/* on the raw run.app hostname.
+    // sessionExempt paths delegate their protection to this layer, so absence must arm it.
+    const absentMode = loadCloudflareAccessConfig({
+      NODE_ENV: "production",
+      CF_ACCESS_TEAM_DOMAIN: "example.cloudflareaccess.com",
+      CF_ACCESS_AUD: "a".repeat(64),
+    }) as { required: boolean };
+    expect(absentMode.required).toBe(true);
     expect(() =>
-      loadCloudflareAccessConfig({
-        K_SERVICE: "caisson-admin",
-        CF_ACCESS_TEAM_DOMAIN: "example.cloudflareaccess.com",
-        CF_ACCESS_AUD: "a".repeat(64),
-      }),
-    ).toThrow(ConfigError);
-    expect(() =>
-      loadCloudflareAccessConfig({ K_SERVICE: "caisson-admin" }),
+      loadCloudflareAccessConfig({ NODE_ENV: "production" }),
     ).toThrow(ConfigError);
     expect(() =>
       loadCloudflareAccessConfig({
-        K_SERVICE: "caisson-admin",
-        CF_ACCESS_REQUIRED: "false",
+        NODE_ENV: "production",
+        CF_ACCESS_MODE: "disabled",
       }),
+    ).toThrow(ConfigError);
+    expect(() =>
+      loadCloudflareAccessConfig({ CF_ACCESS_MODE: "disabled" }),
     ).toThrow(ConfigError);
   });
 
@@ -202,7 +223,8 @@ describe("loadCloudflareAccessConfig", () => {
     if (loadCloudflareAccessConfig === undefined) return;
 
     const loaded = loadCloudflareAccessConfig({
-      CF_ACCESS_REQUIRED: "true",
+      NODE_ENV: "production",
+      CF_ACCESS_MODE: "enabled",
       CF_ACCESS_TEAM_DOMAIN: "caisson.cloudflareaccess.com",
       CF_ACCESS_AUD: AUDIENCE,
     }) as { required: boolean; issuer?: string; audience?: string };
@@ -217,18 +239,18 @@ describe("loadCloudflareAccessConfig", () => {
     if (loadCloudflareAccessConfig === undefined) return;
 
     expect(() =>
-      loadCloudflareAccessConfig({ CF_ACCESS_REQUIRED: "true" }),
+      loadCloudflareAccessConfig({ CF_ACCESS_MODE: "enabled" }),
     ).toThrow(ConfigError);
     expect(() =>
       loadCloudflareAccessConfig({
-        CF_ACCESS_REQUIRED: "true",
+        CF_ACCESS_MODE: "enabled",
         CF_ACCESS_TEAM_DOMAIN: "http://caisson.cloudflareaccess.com",
         CF_ACCESS_AUD: AUDIENCE,
       }),
     ).toThrow(ConfigError);
     expect(() =>
       loadCloudflareAccessConfig({
-        CF_ACCESS_REQUIRED: "true",
+        CF_ACCESS_MODE: "enabled",
         CF_ACCESS_TEAM_DOMAIN: "caisson.cloudflareaccess.com",
         CF_ACCESS_AUD: "not-an-audience",
       }),
@@ -244,7 +266,7 @@ describe("admin proxy edge composition", () => {
     }
     return createAdminProxy({
       originGate: loadOriginGateConfig({
-        ORIGIN_SECRET_REQUIRED: "true",
+        NODE_ENV: "production",
         ORIGIN_SECRET: ORIGIN_CURRENT,
         ORIGIN_SECRET_NEXT: ORIGIN_NEXT,
       }),

@@ -109,7 +109,7 @@ export interface IssueAppDeps {
    * primary auth — this only caps an abusive flood. server.ts injects it.
    */
   limiter: RateLimiter;
-  /** Cloudflare Worker origin gate. Omitted only for Railway/local runtimes where the flag is off. */
+  /** Cloudflare Worker origin gate. Omitted only when the runtime loader supplies the config. */
   originGate?: OriginGateConfig;
   /**
    * Detached operational alert for limiter infrastructure failures. The payload is intentionally

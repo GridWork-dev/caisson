@@ -144,6 +144,10 @@ beforeAll(async () => {
     revokeEmailNotify: async () => {},
     chargebackAlert: async () => {},
     rateLimiterAlert: async () => {},
+    originGate: loadOriginGateConfig({
+      NODE_ENV: "test",
+      ORIGIN_SECRET_MODE: "disabled",
+    }),
   });
   gatedApp = createApp({
     token: TOKEN,
@@ -160,7 +164,7 @@ beforeAll(async () => {
     chargebackAlert: async () => {},
     rateLimiterAlert: async () => {},
     originGate: loadOriginGateConfig({
-      ORIGIN_SECRET_REQUIRED: "true",
+      NODE_ENV: "production",
       ORIGIN_SECRET: ORIGIN_CURRENT,
       ORIGIN_SECRET_NEXT: ORIGIN_NEXT,
     }),
@@ -208,6 +212,10 @@ describe("POST /issue (ADR-0110)", () => {
           renewalEmailNotify: async () => {},
           revokeEmailNotify: async () => {},
           chargebackAlert: async () => {},
+          originGate: loadOriginGateConfig({
+            NODE_ENV: "test",
+            ORIGIN_SECRET_MODE: "disabled",
+          }),
           rateLimiterAlert: async (alert) => {
             alerts.push(alert);
           },
@@ -513,6 +521,10 @@ describe("POST /issue admin-scoped credential (ADR-0220)", () => {
       revokeEmailNotify: async () => {},
       chargebackAlert: async () => {},
       rateLimiterAlert: async () => {},
+      originGate: loadOriginGateConfig({
+        NODE_ENV: "test",
+        ORIGIN_SECRET_MODE: "disabled",
+      }),
     });
   });
 

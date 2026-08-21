@@ -23,6 +23,7 @@ import {
 } from "node:crypto";
 import { Ed25519Signer } from "@caisson/license-issue";
 import { verifyLicenseWithKey } from "@caisson/license-verify";
+import { loadOriginGateConfig } from "@caisson/kernel/node";
 import {
   ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
   withAdminWrite,
@@ -33,7 +34,7 @@ import {
 } from "@caisson/registry-schema";
 import type { Transactor } from "@caisson/tenancy-rls";
 import { type TestPg, newTestPg } from "@caisson/testing";
-import { createApp } from "./app.ts";
+import { createApp as createIssueApp } from "./app.ts";
 import type { RateLimiterInfraAlert } from "./alerting.ts";
 import {
   EVAL_APPLICATION_SCHEMA_SQL,
@@ -53,6 +54,15 @@ import {
   type RateLimiter,
   TokenBucketLimiter,
 } from "./rate-limit.ts";
+
+const TEST_ORIGIN_GATE = loadOriginGateConfig({
+  NODE_ENV: "test",
+  ORIGIN_SECRET_MODE: "disabled",
+});
+const createApp = (
+  deps: Parameters<typeof createIssueApp>[0],
+): ReturnType<typeof createIssueApp> =>
+  createIssueApp({ ...deps, originGate: TEST_ORIGIN_GATE });
 
 const TOKEN = "test-license-issue-token-0123456789";
 const DEV_SEED = createHash("sha256")

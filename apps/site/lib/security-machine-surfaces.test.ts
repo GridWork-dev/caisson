@@ -64,7 +64,7 @@ describe("security claims stay identical across human and machine surfaces", () 
     expect(pageSource).toMatch(/<Faq\s+items=\{SECURITY_FAQ\}/);
     // ADMIN_SECURITY_POSTURE sits in the SecurityClaims contract above but was asserted on no
     // surface, so inlining a stale literal over the shared constant kept all three tests green
-    // while the rendered posture card shipped a claim that is false without CF_ACCESS_REQUIRED.
+    // while the rendered posture card shipped a claim that is false if Access is not armed.
     expect(pageSource).toMatch(/\.\.\.ADMIN_SECURITY_POSTURE/);
     expect(adminQuestion?.acceptedAnswer.text).toBe(
       copy.ADMIN_SECURITY_FAQ.answer,

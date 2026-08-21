@@ -36,6 +36,10 @@ beforeAll(async () => {
     token: TOKEN,
     // Generous default budget — these routing assertions stay well under the burst caps.
     limiter: new TokenBucketLimiter(loadRateLimitConfig({})),
+    originGate: loadOriginGateConfig({
+      NODE_ENV: "test",
+      ORIGIN_SECRET_MODE: "disabled",
+    }),
   });
   gatedApp = createApp({
     index,
@@ -44,7 +48,7 @@ beforeAll(async () => {
     token: TOKEN,
     limiter: new TokenBucketLimiter(loadRateLimitConfig({})),
     originGate: loadOriginGateConfig({
-      ORIGIN_SECRET_REQUIRED: "true",
+      NODE_ENV: "production",
       ORIGIN_SECRET: ORIGIN_CURRENT,
       ORIGIN_SECRET_NEXT: ORIGIN_NEXT,
     }),

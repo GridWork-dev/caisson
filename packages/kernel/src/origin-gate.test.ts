@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { ConfigError } from "./errors.ts";
 import * as originGate from "./origin-gate.ts";
 
-const { loadOriginGateConfig } = originGate;
+const { loadOriginGateConfig, originVerificationDisabledFor } = originGate;
 const originRequestAuthorized = Reflect.get(
   originGate,
   "originRequestAuthorized",
@@ -18,38 +18,79 @@ const NEXT = Buffer.alloc(32, 0x22).toString("base64url");
 const WRONG = Buffer.alloc(32, 0x33).toString("base64url");
 
 describe("loadOriginGateConfig", () => {
-  test("origin verification stays disabled when the runtime flag is absent", () => {
-    expect(loadOriginGateConfig({})).toEqual({
-      required: false,
-      secrets: [],
-    });
+  test("disables verification only for the exact nonproduction opt-out", () => {
+    expect(originVerificationDisabledFor).toBeFunction();
+    if (originVerificationDisabledFor === undefined) return;
+
+    expect(originVerificationDisabledFor("development", "disabled")).toBe(true);
+    expect(originVerificationDisabledFor("test", "disabled")).toBe(true);
+
+    for (const runtime of [undefined, "production"] as const) {
+      expect(originVerificationDisabledFor(runtime, "disabled")).toBe(false);
+    }
+    for (const runtime of [
+      undefined,
+      "production",
+      "development",
+      "test",
+    ] as const) {
+      for (const mode of [
+        undefined,
+        "enabled",
+        "false",
+        "Disabled",
+        "",
+      ] as const) {
+        expect(originVerificationDisabledFor(runtime, mode)).toBe(false);
+      }
+    }
+
+    expect(
+      loadOriginGateConfig({
+        NODE_ENV: "test",
+        ORIGIN_SECRET_MODE: "disabled",
+      }),
+    ).toEqual({ required: false, secrets: [] });
   });
 
-  test("an absent flag fails startup on Cloud Run instead of serving ungated", () => {
-    // K_SERVICE is present on every Cloud Run revision and on no Railway one. The first case is
-    // the sharp one: a half-applied manifest where the secrets mount correctly and the flag row
-    // is dropped — before this guard those valid secrets were silently discarded.
+  test("makes the disabled state unreachable from production configuration", () => {
+    for (const mode of [
+      undefined,
+      "disabled",
+      "enabled",
+      "false",
+      "",
+    ] as const) {
+      expect(() =>
+        loadOriginGateConfig({
+          NODE_ENV: "production",
+          ...(mode === undefined ? {} : { ORIGIN_SECRET_MODE: mode }),
+        }),
+      ).toThrow(ConfigError);
+    }
     expect(() =>
-      loadOriginGateConfig({
-        K_SERVICE: "caisson-site",
-        ORIGIN_SECRET: CURRENT,
-        ORIGIN_SECRET_NEXT: NEXT,
-      }),
+      loadOriginGateConfig({ ORIGIN_SECRET_MODE: "disabled" }),
     ).toThrow(ConfigError);
-    expect(() => loadOriginGateConfig({ K_SERVICE: "caisson-site" })).toThrow(
-      ConfigError,
-    );
-    expect(() =>
-      loadOriginGateConfig({
-        K_SERVICE: "caisson-site",
-        ORIGIN_SECRET_REQUIRED: "false",
-      }),
-    ).toThrow(ConfigError);
+  });
+
+  test("treats an absent mode as armed in every runtime", () => {
+    for (const runtime of [
+      undefined,
+      "production",
+      "development",
+      "test",
+    ] as const) {
+      expect(() =>
+        loadOriginGateConfig(
+          runtime === undefined ? {} : { NODE_ENV: runtime },
+        ),
+      ).toThrow(ConfigError);
+    }
   });
 
   test("decodes the current and next rotation secrets to fixed 32-byte buffers", () => {
     const config = loadOriginGateConfig({
-      ORIGIN_SECRET_REQUIRED: "true",
+      NODE_ENV: "production",
       ORIGIN_SECRET: CURRENT,
       ORIGIN_SECRET_NEXT: NEXT,
     });
@@ -62,16 +103,15 @@ describe("loadOriginGateConfig", () => {
 
   test("fails closed when an enabled gate has no current secret", () => {
     expect(() =>
-      loadOriginGateConfig({ ORIGIN_SECRET_REQUIRED: "true" }),
+      loadOriginGateConfig({ ORIGIN_SECRET_MODE: "enabled" }),
     ).toThrow(ConfigError);
   });
 
-  test("rejects malformed flags and non-canonical current or next secrets", () => {
+  test("rejects non-canonical current or next secrets", () => {
     const cases = [
-      { ORIGIN_SECRET_REQUIRED: "yes", ORIGIN_SECRET: CURRENT },
-      { ORIGIN_SECRET_REQUIRED: "true", ORIGIN_SECRET: "short" },
+      { ORIGIN_SECRET_MODE: "enabled", ORIGIN_SECRET: "short" },
       {
-        ORIGIN_SECRET_REQUIRED: "true",
+        ORIGIN_SECRET_MODE: "enabled",
         ORIGIN_SECRET: CURRENT,
         ORIGIN_SECRET_NEXT: "not-base64url",
       },
@@ -85,7 +125,8 @@ describe("loadOriginGateConfig", () => {
 
 describe("originRequestAuthorized", () => {
   const config = loadOriginGateConfig({
-    ORIGIN_SECRET_REQUIRED: "true",
+    NODE_ENV: "production",
+    ORIGIN_SECRET_MODE: "enabled",
     ORIGIN_SECRET: CURRENT,
     ORIGIN_SECRET_NEXT: NEXT,
   });
@@ -124,8 +165,14 @@ describe("originRequestAuthorized", () => {
   test("allows requests when the runtime gate is explicitly disabled", () => {
     expect(originRequestAuthorized).toBeFunction();
     if (originRequestAuthorized === undefined) return;
-    expect(originRequestAuthorized(request(), loadOriginGateConfig({}))).toBe(
-      true,
-    );
+    expect(
+      originRequestAuthorized(
+        request(),
+        loadOriginGateConfig({
+          NODE_ENV: "test",
+          ORIGIN_SECRET_MODE: "disabled",
+        }),
+      ),
+    ).toBe(true);
   });
 });

@@ -17,7 +17,8 @@ const teamDomainSchema = z
 
 const accessEnvSchema = z
   .object({
-    required: z.enum(["true", "false"]).optional(),
+    runtime: z.string().optional(),
+    mode: z.string().optional(),
     teamDomain: teamDomainSchema.optional(),
     audience: z
       .string()
@@ -40,7 +41,8 @@ const identityClaimsSchema = z
 
 export interface CloudflareAccessEnv {
   readonly [key: string]: string | undefined;
-  CF_ACCESS_REQUIRED?: string;
+  NODE_ENV?: string;
+  CF_ACCESS_MODE?: string;
   CF_ACCESS_TEAM_DOMAIN?: string;
   CF_ACCESS_AUD?: string;
 }
@@ -71,21 +73,22 @@ export function loadCloudflareAccessConfig(
   env: CloudflareAccessEnv,
 ): CloudflareAccessConfig {
   const parsed = accessEnvSchema.safeParse({
-    required: env.CF_ACCESS_REQUIRED,
+    runtime: env.NODE_ENV,
+    mode: env.CF_ACCESS_MODE,
     teamDomain: env.CF_ACCESS_TEAM_DOMAIN,
     audience: env.CF_ACCESS_AUD,
   });
   if (!parsed.success) {
     throw new ConfigError("Invalid Cloudflare Access configuration");
   }
-  // Same absent-is-not-opt-out rule as the origin gate (packages/kernel/src/origin-gate.ts): on
-  // Cloud Run an omitted CF_ACCESS_REQUIRED would drop the entire Access layer while
-  // CF_ACCESS_TEAM_DOMAIN/CF_ACCESS_AUD sit correctly mounted, and admin's sessionExempt paths
-  // (/healthz, /login, /api/auth/*, /_next/*) delegate their protection to exactly this layer.
-  if (env.K_SERVICE !== undefined && parsed.data.required !== "true") {
-    throw new ConfigError("Cloudflare Access is mandatory on Cloud Run");
+  // Mirror the origin gate's fail-closed arming semantics. An absent mode stays armed, and no
+  // production value can disable Access. Only an exact local/test opt-out bypasses it.
+  if (
+    parsed.data.mode === "disabled" &&
+    (parsed.data.runtime === "development" || parsed.data.runtime === "test")
+  ) {
+    return { required: false };
   }
-  if (parsed.data.required !== "true") return { required: false };
 
   if (
     parsed.data.teamDomain === undefined ||

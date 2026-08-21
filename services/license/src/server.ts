@@ -81,8 +81,8 @@ export function startServer(
   // OTEL_EXPORTER_OTLP_ENDPOINT is unset (CI / local / no OTLP sink configured).
   initObservability({ serviceName: "service-license" });
 
-  // Cloud Run/staging set ORIGIN_SECRET_REQUIRED=true. Parse before any credential or index work
-  // so a required but missing/malformed origin secret aborts before Bun binds a socket.
+  // Parse the fail-closed origin gate before any credential or index work. An absent mode is armed,
+  // so missing or malformed secret material aborts before Bun binds a socket.
   const originGate = loadOriginGateConfig(process.env);
 
   const token = process.env.LICENSE_ISSUE_TOKEN ?? "";

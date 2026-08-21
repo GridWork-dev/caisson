@@ -50,6 +50,6 @@ export function createSiteProxy(
   };
 }
 
-// Resolve once while the proxy module loads. Required-but-invalid production configuration fails
-// startup/readiness; Railway remains unchanged while ORIGIN_SECRET_REQUIRED is absent.
+// Resolve once while the proxy module loads. An absent mode is armed; only the exact explicit
+// development/test opt-out disables verification. Invalid armed configuration fails startup.
 export const proxy = createSiteProxy();

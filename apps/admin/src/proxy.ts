@@ -1,5 +1,5 @@
-// App-wide edge + auth gate. Cloud Run/staging enables the Cloudflare origin secret and Access JWT
-// layers through explicit runtime flags; Railway leaves them disabled during the migration window.
+// App-wide edge + auth gate. The Cloudflare origin secret and Access JWT layers are armed by
+// default; only exact development/test mode opt-outs disable them.
 // Better-auth plus the immutable numeric GitHub-ID allowlist remains the independent application
 // authorization layer for every non-bootstrap route.
 //
@@ -9,7 +9,7 @@
 // better-auth session needs `pg`/`node:crypto`, which never ran in the old file's Edge runtime.
 //
 // Bootstrap/static routes bypass only the better-auth session check. They still pass through the
-// origin and Access layers when those runtime flags are enabled, including `/healthz`.
+// origin and Access layers when armed, including `/healthz`.
 import {
   loadOriginGateConfig,
   originRequestAuthorized,

@@ -2,7 +2,17 @@ import { expect, test } from "bun:test";
 import { loadOriginGateConfig } from "@caisson/kernel/node";
 import { NextRequest, type NextResponse } from "next/server";
 
+const previousNodeEnv = process.env.NODE_ENV;
+const previousOriginMode = process.env.ORIGIN_SECRET_MODE;
+Reflect.set(process.env, "NODE_ENV", "test");
+Reflect.set(process.env, "ORIGIN_SECRET_MODE", "disabled");
 const proxyModule = await import("../proxy.ts").catch(() => null);
+if (previousNodeEnv === undefined)
+  Reflect.deleteProperty(process.env, "NODE_ENV");
+else Reflect.set(process.env, "NODE_ENV", previousNodeEnv);
+if (previousOriginMode === undefined)
+  Reflect.deleteProperty(process.env, "ORIGIN_SECRET_MODE");
+else Reflect.set(process.env, "ORIGIN_SECRET_MODE", previousOriginMode);
 const createSiteProxy =
   proxyModule === null
     ? undefined
@@ -28,10 +38,11 @@ function requireProxy(
   return createSiteProxy(loadOriginGateConfig(env));
 }
 
-test("site proxy leaves the current Railway runtime unchanged when the gate flag is absent", async () => {
-  const response = await requireProxy({})(
-    new NextRequest("https://caisson.sh/healthz"),
-  );
+test("site proxy permits the explicit nonproduction opt-out", async () => {
+  const response = await requireProxy({
+    NODE_ENV: "test",
+    ORIGIN_SECRET_MODE: "disabled",
+  })(new NextRequest("https://caisson.sh/healthz"));
   expect(response.status).toBe(200);
 });
 
@@ -41,7 +52,7 @@ test("site proxy matches API and metadata routes instead of excluding security-r
 
 test("site proxy rejects missing and wrong origin secrets on /healthz", async () => {
   const proxy = requireProxy({
-    ORIGIN_SECRET_REQUIRED: "true",
+    NODE_ENV: "production",
     ORIGIN_SECRET: CURRENT,
     ORIGIN_SECRET_NEXT: NEXT,
   });
@@ -59,7 +70,8 @@ test("site proxy rejects missing and wrong origin secrets on /healthz", async ()
 
 test("site proxy independently rejects a direct /api request without the origin secret", async () => {
   const proxy = requireProxy({
-    ORIGIN_SECRET_REQUIRED: "true",
+    NODE_ENV: "production",
+    ORIGIN_SECRET_MODE: "enabled",
     ORIGIN_SECRET: CURRENT,
     ORIGIN_SECRET_NEXT: NEXT,
   });
@@ -70,7 +82,8 @@ test("site proxy independently rejects a direct /api request without the origin 
 
 test("site proxy rejects trailing-slash paths that Next used to redirect pre-gate", async () => {
   const proxy = requireProxy({
-    ORIGIN_SECRET_REQUIRED: "true",
+    NODE_ENV: "production",
+    ORIGIN_SECRET_MODE: "enabled",
     ORIGIN_SECRET: CURRENT,
     ORIGIN_SECRET_NEXT: NEXT,
   });
@@ -85,7 +98,8 @@ test("site proxy rejects trailing-slash paths that Next used to redirect pre-gat
 
 test("site proxy still normalizes a trailing slash once the origin secret checks out", async () => {
   const proxy = requireProxy({
-    ORIGIN_SECRET_REQUIRED: "true",
+    NODE_ENV: "production",
+    ORIGIN_SECRET_MODE: "enabled",
     ORIGIN_SECRET: CURRENT,
     ORIGIN_SECRET_NEXT: NEXT,
   });
@@ -131,7 +145,8 @@ test("the doc 04 §4 pre-gate redirect exception stays exactly the enumerated se
 
 test("site proxy accepts current and next origin secrets during rotation", async () => {
   const proxy = requireProxy({
-    ORIGIN_SECRET_REQUIRED: "true",
+    NODE_ENV: "production",
+    ORIGIN_SECRET_MODE: "enabled",
     ORIGIN_SECRET: CURRENT,
     ORIGIN_SECRET_NEXT: NEXT,
   });

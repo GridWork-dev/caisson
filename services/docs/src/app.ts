@@ -23,7 +23,7 @@ export interface AppDeps {
   token: string;
   /** Per-IP token-bucket limiter (hardening #1). Static routes get a looser budget than POST /query. */
   limiter: RateLimiter;
-  /** Cloudflare Worker origin gate. Omitted only for Railway/local runtimes where the flag is off. */
+  /** Cloudflare Worker origin gate. Omitted only when the runtime loader supplies the config. */
   originGate?: OriginGateConfig;
 }
 

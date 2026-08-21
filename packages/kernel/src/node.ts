@@ -25,6 +25,7 @@ export {
 export {
   loadOriginGateConfig,
   originRequestAuthorized,
+  originVerificationDisabledFor,
   ORIGIN_SECRET_HEADER,
 } from "./origin-gate.ts";
 export type { OriginGateConfig, OriginGateEnv } from "./origin-gate.ts";

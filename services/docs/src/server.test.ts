@@ -59,12 +59,14 @@ test("server binds ready with real responses immediately after loading a prebuil
     token: process.env.DOCS_SERVICE_TOKEN,
     path: process.env.DOCS_INDEX_ARTIFACT_PATH,
     port: process.env.PORT,
-    cloudRun: process.env.K_SERVICE,
+    nodeEnv: process.env.NODE_ENV,
+    originMode: process.env.ORIGIN_SECRET_MODE,
   };
   process.env.DOCS_SERVICE_TOKEN = "test-docs-token";
   process.env.DOCS_INDEX_ARTIFACT_PATH = join(outputDir, "manifest.json");
   process.env.PORT = "0";
-  delete process.env.K_SERVICE;
+  process.env.NODE_ENV = "test";
+  process.env.ORIGIN_SECRET_MODE = "disabled";
 
   let server: Awaited<ReturnType<typeof startServer>> | undefined;
   try {
@@ -83,8 +85,11 @@ test("server binds ready with real responses immediately after loading a prebuil
     else process.env.DOCS_INDEX_ARTIFACT_PATH = previous.path;
     if (previous.port === undefined) delete process.env.PORT;
     else process.env.PORT = previous.port;
-    if (previous.cloudRun === undefined) delete process.env.K_SERVICE;
-    else process.env.K_SERVICE = previous.cloudRun;
+    if (previous.nodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previous.nodeEnv;
+    if (previous.originMode === undefined)
+      delete process.env.ORIGIN_SECRET_MODE;
+    else process.env.ORIGIN_SECRET_MODE = previous.originMode;
     rmSync(outputDir, { recursive: true });
   }
 });
