@@ -9,6 +9,11 @@
 //   • no key (CI / local / offline) → the deterministic FTS5 floor alone: a natural-language sentence
 //     with no exact match returns [] rather than a confidently-wrong chunk.
 import { join } from "node:path";
+import {
+  loadOriginGateConfig,
+  originRequestAuthorized,
+  type OriginGateConfig,
+} from "@caisson/kernel/node";
 import { initObservability } from "@caisson/observability";
 import { createApp, SECURITY_HEADERS } from "./app.ts";
 import { buildCorpus, loadPricingFacts } from "./corpus.ts";
@@ -44,6 +49,20 @@ function warmupHandler(req: Request): Response {
     status: 503,
     headers: WARMUP_HEADERS,
   });
+}
+
+function originGatedWarmupHandler(
+  originGate: OriginGateConfig,
+): (req: Request) => Response {
+  return (req: Request): Response => {
+    if (!originRequestAuthorized(req, originGate)) {
+      return new Response(JSON.stringify({ error: "forbidden" }), {
+        status: 403,
+        headers: WARMUP_HEADERS,
+      });
+    }
+    return warmupHandler(req);
+  };
 }
 
 /**
@@ -144,6 +163,10 @@ export async function startServer(): Promise<{
   // OTEL_EXPORTER_OTLP_ENDPOINT is unset (CI / local / no OTLP sink configured).
   initObservability({ serviceName: "service-docs" });
 
+  // Cloud Run/staging set ORIGIN_SECRET_REQUIRED=true. Parse before binding so a required but
+  // missing/malformed secret fails startup closed; Railway leaves the flag absent during migration.
+  const originGate = loadOriginGateConfig(process.env);
+
   const token = process.env.DOCS_SERVICE_TOKEN ?? "";
   if (token.length === 0) {
     throw new Error(
@@ -164,7 +187,7 @@ export async function startServer(): Promise<{
   // license issuer's cap and the repo's MAX_BODY_BYTES idiom.
   const server = Bun.serve({
     port,
-    fetch: warmupHandler,
+    fetch: originGatedWarmupHandler(originGate),
     maxRequestBodySize: 512 * 1024,
   });
   process.stderr.write(
@@ -189,7 +212,14 @@ export async function startServer(): Promise<{
   // Per-IP token-bucket limiter (hardening #1). Config is Zod-validated from env with safe defaults; a
   // present-but-invalid limit fails startup closed rather than serving with a silently-wrong budget.
   const limiter = new TokenBucketLimiter(loadRateLimitConfig());
-  const handler = createApp({ index, llmsTxt, llmsFull, token, limiter });
+  const handler = createApp({
+    index,
+    llmsTxt,
+    llmsFull,
+    token,
+    limiter,
+    originGate,
+  });
   server.reload({ fetch: handler });
   process.stderr.write(
     `[service-docs] serving ${corpus.chunks.length} chunks on :${server.port}\n`,

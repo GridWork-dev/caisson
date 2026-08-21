@@ -49,13 +49,14 @@ describe("the `.` barrel is browser-safe", () => {
     const walk = nodeBuiltinTaint(nodeEntry, { workspaceRoot: WORKSPACE_ROOT });
     expect(walk.files).toContain(`${KERNEL_SRC}/errors.ts`);
 
-    // The four modules the split exists to keep off the `.` barrel. If this list ever empties, the
+    // The node-only modules the split exists to keep off the `.` barrel. If this list ever empties, the
     // walker has stopped seeing `node:` specifiers and the test above is silently passing on nothing.
     const tainted = [...new Set(walk.offenders.map((o) => o.file))].sort();
     expect(tainted).toEqual([
       `${KERNEL_SRC}/audit-chain.ts`,
       `${KERNEL_SRC}/crypto.ts`,
       `${KERNEL_SRC}/migration-assembly.ts`,
+      `${KERNEL_SRC}/origin-gate.ts`,
       `${KERNEL_SRC}/ssrf.ts`,
     ]);
   });

@@ -21,6 +21,14 @@ export {
   verifyBearer,
 } from "./crypto.ts";
 
+// --- Cloudflare Worker origin verification (fixed 32-byte base64url secret + rotation). --------
+export {
+  loadOriginGateConfig,
+  originRequestAuthorized,
+  ORIGIN_SECRET_HEADER,
+} from "./origin-gate.ts";
+export type { OriginGateConfig, OriginGateEnv } from "./origin-gate.ts";
+
 // --- Audit-chain hashing (node:crypto createHash). The pure canonicalization + the chain value
 // TYPES stay on the `.` barrel via `canonical.ts`; only the hashing half is here. -----------------
 export {

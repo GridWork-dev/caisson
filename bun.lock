@@ -46,6 +46,7 @@
         "@xyflow/react": "^12.11.1",
         "better-auth": "^1.6.25",
         "culori": "catalog:",
+        "jose": "^6.2.3",
         "next": "catalog:",
         "pg": "catalog:",
         "react": "catalog:",

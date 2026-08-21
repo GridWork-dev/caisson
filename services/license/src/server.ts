@@ -14,6 +14,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import type { BillingProvider } from "@caisson/billing";
 import { createPaddleBilling } from "@caisson/billing-orchestration";
+import { loadOriginGateConfig } from "@caisson/kernel/node";
 import { Ed25519Signer } from "@caisson/license-issue";
 import { initObservability } from "@caisson/observability";
 import { loadRegistryIndex } from "@caisson/registry-schema";
@@ -79,6 +80,10 @@ export function startServer(
   // modules it patches (node:http, pg) are first required. Env-gated: a no-op when
   // OTEL_EXPORTER_OTLP_ENDPOINT is unset (CI / local / no OTLP sink configured).
   initObservability({ serviceName: "service-license" });
+
+  // Cloud Run/staging set ORIGIN_SECRET_REQUIRED=true. Parse before any credential or index work
+  // so a required but missing/malformed origin secret aborts before Bun binds a socket.
+  const originGate = loadOriginGateConfig(process.env);
 
   const token = process.env.LICENSE_ISSUE_TOKEN ?? "";
   if (token.length === 0) {
@@ -259,6 +264,7 @@ export function startServer(
       resolveSignals: (domain: string) =>
         resolveDomainSignals(domain, evalSignalsConfig),
     },
+    originGate,
   });
   // maxRequestBodySize caps every route BEFORE buffering (CWE-770, Kickoff-K): POST /webhook reads the
   // raw body for HMAC verification (the signature IS the auth), so the body is buffered pre-credential;

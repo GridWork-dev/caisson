@@ -251,26 +251,33 @@ test("proxy: invalid HMAC or the public admin host cannot enter the internal pro
   }
 });
 
-// --- WR-03 regression: matcher exclusions must be ANCHORED, not prefix-matched -------------------
-// (the config.matcher regex itself is exercised structurally — Next resolves it internally — but
-// the intent it encodes is worth pinning as a standalone assertion so a future edit can't silently
-// widen `login`/`api/auth`/`healthz` back into a prefix match.)
+// T27: every path reaches the edge gate; only the inner better-auth session check has exact
+// bootstrap exemptions. Prefix collisions remain session-gated.
+test("proxy matches every route so origin and Access checks also cover /healthz", () => {
+  expect(proxyConfig.matcher).toEqual(["/:path*"]);
+});
 
-test("proxy config.matcher anchors login/api-auth/healthz — a prefix collision is NOT excluded", () => {
-  const pattern = proxyConfig.matcher[0];
-  expect(pattern).toBeDefined();
-  // Anchored explicitly: Next's own matcher compiler always applies the pattern from the start of
-  // the pathname, but a raw `new RegExp(pattern).test(path)` without `^` would find a match
-  // starting anywhere in the string — e.g. "/login/foo" would falsely "pass" by matching from its
-  // trailing "/foo", masking exactly the prefix-collision bug this test exists to catch.
-  const re = new RegExp(`^${pattern}`);
-  // Real excluded paths: no match (the negative lookahead fires).
-  expect(re.test("/login")).toBe(false);
-  expect(re.test("/login/foo")).toBe(false);
-  expect(re.test("/api/auth/callback/github")).toBe(false);
-  expect(re.test("/healthz")).toBe(false);
-  // Prefix-collision paths: MUST still be gated (match = gated, per the matcher's own semantics).
-  expect(re.test("/loginboard")).toBe(true);
-  expect(re.test("/api/authz")).toBe(true);
-  expect(re.test("/healthzzz")).toBe(true);
+test("bootstrap session exemptions are exact and never widen to prefix collisions", async () => {
+  for (const pathname of [
+    "/login",
+    "/login/foo",
+    "/api/auth/callback/github",
+    "/healthz",
+  ]) {
+    expect(
+      (await proxy(new NextRequest(`https://admin.caisson.sh${pathname}`)))
+        .status,
+    ).toBe(200);
+  }
+
+  expect(
+    (await proxy(new NextRequest("https://admin.caisson.sh/loginboard")))
+      .status,
+  ).toBe(307);
+  expect(
+    (await proxy(new NextRequest("https://admin.caisson.sh/api/authz"))).status,
+  ).toBe(401);
+  expect(
+    (await proxy(new NextRequest("https://admin.caisson.sh/healthzzz"))).status,
+  ).toBe(307);
 });

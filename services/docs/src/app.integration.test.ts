@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { loadOriginGateConfig } from "@caisson/kernel/node";
 import { createApp } from "./app.ts";
 import { FakeEmbedder } from "./embedder.ts";
 import { DocsIndex } from "./index-store.ts";
@@ -20,6 +21,10 @@ const CHUNKS: DocChunk[] = [
 
 let index: DocsIndex;
 let app: (req: Request) => Promise<Response>;
+let gatedApp: (req: Request) => Promise<Response>;
+
+const ORIGIN_CURRENT = Buffer.alloc(32, 0x51).toString("base64url");
+const ORIGIN_NEXT = Buffer.alloc(32, 0x52).toString("base64url");
 
 beforeAll(async () => {
   // Hybrid (FakeEmbedder) so the HTTP path exercises the vector leg — natural-language queries resolve.
@@ -31,6 +36,18 @@ beforeAll(async () => {
     token: TOKEN,
     // Generous default budget — these routing assertions stay well under the burst caps.
     limiter: new TokenBucketLimiter(loadRateLimitConfig({})),
+  });
+  gatedApp = createApp({
+    index,
+    llmsTxt: "# Caisson\n\n> idx\n",
+    llmsFull: "# Billing\n",
+    token: TOKEN,
+    limiter: new TokenBucketLimiter(loadRateLimitConfig({})),
+    originGate: loadOriginGateConfig({
+      ORIGIN_SECRET_REQUIRED: "true",
+      ORIGIN_SECRET: ORIGIN_CURRENT,
+      ORIGIN_SECRET_NEXT: ORIGIN_NEXT,
+    }),
   });
 });
 afterAll(() => index.close());
@@ -52,6 +69,31 @@ describe("createApp routing", () => {
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(res.headers.get("X-Frame-Options")).toBe("DENY");
     expect(res.headers.get("Strict-Transport-Security")).toContain("max-age=");
+  });
+
+  test("origin gate rejects direct /health requests and accepts both rotation secrets", async () => {
+    const missing = await gatedApp(new Request("http://docs.test/health"));
+    const current = await gatedApp(
+      new Request("http://docs.test/health", {
+        headers: { "x-gridwork-origin-secret": ORIGIN_CURRENT },
+      }),
+    );
+    const next = await gatedApp(
+      new Request("http://docs.test/health", {
+        headers: { "x-gridwork-origin-secret": ORIGIN_NEXT },
+      }),
+    );
+
+    expect(missing.status).toBe(403);
+    expect(current.status).toBe(200);
+    expect(next.status).toBe(200);
+  });
+
+  test("origin gate independently rejects a direct /query request", async () => {
+    const response = await gatedApp(
+      new Request("http://docs.test/query", { method: "POST" }),
+    );
+    expect(response.status).toBe(403);
   });
 
   test("GET /llms.txt and /llms-full.txt → public text, edge-cacheable", async () => {

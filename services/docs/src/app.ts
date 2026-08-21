@@ -5,6 +5,11 @@
 // is a server-to-server contract for the support-bot, not a browser surface.
 import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
+import {
+  loadOriginGateConfig,
+  originRequestAuthorized,
+  type OriginGateConfig,
+} from "@caisson/kernel/node";
 import { withRequestSpan } from "@caisson/observability";
 import type { DocsIndex } from "./index-store.ts";
 import { clientIp, type RateBucket, type RateLimiter } from "./rate-limit.ts";
@@ -17,6 +22,8 @@ export interface AppDeps {
   token: string;
   /** Per-IP token-bucket limiter (hardening #1). Static routes get a looser budget than POST /query. */
   limiter: RateLimiter;
+  /** Cloudflare Worker origin gate. Omitted only for Railway/local runtimes where the flag is off. */
+  originGate?: OriginGateConfig;
 }
 
 /** POST /query body. `.strict()` rejects unknown fields; query + k are bounded (no unbounded compute). */
@@ -82,6 +89,7 @@ function authorized(req: Request, token: string): boolean {
 
 /** Build the request handler. Async because /query awaits retrieval. */
 export function createApp(deps: AppDeps): (req: Request) => Promise<Response> {
+  const originGate = deps.originGate ?? loadOriginGateConfig(process.env);
   /**
    * Per-IP rate gate. Returns a 429 Response when the bucket is exhausted, or `null` to proceed. FAILS OPEN
    * on any limiter internal error (logs to stderr — never silently disables the limiter) so a limiter bug
@@ -116,6 +124,9 @@ export function createApp(deps: AppDeps): (req: Request) => Promise<Response> {
   };
 
   return withRequestSpan(async (req: Request): Promise<Response> => {
+    if (!originRequestAuthorized(req, originGate)) {
+      return json({ error: "forbidden" }, 403);
+    }
     const url = new URL(req.url);
     const { pathname } = url;
     const method = req.method.toUpperCase();

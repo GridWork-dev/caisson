@@ -3,6 +3,7 @@ import { llms } from "fumadocs-core/source";
 import { source } from "@/lib/source";
 import { GLOSSARY_TERMS } from "@/lib/glossary";
 import { MODULE_PAGES } from "@/lib/module-pages";
+import { SECURITY_LLMS_SUMMARY } from "@/lib/security-copy";
 
 // Agent-readable index (specs/03 §3, ADR-0237 F8). Composed, not docs-only: a Caisson preamble
 // carries the marketplace hub + the data-driven MODULE_PAGES spokes (the depth routes fumadocs'
@@ -21,6 +22,10 @@ const PREAMBLE = [
   "",
   "- [Marketplace](/marketplace): Every bundle and module on one surface — filter, compare, build a stack, and check out in a single purchase.",
   "- [Plans and pricing](/marketplace/plans): Subscription plans on top of the one-time bundles and modules.",
+  "",
+  "## Security",
+  "",
+  `- [Security](/security): ${SECURITY_LLMS_SUMMARY}`,
   "",
   "## Modules",
   "",

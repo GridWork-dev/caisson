@@ -186,9 +186,25 @@ not a buyer product"). There is no scriptable sign-up/sign-in path for productio
 header comment says "NOT product code... Never run against a real DB." Do not adapt it
 for production Ring-3.
 
-Also note: `admin.caisson.sh` has **no CF-Access gate** — ADR-0283 removed it
-(`infra/terraform/access.tf:12-14`). Ring-3 auth is GitHub OAuth + the allowlist only,
-no service-token headers needed.
+Also note: the current Railway deployment of `admin.caisson.sh` has **no CF-Access
+gate** — ADR-0283 removed it (`infra/terraform/access.tf:12-14`). Ring-3 auth there is
+GitHub OAuth + the numeric-id allowlist only, with no service-token headers needed.
+
+That statement is deployment-specific. The Cloud Run-ready application can enable two
+additional fail-closed layers through runtime flags:
+
+- `ORIGIN_SECRET_REQUIRED=true` requires the Worker-injected origin header on every
+  route, including `/healthz`; `ORIGIN_SECRET_NEXT` permits a two-phase rotation beside
+  the current `ORIGIN_SECRET`.
+- `CF_ACCESS_REQUIRED=true` requires a valid admin application token using the bare
+  `CF_ACCESS_TEAM_DOMAIN` hostname and the application-specific `CF_ACCESS_AUD` tag.
+
+Browser probes do not add either credential manually: Cloudflare Access supplies the
+JWT and the Worker replaces any client origin header with its service secret. A raw
+origin request without that header must return 403, including on health routes. Before
+enabling these flags, the Cloud Run startup/liveness probes must therefore send the
+current origin header (or use a separately authenticated readiness mechanism). Railway
+keeps both runtime flags absent during the migration window.
 
 ### 3.1 Create a dedicated admin-probe GitHub account — OPERATOR-INPUT
 
