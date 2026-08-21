@@ -58,14 +58,36 @@ export async function runPlatformMigrations(
   return applyAll(applier, SITE_LOCAL_MIGRATIONS);
 }
 
+/**
+ * Cloud Run migration Jobs must receive the direct Neon DSN explicitly. Railway remains the
+ * authoritative deploy surface until cutover and its existing preDeployCommand supplies only
+ * DATABASE_URL, so retain that legacy path only when Railway's platform marker is present.
+ */
+export function resolveMigrationDatabaseUrl(
+  env: Record<string, string | undefined>,
+): string {
+  const directUrl = env.DATABASE_DIRECT_URL?.trim() ?? "";
+  if (directUrl !== "") return directUrl;
+
+  const railwayEnvironmentId = env.RAILWAY_ENVIRONMENT_ID?.trim() ?? "";
+  const cloudRunService = env.K_SERVICE?.trim() ?? "";
+  const railwayUrl = env.DATABASE_URL?.trim() ?? "";
+  if (
+    cloudRunService === "" &&
+    railwayEnvironmentId !== "" &&
+    railwayUrl !== ""
+  ) {
+    return railwayUrl;
+  }
+
+  throw new Error(
+    "DATABASE_DIRECT_URL is required (the deploy migration needs a direct Postgres connection) — refusing to run.",
+  );
+}
+
 async function main(): Promise<void> {
   // Fail closed: a deploy migration against no DB is never a silent no-op.
-  const url = process.env.DATABASE_DIRECT_URL ?? "";
-  if (url.length === 0) {
-    throw new Error(
-      "DATABASE_DIRECT_URL is required (the deploy migration needs a direct Postgres connection) — refusing to run.",
-    );
-  }
+  const url = resolveMigrationDatabaseUrl(process.env);
   const pool = createPgPool(url, { purpose: "migration" });
   try {
     const result = await runPlatformMigrations(pgMigrationApplier(pool));

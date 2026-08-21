@@ -7,7 +7,10 @@ import { afterAll, beforeAll, expect, test } from "bun:test";
 import type { MergedMigration } from "@caisson/kernel";
 import type { MigrationApplier } from "@caisson/migrate";
 import { type TestPg, newTestPg } from "@caisson/testing";
-import { runPlatformMigrations } from "./deploy-migrate.ts";
+import {
+  resolveMigrationDatabaseUrl,
+  runPlatformMigrations,
+} from "./deploy-migrate.ts";
 
 const SCHEMA_VERSION_DDL = `CREATE TABLE IF NOT EXISTS schema_version (
   version integer PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now()
@@ -37,6 +40,37 @@ beforeAll(async () => {
 });
 afterAll(async () => {
   await tp.close();
+});
+
+test("migration DSN is direct except for the still-authoritative Railway predeploy", () => {
+  expect(
+    resolveMigrationDatabaseUrl({
+      DATABASE_DIRECT_URL: " postgres://direct.example/db ",
+      DATABASE_URL: "postgres://pooled.example/db",
+      RAILWAY_ENVIRONMENT_ID: "railway-env",
+    }),
+  ).toBe("postgres://direct.example/db");
+  expect(
+    resolveMigrationDatabaseUrl({
+      DATABASE_URL: " postgres://railway.example/db ",
+      RAILWAY_ENVIRONMENT_ID: "railway-env",
+    }),
+  ).toBe("postgres://railway.example/db");
+});
+
+test("Cloud Run and non-Railway jobs fail closed without the direct DSN", () => {
+  expect(() =>
+    resolveMigrationDatabaseUrl({
+      DATABASE_URL: "postgres://pooled.example/db",
+      K_SERVICE: "caisson-migrate",
+      RAILWAY_ENVIRONMENT_ID: "spoofed-railway-marker",
+    }),
+  ).toThrow("DATABASE_DIRECT_URL is required");
+  expect(() =>
+    resolveMigrationDatabaseUrl({
+      DATABASE_URL: "postgres://pooled.example/db",
+    }),
+  ).toThrow("DATABASE_DIRECT_URL is required");
 });
 
 test("platform migrations apply in order then are idempotent", async () => {
