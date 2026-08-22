@@ -41,9 +41,14 @@ jobs:
   rollout:
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    # The GitHub environment is the operator gate (doc 07 §11: "operator gate receipt
-    # where the change affects secrets, production data or migration"). Its reviewers and
-    # its deployment-branch policy are the receipt.
+    # doc 07 §11 wants an "operator gate receipt where the change affects secrets,
+    # production data or migration", and names the GitHub environment as that receipt.
+    # Naming the environment here is necessary but NOT sufficient: environment protection
+    # rules are plan-gated, and on this account only a PUBLIC repo gets them. Measured
+    # 2026-08-21 — gridwork (public) carries 2 protection rules on `production`; caisson,
+    # gridwork-studio and dev-profile (private) carry ZERO, so on those three there is no
+    # reviewer and no deployment-branch policy and this line buys only secret scoping.
+    # Do not read it as a gate on a repo that has none; check before relying on it.
     environment: production
     permissions:
       contents: read
@@ -53,13 +58,15 @@ jobs:
 
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version-file: package.json
+          bun-version-file: ${{ vars.BUN_VERSION_FILE }}
 
       - name: validate inputs against the manifest
         id: plan
         env:
           DIGESTS: ${{ inputs.digests }}
           ENVIRONMENT: production
+          # See deploy-staging.yml — plan.ts cannot build an image reference without it.
+          GCP_REGISTRY: ${{ vars.GCP_REGISTRY }}
         run: bun run deploy/plan.ts >> "$GITHUB_OUTPUT"
 
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
@@ -102,14 +109,67 @@ jobs:
               --no-traffic
           done
 
+      # doc 07 §6 step 5 asks for the tagged revision to be smoke-tested BEFORE any
+      # traffic reaches it, and the first cut of this template had no way to do it. A
+      # Cloud Run traffic tag is addressable only at its own run.app URL; the T27 origin
+      # gate rejects a direct run.app request by design; and Cloudflare routes to the
+      # service's default URL, never to a tag. The caisson and gridwork adoptions hit
+      # this independently and both degraded the pre-traffic smokes to public-edge
+      # baselines against the CURRENT revision — which is not a canary check at all, and
+      # would have left the 5% step as the canary's first real exercise.
+      #
+      # Operator ruling 2026-08-21: the deploy workflow carries the origin secret and
+      # calls the tag URL directly, satisfying the gate as the caller rather than routing
+      # around it. Resolve the URLs from the service description — do not synthesize them
+      # from the tag name, because a URL that is merely well-formed proves nothing.
+      - name: resolve the tagged revision URLs
+        run: |
+          set -euo pipefail
+          urls='{}'
+          while read -r svc; do
+            url="$(gcloud run services describe "$svc" \
+              --project "${{ vars.GCP_PROD_PROJECT }}" \
+              --region "${{ vars.GCP_REGION }}" \
+              --format json |
+              jq -r --arg t "$CANARY_TAG" '.status.traffic[] | select(.tag == $t) | .url')"
+            # Fail loudly. An empty URL here would otherwise reach smoke.ts, which has a
+            # public-hostname path and would happily pass against the CURRENT revision —
+            # a green pre-traffic check that tested nothing.
+            if [ -z "$url" ]; then
+              echo "::error::no URL for tag ${CANARY_TAG} on ${svc}"
+              exit 1
+            fi
+            urls="$(printf '%s' "$urls" | jq --arg k "$svc" --arg v "$url" '. + {($k): $v}')"
+          done < <(echo '${{ steps.plan.outputs.services }}' | jq -r '.[].service')
+          {
+            echo 'CANARY_URLS<<CANARY_URLS_EOF'
+            printf '%s\n' "$urls"
+            echo 'CANARY_URLS_EOF'
+          } >> "$GITHUB_ENV"
+
       # §6 step 2: checks that do NOT require the new schema. Running schema-dependent
       # checks here would fail every expand release for the wrong reason and train
       # everyone to ignore this gate.
+      #
+      # CANARY_TAG and CANARY_URLS are inherited from $GITHUB_ENV and deliberately NOT
+      # re-declared here: a step-level `env:` mapping overrides the inherited value, so a
+      # passthrough that expanded to empty would blank them and take smoke.ts down its
+      # public-hostname path without saying so.
       - name: pre-migration boot + origin checks
         env:
           ENVIRONMENT: production
           MODE: pre-migration
-          CANARY_TAG: ${{ env.CANARY_TAG }}
+          # The per-service origin secrets, as a JSON object keyed by service key, so one
+          # environment secret covers a multi-service repo and this file stays identical
+          # across all four. smoke.ts sends its repo's own origin header — the header NAME
+          # is per-repo and belongs in that repo's smoke.ts, only the value comes from here.
+          ORIGIN_SECRETS: ${{ secrets.ORIGIN_SECRETS }}
+          # Empty on repos with no Cloudflare Access app. smoke.ts calls the public
+          # hostname through Cloudflare, and an Access-protected hostname answers 302 to
+          # the login page without a service token — indistinguishable from a broken
+          # deploy. Never echo either value.
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: bun run deploy/smoke.ts
 
       # §6 steps 3-4. Update-then-execute, same as staging, same reason. Fail closed:
@@ -139,7 +199,14 @@ jobs:
         env:
           ENVIRONMENT: production
           MODE: post-migration
-          CANARY_TAG: ${{ env.CANARY_TAG }}
+          # As above: CANARY_TAG / CANARY_URLS are inherited, never re-declared.
+          ORIGIN_SECRETS: ${{ secrets.ORIGIN_SECRETS }}
+          # Empty on repos with no Cloudflare Access app. smoke.ts calls the public
+          # hostname through Cloudflare, and an Access-protected hostname answers 302 to
+          # the login page without a service token — indistinguishable from a broken
+          # deploy. Never echo either value.
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: bun run deploy/smoke.ts
 
       # §6 steps 6-8. Each step observes before the next shift; deploy/observe.ts is the
@@ -160,7 +227,10 @@ jobs:
                 --to-tags "${CANARY_TAG}=${pct}"
             done
             sleep "$HOLD"
-            ENVIRONMENT=production STEP="$pct" bun run deploy/observe.ts
+            ENVIRONMENT=production STEP="$pct" \
+              GCP_PROD_PROJECT="${{ vars.GCP_PROD_PROJECT }}" \
+              GCP_REGION="${{ vars.GCP_REGION }}" \
+              bun run deploy/observe.ts
             echo "::endgroup::"
           done
 
@@ -170,6 +240,19 @@ jobs:
         env:
           ENVIRONMENT: production
           MODE: post-deploy
+          # Traffic is at 100% and the promoted revision is what the public hostname
+          # serves, so this one goes through Cloudflare — the only step that proves the
+          # real end-to-end path. Blanked here rather than left to smoke.ts's discipline:
+          # the tag URL is still valid at this point, so a mode bug would otherwise smoke
+          # the canary a third time and never test the edge at all.
+          CANARY_URLS: ""
+          ORIGIN_SECRETS: ""
+          # Empty on repos with no Cloudflare Access app. smoke.ts calls the public
+          # hostname through Cloudflare, and an Access-protected hostname answers 302 to
+          # the login page without a service token — indistinguishable from a broken
+          # deploy. Never echo either value.
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: bun run deploy/smoke.ts
 
       - name: deployment evidence

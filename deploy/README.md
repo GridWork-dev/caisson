@@ -8,17 +8,37 @@ bun run /home/gw/lab/gridwork-infra/scripts/render-app-manifests.ts caisson --wr
 ```
 
 The four workflows under `.github/workflows/` are byte-identical copies of the
-reviewed T28 templates. `publish-image.yml` publishes immutable images on a push
-to `main` or an explicit call. Staging, production, and rollback are manual or
-reusable-workflow entrypoints; none deploy on merge.
+reviewed T28 templates as finalized at gridwork-infra commit `6852152`. Their
+registry, project/region, Access-service-token, Bun-version-file, and gate-script
+wiring stays upstream-owned so cross-repository drift remains a hash comparison.
+
+`publish-image.yml` publishes immutable images on a push to `main` or an
+explicit call. Staging, production, and rollback are manual or reusable-workflow
+entrypoints; none deploy on merge.
 
 The six TypeScript entrypoints validate manifest inputs, build deployment plans,
-exercise public Cloudflare paths, enforce rollout observations, and validate
-rollback targets. Run their tests with:
+exercise gcloud-resolved zero-traffic tag URLs with per-service origin headers,
+exercise public Cloudflare paths after promotion, enforce rollout observations,
+and validate rollback targets. `gates.sh` runs this repository's lint, typecheck,
+and test commands in fail-fast order before an image can publish.
+`prepare-build.sh` is the required explicit host-preparation hook; Caisson's
+current implementation is an audited no-op because every build input already
+lives in the Docker context. Run the
+deployment tests with:
 
 ```bash
 bun test deploy
 ```
+
+The generated manifest currently publishes runtime service images only. The
+plan therefore leaves `migration_job` empty rather than point `caisson-migrate`
+at a web-service CMD. A reviewed, published migration image must land before
+that output can be armed.
+
+Production pre/post-migration smoke requires the `ORIGIN_SECRETS` GitHub
+environment secret: a JSON object keyed by the four gated Caisson service keys.
+It is not seeded by this change; creation and rotation ride T34a with the runtime
+and Worker copies. Never put its values in repository variables or logs.
 
 The Wave-3 merge freeze remains binding: do not merge or run production deploys
 until T34 fronts Railway and each gated Railway service has its matching origin
