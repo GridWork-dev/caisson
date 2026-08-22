@@ -9,6 +9,7 @@ import { reportCliError } from "./manifest.ts";
 const REQUEST_TIMEOUT_MS = 10_000;
 const CANARY_TAG = /^r[0-9]{1,20}$/;
 const HEADER_VALUE = /^[^\r\n]+$/;
+const ID_TOKEN = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/;
 const ENCODED_ORIGIN_SECRET = /^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$/;
 const REQUIRED_HEADERS = [
   "strict-transport-security",
@@ -67,6 +68,8 @@ export type TimedFetcher = (
   init?: RequestInit,
   options?: FetchTimeoutOptions,
 ) => Promise<Response>;
+
+export type IdentityTokenProvider = (audience: string) => Promise<string>;
 
 type Environment = "staging" | "production";
 type ServiceKey = z.infer<typeof ServiceKeySchema>;
@@ -317,14 +320,54 @@ function validateConfig(
   return parsed;
 }
 
-function requestHeaders(
+function canaryServiceAudience(
   config: ReturnType<typeof validateConfig>,
   target: Target,
-): Headers {
+): string {
+  const url = new URL(config.canaryUrls![target.key]!);
+  const prefix = `${config.canaryTag!}---`;
+  if (!url.hostname.startsWith(prefix)) {
+    throw new Error(`CANARY_URLS tag does not match ${target.key}`);
+  }
+  url.hostname = url.hostname.slice(prefix.length);
+  return url.origin;
+}
+
+async function gcloudIdentityToken(audience: string): Promise<string> {
+  const result = Bun.spawnSync([
+    "gcloud",
+    "auth",
+    "print-identity-token",
+    `--audiences=${audience}`,
+  ]);
+  if (result.exitCode !== 0) {
+    throw new Error("gcloud failed to mint the demos canary identity token");
+  }
+  const token = new TextDecoder().decode(result.stdout).trim();
+  if (token.length > 8_192 || !ID_TOKEN.test(token)) {
+    throw new Error("gcloud returned an invalid demos canary identity token");
+  }
+  return token;
+}
+
+async function requestHeaders(
+  config: ReturnType<typeof validateConfig>,
+  target: Target,
+  identityTokenProvider: IdentityTokenProvider,
+): Promise<Headers> {
   const headers = new Headers({ accept: "application/json" });
   if (isCanaryMode(config.mode)) {
     if (target.originProtected) {
       headers.set(ORIGIN_SECRET_HEADER, config.originSecrets![target.key]!);
+    }
+    if (target.key === "caisson-demos") {
+      const token = await identityTokenProvider(
+        canaryServiceAudience(config, target),
+      );
+      if (token.length > 8_192 || !HEADER_VALUE.test(token)) {
+        throw new Error("demos canary identity token is invalid");
+      }
+      headers.set("X-Serverless-Authorization", `Bearer ${token}`);
     }
   } else if (target.accessProtected) {
     headers.set("CF-Access-Client-Id", config.accessClientId!);
@@ -359,13 +402,14 @@ async function getTarget(
   path: string,
   label: string,
   transport: TimedFetcher,
+  identityTokenProvider: IdentityTokenProvider,
 ): Promise<void> {
   const response = await transport(
     `${requestOrigin(config, target)}${path}`,
     {
       method: "GET",
       redirect: "manual",
-      headers: requestHeaders(config, target),
+      headers: await requestHeaders(config, target, identityTokenProvider),
     },
     { timeoutMs: REQUEST_TIMEOUT_MS },
   );
@@ -381,8 +425,9 @@ async function assertWriteBoundary(
   path: string,
   body: object,
   transport: TimedFetcher,
+  identityTokenProvider: IdentityTokenProvider,
 ): Promise<void> {
-  const headers = requestHeaders(config, target);
+  const headers = await requestHeaders(config, target, identityTokenProvider);
   headers.set("content-type", "application/json");
   const response = await transport(
     `${requestOrigin(config, target)}${path}`,
@@ -405,6 +450,7 @@ async function assertWriteBoundary(
 export async function runSmoke(
   rawConfig: SmokeConfig,
   transport: TimedFetcher = fetchWithTimeout,
+  identityTokenProvider: IdentityTokenProvider = gcloudIdentityToken,
 ): Promise<void> {
   const config = validateConfig(rawConfig);
   const canaryMode = isCanaryMode(config.mode);
@@ -416,7 +462,8 @@ export async function runSmoke(
 
   // The workflow resolves tag URLs with gcloud; this code never synthesizes one.
   // Pre/post-migration calls the zero-traffic revision directly with its origin
-  // credential. Post-deploy and rollback remain public Cloudflare checks.
+  // credential. The IAM-only demos service additionally receives a Google ID token whose
+  // audience is the untagged service URL. Post-deploy and rollback remain public Cloudflare checks.
   for (const target of targets) {
     await getTarget(
       config,
@@ -424,9 +471,17 @@ export async function runSmoke(
       canaryMode ? target.canaryHealthPath : target.healthPath,
       `${target.key} health`,
       transport,
+      identityTokenProvider,
     );
     if (target.key === "caisson-site") {
-      await getTarget(config, target, "/", "caisson-site page", transport);
+      await getTarget(
+        config,
+        target,
+        "/",
+        "caisson-site page",
+        transport,
+        identityTokenProvider,
+      );
     }
   }
 
@@ -434,7 +489,14 @@ export async function runSmoke(
 
   const license = targets.find((target) => target.key === "caisson-license");
   if (license) {
-    await assertWriteBoundary(config, license, "/issue", {}, transport);
+    await assertWriteBoundary(
+      config,
+      license,
+      "/issue",
+      {},
+      transport,
+      identityTokenProvider,
+    );
   }
   const docs = targets.find((target) => target.key === "caisson-docs");
   if (docs) {
@@ -444,6 +506,7 @@ export async function runSmoke(
       "/query",
       { query: "deployment smoke", k: 1 },
       transport,
+      identityTokenProvider,
     );
   }
 }

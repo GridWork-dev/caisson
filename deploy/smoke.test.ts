@@ -209,6 +209,7 @@ describe("public Caisson deployment smoke", () => {
     if (!subject) return;
 
     const calls: Array<{ url: string; method: string; headers: Headers }> = [];
+    const identityTokenAudiences: string[] = [];
     await subject.runSmoke(
       {
         environment: "production",
@@ -228,6 +229,10 @@ describe("public Caisson deployment smoke", () => {
           headers: new Headers(init?.headers),
         });
         return responseFor(input, init);
+      },
+      async (audience) => {
+        identityTokenAudiences.push(audience);
+        return "demos.canary.id-token";
       },
     );
 
@@ -250,7 +255,13 @@ describe("public Caisson deployment smoke", () => {
       expect(call.headers.get("x-gridwork-origin-secret")).toBe(
         service === "caisson-demos" ? null : originSecret,
       );
+      expect(call.headers.get("x-serverless-authorization")).toBe(
+        service === "caisson-demos" ? "Bearer demos.canary.id-token" : null,
+      );
     }
+    expect(identityTokenAudiences).toEqual([
+      "https://caisson-demos-example-ue.a.run.app",
+    ]);
   });
 
   test("keeps pre-migration canary smoke free of schema-dependent writes", async () => {
