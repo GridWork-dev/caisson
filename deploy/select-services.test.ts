@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
+import { readManifest } from "./manifest.ts";
 import { manifestFixture } from "./test-fixture.ts";
 
 const subject = await import("./select-services.ts").catch(() => undefined);
@@ -23,6 +24,18 @@ describe("selectServiceKeys", () => {
     expect(subject.selectServiceKeys(manifestFixture, ["README.md"])).toEqual(
       [],
     );
+  });
+
+  test("publishes the docs service when authoritative site docs change", async () => {
+    expect(subject?.selectServiceKeys).toBeFunction();
+    if (!subject) return;
+
+    const manifest = await readManifest();
+    expect(
+      subject.selectServiceKeys(manifest, [
+        "apps/site/content/docs/base/billing.mdx",
+      ]),
+    ).toEqual(["caisson-docs", "caisson-site"]);
   });
 
   test("an explicit service bypasses path selection but remains allowlisted", () => {
