@@ -205,19 +205,39 @@ export async function loadDocsArtifact(
     tmpdir(),
     `caisson-docs-${contentVersion}-${randomUUID()}.sqlite`,
   );
-  await withTimeout(
-    Bun.write(runtimePath, indexBuffer),
-    timeoutMs,
-    "docs artifact local copy",
-  );
-  const index = DocsIndex.load(
-    manifest.chunks,
-    runtimePath,
-    manifest.index.dim,
-    opts.queryEmbedder?.dim === manifest.index.dim
-      ? opts.queryEmbedder
-      : undefined,
-  );
+  let index: DocsIndex;
+  try {
+    if (
+      opts.queryEmbedder !== undefined &&
+      opts.queryEmbedder.dim !== manifest.index.dim
+    ) {
+      // Image builds intentionally carry a deterministic, credential-free FTS artifact. Production
+      // supplies the live embedder only at runtime, so rebuild the already-verified chunk set into an
+      // ephemeral vector index instead of silently dropping hybrid retrieval on a dimension mismatch.
+      index = await DocsIndex.build(manifest.chunks, opts.queryEmbedder, {
+        storePath: runtimePath,
+      });
+    } else {
+      await withTimeout(
+        Bun.write(runtimePath, indexBuffer),
+        timeoutMs,
+        "docs artifact local copy",
+      );
+      index = DocsIndex.load(
+        manifest.chunks,
+        runtimePath,
+        manifest.index.dim,
+        opts.queryEmbedder,
+      );
+    }
+  } catch (error) {
+    try {
+      unlinkSync(runtimePath);
+    } catch {
+      // The failing open/build may not have created the ephemeral index.
+    }
+    throw error;
+  }
   return {
     contentVersion,
     index,

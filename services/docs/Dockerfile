@@ -1,6 +1,7 @@
 # services/docs — cloud-runner image (ADR-0096, P6). The image build produces a versioned,
-# checksummed bun:sqlite (FTS5 + optional sqlite-vec) artifact from the authoritative docs, then serves
-# retrieval. Inbound: GET /health · /llms.txt · /llms-full.txt (public) + POST /query (Bearer
+# checksummed bun:sqlite FTS5 artifact from the authoritative docs, then upgrades it to an ephemeral
+# sqlite-vec index when a runtime embedder is armed. Inbound: GET /health · /llms.txt · /llms-full.txt
+# (public) + POST /query (Bearer
 # DOCS_SERVICE_TOKEN, fail-closed). Target: Railway (ADR-0105), operator-gated at DEPLOY.
 #
 # BUILD CONTEXT = the REPO ROOT, not services/docs: buildCorpus() reads apps/site/content/docs/**.mdx
@@ -25,8 +26,8 @@ RUN bun services/docs/src/build-artifact.ts
 USER bun
 
 # DOCS_SERVICE_TOKEN is injected by the platform secret store at run time (server.ts refuses to start
-# without it). OPENROUTER_API_KEY is optional at runtime: a vector artifact can use it for query
-# embeddings; the image build always produces the deterministic FTS5 floor without a secret.
+# without it). OPENROUTER_API_KEY is optional at runtime: when present, the verified artifact's chunk
+# set is rebuilt at the live embedder's dimension; the image build stays deterministic and secret-free.
 EXPOSE 8788
 HEALTHCHECK --interval=30s --timeout=5s --start-period=25s \
   CMD bun -e "fetch('http://127.0.0.1:'+(process.env.PORT||8788)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"

@@ -3,6 +3,7 @@ import { appendFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Corpus } from "./corpus.ts";
+import { FakeEmbedder } from "./embedder.ts";
 
 const tempDirs: string[] = [];
 afterEach(() => {
@@ -53,6 +54,34 @@ test("versioned checksummed artifact round-trips into a queryable index", async 
     expect((await loaded.index.search("billing"))[0]?.id).toBe(
       "billing-webhook",
     );
+  } finally {
+    loaded.close();
+  }
+});
+
+test("an FTS artifact upgrades to the runtime embedder dimension", async () => {
+  const { loadDocsArtifact, writeDocsArtifact } = await import("./artifact.ts");
+  const outputDir = mkdtempSync(join(tmpdir(), "caisson-docs-artifact-test-"));
+  tempDirs.push(outputDir);
+  const manifest = await writeDocsArtifact({ outputDir, corpus: CORPUS });
+  expect(manifest.index.dim).toBe(1);
+
+  const delegate = new FakeEmbedder(8);
+  let embedCalls = 0;
+  const loaded = await loadDocsArtifact({
+    manifestPath: join(outputDir, "manifest.json"),
+    queryEmbedder: {
+      dim: delegate.dim,
+      embed: async (text) => {
+        embedCalls++;
+        return delegate.embed(text);
+      },
+    },
+  });
+  try {
+    expect(embedCalls).toBe(CORPUS.chunks.length);
+    await loaded.index.search("billing webhook");
+    expect(embedCalls).toBe(CORPUS.chunks.length + 1);
   } finally {
     loaded.close();
   }
