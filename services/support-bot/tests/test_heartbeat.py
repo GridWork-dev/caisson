@@ -36,6 +36,19 @@ def test_enabled_heartbeat_requires_a_google_cloud_project() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "project_id",
+    [
+        "abcde",  # five characters is below Google's six-character floor
+        "a" + ("b" * 29) + "c",  # 31 characters exceeds Google's limit
+        "caisson-prod-",  # project IDs cannot end in a hyphen
+    ],
+)
+def test_google_cloud_project_matches_the_gcp_project_id_contract(project_id: str) -> None:
+    with pytest.raises(ValidationError):
+        _settings(heartbeat_enabled=True, google_cloud_project=project_id)
+
+
 async def test_write_heartbeat_builds_a_global_custom_gauge() -> None:
     client = AsyncMock()
 

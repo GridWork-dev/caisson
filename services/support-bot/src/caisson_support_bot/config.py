@@ -206,9 +206,9 @@ class Settings(BaseSettings):
     heartbeat_interval_s: float = Field(default=60.0, ge=10, le=300)
     google_cloud_project: str | None = Field(
         default=None,
-        min_length=1,
-        max_length=128,
-        pattern=r"^[a-z][a-z0-9-]{4,61}[a-z0-9]$",
+        min_length=6,
+        max_length=30,
+        pattern=r"^[a-z][a-z0-9-]{4,28}[a-z0-9]$",
         description="Metric destination project; required only when heartbeat_enabled is true.",
     )
 
