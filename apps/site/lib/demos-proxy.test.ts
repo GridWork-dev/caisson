@@ -7,14 +7,33 @@ import {
 } from "./demos-proxy";
 
 describe("demos IAM proxy", () => {
-  test("requires an HTTPS Cloud Run audience", () => {
-    expect(parseDemosOrigin(undefined)).toBeNull();
-    expect(parseDemosOrigin(" https://demos-abc-ue.a.run.app/path ")).toBe(
-      "https://demos-abc-ue.a.run.app",
-    );
-    expect(() => parseDemosOrigin("http://demos.internal")).toThrow(
-      "must use https",
-    );
+  test("uses HTTPS plus Google IAM on Cloud Run and the private HTTP mesh only on Railway", () => {
+    expect(parseDemosOrigin(undefined, {})).toBeNull();
+    expect(
+      parseDemosOrigin(" https://demos-abc-ue.a.run.app/path ", {
+        K_SERVICE: "caisson-site",
+      }),
+    ).toEqual({
+      origin: "https://demos-abc-ue.a.run.app",
+      authorization: "google-id-token",
+    });
+    expect(
+      parseDemosOrigin("http://caisson-demos.railway.internal:3040", {
+        RAILWAY_ENVIRONMENT_ID: "railway-env",
+      }),
+    ).toEqual({
+      origin: "http://caisson-demos.railway.internal:3040",
+      authorization: "none",
+    });
+    expect(() =>
+      parseDemosOrigin("http://caisson-demos.railway.internal:3040", {}),
+    ).toThrow("private HTTP origin requires Railway");
+    expect(() =>
+      parseDemosOrigin("http://caisson-demos.railway.internal:3040", {
+        RAILWAY_ENVIRONMENT_ID: "spoofed",
+        K_SERVICE: "caisson-site",
+      }),
+    ).toThrow("private HTTP origin requires Railway");
   });
 
   test("mints an audience-bound token and keeps it server-side", async () => {
@@ -68,7 +87,9 @@ describe("demos IAM proxy", () => {
     const response = await proxyDemosRequest(
       request,
       ["embed", "audit-worm"],
-      "https://demos-abc-ue.a.run.app",
+      parseDemosOrigin("https://demos-abc-ue.a.run.app", {
+        K_SERVICE: "caisson-site",
+      }),
       deps,
     );
 
@@ -87,6 +108,39 @@ describe("demos IAM proxy", () => {
     expect(response.headers.get("content-length")).toBeNull();
     expect(response.headers.get("set-cookie")).toBeNull();
     expect(response.headers.get("authorization")).toBeNull();
+  });
+
+  test("preserves Railway private-mesh forwarding without minting a Google token", async () => {
+    let requestedToken = false;
+    let target = "";
+    let upstreamAuthorization: string | null = "unexpected";
+    const deps: DemosProxyDependencies = {
+      getAuthorizationHeaders: () => {
+        requestedToken = true;
+        return Promise.resolve(new Headers());
+      },
+      fetchImpl: (input, init) => {
+        target = input.toString();
+        upstreamAuthorization = new Headers(init?.headers).get("authorization");
+        return Promise.resolve(new Response("demo", { status: 200 }));
+      },
+    };
+
+    const response = await proxyDemosRequest(
+      new Request("https://caisson.sh/demos/embed/audit-worm"),
+      ["embed", "audit-worm"],
+      parseDemosOrigin("http://caisson-demos.railway.internal:3040", {
+        RAILWAY_ENVIRONMENT_ID: "railway-env",
+      }),
+      deps,
+    );
+
+    expect(response.status).toBe(200);
+    expect(target).toBe(
+      "http://caisson-demos.railway.internal:3040/demos/embed/audit-worm",
+    );
+    expect(requestedToken).toBe(false);
+    expect(upstreamAuthorization).toBeNull();
   });
 
   test("returns a fail-safe 404 without contacting IAM or demos when unconfigured", async () => {
@@ -130,7 +184,9 @@ describe("demos IAM proxy", () => {
       proxyDemosRequest(
         new Request("https://caisson.sh/demos/%2e%2e/private"),
         ["..", "private"],
-        "https://demos-abc-ue.a.run.app",
+        parseDemosOrigin("https://demos-abc-ue.a.run.app", {
+          K_SERVICE: "caisson-site",
+        }),
         deps,
       ),
     ).rejects.toThrow("invalid demos path");

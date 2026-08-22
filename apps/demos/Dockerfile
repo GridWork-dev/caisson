@@ -32,6 +32,7 @@ ENV NODE_ENV=production \
 COPY --from=build /app/apps/demos/.next/standalone ./
 COPY --from=build /app/apps/demos/.next/static ./apps/demos/.next/static
 COPY --from=build /app/apps/demos/public ./apps/demos/public
+COPY --from=build /app/apps/demos/entrypoint.sh ./apps/demos/entrypoint.sh
 
 # Non-root: the standalone server never writes to disk at runtime, so the root-owned,
 # world-readable copies above need no chown. `bun` (uid/gid 1000) is the oven/bun base image's
@@ -44,4 +45,4 @@ EXPOSE 3040
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \
   CMD bun -e "fetch('http://127.0.0.1:'+(process.env.PORT||3040)+'/demos/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["bun", "apps/demos/server.js"]
+CMD ["sh", "apps/demos/entrypoint.sh"]

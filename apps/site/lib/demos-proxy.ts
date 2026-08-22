@@ -58,6 +58,12 @@ const RESPONSE_HEADER_DENYLIST = new Set([
 ]);
 
 type FetchImpl = typeof fetchWithTimeout;
+type DemosAuthorization = "google-id-token" | "none";
+
+export type DemosOrigin = {
+  origin: string;
+  authorization: DemosAuthorization;
+};
 
 export interface DemosProxyDependencies {
   getAuthorizationHeaders: (audience: string) => Promise<Headers>;
@@ -92,8 +98,11 @@ const defaultDependencies: DemosProxyDependencies = {
   fetchImpl: fetchWithTimeout,
 };
 
-/** Resolve the private Cloud Run service origin and ID-token audience. */
-export function parseDemosOrigin(raw: string | undefined): string | null {
+/** Resolve the Cloud Run IAM origin or the still-authoritative Railway private-mesh origin. */
+export function parseDemosOrigin(
+  raw: string | undefined,
+  environment: Readonly<Record<string, string | undefined>> = process.env,
+): DemosOrigin | null {
   const value = raw?.trim();
   if (!value) return null;
 
@@ -104,21 +113,44 @@ export function parseDemosOrigin(raw: string | undefined): string | null {
   } catch {
     throw new Error("DEMOS_ORIGIN_URL is not a valid URL");
   }
-  if (parsed.protocol !== "https:") {
-    throw new Error("DEMOS_ORIGIN_URL must use https");
-  }
   if (parsed.username !== "" || parsed.password !== "") {
     throw new Error("DEMOS_ORIGIN_URL must not contain credentials");
   }
-  return parsed.origin;
+  if (
+    parsed.protocol === "https:" &&
+    parsed.hostname.endsWith(".run.app") &&
+    parsed.hostname !== "run.app"
+  ) {
+    return { origin: parsed.origin, authorization: "google-id-token" };
+  }
+
+  const railwayEnvironmentId = environment.RAILWAY_ENVIRONMENT_ID?.trim() ?? "";
+  const cloudRunService = environment.K_SERVICE?.trim() ?? "";
+  if (
+    parsed.protocol === "http:" &&
+    parsed.hostname.endsWith(".railway.internal") &&
+    parsed.hostname !== "railway.internal" &&
+    railwayEnvironmentId !== "" &&
+    cloudRunService === ""
+  ) {
+    return { origin: parsed.origin, authorization: "none" };
+  }
+  if (parsed.protocol === "http:") {
+    throw new Error("DEMOS_ORIGIN_URL private HTTP origin requires Railway");
+  }
+  throw new Error("DEMOS_ORIGIN_URL must name an HTTPS Cloud Run service");
 }
 
 function upstreamHeaders(
   request: Request,
   authorizationHeaders: Headers,
+  authorization: DemosAuthorization,
 ): Headers {
-  const authorization = authorizationHeaders.get("authorization");
-  if (authorization === null || !authorization.startsWith("Bearer ")) {
+  const authorizationHeader = authorizationHeaders.get("authorization");
+  if (
+    authorization === "google-id-token" &&
+    (authorizationHeader === null || !authorizationHeader.startsWith("Bearer "))
+  ) {
     throw new Error("Google identity client returned no Bearer token");
   }
 
@@ -134,7 +166,9 @@ function upstreamHeaders(
     }
     headers.set(name, value);
   }
-  headers.set("authorization", authorization);
+  if (authorizationHeader !== null) {
+    headers.set("authorization", authorizationHeader);
+  }
   return headers;
 }
 
@@ -166,22 +200,20 @@ function downstreamHeaders(
 }
 
 /**
- * Proxy one same-origin `/demos/*` GET/HEAD to an IAM-private Cloud Run service. The Google ID
- * token exists only in this server-side request and is never copied into the browser response.
+ * Proxy one same-origin `/demos/*` GET/HEAD to the selected private service. The Google ID token
+ * exists only on the Cloud Run path and is never copied into the browser response; Railway keeps
+ * its existing unauthenticated private-mesh hop until cutover.
  */
 export async function proxyDemosRequest(
   request: Request,
   path: string[],
-  configuredOrigin: string | null,
+  configuredOrigin: DemosOrigin | null,
   dependencies: DemosProxyDependencies = defaultDependencies,
 ): Promise<Response> {
   if (configuredOrigin === null) {
     return new Response("Not Found", { status: 404 });
   }
-  const demosOrigin = parseDemosOrigin(configuredOrigin);
-  if (demosOrigin === null) {
-    return new Response("Not Found", { status: 404 });
-  }
+  const demosOrigin = configuredOrigin.origin;
   const parsedPath = demosPathSchema.safeParse(path);
   if (!parsedPath.success) {
     throw new Error("invalid demos path");
@@ -198,12 +230,18 @@ export async function proxyDemosRequest(
   target.search = requestUrl.search;
 
   const authorizationHeaders =
-    await dependencies.getAuthorizationHeaders(demosOrigin);
+    configuredOrigin.authorization === "google-id-token"
+      ? await dependencies.getAuthorizationHeaders(demosOrigin)
+      : new Headers();
   const upstream = await dependencies.fetchImpl(
     target,
     {
       method: request.method,
-      headers: upstreamHeaders(request, authorizationHeaders),
+      headers: upstreamHeaders(
+        request,
+        authorizationHeaders,
+        configuredOrigin.authorization,
+      ),
       redirect: "manual",
     },
     { timeoutMs: 30_000 },
