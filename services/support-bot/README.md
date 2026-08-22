@@ -83,9 +83,11 @@ secrets.
 
 ### Disposable GCE worker contract
 
-`gce-deploy.toml` is the values-free handoff to T41. It maps the bot container's
-`DISCORD_TOKEN`, `DATABASE_URL`, and `BILLING_GRANT_TOKEN`, plus cloudflared's `TUNNEL_TOKEN`, to
-the four dedicated Secret Manager container names. Secret values stay operator-seeded out of band.
+`gce-deploy.toml` is the values-free handoff to T41. It maps every startup-required bot value
+(`DISCORD_TOKEN`, `OPENROUTER_API_KEY`, `DOCS_SERVICE_URL`, and `DOCS_SERVICE_TOKEN`) plus the
+optional `DATABASE_URL` and `BILLING_GRANT_TOKEN`; cloudflared separately maps `TUNNEL_TOKEN`.
+Each mapping names a dedicated Secret Manager container. Secret values stay operator-seeded out of
+band.
 
 The process handles `SIGTERM` directly: it closes the authenticated mutation gate first, drains
 in-flight callbacks within `SHUTDOWN_GRACE_S`, asks Discord to close, then bounds HTTP and asyncpg

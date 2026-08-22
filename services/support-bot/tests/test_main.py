@@ -36,14 +36,35 @@ async def test_database_pool_uses_the_bounded_runtime_envelope(
     )
 
 
-def test_gce_deploy_contract_maps_only_named_secret_containers() -> None:
+def test_gce_deploy_contract_maps_every_startup_requirement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     contract = tomllib.loads((PACKAGE_ROOT / "gce-deploy.toml").read_text())
 
     assert contract["containers"]["support-bot"]["secret_env"] == {
         "DISCORD_TOKEN": "bot-discord-token",
+        "OPENROUTER_API_KEY": "bot-openrouter-api-key",
+        "DOCS_SERVICE_URL": "bot-docs-service-url",
+        "DOCS_SERVICE_TOKEN": "bot-docs-service-token",
         "DATABASE_URL": "bot-database-url",
         "BILLING_GRANT_TOKEN": "bot-http-bearer",
     }
     assert contract["containers"]["cloudflared"]["secret_env"] == {
         "TUNNEL_TOKEN": "bot-tunnel-credentials"
     }
+
+    required_values = {
+        "DISCORD_TOKEN": "test-discord-token",
+        "OPENROUTER_API_KEY": "test-openrouter-key",
+        "DOCS_SERVICE_URL": "https://docs.example.test",
+        "DOCS_SERVICE_TOKEN": "test-docs-token",
+    }
+    for name, value in required_values.items():
+        assert name in contract["containers"]["support-bot"]["secret_env"]
+        monkeypatch.setenv(name, value)
+
+    settings = entrypoint.Settings()  # type: ignore[call-arg]
+    assert settings.discord_token == required_values["DISCORD_TOKEN"]
+    assert settings.openrouter_api_key == required_values["OPENROUTER_API_KEY"]
+    assert str(settings.docs_service_url).rstrip("/") == required_values["DOCS_SERVICE_URL"]
+    assert settings.docs_service_token == required_values["DOCS_SERVICE_TOKEN"]
