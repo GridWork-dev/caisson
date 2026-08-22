@@ -222,7 +222,7 @@ it has no public hostname and is IAM-only behind the site proxy.
 |   19 | REACHED, EXTERNAL HOLD — `PROD_DEPLOY_RECEIPT` is absent. Seeding was prohibited and not attempted.                                            |
 |   20 | CLOSED — fresh read-only metadata confirms all ten required repository-variable names are present.                                             |
 
-No checklist item was silently skipped. Items 10–14 and 16 are not applicable for the
+No checklist item was silently skipped. Items 10–13 and 16 are not applicable for the
 reasons above; item 19 was deliberately not executed because the audit forbids secret
 handling and external mutation.
 
