@@ -85,9 +85,11 @@ export function resolveMigrationDatabaseUrl(
   );
 }
 
-async function main(): Promise<void> {
+export async function runSiteDeployMigration(
+  env: Record<string, string | undefined> = process.env,
+): Promise<void> {
   // Fail closed: a deploy migration against no DB is never a silent no-op.
-  const url = resolveMigrationDatabaseUrl(process.env);
+  const url = resolveMigrationDatabaseUrl(env);
   const pool = createPgPool(url, { purpose: "migration" });
   try {
     const result = await runPlatformMigrations(pgMigrationApplier(pool));
@@ -101,11 +103,11 @@ async function main(): Promise<void> {
     const auth = await createAuth({
       database: pool,
       secret:
-        process.env.BETTER_AUTH_SECRET ??
+        env.BETTER_AUTH_SECRET ??
         "deploy-migrate-placeholder-secret-32chars-minimum",
       emailer: createCaptureEmailer(),
       hmacKey:
-        process.env.SESSION_TOKEN_HMAC_KEY ??
+        env.SESSION_TOKEN_HMAC_KEY ??
         "deploy-migrate-placeholder-hmac-key-32chars-minimum",
     });
     // `auth.options.database` is the ADR-0366 wrapped adapter FACTORY (see the comment on
@@ -168,5 +170,5 @@ export async function cutoverLegacySessionTokens(
 }
 
 if (import.meta.main) {
-  await main();
+  await runSiteDeployMigration();
 }

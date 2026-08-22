@@ -20,7 +20,12 @@ describe("selectServiceKeys", () => {
       subject.selectServiceKeys(manifestFixture, [
         "packages/kernel/src/fetch.ts",
       ]),
-    ).toEqual(["caisson-demos", "caisson-docs", "caisson-site"]);
+    ).toEqual([
+      "caisson-demos",
+      "caisson-docs",
+      "caisson-migrate",
+      "caisson-site",
+    ]);
     expect(subject.selectServiceKeys(manifestFixture, ["README.md"])).toEqual(
       [],
     );
@@ -36,6 +41,15 @@ describe("selectServiceKeys", () => {
         "apps/site/content/docs/base/billing.mdx",
       ]),
     ).toEqual(["caisson-docs", "caisson-site"]);
+  });
+
+  test("publishes the migration job when its combined entrypoint changes", async () => {
+    expect(subject?.selectServiceKeys).toBeFunction();
+    if (!subject) return;
+
+    expect(
+      subject.selectServiceKeys(await readManifest(), ["deploy/migrate.ts"]),
+    ).toEqual(["caisson-migrate"]);
   });
 
   test("an explicit service bypasses path selection but remains allowlisted", () => {
@@ -57,6 +71,7 @@ describe("selectServiceKeys", () => {
     expect(subject.selectServiceKeys(manifestFixture, null)).toEqual([
       "caisson-demos",
       "caisson-docs",
+      "caisson-migrate",
       "caisson-site",
     ]);
     expect(subject.parseBefore("0".repeat(40))).toBeNull();

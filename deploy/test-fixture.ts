@@ -12,6 +12,15 @@ export type FixtureManifest = {
       runtime: "cloud-run-service";
     }
   >;
+  jobs: Record<
+    string,
+    {
+      dockerfile: string;
+      build_context: string;
+      watched_paths: string[];
+      runtime: "cloud-run-job";
+    }
+  >;
 };
 
 export const manifestFixture: FixtureManifest = {
@@ -41,6 +50,14 @@ export const manifestFixture: FixtureManifest = {
       healthcheck: "/demos/healthz",
       hostnames: [],
       runtime: "cloud-run-service",
+    },
+  },
+  jobs: {
+    "caisson-migrate": {
+      dockerfile: "deploy/Dockerfile.migrate",
+      build_context: ".",
+      watched_paths: ["deploy/migrate.ts", "packages/**", "bun.lock"],
+      runtime: "cloud-run-job",
     },
   },
 };

@@ -1,8 +1,9 @@
 import {
+  buildTargetKeys,
   output,
   readManifest,
   reportCliError,
-  requireService,
+  requireBuildTarget,
   type ServiceManifest,
 } from "./manifest.ts";
 
@@ -45,15 +46,15 @@ export function selectServiceKeys(
   only?: string,
 ): string[] {
   if (only) {
-    requireService(manifest, only);
+    requireBuildTarget(manifest, only);
     return [only];
   }
 
-  const keys = Object.keys(manifest.services).sort();
+  const keys = buildTargetKeys(manifest);
   if (changedPaths === null) return keys;
   return keys.filter((key) =>
     matchesWatchedPath(
-      requireService(manifest, key).watched_paths,
+      requireBuildTarget(manifest, key).watched_paths,
       changedPaths,
     ),
   );

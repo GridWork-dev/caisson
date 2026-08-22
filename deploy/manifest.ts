@@ -46,6 +46,15 @@ const ServiceConfigSchema = z
   })
   .strict();
 
+const JobConfigSchema = z
+  .object({
+    dockerfile: repositoryPath(false),
+    build_context: repositoryPath(false),
+    watched_paths: z.array(repositoryPath(true)).min(1).max(128),
+    runtime: z.literal("cloud-run-job"),
+  })
+  .strict();
+
 const ManifestSchema = z
   .object({
     _source: z.string().trim().min(1).max(512),
@@ -55,10 +64,17 @@ const ManifestSchema = z
       .refine((services) => Object.keys(services).length > 0, {
         message: "services must be non-empty",
       }),
+    jobs: z.record(z.string().regex(SERVICE_KEY), JobConfigSchema),
   })
-  .strict();
+  .strict()
+  .refine(
+    ({ services, jobs }) =>
+      !Object.keys(jobs).some((key) => Object.hasOwn(services, key)),
+    { message: "service and job keys must not overlap" },
+  );
 
 export type ServiceConfig = z.infer<typeof ServiceConfigSchema>;
+export type JobConfig = z.infer<typeof JobConfigSchema>;
 export type ServiceManifest = z.infer<typeof ManifestSchema>;
 
 export function parseManifest(value: unknown): ServiceManifest {
@@ -87,6 +103,28 @@ export function requireService(
   const service = manifest.services[key];
   if (!service) throw new Error(`unknown service ${key}`);
   return service;
+}
+
+export function requireBuildTarget(
+  manifest: ServiceManifest,
+  key: string,
+): ServiceConfig | JobConfig {
+  if (Object.hasOwn(manifest.services, key)) {
+    return requireService(manifest, key);
+  }
+  if (!Object.hasOwn(manifest.jobs, key)) {
+    throw new Error(`unknown service ${key}`);
+  }
+  const job = manifest.jobs[key];
+  if (!job) throw new Error(`unknown service ${key}`);
+  return job;
+}
+
+export function buildTargetKeys(manifest: ServiceManifest): string[] {
+  return [
+    ...Object.keys(manifest.services),
+    ...Object.keys(manifest.jobs),
+  ].sort();
 }
 
 export function output(name: string, value: string): void {

@@ -2,7 +2,7 @@ import {
   output,
   readManifest,
   reportCliError,
-  requireService,
+  requireBuildTarget,
   type ServiceManifest,
 } from "./manifest.ts";
 
@@ -10,7 +10,7 @@ export function serviceInputs(
   manifest: ServiceManifest,
   serviceKey: string,
 ): { dockerfile: string; buildContext: string } {
-  const service = requireService(manifest, serviceKey);
+  const service = requireBuildTarget(manifest, serviceKey);
   return {
     dockerfile: service.dockerfile,
     buildContext: service.build_context,

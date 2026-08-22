@@ -46,9 +46,11 @@ export async function ensureAdminAuthTables(url: string): Promise<void> {
   }
 }
 
-async function main(): Promise<void> {
+export async function runAdminDeployMigration(
+  env: Record<string, string | undefined> = process.env,
+): Promise<void> {
   // Fail loud: a deploy migration against no DB is never a silent no-op.
-  const url = process.env.ADMIN_AUTH_DIRECT_DATABASE_URL?.trim();
+  const url = env.ADMIN_AUTH_DIRECT_DATABASE_URL?.trim();
   if (url === undefined || url.length === 0) {
     throw new Error(
       "ADMIN_AUTH_DIRECT_DATABASE_URL is required (the admin deploy migration needs its own direct Postgres " +
@@ -60,5 +62,5 @@ async function main(): Promise<void> {
 }
 
 if (import.meta.main) {
-  await main();
+  await runAdminDeployMigration();
 }

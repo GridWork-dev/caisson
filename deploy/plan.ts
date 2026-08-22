@@ -3,7 +3,7 @@ import {
   output,
   readManifest,
   reportCliError,
-  requireService,
+  requireBuildTarget,
   type ServiceManifest,
 } from "./manifest.ts";
 
@@ -54,18 +54,26 @@ export function createPlan(
   if (keys.length === 0) {
     throw new Error("DIGESTS must contain at least one service");
   }
-  const services = keys.map((service) => {
-    requireService(manifest, service);
+  const services: DeploymentPlan["services"] = [];
+  let migrationJob = "";
+  let migrationImage = "";
+  for (const service of keys) {
+    const target = requireBuildTarget(manifest, service);
     const digest = digests[service]!;
     if (!DIGEST.test(digest)) throw new Error(`invalid digest for ${service}`);
-    return { service, image: `${registry}/${service}@${digest}` };
-  });
+    const image = `${registry}/${service}@${digest}`;
+    if (target.runtime === "cloud-run-service") {
+      services.push({ service, image });
+      continue;
+    }
+    if (service !== "caisson-migrate") {
+      throw new Error(`unsupported deployment job ${service}`);
+    }
+    migrationJob = service;
+    migrationImage = image;
+  }
 
-  // The reviewed manifest publishes only runtime service images. Although Caisson's
-  // Dockerfiles expose migration targets, the shared publisher does not publish a
-  // caisson-migrate digest yet. Emitting a runtime image here would execute the web
-  // CMD under the Job and falsely report a successful migration, so remain inert.
-  return { services, migrationJob: "", migrationImage: "" };
+  return { services, migrationJob, migrationImage };
 }
 
 async function main(): Promise<void> {
