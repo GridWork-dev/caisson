@@ -6,13 +6,18 @@ import { writeDocsArtifact } from "./artifact.ts";
 import { buildCorpus, loadPricingFacts } from "./corpus.ts";
 import { createOpenRouterEmbedder } from "./openrouter-embedder.ts";
 
-function embedPhaseDeadlineMs(
+export function embedPhaseDeadlineMs(
   env: Record<string, string | undefined>,
 ): number | undefined {
   const raw = env.DOCS_EMBED_PHASE_DEADLINE_MS?.trim() ?? "";
   if (raw === "") return undefined;
-  const parsed = Number.parseInt(raw, 10);
-  if (!Number.isFinite(parsed) || parsed < 1_000 || parsed > 1_800_000) {
+  const parsed = Number(raw);
+  if (
+    !/^[0-9]+$/.test(raw) ||
+    !Number.isSafeInteger(parsed) ||
+    parsed < 1_000 ||
+    parsed > 1_800_000
+  ) {
     throw new Error(
       "DOCS_EMBED_PHASE_DEADLINE_MS must be an integer from 1000 to 1800000",
     );

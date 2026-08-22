@@ -10,13 +10,18 @@ import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
 
 const DEFAULT_PORT = 8788;
 
-function artifactLoadTimeoutMs(
+export function artifactLoadTimeoutMs(
   env: Record<string, string | undefined>,
 ): number | undefined {
   const raw = env.DOCS_ARTIFACT_LOAD_TIMEOUT_MS?.trim() ?? "";
   if (raw === "") return undefined;
-  const parsed = Number.parseInt(raw, 10);
-  if (!Number.isFinite(parsed) || parsed < 1_000 || parsed > 30_000) {
+  const parsed = Number(raw);
+  if (
+    !/^[0-9]+$/.test(raw) ||
+    !Number.isSafeInteger(parsed) ||
+    parsed < 1_000 ||
+    parsed > 30_000
+  ) {
     throw new Error(
       "DOCS_ARTIFACT_LOAD_TIMEOUT_MS must be an integer from 1000 to 30000",
     );

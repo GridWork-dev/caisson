@@ -3,8 +3,27 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Corpus } from "./corpus.ts";
+import { embedPhaseDeadlineMs } from "./build-artifact.ts";
 import { writeDocsArtifact } from "./artifact.ts";
-import { startServer } from "./server.ts";
+import { artifactLoadTimeoutMs, startServer } from "./server.ts";
+
+test("timeout environment values require complete bounded integer strings", () => {
+  expect(embedPhaseDeadlineMs({})).toBeUndefined();
+  expect(embedPhaseDeadlineMs({ DOCS_EMBED_PHASE_DEADLINE_MS: "1000" })).toBe(
+    1_000,
+  );
+  expect(
+    artifactLoadTimeoutMs({ DOCS_ARTIFACT_LOAD_TIMEOUT_MS: "30000" }),
+  ).toBe(30_000);
+  for (const invalid of ["1000ms", "1000.5", "+1000", "1e3"]) {
+    expect(() =>
+      embedPhaseDeadlineMs({ DOCS_EMBED_PHASE_DEADLINE_MS: invalid }),
+    ).toThrow("must be an integer");
+    expect(() =>
+      artifactLoadTimeoutMs({ DOCS_ARTIFACT_LOAD_TIMEOUT_MS: invalid }),
+    ).toThrow("must be an integer");
+  }
+});
 
 test("runtime server only loads a prebuilt artifact", async () => {
   const source = await Bun.file(`${import.meta.dir}/server.ts`).text();

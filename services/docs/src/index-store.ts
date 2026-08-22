@@ -271,9 +271,9 @@ export class DocsIndex {
     const perSourceCap = tuning?.perSourceCap ?? DEFAULT_PER_SOURCE_CAP;
     // Fail CLOSED like hybridSearch's ftsWeight guard: `used >= NaN` is always false, so an
     // unguarded NaN cap would silently disable per-source dedup instead of erroring.
-    if (!Number.isFinite(perSourceCap) || perSourceCap < 1) {
+    if (!Number.isSafeInteger(perSourceCap) || perSourceCap < 1) {
       throw new ValidationError(
-        `perSourceCap must be a finite number >= 1, got ${String(perSourceCap)}`,
+        `perSourceCap must be a positive safe integer, got ${String(perSourceCap)}`,
       );
     }
     // Over-fetch so the per-source cap has surplus candidates to promote into freed window slots.

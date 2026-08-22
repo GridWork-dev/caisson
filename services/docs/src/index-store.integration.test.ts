@@ -233,4 +233,15 @@ describe("per-source cap in the answer window (CAISSON-83)", () => {
       idx.close();
     }
   });
+
+  test("rejects a fractional per-source cap instead of exceeding it", async () => {
+    const idx = await DocsIndex.build(crowd);
+    try {
+      await expect(
+        idx.search("install", 3, { perSourceCap: 1.5 }),
+      ).rejects.toThrow("perSourceCap must be a positive safe integer");
+    } finally {
+      idx.close();
+    }
+  });
 });
