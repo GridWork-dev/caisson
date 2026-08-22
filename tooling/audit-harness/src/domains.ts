@@ -182,6 +182,16 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
     class: "internal-only",
   });
 
+  // Deployment entrypoints and their generated service census are executable
+  // release infrastructure. Keep them inside the audit partition rather than
+  // treating a new top-level tree as process exhaust.
+  domains.push({
+    id: "deploy-pipeline",
+    roots: ["deploy"],
+    globs: ["deploy/**"],
+    class: "internal-only",
+  });
+
   // The .github CI execution surface — one domain over every workflow and local action.
   domains.push({
     id: "workflows",

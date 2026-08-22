@@ -136,7 +136,11 @@ describe("coverage gate — complete, non-overlapping tree partition (ADR-0233)"
     expect(
       domainForPath("patches/dependency-cruiser@18.1.0.patch", domains)?.id,
     ).toBe("patches");
-    // (d) a hypothetical new top-level dir with no IGNORE entry and no domain: this is exactly the
+    // (d) the Cloud Run deployment surface is executable release infrastructure.
+    expect(domainForPath("deploy/plan.ts", domains)?.id).toBe(
+      "deploy-pipeline",
+    );
+    // (e) a hypothetical new top-level dir with no IGNORE entry and no domain: this is exactly the
     // shape the whole-repo scan test above fails loud on — unclaimed AND not ignored.
     expect(domainForPath("newdir/x.ts", domains)).toBeNull();
     expect(isIgnored("newdir/x.ts")).toBe(false);
