@@ -39,6 +39,21 @@ const identityClaimsSchema = z
   })
   .strict();
 
+const serviceTokenClaimsSchema = z
+  .object({
+    type: z.literal("app"),
+    commonName: z
+      .string()
+      .trim()
+      .min(8)
+      .max(256)
+      .regex(/^[A-Za-z0-9_-]+\.access$/),
+    subject: z.literal(""),
+    issuedAt: z.number().int().nonnegative(),
+    expiresAt: z.number().int().positive(),
+  })
+  .strict();
+
 export interface CloudflareAccessEnv {
   readonly [key: string]: string | undefined;
   NODE_ENV?: string;
@@ -123,7 +138,7 @@ export async function verifyCloudflareAccessRequest(
       issuer: config.issuer,
       audience: config.audience,
     });
-    return identityClaimsSchema.safeParse({
+    const identityClaimsValid = identityClaimsSchema.safeParse({
       type: payload.type,
       email: payload.email,
       subject: payload.sub,
@@ -132,6 +147,14 @@ export async function verifyCloudflareAccessRequest(
       notBefore: payload.nbf,
       expiresAt: payload.exp,
     }).success;
+    const serviceTokenClaimsValid = serviceTokenClaimsSchema.safeParse({
+      type: payload.type,
+      commonName: payload.common_name,
+      subject: payload.sub,
+      issuedAt: payload.iat,
+      expiresAt: payload.exp,
+    }).success;
+    return identityClaimsValid || serviceTokenClaimsValid;
   } catch {
     return false;
   }

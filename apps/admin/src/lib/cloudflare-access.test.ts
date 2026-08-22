@@ -96,12 +96,14 @@ async function token(
     expiresInSec?: number;
     notBeforeSec?: number;
     includeIdentity?: boolean;
+    serviceToken?: boolean;
     signingKey?: CryptoKey;
   } = {},
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  const payload =
-    options.includeIdentity === false
+  const payload = options.serviceToken
+    ? { type: "app", common_name: "smoke-client.access" }
+    : options.includeIdentity === false
       ? { type: "app" }
       : {
           type: "app",
@@ -109,15 +111,17 @@ async function token(
           identity_nonce: "identity-nonce-1",
         };
 
-  return new SignJWT(payload)
+  let jwt = new SignJWT(payload)
     .setProtectedHeader({ alg: "RS256", kid: KID, typ: "JWT" })
     .setIssuer(options.issuer ?? ISSUER)
     .setAudience(options.audience ?? AUDIENCE)
-    .setSubject("access-user-1")
+    .setSubject(options.serviceToken ? "" : "access-user-1")
     .setIssuedAt(now)
-    .setNotBefore(now + (options.notBeforeSec ?? -1))
-    .setExpirationTime(now + (options.expiresInSec ?? 60))
-    .sign(options.signingKey ?? privateKey);
+    .setExpirationTime(now + (options.expiresInSec ?? 60));
+  if (!options.serviceToken) {
+    jwt = jwt.setNotBefore(now + (options.notBeforeSec ?? -1));
+  }
+  return jwt.sign(options.signingKey ?? privateKey);
 }
 
 const request = (jwt?: string): Request =>
@@ -129,6 +133,15 @@ const request = (jwt?: string): Request =>
 describe("verifyCloudflareAccessRequest", () => {
   test("accepts a signed, audience-bound identity token", async () => {
     expect(await requireVerifier()(request(await token()), config)).toBe(true);
+  });
+
+  test("accepts a signed, audience-bound service-token assertion", async () => {
+    expect(
+      await requireVerifier()(
+        request(await token({ serviceToken: true })),
+        config,
+      ),
+    ).toBe(true);
   });
 
   test("rejects missing tokens and tokens signed by an unknown key", async () => {
@@ -319,13 +332,22 @@ describe("admin proxy edge composition", () => {
     expect(response.status).toBe(403);
   });
 
-  test("rejects /healthz without Access even when the origin secret is valid", async () => {
-    const response = await handler()(
+  test("allows origin-authenticated exact health but keeps Access on every other route", async () => {
+    const health = await handler()(
       new NextRequest("https://admin.caisson.sh/healthz", {
         headers: { "x-gridwork-origin-secret": ORIGIN_CURRENT },
       }),
     );
-    expect(response.status).toBe(403);
+    expect(health.status).toBe(200);
+
+    for (const path of ["/healthz/", "/login", "/api/admin/fleet"]) {
+      const response = await handler()(
+        new NextRequest(`https://admin.caisson.sh${path}`, {
+          headers: { "x-gridwork-origin-secret": ORIGIN_CURRENT },
+        }),
+      );
+      expect(response.status).toBe(403);
+    }
   });
 
   test("accepts current and next origin secrets when Access is valid", async () => {

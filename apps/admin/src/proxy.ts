@@ -1,5 +1,7 @@
 // App-wide edge + auth gate. The Cloudflare origin secret and Access JWT layers are armed by
-// default; only exact development/test mode opt-outs disable them.
+// default; only exact development/test mode opt-outs disable them. Exact `/healthz` is the narrow
+// exception: an origin-authenticated zero-traffic Cloud Run revision cannot receive Cloudflare's
+// injected Access JWT, so that one readiness path admits the rotating origin secret by itself.
 // Better-auth plus the immutable numeric GitHub-ID allowlist remains the independent application
 // authorization layer for every non-bootstrap route.
 //
@@ -8,8 +10,8 @@
 // one is set here). That default is load-bearing this time, unlike the old file: verifying a
 // better-auth session needs `pg`/`node:crypto`, which never ran in the old file's Edge runtime.
 //
-// Bootstrap/static routes bypass only the better-auth session check. They still pass through the
-// origin and Access layers when armed, including `/healthz`.
+// Bootstrap/static routes bypass only the better-auth session check. They still pass through both
+// edge layers when armed, except for the exact origin-authenticated `/healthz` canary path above.
 import {
   loadOriginGateConfig,
   originRequestAuthorized,
@@ -115,7 +117,11 @@ export function createAdminProxy(
 
   return async (req: NextRequest): Promise<NextResponse> => {
     if (!originRequestAuthorized(req, originGate)) return edgeForbidden();
-    if (!(await verifyCloudflareAccessRequest(req, access))) {
+    const directCanaryHealth = req.nextUrl.pathname === "/healthz";
+    if (
+      !directCanaryHealth &&
+      !(await verifyCloudflareAccessRequest(req, access))
+    ) {
       return edgeForbidden();
     }
 
