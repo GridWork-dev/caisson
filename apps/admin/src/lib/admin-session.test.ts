@@ -13,7 +13,22 @@ import { setAdminAuthFixture, VERIFIED_ADMIN } from "./admin-auth-mock.ts";
 
 const { verifyAdminSession } = await import("./admin-session.ts");
 const { requireAdmin } = await import("./admin-route.ts");
+const previousNodeEnv = process.env.NODE_ENV;
+const previousOriginMode = process.env.ORIGIN_SECRET_MODE;
+const previousAccessMode = process.env.CF_ACCESS_MODE;
+Reflect.set(process.env, "NODE_ENV", "test");
+Reflect.set(process.env, "ORIGIN_SECRET_MODE", "disabled");
+Reflect.set(process.env, "CF_ACCESS_MODE", "disabled");
 const { proxy, config: proxyConfig } = await import("../proxy.ts");
+if (previousNodeEnv === undefined)
+  Reflect.deleteProperty(process.env, "NODE_ENV");
+else Reflect.set(process.env, "NODE_ENV", previousNodeEnv);
+if (previousOriginMode === undefined)
+  Reflect.deleteProperty(process.env, "ORIGIN_SECRET_MODE");
+else Reflect.set(process.env, "ORIGIN_SECRET_MODE", previousOriginMode);
+if (previousAccessMode === undefined)
+  Reflect.deleteProperty(process.env, "CF_ACCESS_MODE");
+else Reflect.set(process.env, "CF_ACCESS_MODE", previousAccessMode);
 
 const REQ = new Request("https://admin.caisson.sh/business");
 
