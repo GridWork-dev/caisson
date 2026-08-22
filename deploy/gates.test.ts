@@ -33,6 +33,7 @@ async function runGates(failOn?: string): Promise<{
   temporaryDirectories.push(directory);
   const logPath = join(directory, "commands.log");
   const bunPath = join(directory, "bun");
+  const gitPath = join(directory, "git");
   await writeFile(
     bunPath,
     [
@@ -44,6 +45,16 @@ async function runGates(failOn?: string): Promise<{
     { mode: 0o700 },
   );
   await chmod(bunPath, 0o700);
+  await writeFile(
+    gitPath,
+    [
+      "#!/usr/bin/env bash",
+      'printf "git %s\\n" "$*" >> "$GATE_TEST_LOG"',
+      "",
+    ].join("\n"),
+    { mode: 0o700 },
+  );
+  await chmod(gitPath, 0o700);
 
   const child = Bun.spawn(["bash", GATES], {
     env: {
@@ -70,17 +81,32 @@ describe("repository deployment gates", () => {
     expect((await stat(PREPARE_BUILD)).mode & 0o111).not.toBe(0);
   });
 
-  test("runs lint, typecheck, and test in order", async () => {
+  test("runs repository standards, registry provenance, and code gates in order", async () => {
     expect(await runGates()).toEqual({
       exitCode: 0,
-      commands: ["run lint", "run typecheck", "run test"],
+      commands: [
+        "run tooling/standards-gate/src/cli.ts",
+        "run lint:repo",
+        "run lint:canary",
+        "tooling/standards-gate/src/dependency-graph-guard.ts",
+        "test registry/schema registry/scripts registry/worker",
+        "registry/scripts/build-index.ts",
+        "git diff --exit-code registry/index.json",
+        "run lint",
+        "run typecheck",
+        "run test",
+      ],
     });
   });
 
   test("stops immediately and preserves a failing gate status", async () => {
-    expect(await runGates("run typecheck")).toEqual({
+    expect(await runGates("run lint:canary")).toEqual({
       exitCode: 23,
-      commands: ["run lint", "run typecheck"],
+      commands: [
+        "run tooling/standards-gate/src/cli.ts",
+        "run lint:repo",
+        "run lint:canary",
+      ],
     });
   });
 });
