@@ -71,13 +71,15 @@ export function validateRollback(
   return { project };
 }
 
-async function main(): Promise<void> {
-  const service = process.env.SERVICE?.trim();
-  const revision = process.env.REVISION?.trim();
-  const environment = process.env.ENVIRONMENT?.trim();
-  const nonprodProject = process.env.GCP_NONPROD_PROJECT?.trim();
-  const prodProject = process.env.GCP_PROD_PROJECT?.trim();
-  const region = process.env.GCP_REGION?.trim();
+export function rollbackInputsFromEnvironment(
+  environmentVariables: Record<string, string | undefined>,
+) {
+  const service = environmentVariables.SERVICE;
+  const revision = environmentVariables.REVISION;
+  const environment = environmentVariables.ENVIRONMENT;
+  const nonprodProject = environmentVariables.GCP_NONPROD_PROJECT;
+  const prodProject = environmentVariables.GCP_PROD_PROJECT;
+  const region = environmentVariables.GCP_REGION;
   if (!service) throw new Error("SERVICE is required");
   if (!revision) throw new Error("REVISION is required");
   if (!environment) throw new Error("ENVIRONMENT is required");
@@ -85,14 +87,27 @@ async function main(): Promise<void> {
   if (!prodProject) throw new Error("GCP_PROD_PROJECT is required");
   if (!region) throw new Error("GCP_REGION is required");
 
-  const result = validateRollback(
-    await readManifest(),
+  return {
     service,
     revision,
     environment,
     nonprodProject,
     prodProject,
     region,
+  };
+}
+
+async function main(): Promise<void> {
+  const inputs = rollbackInputsFromEnvironment(process.env);
+
+  const result = validateRollback(
+    await readManifest(),
+    inputs.service,
+    inputs.revision,
+    inputs.environment,
+    inputs.nonprodProject,
+    inputs.prodProject,
+    inputs.region,
   );
   output("project", result.project);
 }

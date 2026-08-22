@@ -9,6 +9,51 @@ const region = "us-east4";
 const revision = "caisson-site-00042-abc";
 
 describe("validateRollback", () => {
+  test("preserves raw workflow inputs for validation", () => {
+    expect(subject?.rollbackInputsFromEnvironment).toBeFunction();
+    if (!subject) return;
+
+    const inputs = subject.rollbackInputsFromEnvironment({
+      SERVICE: " caisson-site",
+      REVISION: `${revision} `,
+      ENVIRONMENT: "production",
+      GCP_NONPROD_PROJECT: nonprodProject,
+      GCP_PROD_PROJECT: prodProject,
+      GCP_REGION: region,
+    });
+
+    expect(inputs.service).toBe(" caisson-site");
+    expect(inputs.revision).toBe(`${revision} `);
+
+    const never = () => {
+      throw new Error("gcloud must not run");
+    };
+    expect(() =>
+      subject.validateRollback(
+        manifestFixture,
+        inputs.service,
+        revision,
+        inputs.environment,
+        inputs.nonprodProject,
+        inputs.prodProject,
+        inputs.region,
+        never,
+      ),
+    ).toThrow("unknown service  caisson-site");
+    expect(() =>
+      subject.validateRollback(
+        manifestFixture,
+        "caisson-site",
+        inputs.revision,
+        inputs.environment,
+        inputs.nonprodProject,
+        inputs.prodProject,
+        inputs.region,
+        never,
+      ),
+    ).toThrow("REVISION must belong to caisson-site");
+  });
+
   test("accepts an allowlisted service only after the exact revision is described", () => {
     expect(subject?.validateRollback).toBeFunction();
     if (!subject) return;

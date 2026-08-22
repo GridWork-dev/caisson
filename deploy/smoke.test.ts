@@ -43,12 +43,13 @@ describe("public Caisson deployment smoke", () => {
     expect(
       subject.smokeConfigFromEnvironment({
         ENVIRONMENT: "staging",
+        MODE: "staging",
         CF_ACCESS_CLIENT_ID: "staging-id",
         CF_ACCESS_CLIENT_SECRET: "staging-secret",
       }),
     ).toEqual({
       environment: "staging",
-      mode: "post-deploy",
+      mode: "staging",
       canaryTag: undefined,
       canaryUrls: undefined,
       originSecrets: undefined,
@@ -56,6 +57,9 @@ describe("public Caisson deployment smoke", () => {
       accessClientId: "staging-id",
       accessClientSecret: "staging-secret",
     });
+    expect(() =>
+      subject.smokeConfigFromEnvironment({ ENVIRONMENT: "staging" }),
+    ).toThrow("MODE is required");
     expect(() =>
       subject.smokeConfigFromEnvironment({ ENVIRONMENT: "production" }),
     ).toThrow("MODE is required");
@@ -138,7 +142,7 @@ describe("public Caisson deployment smoke", () => {
     await subject.runSmoke(
       {
         environment: "staging",
-        mode: "post-deploy",
+        mode: "staging",
         accessClientId: "staging-id",
         accessClientSecret: "staging-secret",
       },
@@ -164,7 +168,7 @@ describe("public Caisson deployment smoke", () => {
       subject.runSmoke(
         {
           environment: "staging",
-          mode: "post-deploy",
+          mode: "staging",
           accessClientId: "staging-id",
           accessClientSecret: "staging-secret",
         },
@@ -175,6 +179,29 @@ describe("public Caisson deployment smoke", () => {
           }),
       ),
     ).rejects.toThrow("caisson-site health returned 302");
+  });
+
+  test("scopes rollback smoke to the selected service", async () => {
+    expect(subject?.runSmoke).toBeFunction();
+    if (!subject) return;
+
+    const calls: string[] = [];
+    await subject.runSmoke(
+      {
+        environment: "production",
+        mode: "rollback",
+        service: "caisson-license",
+      },
+      async (input, init) => {
+        calls.push(`${init?.method ?? "GET"} ${String(input)}`);
+        return responseFor(input, init);
+      },
+    );
+
+    expect(calls).toEqual([
+      "GET https://license.caisson.sh/health",
+      "POST https://license.caisson.sh/issue",
+    ]);
   });
 
   test("smokes zero-traffic tag URLs directly with each service's origin header", async () => {

@@ -73,19 +73,14 @@ describe("repository deployment gates", () => {
   test("runs lint, typecheck, and test in order", async () => {
     expect(await runGates()).toEqual({
       exitCode: 0,
-      commands: [
-        "install --frozen-lockfile",
-        "run lint",
-        "run typecheck",
-        "run test",
-      ],
+      commands: ["run lint", "run typecheck", "run test"],
     });
   });
 
   test("stops immediately and preserves a failing gate status", async () => {
     expect(await runGates("run typecheck")).toEqual({
       exitCode: 23,
-      commands: ["install --frozen-lockfile", "run lint", "run typecheck"],
+      commands: ["run lint", "run typecheck"],
     });
   });
 });

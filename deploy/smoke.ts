@@ -31,6 +31,7 @@ const SmokeConfigSchema = z
   .object({
     environment: z.enum(["staging", "production"]),
     mode: z.enum([
+      "staging",
       "pre-migration",
       "post-migration",
       "post-deploy",
@@ -255,6 +256,7 @@ function validateConfig(
       throw new Error("ENVIRONMENT must be staging or production");
     }
     if (
+      config.mode !== "staging" &&
       config.mode !== "pre-migration" &&
       config.mode !== "post-migration" &&
       config.mode !== "post-deploy" &&
@@ -270,6 +272,9 @@ function validateConfig(
 
   const parsed = result.data;
   const canaryMode = isCanaryMode(parsed.mode);
+  if (parsed.mode === "staging" && parsed.environment !== "staging") {
+    throw new Error("staging smoke requires staging");
+  }
   if (canaryMode && !parsed.canaryTag)
     throw new Error("CANARY_TAG is required");
   if (canaryMode && parsed.environment !== "production") {
@@ -470,9 +475,7 @@ export function smokeConfigFromEnvironment(
 ): SmokeConfig {
   const environment = environmentVariables.ENVIRONMENT?.trim();
   if (!environment) throw new Error("ENVIRONMENT is required");
-  const explicitMode = environmentVariables.MODE?.trim();
-  const mode =
-    explicitMode || (environment === "staging" ? "post-deploy" : undefined);
+  const mode = environmentVariables.MODE?.trim();
   if (!mode) throw new Error("MODE is required");
 
   return {

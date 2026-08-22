@@ -7,16 +7,17 @@ hand:
 bun run /home/gw/lab/gridwork-infra/scripts/render-app-manifests.ts caisson --write .
 ```
 
-The four workflows under `.github/workflows/` are byte-identical copies of the
-reviewed T28 templates as finalized at gridwork-infra commit `6852152`. Their
-registry, project/region, Access-service-token, Bun-version-file, and gate-script
-wiring stays upstream-owned so cross-repository drift remains a hash comparison.
+The four workflows under `.github/workflows/` and `verify-receipt.ts` are
+byte-identical copies of the reviewed T28 templates as corrected at
+gridwork-infra commit `0d22c39`. Their registry, project/region,
+Access-service-token, Bun-version-file, receipt, and gate-script wiring stays
+upstream-owned so cross-repository drift remains a hash comparison.
 
 `publish-image.yml` publishes immutable images on a push to `main` or an
 explicit call. Staging, production, and rollback are manual or reusable-workflow
 entrypoints; none deploy on merge.
 
-The six TypeScript entrypoints validate manifest inputs, build deployment plans,
+The seven TypeScript entrypoints validate manifest inputs, build deployment plans,
 exercise gcloud-resolved zero-traffic tag URLs with per-service origin headers,
 exercise public Cloudflare paths after promotion, enforce rollout observations,
 and validate rollback targets. `gates.sh` runs this repository's lint, typecheck,
@@ -39,6 +40,12 @@ Production pre/post-migration smoke requires the `ORIGIN_SECRETS` GitHub
 environment secret: a JSON object keyed by the four gated Caisson service keys.
 It is not seeded by this change; creation and rotation ride T34a with the runtime
 and Worker copies. Never put its values in repository variables or logs.
+
+Production dispatch also requires the `PROD_DEPLOY_RECEIPT` GitHub environment
+secret and a matching receipt input. The operator-side source is the same-named
+entry in `~/.gridwork/env`; never print or commit it. This change does not seed
+or inspect that value, and production remains fail-closed until the environment
+secret exists.
 
 The Wave-3 merge freeze remains binding: do not merge or run production deploys
 until T34 fronts Railway and each gated Railway service has its matching origin
