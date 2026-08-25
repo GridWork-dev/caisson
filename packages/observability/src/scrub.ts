@@ -21,6 +21,17 @@ import type {
 import * as semconv from "@opentelemetry/semantic-conventions/incubating";
 
 /**
+ * The deny-list's term sources, as strings, so the union regex and its two arms below are all
+ * DERIVED from one place: a term added or dropped here changes every consumer together, and no
+ * hand-synchronised copy exists to drift. (An earlier revision kept three literal copies; a
+ * one-term drift between them shipped green because the tests could only see the union.)
+ */
+const CREDENTIAL_TERMS =
+  "secret|token|password|passwd|api[_-]?key|authoriz|bearer|credential|cookie|session|private[_-]?key|access[_-]?key|signing[_-]?key|encryption[_-]?key";
+const PII_TERMS =
+  "(?<![a-z])ssns?|ssns?(?![a-z])|social[_-]?security|e[_.-]?mail|date[_-]?of[_-]?birth|birth[_-]?date|(?<![a-z])dobs?(?![a-z])|(?<![a-z])mrns?(?![a-z])|medical[_-]?record|phone|first[_-]?name(?![a-z])|last[_-]?name(?![a-z])|full[_-]?name(?![a-z])|(?<![a-z])patient";
+
+/**
  * Span attribute / header KEY deny-list. Matches loosely on purpose — a key that merely LOOKS
  * sensitive is redacted rather than risk a false negative. Extend this list, don't replace it.
  *
@@ -43,19 +54,18 @@ import * as semconv from "@opentelemetry/semantic-conventions/incubating";
  * key (NFKC + camelCase/snake_case word split) first. Tested raw, this regex misses `userEmail`,
  * `user_email`, and a fullwidth `ｅmail` (audit finding 19d1af0e70d0c2d7). Export kept for back-compat.
  */
-export const SENSITIVE_ATTRIBUTE_KEY =
-  /(?:secret|token|password|passwd|api[_-]?key|apikey|authoriz|bearer|credential|cookie|session|private[_-]?key|access[_-]?key|signing[_-]?key|encryption[_-]?key|(?<![a-z])ssns?|ssns?(?![a-z])|social[_-]?security|e[_.-]?mail|date[_-]?of[_-]?birth|birth[_-]?date|(?<![a-z])dobs?(?![a-z])|(?<![a-z])mrns?(?![a-z])|medical[_-]?record|phone|first[_-]?name(?![a-z])|last[_-]?name(?![a-z])|full[_-]?name(?![a-z])|(?<![a-z])patient)/i;
+export const SENSITIVE_ATTRIBUTE_KEY = new RegExp(
+  `(?:${CREDENTIAL_TERMS}|${PII_TERMS})`,
+  "i",
+);
 
 /**
- * The deny-list's two arms, kept as separate literals because {@link isSensitiveAttributeKey}
- * treats them differently: the PII arm is unconditional; the credential arm yields to an exact
- * OTel semantic-convention name. Term-for-term identical to {@link SENSITIVE_ATTRIBUTE_KEY}
- * (`scrub.test.ts` pins the union) — extend all three together.
+ * The deny-list's two arms, derived from the same term sources as the union above. They stay
+ * separate because {@link isSensitiveAttributeKey} treats them differently: the PII arm is
+ * unconditional; the credential arm yields to an exact OTel semantic-convention name.
  */
-const CREDENTIAL_KEY =
-  /(?:secret|token|password|passwd|api[_-]?key|apikey|authoriz|bearer|credential|cookie|session|private[_-]?key|access[_-]?key|signing[_-]?key|encryption[_-]?key)/i;
-const PII_KEY =
-  /(?:(?<![a-z])ssns?|ssns?(?![a-z])|social[_-]?security|e[_.-]?mail|date[_-]?of[_-]?birth|birth[_-]?date|(?<![a-z])dobs?(?![a-z])|(?<![a-z])mrns?(?![a-z])|medical[_-]?record|phone|first[_-]?name(?![a-z])|last[_-]?name(?![a-z])|full[_-]?name(?![a-z])|(?<![a-z])patient)/i;
+const CREDENTIAL_KEY = new RegExp(`(?:${CREDENTIAL_TERMS})`, "i");
+const PII_KEY = new RegExp(`(?:${PII_TERMS})`, "i");
 
 /**
  * Every attribute NAME `@opentelemetry/semantic-conventions` exports (stable + incubating, ~890).

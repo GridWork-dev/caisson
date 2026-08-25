@@ -132,6 +132,10 @@ describe("isSensitiveAttributeKey — camelCase / snake_case PII boundaries", ()
       "credentialStore",
       "password",
       "passwd",
+      "bearer",
+      "socialSecurityNumber",
+      "social_security_number",
+      "patientId",
     ]) {
       expect(isSensitiveAttributeKey(key)).toBe(true);
     }
