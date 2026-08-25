@@ -11,6 +11,49 @@ grounds:
 
 # Deploy log
 
+## 2026-08-25 — Organization entity edges to the GridWork hub (run 32870028441)
+
+PR #453 (`4087f8e0`) merged and took the automatic path. All five push-path legs SUCCESS in
+**17m06s** (16:07:21 → 16:24:27Z); `services/license` skipped (dispatch-only). The admin leg alone
+took 10m14s (16:07:43 → 16:17:57Z) against ~2 min on the two earlier rides today — a Railway
+build-side slowdown, not a diff effect (admin was unchanged). Only `apps/site` changed.
+
+**What shipped.** The site's `Organization` node now carries two edges into the GridWork hub:
+`founder` → `https://gridworkdigital.com/#founder` and `subjectOf` →
+`https://gridworkdigital.com/work/caisson-reliability#casestudy`. No `parentOrganization` — Caisson
+Software LLC is a separate Georgia LLC, not a subsidiary; the subsidiary predicate stays banned
+and the test suite pins its absence (both directions mutation-checked). The edges landed only
+after the hub's own deploy (studio main `51a7cab`) served all three IRIs, verified anonymously:
+`#founder` is a Person with no organization back-reference, and the case study's `about` points at
+the caisson organization.
+
+**Verification.** Anonymous clean-UA fetch of `https://caisson.sh/` after the site leg: one
+`Organization` node, `founder` and `subjectOf` exactly as pinned; `parentOrganization`,
+`subOrganization`, `worksFor`, `memberOf`, `affiliation`, and the hub `#organization` IRI all
+absent from the served JSON-LD. No receipt file — CI deploys commit none.
+
+## 2026-08-25 — PII attribute-key scrub hardened, deployed fleet-wide (run 32868697727)
+
+PR #449 (`87b07c60`) merged and took the automatic path. All five push-path legs SUCCESS in
+**8m55s** (15:54:34 → 16:03:29Z); `services/license` skipped (dispatch-only). The diff touched
+`packages/observability` and `packages/kernel`, so every service that compiles either re-rode.
+
+**What shipped.** Audit finding `19d1af0e70d0c2d7` had been closed in a 259-row bulk reconcile
+while still live: the span-attribute deny-list's `\b` word anchors cannot see a camelCase or
+snake_case boundary, so `userEmail` / `user_email` / `phoneNumber` reached the OTLP sink
+unredacted. The fix normalizes the key (NFKC + a linear camelCase/snake_case word split) and tests
+the deny-list against both forms, with letter-lookarounds replacing `\b` on the short tokens.
+The round-1 fix also introduced a quadratic ReDoS in the acronym split (`([A-Z]+)`, ~850 ms at 32k
+chars on an attacker-named attribute) — caught by the in-session security audit and removed
+before merge. Independent re-verification (own 67-key probe set, 889-name semconv sweep
+main-vs-branch with zero delta, kernel golden byte-identical) returned MERGE. Full record:
+`outputs/audit/2026-08-25-false-close-19d1af0e.md`; follow-on CAISSON-205 (21 semconv names the
+unchanged `token`/`session`/`authoriz` terms redact, pre-existing).
+
+**Verification.** Export-side scrubbing has no served surface to probe; the proof is the merged
+suites (observability 82, kernel 10, five mutations each red only where they should) plus the
+`bun run check` gate. No receipt file — CI deploys commit none.
+
 ## 2026-08-25 — sameAs identity claim corrected, crawl hygiene, llms.txt open-core split (run 32864573000)
 
 PR #452 (`f6282dc3`) merged and took the automatic path. All five push-path legs SUCCESS in

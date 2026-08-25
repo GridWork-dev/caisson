@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-19
+updated: 2026-08-25
 status: live
 grounds:
   - docs/state/outstanding-work.md
