@@ -18,9 +18,45 @@ import type {
 /**
  * Span attribute / header KEY deny-list. Matches loosely on purpose — a key that merely LOOKS
  * sensitive is redacted rather than risk a false negative. Extend this list, don't replace it.
+ *
+ * IMPORTANT: do not call `.test()` on this directly — use {@link isSensitiveAttributeKey}. The
+ * word-anchored terms (`\bemail\b`, `\bphone\b`, `\bssn\b`, `\bdob\b`) cannot see a camelCase
+ * or snake_case boundary on their own: `\b` sits between a word and a NON-word character, and both
+ * `r`/`E` in `userEmail` and `_`/`e` in `user_email` are word characters, so neither is a boundary.
+ * The anchors are still load-bearing for precision — an unanchored `dob` matches inside `adobe` —
+ * so the fix is to normalize the key, not to drop them. This export stays for back-compat.
  */
 export const SENSITIVE_ATTRIBUTE_KEY =
-  /(?:secret|token|password|passwd|api[_-]?key|apikey|authoriz|bearer|credential|cookie|session|private[_-]?key|access[_-]?key|signing[_-]?key|encryption[_-]?key|\bssn\b|social[_-]?security|\bemail\b|\bphone\b|date[_-]?of[_-]?birth|\bdob\b)/i;
+  /(?:secret|token|password|passwd|api[_-]?key|apikey|authoriz|bearer|credential|cookie|session|private[_-]?key|access[_-]?key|signing[_-]?key|encryption[_-]?key|\bssn\b|social[_-]?security|\bemail\b|\bphone\b|date[_-]?of[_-]?birth|birth[_-]?date|\bdob\b|first[_-]?name|last[_-]?name|full[_-]?name|\bmrn\b|patient)/i;
+
+/**
+ * Split camelCase/PascalCase runs and `_`/`-` separators into space-delimited words, so the
+ * word-anchored deny-list terms above see a real boundary. `userEmail` -> `user Email`,
+ * `user_email` -> `user email`, `userDOBValue` -> `user DOB Value`. Deliberately does NOT lowercase
+ * (the deny-list is already `/i`) and does NOT strip separators — stripping would re-fuse
+ * `user_dob` into `userdob` and lose the boundary this exists to create.
+ */
+function splitKeyWords(key: string): string {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .replace(/[_-]/g, " ");
+}
+
+/**
+ * The real key predicate: tests the deny-list against BOTH the raw key and its word-split form.
+ * Testing both is monotone — it can only ever redact MORE keys than the raw regex alone, never
+ * fewer — so it cannot regress an already-redacted key. The raw arm keeps terms whose own optional
+ * separator already spans the case change (`api[_-]?key` matches `apiKey` directly, but would NOT
+ * match the split form `api Key`); the split arm adds the anchored PII terms. Over-redaction is the
+ * fail-safe direction here, per this module's stated philosophy.
+ */
+export function isSensitiveAttributeKey(key: string): boolean {
+  return (
+    SENSITIVE_ATTRIBUTE_KEY.test(key) ||
+    SENSITIVE_ATTRIBUTE_KEY.test(splitKeyWords(key))
+  );
+}
 
 /** A value-level backstop: a raw `Authorization: Bearer <token>` string under an unsuspicious key. */
 const BEARER_VALUE = /^bearer\s+\S+/i;
@@ -80,14 +116,14 @@ export function scrubPath(path: string): string {
 }
 
 /**
- * Redact `attributes` IN PLACE: any key matching `SENSITIVE_ATTRIBUTE_KEY`, or any string value
+ * Redact `attributes` IN PLACE: any key matching {@link isSensitiveAttributeKey}, or any string value
  * shaped like a raw bearer token, is replaced with `"[REDACTED]"`. Mutating in place (rather than
  * returning a copy) is required by the `SpanProcessor#onEnd` seam below — `ReadableSpan.attributes`
  * is the live object the next processor in the chain reads.
  */
 export function scrubAttributes(attributes: Record<string, unknown>): void {
   for (const key of Object.keys(attributes)) {
-    if (SENSITIVE_ATTRIBUTE_KEY.test(key)) {
+    if (isSensitiveAttributeKey(key)) {
       attributes[key] = REDACTED;
       continue;
     }

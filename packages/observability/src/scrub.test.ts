@@ -5,7 +5,12 @@ import type {
   Span,
   SpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
-import { ScrubbingSpanProcessor, scrubAttributes, scrubPath } from "./scrub.ts";
+import {
+  isSensitiveAttributeKey,
+  ScrubbingSpanProcessor,
+  scrubAttributes,
+  scrubPath,
+} from "./scrub.ts";
 
 describe("scrubAttributes", () => {
   test("redacts secret/auth/cookie/token/key-shaped keys", () => {
@@ -52,6 +57,96 @@ describe("scrubAttributes", () => {
     const attrs: Record<string, unknown> = { "retry.count": 3, ok: true };
     scrubAttributes(attrs);
     expect(attrs).toEqual({ "retry.count": 3, ok: true });
+  });
+});
+
+// Regression: ADR-0117 / audit finding 19d1af0e70d0c2d7. The deny-list's word-anchored PII terms
+// (\bemail\b, \bphone\b, \bssn\b, \bdob\b) only ever saw a boundary because every existing test
+// above used DOT-separated OTel-convention keys ("user.email") — `.` is a non-word char, so `\b`
+// matches. Application code that names a span attribute `userEmail` or `user_email` (both word
+// chars either side of the term) silently reached the external OTLP sink unredacted. These cases
+// are the mutation check: revert splitKeyWords/isSensitiveAttributeKey and every key below goes red.
+describe("isSensitiveAttributeKey — camelCase / snake_case PII boundaries", () => {
+  const MUST_REDACT = [
+    "userEmail",
+    "user_email",
+    "emailAddress",
+    "email_address",
+    "EmailAddress",
+    "phoneNumber",
+    "customerSsn",
+    "userDob",
+    "userDOB",
+    "firstName",
+    "last_name",
+    "fullName",
+    "dateOfBirth",
+    "birthDate",
+    "patientMrn",
+  ];
+  for (const key of MUST_REDACT) {
+    test(`redacts ${key}`, () => {
+      expect(isSensitiveAttributeKey(key)).toBe(true);
+    });
+  }
+
+  // The anchors stay load-bearing: an UNanchored `dob` matches inside `adobe`, `mrn` inside `mrna`.
+  // If a future "fix" drops the anchors instead of normalizing the key, these go red.
+  const MUST_NOT_REDACT = [
+    "adobeVersion",
+    "dobro",
+    "mrnaSequence",
+    "userId",
+    "requestId",
+    "statusCode",
+    "durationMs",
+    "httpMethod",
+    "serviceName",
+    "retryCount",
+  ];
+  for (const key of MUST_NOT_REDACT) {
+    test(`leaves ${key} alone`, () => {
+      expect(isSensitiveAttributeKey(key)).toBe(false);
+    });
+  }
+
+  // Widening must be monotone — every key the old raw regex caught must still be caught.
+  test("does not regress any secret/credential key shape", () => {
+    for (const key of [
+      "apiKey",
+      "api_key",
+      "apikey",
+      "x-api-key",
+      "sessionId",
+      "authorization",
+      "Authorization",
+      "accessToken",
+      "userSecret",
+      "cookieJar",
+      "privateKey",
+      "signingKey",
+      "encryptionKey",
+      "bearerToken",
+      "credentialStore",
+      "password",
+      "passwd",
+    ]) {
+      expect(isSensitiveAttributeKey(key)).toBe(true);
+    }
+  });
+
+  test("scrubAttributes actually drops a camelCase PII attribute end to end", () => {
+    const attrs: Record<string, unknown> = {
+      userEmail: "user@example.com",
+      customerSsn: "123-45-6789",
+      phoneNumber: "555-0100",
+      requestId: "req-1",
+    };
+    scrubAttributes(attrs);
+    expect(attrs.userEmail).toBe("[REDACTED]");
+    expect(attrs.customerSsn).toBe("[REDACTED]");
+    expect(attrs.phoneNumber).toBe("[REDACTED]");
+    expect(attrs.requestId).toBe("req-1");
   });
 });
 
