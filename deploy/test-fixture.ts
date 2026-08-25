@@ -10,6 +10,11 @@ export type FixtureManifest = {
       healthcheck: string;
       hostnames: string[];
       runtime: "cloud-run-service";
+      // Optional origin-gate env var NAMES, mirroring ServiceConfigSchema — the fleet projector
+      // emits each only when the service's manifest row declares it.
+      origin_secret_mode?: string;
+      origin_secret_current?: string;
+      origin_secret_next?: string;
     }
   >;
   jobs: Record<

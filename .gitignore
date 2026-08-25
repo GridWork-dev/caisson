@@ -77,3 +77,9 @@ graphify-out/
 
 # apps/admin LocalArtifactStore test artifact (created transiently by a running test)
 apps/admin/.caisson-admin-worm/
+
+# fumadocs-mdx generated runtime stubs — regenerated on every build/dev run, never committed
+.source/
+
+# session handoff/resume brief for this branch — local working note, never committed
+BRIEF.md

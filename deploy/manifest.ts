@@ -2,6 +2,20 @@ import { z } from "zod";
 
 const SERVICE_KEY = /^[a-z][a-z0-9-]{0,62}$/;
 const REPOSITORY = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/;
+/**
+ * A POSIX-ish environment variable NAME. Bounded and pattern-checked for the same reason every
+ * other field here is: this manifest is rendered from another repo and fed to deploy tooling, so
+ * an unvalidated string is an injection surface. Names only — a value never appears in this file.
+ */
+const ENV_VAR_NAME = z
+  .string()
+  .trim()
+  .min(1)
+  .max(128)
+  .regex(/^[A-Z][A-Z0-9_]*$/, {
+    message: "must be an uppercase environment variable name",
+  });
+
 const HOSTNAME =
   /^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
@@ -43,6 +57,15 @@ const ServiceConfigSchema = z
     // hostname. Empty is valid; every hostname that is present remains strict.
     hostnames: z.array(z.string().trim().regex(HOSTNAME)).max(16),
     runtime: z.literal("cloud-run-service"),
+    // Origin-gate env var NAMES (never values — the fleet manifest is a names-only
+    // surface). The projector emits each key only when the service's manifest row
+    // declares it, so all three are OPTIONAL: caisson-demos deliberately carries none
+    // (IAM-only behind the site proxy, no public hostname, outside the origin gate),
+    // and an absent `origin_secret_mode` is STRICTER than a present one, not weaker.
+    // Required here would reject the demos projection outright.
+    origin_secret_mode: ENV_VAR_NAME.optional(),
+    origin_secret_current: ENV_VAR_NAME.optional(),
+    origin_secret_next: ENV_VAR_NAME.optional(),
   })
   .strict();
 
