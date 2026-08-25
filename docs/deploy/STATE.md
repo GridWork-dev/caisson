@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-19
+updated: 2026-08-25
 status: live
 grounds:
   - docs/build-state.md
@@ -10,6 +10,105 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-08-25 — Semconv exemption in the span scrub (run 32892857628)
+
+PR #455 (`9cb7681c`) merged and took the automatic path. All five push-path legs SUCCESS in
+**7m36s** (20:00:47 → 20:08:23Z); `services/license` skipped (dispatch-only). The diff touched
+`packages/observability`, so every service compiling it re-rode.
+
+**What shipped.** CAISSON-205: the deny-list's unanchored credential terms (`token`, `session`,
+`authoriz`) matched 21 real `@opentelemetry/semantic-conventions` attribute names, blanking LLM
+usage (`gen_ai.usage.*_tokens`) and session correlation (`session.id`, `mcp.session.id`) on every
+span. Fix: a key that is an exact member of the semconv name set (read from
+`@opentelemetry/semantic-conventions/incubating` at module load, never hand-copied) skips the
+credential arm only — the PII arm is unconditional, so `user.email` / `user.full_name` (semconv
+names too) still redact. 19 names newly pass, 2 stay redacted; templates
+(`http.request.header.authorization`) are exported as functions, never members, and still redact.
+The three deny regexes (union + both arms) are now derived from one term-source pair — a
+mid-review CI failure proved the drift class real (a mutation-check state with one term dropped
+was accidentally committed and only the hand-written regression list caught it), so the class was
+deleted by construction rather than tested for. Review: gw-code-reviewer + gw-security-auditor
+(PII tag) both MERGE_WITH_FIXES, zero blockers; 4 confirmed findings fixed on-branch, 3 refuted in
+adversarial verify; operator ruled merge via the in-session ask, keeping `mcp.session.id` exempt
+(nothing in-repo emits it; the value-level bearer backstop stands).
+
+**Verification.** Suite 136/136 including the full-census sweep (889 exported names →
+exactly `user.email` + `user.full_name` flagged, pinned as a literal), 13 exact-match-only
+guards, and per-term mutation proof (every load-bearing term deletion reds a named test).
+Export-side scrubbing has no served surface to probe; the proof is the merged suite plus the six
+green required checks. No receipt file — CI deploys commit none.
+
+## 2026-08-25 — Organization entity edges to the GridWork hub (run 32870028441)
+
+PR #453 (`4087f8e0`) merged and took the automatic path. All five push-path legs SUCCESS in
+**17m06s** (16:07:21 → 16:24:27Z); `services/license` skipped (dispatch-only). The admin leg alone
+took 10m14s (16:07:43 → 16:17:57Z) against ~2 min on the two earlier rides today — a Railway
+build-side slowdown, not a diff effect (admin was unchanged). Only `apps/site` changed.
+
+**What shipped.** The site's `Organization` node now carries two edges into the GridWork hub:
+`founder` → `https://gridworkdigital.com/#founder` and `subjectOf` →
+`https://gridworkdigital.com/work/caisson-reliability#casestudy`. No `parentOrganization` — Caisson
+Software LLC is a separate Georgia LLC, not a subsidiary; the subsidiary predicate stays banned
+and the test suite pins its absence (both directions mutation-checked). The edges landed only
+after the hub's own deploy (studio main `51a7cab`) served all three IRIs, verified anonymously:
+`#founder` is a Person with no organization back-reference, and the case study's `about` points at
+the caisson organization.
+
+**Verification.** Anonymous clean-UA fetch of `https://caisson.sh/` after the site leg: one
+`Organization` node, `founder` and `subjectOf` exactly as pinned; `parentOrganization`,
+`subOrganization`, `worksFor`, `memberOf`, `affiliation`, and the hub `#organization` IRI all
+absent from the served JSON-LD. No receipt file — CI deploys commit none.
+
+## 2026-08-25 — PII attribute-key scrub hardened, deployed fleet-wide (run 32868697727)
+
+PR #449 (`87b07c60`) merged and took the automatic path. All five push-path legs SUCCESS in
+**8m55s** (15:54:34 → 16:03:29Z); `services/license` skipped (dispatch-only). The diff touched
+`packages/observability` and `packages/kernel`, so every service that compiles either re-rode.
+
+**What shipped.** Audit finding `19d1af0e70d0c2d7` had been closed in a 259-row bulk reconcile
+while still live: the span-attribute deny-list's `\b` word anchors cannot see a camelCase or
+snake_case boundary, so `userEmail` / `user_email` / `phoneNumber` reached the OTLP sink
+unredacted. The fix normalizes the key (NFKC + a linear camelCase/snake_case word split) and tests
+the deny-list against both forms, with letter-lookarounds replacing `\b` on the short tokens.
+The round-1 fix also introduced a quadratic ReDoS in the acronym split (`([A-Z]+)`, ~850 ms at 32k
+chars on an attacker-named attribute) — caught by the in-session security audit and removed
+before merge. Independent re-verification (own 67-key probe set, 889-name semconv sweep
+main-vs-branch with zero delta, kernel golden byte-identical) returned MERGE. Full record:
+`outputs/audit/2026-08-25-false-close-19d1af0e.md`; follow-on CAISSON-205 (21 semconv names the
+unchanged `token`/`session`/`authoriz` terms redact, pre-existing).
+
+**Verification.** Export-side scrubbing has no served surface to probe; the proof is the merged
+suites (observability 82, kernel 10, five mutations each red only where they should) plus the
+`bun run check` gate. No receipt file — CI deploys commit none.
+
+## 2026-08-25 — sameAs identity claim corrected, crawl hygiene, llms.txt open-core split (run 32864573000)
+
+PR #452 (`f6282dc3`) merged and took the automatic path. All five push-path legs SUCCESS in
+**7m53s** (15:14:39 → 15:22:32Z); `services/license` skipped (dispatch-only, carries migrations).
+Only `apps/site` changed in the diff — the trigger's path filter gates the _run_, not the legs, so
+admin/demos/docs/support-bot re-rode unchanged code at the new sha.
+
+**What shipped.** The root JSON-LD `sameAs` advertised the private development repo, which 404s
+to any anonymous crawler — a broken identity claim, not a weak one. It now names the public org page
+only, pinned by `apps/site/lib/jsonld.test.ts` (shape floor first, then both directions).
+`llms.txt` gained the Licensing / Documentation / Buying blocks (package count read from the same
+const the license page reads) and carries **no** parent-organization line — Caisson Software LLC
+and GridWork Digital LLC are separate Georgia LLCs with common ownership at the individual level
+only, so a subsidiary-shaped claim would be false; a test pins its absence. `robots.txt` disallows
+`/cart`, `/login`, `/forgot-password`, `/reset-password` alongside `/dashboard` in both rule groups
+(the AI-crawler group cannot inherit from `*`), and `/demo` is in the sitemap.
+
+**Verified against served content, anonymous clean-UA, after the run:**
+
+- `https://github.com/caisson-sh` → **200** (control: the private repo path → 404)
+- `caisson.sh/` JSON-LD: `"sameAs":["https://github.com/caisson-sh"]`
+- `caisson.sh/llms.txt`: zero hits for the parent-org strings; `## Licensing` and the
+  no-self-serve statement present
+- `caisson.sh/robots.txt`: `Disallow: /cart` in both groups
+
+**Receipts.** Unchanged: a CI deploy commits no receipt, so `outputs/deploy/receipts/*.json`
+lags every service on the automatic path. The deployment ledger remains the truth.
 
 ## 2026-08-19 — analytics origin gate shipped, verified in the served bundle (run 32294345876)
 

@@ -102,3 +102,41 @@ describe("PHI_KEY", () => {
     }
   });
 });
+
+// Regression (2026-08-25, sibling of observability audit finding 19d1af0e70d0c2d7): the anchored
+// short tokens `dob`/`mrn` could not see a camelCase boundary. `user_dob` worked via the raw arm
+// and the golden fixture carries only that snake_case form, so the camelCase hole was invisible.
+describe("scrubDeep — camelCase boundaries for anchored PHI tokens", () => {
+  test("redacts camelCase dob/mrn keys", () => {
+    const out = scrubDeep({
+      userDob: "1990-01-01",
+      userDOB: "1990-01-01",
+      patientMrn: "MRN-1",
+    }) as Record<string, unknown>;
+    expect(out.userDob).toBe("[REDACTED]");
+    expect(out.userDOB).toBe("[REDACTED]");
+    expect(out.patientMrn).toBe("[REDACTED]");
+  });
+
+  test("keeps the anchors — does not redact adobe/mrna lookalikes", () => {
+    const out = scrubDeep({
+      adobeVersion: "2024",
+      mrnaSequence: "AUG",
+      userId: "u1",
+    }) as Record<string, unknown>;
+    expect(out.adobeVersion).toBe("2024");
+    expect(out.mrnaSequence).toBe("AUG");
+    expect(out.userId).toBe("u1");
+  });
+
+  // The camelCase splitter must stay linear: `([A-Z]+)([A-Z][a-z])` backtracks quadratically on a
+  // long all-caps key (~3.4 s at this size), `([A-Z])` runs in ~20 ms. Evidence records carry
+  // caller-controlled key names, so this is a DoS on the egress path.
+  test("a 64k-char all-caps key scrubs in linear time", () => {
+    const key = "A".repeat(64_000);
+    const started = Bun.nanoseconds();
+    scrubDeep({ [key]: "v" });
+    const elapsedMs = (Bun.nanoseconds() - started) / 1e6;
+    expect(elapsedMs).toBeLessThan(500);
+  });
+});

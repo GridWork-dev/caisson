@@ -15,6 +15,29 @@ import {
 export const ORG_ID = `${SITE_URL}/#organization`;
 export const SITE_ID = `${SITE_URL}/#website`;
 
+/**
+ * Public identity surfaces for `sameAs`. Every entry MUST resolve for an ANONYMOUS crawler — a
+ * sameAs pointing at a 404 is a broken identity claim, not a weak one. The development repo
+ * `caisson-sh/caisson` is private and 404s when logged out, so only the org page is listed. The
+ * `caisson` names on npm and crates.io belong to unrelated projects and must never be claimed.
+ * Add the public mirror and the npm scope here once they actually publish and resolve anonymously.
+ */
+export const SAME_AS = ["https://github.com/caisson-sh"] as const;
+
+/**
+ * Entity-association edges to the GridWork Digital hub (R19, operator ruling "A+C", 2026-08-25).
+ * Caisson Software LLC and GridWork Digital LLC are SEPARATE Georgia LLCs with common ownership
+ * at the individual level only, so the truthful predicates are a shared `founder` Person and the
+ * hub's case study being `about` this Organization (mirrored here as `subjectOf`). There is
+ * deliberately NO `parentOrganization` / `subOrganization` — that is the subsidiary predicate and
+ * it would be false (R39/R40). Both IRIs are constants on the hub side (studio PR #87 pins them
+ * once `NEXT_PUBLIC_SITE_URL` is set), and each must resolve in the hub's served JSON-LD before
+ * this ships; the pinning tests hold the literal strings so a drift here cannot go unnoticed.
+ */
+export const HUB_FOUNDER_ID = "https://gridworkdigital.com/#founder";
+export const HUB_CASE_STUDY_ID =
+  "https://gridworkdigital.com/work/caisson-reliability#casestudy";
+
 /** XSS-safe serialize for a dangerouslySetInnerHTML JSON-LD payload. */
 export function serializeJsonLd(data: unknown): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
@@ -32,7 +55,9 @@ export const rootGraph = {
       url: SITE_URL,
       description:
         "Compliance-grade infrastructure for regulated SaaS — fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only audit chain.",
-      sameAs: ["https://github.com/caisson-sh/caisson"],
+      sameAs: SAME_AS,
+      founder: { "@id": HUB_FOUNDER_ID },
+      subjectOf: { "@id": HUB_CASE_STUDY_ID },
     },
     {
       "@type": "WebSite",

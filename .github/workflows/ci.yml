@@ -149,11 +149,20 @@ jobs:
         #
         # `tooling/scripts/` and `scripts/` have NO package.json, so the `tooling/*` workspace glob
         # skips them and turbo never runs their tests — they are only covered by being named here.
-        # ADR-0414 named railway-deploy + release-readiness because it changed both. The other SIX
-        # suites under tooling/scripts/ (sot-check, dts-drift-check, tsgo-agreement, railway-env-sync,
-        # vault-parity-check, aeo-probe) are STILL uncovered; tracked in docs/state/outstanding-work.md
-        # rather than added blind, because an unproven leg on a required check reds main, not a PR.
-        run: bun test tools/demo-excerpts tools/demo-preview tools/paddle-catalog-recreate.test.ts scripts/export-public-mirror.test.ts ./.agents/skills/caisson-production-browser-audit/scripts/ scripts/release-readiness.test.ts tooling/scripts/railway-deploy.test.ts
+        # ADR-0414 named railway-deploy + release-readiness because it changed both. The remaining
+        # six (sot-check, dts-drift-check, tsgo-agreement, railway-env-sync, vault-parity-check,
+        # aeo-probe) plus scripts/gen-shadcn-registry are now named too, closing the gap that
+        # docs/state/outstanding-work.md tracked: 157 tests that ran in NO gate, including
+        # sot-check — the repo's own drift detector.
+        #
+        # The prior caution ("unproven leg on a required check reds main") was discharged by
+        # proving them first, not by overriding it. All seven were run with a SCRUBBED environment
+        # (`env -i`, no ~/.gridwork/env) and pass 157/157, so none is green only because ambient
+        # credentials supplied a value. None reaches the network or the live repo state:
+        # railway-deploy and railway-env-sync use injected exec doubles and source-text assertions,
+        # and sot-check builds SYNTHETIC throwaway git repos under mkdtempSync rather than reading
+        # this working tree — which is why its live-repo DRIFT output does not follow it into CI.
+        run: bun test tools/demo-excerpts tools/demo-preview tools/paddle-catalog-recreate.test.ts scripts/export-public-mirror.test.ts ./.agents/skills/caisson-production-browser-audit/scripts/ scripts/release-readiness.test.ts scripts/gen-shadcn-registry.test.ts tooling/scripts/railway-deploy.test.ts tooling/scripts/sot-check.test.ts tooling/scripts/dts-drift-check.test.ts tooling/scripts/tsgo-agreement.test.ts tooling/scripts/railway-env-sync.test.ts tooling/scripts/vault-parity-check.test.ts tooling/scripts/aeo-probe.test.ts
       - name: typecheck the browser-audit skill (.agents sits outside the workspaces)
         # ADR-0413 / C13. The deleted tooling/browser-audit manifest's `build: tscn -p tsconfig.json`
         # was the only thing typechecking this code. Nothing else reaches it: the root tsconfig is

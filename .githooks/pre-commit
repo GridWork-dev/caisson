@@ -17,8 +17,15 @@ for f in "${staged[@]}"; do
   esac
 done
 if [ ${#fmt[@]} -gt 0 ] && [ -x node_modules/.bin/oxfmt ]; then
-  node_modules/.bin/oxfmt --check --no-error-on-unmatched-pattern "${fmt[@]}" >/dev/null 2>&1 || {
-    echo "pre-commit: oxfmt check failed (run: bun run format)"; exit 1; }
+  # oxfmt applies its own ignore rules (.prettierignore + .oxfmtrc.json ignorePatterns) on top of
+  # the case filter above. When EVERY staged file is oxfmt-ignored — a generated artifact such as
+  # deploy/services.json — it matches zero targets and exits 2 with "Expected at least one target
+  # file". That is "nothing to check", not "unformatted": CI's format check ignores the same files.
+  # Any other non-zero exit is a real formatting failure.
+  out=$(node_modules/.bin/oxfmt --check "${fmt[@]}" 2>&1) || case "$out" in
+    *"Expected at least one target file"*) ;;
+    *) echo "pre-commit: oxfmt check failed (run: bun run format)"; exit 1 ;;
+  esac
 fi
 
 # tsc runs once packages have code + tooling/ is wired; guarded until then.

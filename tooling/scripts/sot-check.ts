@@ -127,7 +127,11 @@ export function frontmatterKeyLine(text: string, key: string): number | null {
 // ============================================================================================
 
 const ADR_FILENAME_RE = /^ADR-(\d{4})-/;
-const CEILING_RE = /ceiling[:\s*]*(?:ADR-)?(\d{4})/i;
+// Tolerates the three phrasings actually in use: "Ceiling: ADR-0414" (CLAUDE.md),
+// "ADR ceiling: 0414" (adr-index), and "ADR ceiling is `0401`" (build-state — the `is` and the
+// backticks are why this file's drift was invisible to an earlier, tighter pattern). Verified
+// behaviour-identical on the pre-existing three sources; "ADR-ceiling parity" still does not match.
+const CEILING_RE = /ceiling(?:\s+is)?[:\s`*]*(?:ADR-)?(\d{4})/i;
 
 export function maxAdrFromFilenames(
   filenames: readonly string[],
@@ -152,6 +156,14 @@ export interface AdrCeilingSources {
   claudeMd: number | null;
   adrIndex: number | null;
   forks: number | null;
+  /**
+   * docs/build-state.md — source-of-truth #4. Added 2026-08-25 after it sat at ADR-0401 while the
+   * other four agreed at 0414. It passed frontmatter-freshness the whole time (its `updated:`
+   * stamp matched its own last commit) because that check proves a file was TOUCHED, not that its
+   * prose is true. A ceiling stated in a file this gate does not read is a ceiling that can drift
+   * silently, so the fix is to read every file that states one.
+   */
+  buildState: number | null;
 }
 
 export function extractAdrCeilingSources(input: {
@@ -159,6 +171,7 @@ export function extractAdrCeilingSources(input: {
   claudeMdText: string;
   adrIndexText: string;
   forksText: string;
+  buildStateText: string;
 }): AdrCeilingSources {
   const forksFm = parseFrontmatter(input.forksText);
   const forksRaw = forksFm?.raw.adr_ceiling;
@@ -167,6 +180,7 @@ export function extractAdrCeilingSources(input: {
     claudeMd: extractCeiling(input.claudeMdText),
     adrIndex: extractCeiling(input.adrIndexText),
     forks: forksRaw ? Number(forksRaw) : null,
+    buildState: extractCeiling(input.buildStateText),
   };
 }
 
@@ -178,6 +192,7 @@ const CEILING_SOURCE_LABELS: readonly [
   ["claudeMd", "CLAUDE.md"],
   ["adrIndex", "docs/adr-index.md"],
   ["forks", "docs/state/decisions-and-forks.md frontmatter adr_ceiling"],
+  ["buildState", "docs/build-state.md"],
 ];
 
 export function checkAdrCeilingParity(sources: AdrCeilingSources): CheckResult {
@@ -216,7 +231,12 @@ export function checkAdrCeilingParity(sources: AdrCeilingSources): CheckResult {
  *  suggestion is emitted for every other source that disagrees with it. */
 export function buildCeilingEditSuggestions(
   sources: AdrCeilingSources,
-  texts: { claudeMd: string; adrIndex: string; forks: string },
+  texts: {
+    claudeMd: string;
+    adrIndex: string;
+    forks: string;
+    buildState: string;
+  },
 ): EditSuggestion[] {
   const truth = sources.filesystem;
   if (truth === null) return [];
@@ -242,6 +262,14 @@ export function buildCeilingEditSuggestions(
       file: "docs/state/decisions-and-forks.md",
       line: frontmatterKeyLine(texts.forks, "adr_ceiling"),
       suggestion: `adr_ceiling: ${pad4(truth)}`,
+    });
+  }
+  if (sources.buildState !== truth) {
+    const m = CEILING_RE.exec(texts.buildState);
+    suggestions.push({
+      file: "docs/build-state.md",
+      line: m ? lineNumberAt(texts.buildState, m.index) : null,
+      suggestion: `ceiling reference -> ${pad4(truth)}`,
     });
   }
   return suggestions;
@@ -1159,11 +1187,15 @@ function gatherAdrCeilingCheck(): {
   const forksText = pathExistsInRepo("docs/state/decisions-and-forks.md")
     ? fileText("docs/state/decisions-and-forks.md")
     : "";
+  const buildStateText = pathExistsInRepo("docs/build-state.md")
+    ? fileText("docs/build-state.md")
+    : "";
   const sources = extractAdrCeilingSources({
     decisionFilenames,
     claudeMdText,
     adrIndexText,
     forksText,
+    buildStateText,
   });
   return {
     result: checkAdrCeilingParity(sources),
@@ -1171,6 +1203,7 @@ function gatherAdrCeilingCheck(): {
       claudeMd: claudeMdText,
       adrIndex: adrIndexText,
       forks: forksText,
+      buildState: buildStateText,
     }),
   };
 }
