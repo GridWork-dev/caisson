@@ -56,25 +56,75 @@ no fixture could reveal it. Fixed in the same commit as this finding.
 
 ## Fix
 
-- `scrub.ts`: added `splitKeyWords()` (inserts a separator at camelCase transitions, normalizes
-  `_`/`-`) and `isSensitiveAttributeKey()`, which tests the deny-list against **both** the raw key
-  and its word-split form. Testing both is **monotone** — strictly more keys redact, never fewer —
-  so it cannot regress an already-redacted key. The `\b` anchors are **kept**: they are load-bearing
-  for precision (an unanchored `dob` matches inside `adobe`, `mrn` inside `mrna`). The vocabulary
-  also gained `first/last/full name`, `birthdate`, `mrn`, `patient`.
-- `scrub-deep.ts`: added `splitWords()` to `isRedactedKey`'s form set. Golden unchanged.
-- Result: **20/20** PII probe keys redacted, **15/15** secret/credential controls preserved,
-  **0/12** benign operational keys falsely redacted.
+**Round 1 (`fd82cd6d`).** `scrub.ts` gained `splitKeyWords()` (a separator at each camelCase
+transition, `_`/`-` normalized) and `isSensitiveAttributeKey()`, which tests the deny-list against
+both the raw key and its split form — monotone, so it cannot regress an already-redacted key. The
+`\b` anchors were kept (an unanchored `dob` matches inside `adobe`) and the vocabulary gained
+`first/last/full name`, `birthdate`, `mrn`, `patient`. `scrub-deep.ts` gained the same split for its
+anchored `dob`/`mrn` tokens; golden unchanged.
 
-**Deliberately NOT added:** `address`. `scrub-deep` accepts `ipAddress` over-redaction as fail-safe
-for compliance-evidence egress, but a span-attribute scrub that drops `net.peer.address` /
-`http.client_ip` degrades tracing materially, and it is outside this finding. Flagged, not changed.
+**Round 1 overstated its result.** The commit claimed "20/20 PII probe keys redacted". That number
+was measured against a probe set drawn from the two naming conventions the fix targeted (camelCase,
+snake_case). The security audit of PR #449 probed independently with 86 keys and measured **48/86**:
+plurals (`emails`), digit suffixes (`email2`), fused lowercase (`useremail`, `myssn`), all-caps
+(`USEREMAIL`, `SSNVALUE`), and a fullwidth `ｅmail` all still passed through. That is the same
+self-derived-expectation error this note diagnoses in the original close — the probe and the fix
+came from one mind. The audit also found that round 1's acronym split, `([A-Z]+)([A-Z][a-z])`,
+backtracks quadratically: an all-caps key of 32k chars took ~850 ms (measured 3.0 s at 64k in the
+mutation check below), and an attribute NAME is attacker-controlled from any instrumented request.
+
+**Round 2 (this branch, the audit's F1–F6).**
+
+- **F1 — ReDoS.** `([A-Z]+)` → `([A-Z])` in both splitters. Proven equivalent over 200,015 random +
+  adversarial keys (0 differences); 64k-char all-caps key now 19 ms (observability) / 15 ms (kernel),
+  linear in the length.
+- **F2 — completeness.** The `\b` word anchors are gone; the short tokens that need precision now
+  use letter-lookarounds instead, which see the space `splitKeyWords` inserts where `\b` never
+  could: `(?<![a-z])dobs?(?![a-z])`, `(?<![a-z])mrns?(?![a-z])`, `(?<![a-z])patient`,
+  `first/last/full[_-]?name(?![a-z])`. `email`/`phone` are unanchored. `ssn` is anchored on ONE side
+  (`(?<![a-z])ssns?|ssns?(?![a-z])`) so `myssn`/`SSNVALUE` hit while the mid-word cluster in
+  `className`/`businessName`/`processName` does not — a class the auditor's own proposal would have
+  falsely redacted. The key is NFKC-normalized before both arms, so fullwidth forms fold.
+- **F3** — this correction. **F4** — the empty changeset replaced by real `patch` bumps for
+  `@caisson/observability` and `@caisson/kernel`. **F5** — the `address` exclusion is now explained
+  at the deny-list itself. **F6** — `SENSITIVE_ATTRIBUTE_KEY` is `@deprecated` for direct `.test()`.
+
+**Result — measured on the shipped `isSensitiveAttributeKey`, not on a copy of the regex:**
+
+| Probe set                                                                                | Round 1 | Round 2   |
+| ---------------------------------------------------------------------------------------- | ------- | --------- |
+| Core camelCase/snake_case/dot PII keys (20)                                              | 20/20   | **20/20** |
+| Auditor's hardening residual — plural/digit/fused/caps/fullwidth (36)                    | 1/36    | **32/36** |
+| Secret/credential controls incl. fullwidth `ａpiKey` (17)                                | 16/17   | **17/17** |
+| OTel semconv attribute names that must SURVIVE (24)                                      | 24/24   | **24/24** |
+| Benign keys that must survive incl. `className`/`outpatientVisits`/`lastNameserver` (22) | 19/22   | **22/22** |
+
+**Accepted residual (4/36):** `userdob`, `recdob`, `e_mail`, `E_MAIL` — a 3-letter token fused
+lowercase in the MIDDLE of a key, or `email` with a separator inside the word. No regex catches
+these without also catching `adobe`; a value-level scrub is the tool for them.
+**Accepted over-redaction (3):** `phoneticKey`, `iPhoneVersion`, `telephoneBooth` — non-semconv,
+fail-safe direction.
+
+**Ledger.** The row keeps `status = "fixed"`. The ledger schema is `open | accepted | fixed` with no
+evidence field, and `reconcile()` regenerates every row, so a "partially fixed" status cannot live
+there. This note is the retained evidence the original close lacked; the residual above is the
+enumerated boundary of "fixed".
 
 ## Guardrail
 
-Both fixes are mutation-checked. Reverting the split arm in `scrub.ts` fails **10** tests; dropping
-the `\b` anchors instead of normalizing the key (the naive "fix") fails **3** on the
-`adobeVersion`/`dobro`/`mrnaSequence` false-positive arm. The guard discriminates in both directions.
+Every guard is mutation-checked against the round-2 test files (75 + 10 tests, all green at HEAD):
+
+| Mutation                                                                 | Red tests                                                               |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------- |
+| Restore the greedy `([A-Z]+)` split (F1 revert) — observability / kernel | 1 / 1 (the 64k timing test, 3.0 s / 2.7 s)                              |
+| Remove the split arm                                                     | 3 (`userDob`, `userDOB`, `userDobs` — the anchored tokens)              |
+| Naive fully-unanchored deny-list                                         | 13 (`adobeVersion`, `className`, `businessName`, `outpatientVisits`, …) |
+| Drop NFKC normalization                                                  | 2 (`ｅmail`, `ａpiKey`)                                                 |
+| Anchor `ssn` on both sides                                               | 3 (`myssn`, `userssn`, `SSNVALUE`)                                      |
+
+Note the split-arm mutation now reds only 3 (round 1 reported 10): with `email`/`phone` unanchored,
+the raw arm catches most camelCase keys on its own, and the split arm's remaining job is the
+lookaround-guarded short tokens. That is the honest scope of that arm, not a weaker guard.
 
 ## Lesson for the ledger
 

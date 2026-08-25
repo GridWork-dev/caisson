@@ -150,6 +150,109 @@ describe("isSensitiveAttributeKey — camelCase / snake_case PII boundaries", ()
   });
 });
 
+// Second-round hardening (security audit of PR #449). Each block below is one class the first fix
+// did not cover, plus the ReDoS the first fix introduced. Numbers are measured, not asserted from
+// the fixture: see outputs/audit/2026-08-25-false-close-19d1af0e.md for the full probe sets.
+describe("isSensitiveAttributeKey — plural / numbered / fused / unicode forms", () => {
+  const MUST_REDACT = [
+    "emails",
+    "userEmails",
+    "phones",
+    "ssns",
+    "userDobs",
+    "mrns",
+    "email2",
+    "phone2",
+    "ssn1",
+    "dob2",
+    "Email2Address",
+    "USEREMAIL2",
+    "useremail",
+    "emailaddress",
+    "phonenumber",
+    "homephone",
+    "custemail",
+    "myssn", // fused lowercase, ssn at the END — the one-side anchor catches it
+    "userssn",
+    "SSNVALUE", // fused, ssn at the START
+    "CUSTOMEREMAIL",
+    "eMailAddress",
+    "\uff45mail", // fullwidth ｅ — NFKC folds it to `email`
+    "\uff41piKey", // fullwidth ａ on a SECRET term — NFKC must run on the raw arm too
+  ];
+  for (const key of MUST_REDACT) {
+    test(`redacts ${JSON.stringify(key)}`, () => {
+      expect(isSensitiveAttributeKey(key)).toBe(true);
+    });
+  }
+
+  // `ssn` is guarded on ONE side only: a mid-word `ssN` is an ordinary English cluster.
+  // `patient`/`*Name` are guarded so `outpatient`/`lastNameserver` survive. These are the keys a
+  // fully unanchored deny-list would falsely drop.
+  const MUST_NOT_REDACT = [
+    "className",
+    "classNames",
+    "businessName",
+    "businessNumber",
+    "processName",
+    "lessness",
+    "lastNameserver",
+    "impatientRetries",
+    "outpatientVisits",
+    "endobar",
+    "description",
+  ];
+  for (const key of MUST_NOT_REDACT) {
+    test(`leaves ${key} alone`, () => {
+      expect(isSensitiveAttributeKey(key)).toBe(false);
+    });
+  }
+
+  // Every OTel semantic-convention attribute a request/db/rpc span carries must survive, or the
+  // scrub blinds tracing. `*.address` is the reason `address` is NOT in the deny-list.
+  test("never redacts an OTel semconv attribute name", () => {
+    for (const key of [
+      "net.peer.address",
+      "net.peer.name",
+      "http.client_ip",
+      "http.route",
+      "http.method",
+      "http.status_code",
+      "db.name",
+      "db.system",
+      "db.statement",
+      "host.name",
+      "url.full",
+      "enduser.id",
+      "k8s.pod.name",
+      "messaging.destination.name",
+      "aws.lambda.invoked_arn",
+      "service.name",
+      "rpc.method",
+      "server.address",
+      "client.address",
+      "user_agent.original",
+      "process.runtime.name",
+      "code.namespace",
+      "code.function",
+      "exception.type",
+    ]) {
+      expect(isSensitiveAttributeKey(key)).toBe(false);
+    }
+  });
+
+  // The camelCase splitter must stay linear. `([A-Z]+)([A-Z][a-z])` backtracks quadratically on a
+  // long all-caps key (~3.4 s at this size); `([A-Z])` runs in ~20 ms. An attribute NAME is
+  // attacker-reachable from any instrumented request, so this is a DoS on the export path.
+  test("a 64k-char all-caps key scrubs in linear time", () => {
+    const key = "A".repeat(64_000);
+    const started = Bun.nanoseconds();
+    isSensitiveAttributeKey(key);
+    const elapsedMs = (Bun.nanoseconds() - started) / 1e6;
+    expect(elapsedMs).toBeLessThan(500);
+  });
+});
+
 describe("scrubPath", () => {
   test("redacts a UUID segment", () => {
     expect(scrubPath("/users/3fa85f64-5717-4562-b3fc-2c963f66afa6")).toBe(

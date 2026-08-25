@@ -128,4 +128,15 @@ describe("scrubDeep — camelCase boundaries for anchored PHI tokens", () => {
     expect(out.mrnaSequence).toBe("AUG");
     expect(out.userId).toBe("u1");
   });
+
+  // The camelCase splitter must stay linear: `([A-Z]+)([A-Z][a-z])` backtracks quadratically on a
+  // long all-caps key (~3.4 s at this size), `([A-Z])` runs in ~20 ms. Evidence records carry
+  // caller-controlled key names, so this is a DoS on the egress path.
+  test("a 64k-char all-caps key scrubs in linear time", () => {
+    const key = "A".repeat(64_000);
+    const started = Bun.nanoseconds();
+    scrubDeep({ [key]: "v" });
+    const elapsedMs = (Bun.nanoseconds() - started) / 1e6;
+    expect(elapsedMs).toBeLessThan(500);
+  });
 });
