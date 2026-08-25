@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-19
+updated: 2026-08-25
 status: live
 grounds:
   - docs/build-state.md
@@ -10,6 +10,34 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-08-25 — sameAs identity claim corrected, crawl hygiene, llms.txt open-core split (run 32864573000)
+
+PR #452 (`f6282dc3`) merged and took the automatic path. All five push-path legs SUCCESS in
+**7m53s** (15:14:39 → 15:22:32Z); `services/license` skipped (dispatch-only, carries migrations).
+Only `apps/site` changed in the diff — the trigger's path filter gates the _run_, not the legs, so
+admin/demos/docs/support-bot re-rode unchanged code at the new sha.
+
+**What shipped.** The root JSON-LD `sameAs` advertised the private development repo, which 404s
+to any anonymous crawler — a broken identity claim, not a weak one. It now names the public org page
+only, pinned by `apps/site/lib/jsonld.test.ts` (shape floor first, then both directions).
+`llms.txt` gained the Licensing / Documentation / Buying blocks (package count read from the same
+const the license page reads) and carries **no** parent-organization line — Caisson Software LLC
+and GridWork Digital LLC are separate Georgia LLCs with common ownership at the individual level
+only, so a subsidiary-shaped claim would be false; a test pins its absence. `robots.txt` disallows
+`/cart`, `/login`, `/forgot-password`, `/reset-password` alongside `/dashboard` in both rule groups
+(the AI-crawler group cannot inherit from `*`), and `/demo` is in the sitemap.
+
+**Verified against served content, anonymous clean-UA, after the run:**
+
+- `https://github.com/caisson-sh` → **200** (control: the private repo path → 404)
+- `caisson.sh/` JSON-LD: `"sameAs":["https://github.com/caisson-sh"]`
+- `caisson.sh/llms.txt`: zero hits for the parent-org strings; `## Licensing` and the
+  no-self-serve statement present
+- `caisson.sh/robots.txt`: `Disallow: /cart` in both groups
+
+**Receipts.** Unchanged: a CI deploy commits no receipt, so `outputs/deploy/receipts/*.json`
+lags every service on the automatic path. The deployment ledger remains the truth.
 
 ## 2026-08-19 — analytics origin gate shipped, verified in the served bundle (run 32294345876)
 
