@@ -24,11 +24,11 @@ import {
 } from "@caisson/service-license";
 import { ADMIN_WRITE_ROLE_BOOTSTRAP_SQL } from "@caisson/org-controls";
 import {
+  createPgPool,
   createPgTransactor,
   type TenantExecutor,
   type Transactor,
 } from "@caisson/tenancy-rls";
-import { Pool } from "pg";
 
 import {
   ADMIN_ROLE_BOOTSTRAP_SQL,
@@ -198,12 +198,7 @@ export async function getAdminDb(): Promise<Transactor> {
   if (globalDb.caissonAdminTransactor) return globalDb.caissonAdminTransactor;
   const url = process.env.CAISSON_ADMIN_DB_URL;
   if (url !== undefined && url.length > 0) {
-    const pool = new Pool({ connectionString: url });
-    pool.on("error", (err) => {
-      process.stderr.write(
-        `[apps/admin] idle pg client error: ${err.message}\n`,
-      );
-    });
+    const pool = createPgPool(url);
     globalDb.caissonAdminTransactor = createPgTransactor(pool);
     return globalDb.caissonAdminTransactor;
   }

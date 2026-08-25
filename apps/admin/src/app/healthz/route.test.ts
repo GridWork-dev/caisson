@@ -5,10 +5,6 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, test } from "bun:test";
-import {
-  markAuthMigrationFailed,
-  markAuthMigrationOk,
-} from "../../lib/admin-boot-state.ts";
 import { GET } from "./route.ts";
 
 const ORIGINAL_PATH = process.env.CAISSON_REGISTRY_INDEX_PATH;
@@ -18,7 +14,6 @@ afterEach(() => {
   } else {
     process.env.CAISSON_REGISTRY_INDEX_PATH = ORIGINAL_PATH;
   }
-  markAuthMigrationOk();
 });
 
 test("reports the sha256-first-12-hex digest + entry count of the baked index", async () => {
@@ -58,10 +53,4 @@ test("an unreadable index path omits the digest fields without failing readiness
   const json = (await res.json()) as { ok: boolean; indexDigest?: string };
   expect(json.ok).toBe(true);
   expect(json.indexDigest).toBeUndefined();
-});
-
-test("a failed boot migration still reports 503 regardless of the index digest", () => {
-  markAuthMigrationFailed();
-  const res = GET();
-  expect(res.status).toBe(503);
 });

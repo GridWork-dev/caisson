@@ -17,6 +17,11 @@ import {
 import { buildMetadata } from "@/lib/metadata";
 import { contentSecurityPolicy } from "@/lib/security-headers";
 import {
+  ADMIN_SECURITY_POSTURE,
+  SECURITY_FAQ,
+  SECURITY_META_DESCRIPTION,
+} from "@/lib/security-copy";
+import {
   breadcrumb,
   faqPage,
   serializeJsonLd,
@@ -25,8 +30,7 @@ import {
 
 export const metadata = buildMetadata({
   title: "Security",
-  description:
-    "How Caisson secures the controls it generates and this site itself: fail-closed RLS, a resolve-and-recheck SSRF guard, timing-safe comparisons, and an admin app gated by a fail-closed CF-Access JWT check. Caisson generates audit evidence; it is not an auditor.",
+  description: SECURITY_META_DESCRIPTION,
   path: "/security",
 });
 
@@ -82,8 +86,7 @@ const SITE_POSTURE: ReadonlyArray<{
   },
   {
     icon: "shield",
-    title: "Admin gated by a fail-closed CF-Access JWT check",
-    body: "apps/admin renders cross-tenant business data, so an app-wide middleware validates the Cf-Access-Jwt-Assertion token's signature, audience, and issuer against the admin Access app's own JWKS before any route runs, denying with a 403 on any failure or misconfiguration. Both CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD must be set before the app serves a single route.",
+    ...ADMIN_SECURITY_POSTURE,
   },
   {
     icon: "gauge",
@@ -109,36 +112,6 @@ const SITE_POSTURE: ReadonlyArray<{
 
 // A real, visible FAQ — drives the precise-scope honesty law (ADR-0080 §3). FAQPage JSON-LD is
 // emitted only because these questions render on the page.
-const FAQ: ReadonlyArray<{ question: string; answer: string }> = [
-  {
-    question: "Is Caisson SOC 2 or HIPAA certified?",
-    answer:
-      "No. Caisson is a codebase, not an auditor. It ships the technical controls those frameworks require (fail-closed RLS, WORM storage, an append-only audit chain) and generates the evidence pack you hand your auditor. The audit itself and your organizational controls (HR, vendor, incident response) remain yours.",
-  },
-  {
-    question: "Does this site set tracking cookies?",
-    answer:
-      "No. Analytics are cookieless (Plausible), there are no third-party trackers, and there is no consent banner because nothing is stored on your device.",
-  },
-  {
-    question:
-      "What stops a DNS-rebinding attack against a webhook or provider URL I configure?",
-    answer:
-      "packages/kernel's ssrf.ts resolves the hostname and re-checks every returned IP against a private/loopback/link-local/metadata denylist immediately before the outbound fetch, and forces the request to fail on any redirect. A literal-only check can't see a name that resolves into private space after the fact; the resolve-and-recheck design closes that gap for both the alerting transports and the AI-Production provider baseUrl.",
-  },
-  {
-    question:
-      "How is the admin dashboard protected if it renders every tenant's data?",
-    answer:
-      "Two independent layers: Cloudflare Access gates the edge, and apps/admin's own middleware.ts independently verifies the Cf-Access-Jwt-Assertion token's signature, audience, and issuer before any route runs, denying with a 403 on failure or misconfiguration. A request that reaches the raw Railway origin directly (bypassing Cloudflare) still hits this in-app check and is refused.",
-  },
-  {
-    question: "How do I report a vulnerability?",
-    answer:
-      "Email security@caisson.sh, or read the machine-readable policy at /.well-known/security.txt. There is no bug-bounty program yet; we still want the report.",
-  },
-];
-
 // GENERATED from the policy this app actually sends, never hand-written. A displayed `curl`
 // transcript is a claim about live behaviour under ADR-0080, and hand-maintaining this block is
 // exactly how it drifted from the real header twice — first missing the PostHog origins, then
@@ -155,11 +128,10 @@ export default function SecurityPage() {
     ]),
     techArticle({
       headline: "Caisson security & trust posture",
-      description:
-        "The product controls Caisson generates and the security posture of caisson.sh, stated precisely, no certification claims.",
+      description: SECURITY_META_DESCRIPTION,
       url: "https://caisson.sh/security",
     }),
-    faqPage(FAQ),
+    faqPage(SECURITY_FAQ),
   ];
 
   return (
@@ -354,7 +326,10 @@ content-security-policy: default-src 'self'; …`}
         <Section band="tint" title="The questions procurement asks first.">
           {/* Bare <Faq>, matching ai-kit/compliance — a Card wrapper here double-borders the
            * accordion rows (Faq draws its own per-row surface). D8(a) vetoable call. */}
-          <Faq items={FAQ} style={{ marginTop: "var(--cs-space-8)" }} />
+          <Faq
+            items={SECURITY_FAQ}
+            style={{ marginTop: "var(--cs-space-8)" }}
+          />
         </Section>
 
         {/* ===== Disclosure CTA ===== */}

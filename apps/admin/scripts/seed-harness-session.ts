@@ -10,15 +10,16 @@
  * cookie the exact way better-call's `serializeSignedCookie` does — and proves the cookie by
  * replaying it through `auth.api.getSession` (the same read path `verifyAdminSession` uses).
  *
- * It points at the SAME Postgres the dev server reads (ADMIN_AUTH_DATABASE_URL) and signs with the
- * SAME secret (ADMIN_BETTER_AUTH_SECRET) — both MUST be byte-identical to the running dev server or
- * the cookie won't verify. Drive it through tools/security/harness-admin.sh, which spins a
+ * It points at the SAME Postgres the dev server reads, using ADMIN_AUTH_DIRECT_DATABASE_URL for
+ * this migration-capable finite script while the server uses ADMIN_AUTH_DATABASE_URL. It signs
+ * with the SAME ADMIN_BETTER_AUTH_SECRET — both processes must target the same database and secret
+ * or the cookie won't verify. Drive it through tools/security/harness-admin.sh, which spins a
  * throwaway loopback Postgres and pins all three env vars for both this script and `bun dev`.
  *
  *   bun run apps/admin/scripts/seed-harness-session.ts
  *
  * Required env (all three identical to the dev server you'll point the harness at):
- *   ADMIN_AUTH_DATABASE_URL        the admin better-auth DB (throwaway loopback PG for the harness)
+ *   ADMIN_AUTH_DIRECT_DATABASE_URL the direct admin better-auth DB (throwaway loopback PG for the harness)
  *   ADMIN_BETTER_AUTH_SECRET       the cookie HMAC key
  *   ADMIN_GITHUB_ALLOWED_USER_IDS  MUST include ADMIN_HARNESS_GITHUB_ID (else verifyAdminSession denies)
  * Optional:
@@ -32,7 +33,7 @@
 import { createHmac } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
-import { Pool } from "pg";
+import { createPgPool } from "@caisson/tenancy-rls";
 import { getMigrations } from "better-auth/db/migration";
 import {
   createAdminAuth,
@@ -66,7 +67,7 @@ function signSessionCookie(token: string, secret: string): string {
 }
 
 async function main(): Promise<void> {
-  const databaseUrl = requiredEnv("ADMIN_AUTH_DATABASE_URL");
+  const databaseUrl = requiredEnv("ADMIN_AUTH_DIRECT_DATABASE_URL");
   const secret = requiredEnv("ADMIN_BETTER_AUTH_SECRET");
   // Fail loud if the running dev server's allowlist won't accept our sentinel — otherwise the
   // cookie would verify here but every real request would be denied by verifyAdminSession.
@@ -86,10 +87,7 @@ async function main(): Promise<void> {
     );
   }
 
-  const database = new Pool({ connectionString: databaseUrl });
-  database.on("error", (err) => {
-    process.stderr.write(`[harness] idle pg client error: ${err.message}\n`);
-  });
+  const database = createPgPool(databaseUrl, { purpose: "migration" });
 
   try {
     const auth = createAdminAuth({
@@ -159,7 +157,7 @@ async function main(): Promise<void> {
         `✓ admin harness session minted (github id ${harnessGithubId}, ${user.email})`,
         `  storageState → ${outPath}`,
         `  curl header  → -H 'Cookie: ${cookieHeader}'`,
-        `  target       → ${baseUrl} (start it with the SAME 3 env vars: ADMIN_AUTH_DATABASE_URL, ADMIN_BETTER_AUTH_SECRET, ADMIN_GITHUB_ALLOWED_USER_IDS)`,
+        `  target       → ${baseUrl} (the server uses ADMIN_AUTH_DATABASE_URL; this script uses ADMIN_AUTH_DIRECT_DATABASE_URL)`,
         "",
       ].join("\n"),
     );

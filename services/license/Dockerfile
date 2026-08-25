@@ -30,6 +30,14 @@ RUN bun install --frozen-lockfile
 # at runtime. `bun` (uid/gid 1000) is the oven/bun base image's baked-in non-root user.
 USER bun
 
+# Cloud Run migration Job target. This deliberately retains the full workspace: Next standalone
+# images omit the migration source and its package graph. Railway keeps using the runtime target
+# and its existing preDeployCommand until the later cutover wave.
+FROM base AS migrate
+CMD ["bun", "apps/site/lib/deploy-migrate.ts"]
+
+FROM base AS runtime
+
 # DATABASE_URL, CAISSON_LICENSE_SIGNING_KEY, LICENSE_ISSUE_TOKEN, PADDLE_WEBHOOK_SECRET are injected
 # by the platform secret store at run time (deploy.ts / server.ts refuse to start without them).
 EXPOSE 8789

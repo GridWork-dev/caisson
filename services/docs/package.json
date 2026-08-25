@@ -14,6 +14,7 @@
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
+    "build:index": "bun run src/build-artifact.ts",
     "lint": "oxlint src",
     "test": "bun test --timeout 60000 ./src",
     "test:live": "bun test ./live",

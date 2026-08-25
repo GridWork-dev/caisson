@@ -10,6 +10,9 @@ bun.lock
 packages/ui/styles/tokens.css
 # generated, drift-guarded by gen-manifest.ts
 packages/ds-manifest/src/base-manifest.json
+# generated from gridwork-infra/manifests/services.toml by render-app-manifests.ts;
+# formatting it would fight the byte-identical regeneration check (T28/doc 07 §4).
+deploy/services.json
 # CI-built by registry/scripts/build-index.ts (owns its canonical serialization). Prettier must NOT
 # touch it or it would fight the byte-identical rebuild check (ADR-0047).
 registry/index.json
@@ -21,6 +24,7 @@ registry/index.json
 apps/site/scripts/anti-slop/detector/
 # local artifacts
 .playwright-mcp/
+BRIEF.md
 *.png
 outputs/streams/
 docs/session-logs/

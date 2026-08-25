@@ -191,6 +191,26 @@ class Settings(BaseSettings):
 
     # --- liveness ---
     health_port: int = Field(default=8080, ge=1, le=65535)
+    shutdown_grace_s: float = Field(
+        default=20.0,
+        gt=0,
+        le=60,
+        description="Maximum seconds for each bounded Gateway/work/resource shutdown stage.",
+    )
+
+    # --- external dead-man heartbeat (T25; T41 owns the GCP alert policy) ---
+    heartbeat_enabled: bool = Field(
+        default=False,
+        description="Emit the Google custom heartbeat metric while Discord is ready.",
+    )
+    heartbeat_interval_s: float = Field(default=60.0, ge=10, le=300)
+    google_cloud_project: str | None = Field(
+        default=None,
+        min_length=6,
+        max_length=30,
+        pattern=r"^[a-z][a-z0-9-]{4,28}[a-z0-9]$",
+        description="Metric destination project; required only when heartbeat_enabled is true.",
+    )
 
     @field_validator("docs_service_url")
     @classmethod
@@ -220,6 +240,12 @@ class Settings(BaseSettings):
             raise ValueError(
                 "chat_platform='slack' requires both slack_bot_token and slack_escalation_channel_id"
             )
+        return self
+
+    @model_validator(mode="after")
+    def _heartbeat_requires_project(self) -> Settings:
+        if self.heartbeat_enabled and self.google_cloud_project is None:
+            raise ValueError("heartbeat_enabled requires google_cloud_project")
         return self
 
     @property

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { createApp } from "./app.ts";
+import { loadOriginGateConfig } from "@caisson/kernel/node";
+import { createApp as createServiceApp } from "./app.ts";
 import { FakeEmbedder } from "./embedder.ts";
 import { DocsIndex } from "./index-store.ts";
 import {
@@ -9,6 +10,15 @@ import {
   type RateLimitConfig,
 } from "./rate-limit.ts";
 import type { DocChunk } from "./types.ts";
+
+const TEST_ORIGIN_GATE = loadOriginGateConfig({
+  NODE_ENV: "test",
+  ORIGIN_SECRET_MODE: "disabled",
+});
+const createApp = (
+  deps: Parameters<typeof createServiceApp>[0],
+): ReturnType<typeof createServiceApp> =>
+  createServiceApp({ ...deps, originGate: TEST_ORIGIN_GATE });
 
 // Generous global ceilings so the per-IP tests below exercise the per-IP budget, not the global cap.
 const CONFIG: RateLimitConfig = {

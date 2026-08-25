@@ -54,6 +54,45 @@ const tickPayloadSchema = strictObject({});
 const noticePayloadSchema = strictObject({ accountId: z.string().min(1) });
 type NoticePayload = z.infer<typeof noticePayloadSchema>;
 
+export interface AbandonedCheckoutNoticeTaskDeps {
+  db: Transactor;
+  emailer: Emailer | null;
+  posthog: PostHogCaptureConfig | null;
+}
+
+/** The reusable, idempotent per-account handler shared by the legacy scheduler and finite Job. */
+export function defineAbandonedCheckoutNoticeTask(
+  deps: AbandonedCheckoutNoticeTaskDeps,
+) {
+  return defineTask(
+    ABANDONED_CHECKOUT_NOTICE_TASK,
+    noticePayloadSchema,
+    async (payload: NoticePayload) => {
+      const result = await withTenant(deps.db, payload.accountId, (tx) =>
+        sweepEligibleAbandonedCheckout(
+          tx,
+          payload.accountId,
+          ABANDONED_CHECKOUT_DELAY_HOURS,
+        ),
+      );
+      if (result === null) return;
+
+      if (deps.emailer !== null) {
+        await notifyAbandonedCheckout(deps.db, deps.emailer, {
+          accountId: payload.accountId,
+          lines: result.lines,
+        });
+      }
+      if (deps.posthog !== null) {
+        await capturePostHogAbandonedCheckoutEmailSent(deps.posthog, {
+          accountId: payload.accountId,
+          itemCount: result.lines.length,
+        });
+      }
+    },
+  );
+}
+
 /** Resolve the arming cron expression from env; `null` (inert) unless a non-blank value is set —
  *  same shape as `loadCreditExpiryScheduleConfig`. */
 export function loadAbandonedCheckoutScheduleConfig(
@@ -128,36 +167,7 @@ export async function startAbandonedCheckoutScheduler(
         await runAbandonedCheckoutTick(deps.db, queueBox.queue as JobQueue);
       },
     );
-    const noticeTask = defineTask(
-      ABANDONED_CHECKOUT_NOTICE_TASK,
-      noticePayloadSchema,
-      async (payload: NoticePayload) => {
-        const result = await withTenant(deps.db, payload.accountId, (tx) =>
-          sweepEligibleAbandonedCheckout(
-            tx,
-            payload.accountId,
-            ABANDONED_CHECKOUT_DELAY_HOURS,
-          ),
-        );
-        if (result === null) return; // nothing eligible, or another run already marked it
-
-        // Detached-in-spirit but awaited here (mirrors app.ts's post-commit fires structurally,
-        // minus the try/catch ceremony — both callees already never throw): the marker already
-        // committed above, so a send/capture failure here can never re-open the race.
-        if (deps.emailer !== null) {
-          await notifyAbandonedCheckout(deps.db, deps.emailer, {
-            accountId: payload.accountId,
-            lines: result.lines,
-          });
-        }
-        if (deps.posthog !== null) {
-          await capturePostHogAbandonedCheckoutEmailSent(deps.posthog, {
-            accountId: payload.accountId,
-            itemCount: result.lines.length,
-          });
-        }
-      },
-    );
+    const noticeTask = defineAbandonedCheckoutNoticeTask(deps);
 
     const started = createQueue([tickTask, noticeTask], {
       connectionString: deps.connectionString,

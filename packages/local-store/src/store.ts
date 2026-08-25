@@ -155,6 +155,14 @@ export class LocalStore {
     }
   }
 
+  /** Insert a corpus atomically. Besides all-or-nothing semantics, one transaction avoids an fsync
+   * per document when producing a file-backed build artifact. */
+  upsertMany(docs: readonly StoreDoc[]): void {
+    this.db.transaction((batch: readonly StoreDoc[]) => {
+      for (const doc of batch) this.upsert(doc);
+    })(docs);
+  }
+
   /**
    * Hybrid retrieval: rank by vector KNN and by FTS5 independently, then fuse by RRF. The vec leg is
    * skipped when no `queryVector` is given and is caught-and-skipped on a backend failure (degrade to

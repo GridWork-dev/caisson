@@ -18,9 +18,12 @@
 // proof tenant + a per-run txn id so concurrent runs never collide on the ledger idempotency key.
 import { afterAll, describe, expect, test } from "bun:test";
 import { createHmac, randomUUID } from "node:crypto";
-import { Pool } from "pg";
 import { fetchWithTimeout } from "@caisson/kernel";
-import { createPgTransactor, withTenant } from "@caisson/tenancy-rls";
+import {
+  createPgPool,
+  createPgTransactor,
+  withTenant,
+} from "@caisson/tenancy-rls";
 
 const WEBHOOK_SECRET = process.env.PADDLE_WEBHOOK_SECRET ?? "";
 const DATABASE_URL = process.env.DATABASE_URL ?? "";
@@ -46,7 +49,7 @@ const PAYMENT_ID = `txn_proof_${RUN}`;
 
 // Only build the pool when creds are present — the credential-less skip run has zero side effects.
 // The Pool→Transactor adapter is tenancy-rls's canonical `createPgTransactor` (C05).
-const pool = HAVE_CREDS ? new Pool({ connectionString: DATABASE_URL }) : null;
+const pool = HAVE_CREDS ? createPgPool(DATABASE_URL) : null;
 const db = pool ? createPgTransactor(pool) : null;
 
 /** A minimal but valid one-time `transaction.completed` for the proof account + proof price. */

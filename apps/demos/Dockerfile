@@ -20,22 +20,19 @@ RUN bunx turbo run build --filter=@caisson/demos --concurrency=50%
 
 FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS runtime
 WORKDIR /app
-# HOSTNAME is load-bearing: Next's standalone server.js binds to process.env.HOSTNAME, and Docker
-# auto-sets HOSTNAME to the container id — so without this the server binds only to the
-# container-hostname interface. Unlike apps/site and apps/admin (public edge, 0.0.0.0), THIS
-# service is reached exclusively over Railway's private network, which is IPv6-only — an
-# IPv4-only 0.0.0.0 bind refuses every connection from caisson-site's rewrite (observed as a
-# public 500 on /demos/* at first flip). "::" binds dual-stack, so the private IPv6 mesh and the
-# healthcheck's 127.0.0.1 fetch below both answer.
+# HOSTNAME is load-bearing: Next's standalone server.js binds to process.env.HOSTNAME, while Docker
+# otherwise injects the container id. 0.0.0.0 is portable across Cloud Run and ordinary container
+# runtimes and keeps the loopback healthcheck reachable.
 ENV NODE_ENV=production \
     PORT=3040 \
-    HOSTNAME=::
+    HOSTNAME=0.0.0.0
 
 # output:'standalone' preserves the monorepo-relative path (server.js lands at apps/demos/server.js,
 # NOT flattened to the image root), so the copies below mirror apps/site's exactly.
 COPY --from=build /app/apps/demos/.next/standalone ./
 COPY --from=build /app/apps/demos/.next/static ./apps/demos/.next/static
 COPY --from=build /app/apps/demos/public ./apps/demos/public
+COPY --from=build /app/apps/demos/entrypoint.sh ./apps/demos/entrypoint.sh
 
 # Non-root: the standalone server never writes to disk at runtime, so the root-owned,
 # world-readable copies above need no chown. `bun` (uid/gid 1000) is the oven/bun base image's
@@ -48,4 +45,4 @@ EXPOSE 3040
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \
   CMD bun -e "fetch('http://127.0.0.1:'+(process.env.PORT||3040)+'/demos/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["bun", "apps/demos/server.js"]
+CMD ["sh", "apps/demos/entrypoint.sh"]

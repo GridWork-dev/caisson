@@ -15,6 +15,9 @@ packages/cli/migrations-bundle/
 # (delivery-path fix G3) — never hand-edited, never committed (registry/index.json stays the
 # single source of truth, ADR-0047).
 packages/cli/registry-index.json
+
+# Docs retrieval index: versioned/checksummed build output, rebuilt by services/docs build:index.
+services/docs/artifact/
 .env
 .env.*
 !.env.example

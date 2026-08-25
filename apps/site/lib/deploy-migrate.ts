@@ -27,8 +27,8 @@ import {
   applyAll,
   platformMigrationsPackage,
 } from "@caisson/platform-migrations";
+import { createPgPool } from "@caisson/tenancy-rls";
 import { getMigrations } from "better-auth/db/migration";
-import { Pool } from "pg";
 import { createAuth } from "./auth-server.ts";
 import { SITE_LOCAL_MIGRATIONS } from "./site-migrations.ts";
 
@@ -58,20 +58,39 @@ export async function runPlatformMigrations(
   return applyAll(applier, SITE_LOCAL_MIGRATIONS);
 }
 
-async function main(): Promise<void> {
-  // Fail closed: a deploy migration against no DB is never a silent no-op.
-  const url = process.env.DATABASE_URL ?? "";
-  if (url.length === 0) {
-    throw new Error(
-      "DATABASE_URL is required (the deploy migration needs a Postgres connection) — refusing to run.",
-    );
+/**
+ * Cloud Run migration Jobs must receive the direct Neon DSN explicitly. Railway remains the
+ * authoritative deploy surface until cutover and its existing preDeployCommand supplies only
+ * DATABASE_URL, so retain that legacy path only when Railway's platform marker is present.
+ */
+export function resolveMigrationDatabaseUrl(
+  env: Record<string, string | undefined>,
+): string {
+  const directUrl = env.DATABASE_DIRECT_URL?.trim() ?? "";
+  if (directUrl !== "") return directUrl;
+
+  const railwayEnvironmentId = env.RAILWAY_ENVIRONMENT_ID?.trim() ?? "";
+  const cloudRunService = env.K_SERVICE?.trim() ?? "";
+  const railwayUrl = env.DATABASE_URL?.trim() ?? "";
+  if (
+    cloudRunService === "" &&
+    railwayEnvironmentId !== "" &&
+    railwayUrl !== ""
+  ) {
+    return railwayUrl;
   }
-  const pool = new Pool({ connectionString: url });
-  pool.on("error", (err) => {
-    process.stderr.write(
-      `[deploy-migrate] idle pg client error: ${err.message}\n`,
-    );
-  });
+
+  throw new Error(
+    "DATABASE_DIRECT_URL is required (the deploy migration needs a direct Postgres connection) — refusing to run.",
+  );
+}
+
+export async function runSiteDeployMigration(
+  env: Record<string, string | undefined> = process.env,
+): Promise<void> {
+  // Fail closed: a deploy migration against no DB is never a silent no-op.
+  const url = resolveMigrationDatabaseUrl(env);
+  const pool = createPgPool(url, { purpose: "migration" });
   try {
     const result = await runPlatformMigrations(pgMigrationApplier(pool));
     process.stdout.write(
@@ -84,11 +103,11 @@ async function main(): Promise<void> {
     const auth = await createAuth({
       database: pool,
       secret:
-        process.env.BETTER_AUTH_SECRET ??
+        env.BETTER_AUTH_SECRET ??
         "deploy-migrate-placeholder-secret-32chars-minimum",
       emailer: createCaptureEmailer(),
       hmacKey:
-        process.env.SESSION_TOKEN_HMAC_KEY ??
+        env.SESSION_TOKEN_HMAC_KEY ??
         "deploy-migrate-placeholder-hmac-key-32chars-minimum",
     });
     // `auth.options.database` is the ADR-0366 wrapped adapter FACTORY (see the comment on
@@ -151,5 +170,5 @@ export async function cutoverLegacySessionTokens(
 }
 
 if (import.meta.main) {
-  await main();
+  await runSiteDeployMigration();
 }

@@ -2,7 +2,7 @@ import { fileURLToPath } from "node:url";
 import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
 
-import { contentSecurityPolicy, demosOriginUrl } from "./lib/security-headers";
+import { contentSecurityPolicy } from "./lib/security-headers";
 
 // The monorepo root (two levels up from apps/site) — pinned explicitly because Turbopack's
 // auto-detected workspace root walks up to the FIRST ancestor directory carrying a lockfile,
@@ -12,12 +12,6 @@ import { contentSecurityPolicy, demosOriginUrl } from "./lib/security-headers";
 // node_modules, never hoisted to the misdetected root's node_modules (vercel/next.js#92978).
 const monorepoRoot = fileURLToPath(new URL("../..", import.meta.url));
 
-// The ADR-0400 demo zone's two config inputs. Both live in lib/security-headers.ts, with their
-// full rationale, so a test can drive them without importing this file (and the MDX pipeline it
-// pulls in) — asked for `frame-ancestors 'none'`, the CSP builder emits the pre-split policy
-// plus `frame-src 'self'` (the demos iframes), and that exact shape is pinned there.
-const demosOrigin = demosOriginUrl(process.env.DEMOS_ORIGIN_URL);
-
 const config: NextConfig = {
   // Keep static generation below the build host's memory ceiling. Next otherwise derives this
   // from host CPUs and can fan out dozens of workers for this documentation-heavy app.
@@ -26,6 +20,13 @@ const config: NextConfig = {
   // ADR-0084). Marketing + docs routes still render statically (SSG / generateStaticParams) —
   // this only swaps the OUTPUT MODE so `/dashboard` can exist as a dynamic, authed route group.
   output: "standalone",
+  // T27 edge gate: Next resolves config redirects BEFORE the proxy entry
+  // (next/dist/server/lib/router-utils/resolve-routes.js orders `fsChecker.redirects` ahead of
+  // `{name:'middleware'}`), and with this flag unset Next unshifts an internal `/:path+/` rule
+  // onto that same array — so ANY path with a trailing slash answered 308 on the raw Cloud Run
+  // origin without ever reaching originRequestAuthorized. Skipping it hands `/foo/` to the proxy,
+  // which re-issues the normalization AFTER the gate. See apps/site/proxy.ts.
+  skipTrailingSlashRedirect: true,
   // Cloudflare brotli-compresses at the edge already (HTML already serves `br`); the origin's
   // own gzip pre-compression was pinning ~1.7MB of cacheable JS+CSS to gzip on every cold load
   // because CF caches whatever content-encoding the origin sent. Turning this off lets CF's
@@ -177,27 +178,6 @@ const config: NextConfig = {
       },
     ];
   },
-  // The multi-zone rewrite (ADR-0400): /demos/* is served by the separate apps/demos service, on
-  // THIS origin. apps/demos sets `basePath: "/demos"`, which prefixes its routes AND its
-  // `_next/*` assets, so this one source covers pages and chunks alike — no second
-  // `/demos-static/*` rule. Returning an empty array when the variable is unset is the fail-safe
-  // state (see demosOriginUrl above): this app then has no /demos ROUTE whatsoever and every page
-  // renders exactly as it did before the split.
-  //
-  // Precisely, because "unchanged" is easy to overclaim: routing and page output are unchanged,
-  // but the header floor is NOT conditional on this variable. `frame-src` gains 'self' on every
-  // response and the /demos rule below ships armed or not — both additive, both necessary before
-  // the flip rather than after it (the module pages frame /demos from the day this merges). What
-  // the variable gates is where those requests GO, not what the headers say.
-  async rewrites() {
-    if (!demosOrigin) return [];
-    return [
-      {
-        source: "/demos/:path*",
-        destination: `${demosOrigin}/demos/:path*`,
-      },
-    ];
-  },
   // Security headers — the CSP/HSTS/X-Frame floor the (now-deleted) Cloudflare Pages public/_headers
   // served, now emitted by the Node standalone server (which never read _headers). Divergence from
   // that file: the Paddle Billing overlay checkout is a live surface here, so *.paddle.com is allowed
@@ -256,19 +236,9 @@ const config: NextConfig = {
       // (verified against a built server: /demos/* returns exactly ONE X-Frame-Options, and it
       // reads SAMEORIGIN).
       //
-      // This rule governs the UNARMED state, which is the state this commit ships in. VERIFIED,
-      // against a built server with and without DEMOS_ORIGIN_URL: Next does NOT apply configured
-      // headers to a response it proxies to an external rewrite destination — an armed /demos
-      // response carries apps/demos' own header floor and nothing from this file. So the only
-      // requests this rule actually reaches are the ones THIS app answers under /demos, i.e. its
-      // own 404 before the rewrite is armed.
-      //
-      // That 404 is precisely what the module pages iframe pre-flip, and `X-Frame-Options: DENY`
-      // on it would have the browser refuse to render the frame at all — leaving the wrapper
-      // waiting on a load event whose behavior varies by browser instead of reading the missing
-      // embed marker and showing its fallback text. SAMEORIGIN is what makes the pre-flip
-      // fallback deterministic; it also means a future Next that DOES apply these headers to
-      // proxied responses cannot silently break the armed embed either.
+      // The runtime route keeps this response same-origin while attaching the private Cloud Run
+      // credential server-side. SAMEORIGIN therefore applies to both the fail-safe 404 and a live
+      // demos response without granting any third-party frame parent.
       //
       // `frame-ancestors 'self'` states the same rule in the header that supersedes
       // X-Frame-Options wherever both are present. apps/demos deliberately sets no
