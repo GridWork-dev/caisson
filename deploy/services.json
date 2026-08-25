@@ -1,5 +1,5 @@
 {
-  "_source": "gridwork-infra/manifests/services.toml (doc 07 §4) services + repo-resolved T28 migration job",
+  "_source": "gridwork-infra/manifests/services.toml (doc 07 §4) — regenerate, never hand-edit",
   "repository": "caisson-sh/caisson",
   "services": {
     "caisson-admin": {
@@ -15,7 +15,10 @@
       "hostnames": [
         "admin.caisson.sh"
       ],
-      "runtime": "cloud-run-service"
+      "runtime": "cloud-run-service",
+      "origin_secret_mode": "ORIGIN_SECRET_MODE",
+      "origin_secret_current": "ORIGIN_SECRET",
+      "origin_secret_next": "ORIGIN_SECRET_NEXT"
     },
     "caisson-demos": {
       "dockerfile": "apps/demos/Dockerfile",
@@ -42,7 +45,10 @@
       "hostnames": [
         "docs-api.caisson.sh"
       ],
-      "runtime": "cloud-run-service"
+      "runtime": "cloud-run-service",
+      "origin_secret_mode": "ORIGIN_SECRET_MODE",
+      "origin_secret_current": "ORIGIN_SECRET",
+      "origin_secret_next": "ORIGIN_SECRET_NEXT"
     },
     "caisson-license": {
       "dockerfile": "services/license/Dockerfile",
@@ -57,7 +63,10 @@
       "hostnames": [
         "license.caisson.sh"
       ],
-      "runtime": "cloud-run-service"
+      "runtime": "cloud-run-service",
+      "origin_secret_mode": "ORIGIN_SECRET_MODE",
+      "origin_secret_current": "ORIGIN_SECRET",
+      "origin_secret_next": "ORIGIN_SECRET_NEXT"
     },
     "caisson-site": {
       "dockerfile": "apps/site/Dockerfile",
@@ -73,7 +82,10 @@
         "caisson.sh",
         "www.caisson.sh"
       ],
-      "runtime": "cloud-run-service"
+      "runtime": "cloud-run-service",
+      "origin_secret_mode": "ORIGIN_SECRET_MODE",
+      "origin_secret_current": "ORIGIN_SECRET",
+      "origin_secret_next": "ORIGIN_SECRET_NEXT"
     }
   },
   "jobs": {
