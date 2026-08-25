@@ -60,6 +60,10 @@ export const MARKETING_ROUTES: readonly MarketingRoute[] = [
   { path: "/stack-fit", label: "Stack fit", priority: 0.75, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/ui", label: "UI Pro showcase", navLabel: "UI Pro", priority: 0.7, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/build-vs-buy", label: "Build vs buy", priority: 0.75, changeFrequency: "weekly", group: "product" }, // prettier-ignore
+  // Public, indexable, and until now absent from BOTH the registry and every internal link — the
+  // only route on the site reachable by direct URL alone. Registry-only (no nav/footer flag) puts
+  // it in the sitemap without deciding where it belongs in the nav.
+  { path: "/demo", label: "Try it", priority: 0.8, changeFrequency: "weekly", group: "product" }, // prettier-ignore
   { path: "/security", label: "Security", priority: 0.75, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
   { path: "/evidence", label: "Evidence pack", priority: 0.8, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
   { path: "/updates", label: "Updates", priority: 0.7, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
