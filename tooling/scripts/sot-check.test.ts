@@ -196,6 +196,7 @@ describe("check #1 — ADR ceiling parity", () => {
       claudeMdText: "Ceiling 0245**",
       adrIndexText: "— ceiling 0245**;",
       forksText: "---\nadr_ceiling: 0245\n---\n",
+      buildStateText: "ADR ceiling is `0245`",
     });
     const result = checkAdrCeilingParity(sources);
     expect(result.status).toBe("green");
@@ -207,6 +208,7 @@ describe("check #1 — ADR ceiling parity", () => {
       claudeMdText: "Ceiling 0242**",
       adrIndexText: "ceiling 0245**",
       forksText: "---\nadr_ceiling: 0245\n---\n",
+      buildStateText: "ADR ceiling is `0245`",
     });
     const result = checkAdrCeilingParity(sources);
     expect(result.status).toBe("drift");
@@ -219,6 +221,7 @@ describe("check #1 — ADR ceiling parity", () => {
       claudeMdText: "Ceiling 0245**",
       adrIndexText: "ceiling 0245**",
       forksText: "# Decisions & Forks — live board\n\nno frontmatter here\n",
+      buildStateText: "ADR ceiling is `0245`",
     });
     const result = checkAdrCeilingParity(sources);
     expect(result.status).toBe("drift");
@@ -229,17 +232,68 @@ describe("check #1 — ADR ceiling parity", () => {
     ).toBe(true);
   });
 
+  // Regression for the real 2026-08-25 drift: docs/build-state.md sat at ADR-0401 while the other
+  // four sources agreed at 0414. It was invisible because this gate did not read the file, and
+  // frontmatter-freshness passed it (the stamp matched its own last commit — that check proves a
+  // file was TOUCHED, not that its prose is true). Reverting the buildState source turns this green.
+  test("drift when docs/build-state.md states a stale ceiling and the other four agree", () => {
+    const sources = extractAdrCeilingSources({
+      decisionFilenames: ["ADR-0414-foo.md"],
+      claudeMdText: "**Ceiling: ADR-0414**",
+      adrIndexText: "ceiling 0414",
+      forksText: "---\nadr_ceiling: 0414\n---\n",
+      buildStateText:
+        "**ADR ceiling is `0401`; the latest release tag is ...**",
+    });
+    expect(sources.buildState).toBe(401);
+    const result = checkAdrCeilingParity(sources);
+    expect(result.status).toBe("drift");
+    expect(result.details.join("\n")).toContain(
+      "docs/build-state.md: ADR-0401",
+    );
+  });
+
+  // The `is` and the backticks are the whole reason the drift hid — pin every phrasing in use.
+  test("reads the ceiling from all three phrasings actually used in the repo", () => {
+    expect(extractCeiling("**Ceiling: ADR-0414**")).toBe(414);
+    expect(extractCeiling("ADR ceiling: 0414")).toBe(414);
+    expect(extractCeiling("**ADR ceiling is `0401`**")).toBe(401);
+    // Must NOT match the gate's own name in prose.
+    expect(extractCeiling("ADR-ceiling parity")).toBeNull();
+  });
+
+  test("--update names docs/build-state.md when only it disagrees", () => {
+    const texts = {
+      claudeMd: "**Ceiling: ADR-0414**",
+      adrIndex: "ceiling 0414",
+      forks: "---\nadr_ceiling: 0414\n---\n",
+      buildState: "**ADR ceiling is `0401`**",
+    };
+    const sources = extractAdrCeilingSources({
+      decisionFilenames: ["ADR-0414-foo.md"],
+      claudeMdText: texts.claudeMd,
+      adrIndexText: texts.adrIndex,
+      forksText: texts.forks,
+      buildStateText: texts.buildState,
+    });
+    const suggestions = buildCeilingEditSuggestions(sources, texts);
+    expect(suggestions.map((s) => s.file)).toEqual(["docs/build-state.md"]);
+    expect(suggestions[0]?.suggestion).toContain("0414");
+  });
+
   test("--update suggests fixing every source that disagrees with the filesystem truth", () => {
     const sources = extractAdrCeilingSources({
       decisionFilenames: ["ADR-0245-foo.md"],
       claudeMdText: "Ceiling 0242**",
       adrIndexText: "ceiling 0245**",
       forksText: "---\nadr_ceiling: 0240\n---\n",
+      buildStateText: "ADR ceiling is `0245`",
     });
     const suggestions = buildCeilingEditSuggestions(sources, {
       claudeMd: "Ceiling 0242**",
       adrIndex: "ceiling 0245**",
       forks: "---\nadr_ceiling: 0240\n---\n",
+      buildState: "ADR ceiling is `0245`",
     });
     expect(suggestions.map((s) => s.file)).toEqual([
       "CLAUDE.md",
