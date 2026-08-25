@@ -14,6 +14,22 @@ import type {
   Span,
   SpanProcessor,
 } from "@opentelemetry/sdk-trace-base";
+// The incubating entry-point on purpose: it re-exports the stable names AND carries the
+// experimental ones (`gen_ai.*`, `session.id`, `mcp.session.id`) that instrumentation actually
+// emits today. Its constants are not semver-stable, but only their string VALUES are read here, via
+// `Object.entries` — a renamed or removed constant changes the allowlist, never the build.
+import * as semconv from "@opentelemetry/semantic-conventions/incubating";
+
+/**
+ * The deny-list's term sources, as strings, so the union regex and its two arms below are all
+ * DERIVED from one place: a term added or dropped here changes every consumer together, and no
+ * hand-synchronised copy exists to drift. (An earlier revision kept three literal copies; a
+ * one-term drift between them shipped green because the tests could only see the union.)
+ */
+const CREDENTIAL_TERMS =
+  "secret|token|password|passwd|api[_-]?key|authoriz|bearer|credential|cookie|session|private[_-]?key|access[_-]?key|signing[_-]?key|encryption[_-]?key";
+const PII_TERMS =
+  "(?<![a-z])ssns?|ssns?(?![a-z])|social[_-]?security|e[_.-]?mail|date[_-]?of[_-]?birth|birth[_-]?date|(?<![a-z])dobs?(?![a-z])|(?<![a-z])mrns?(?![a-z])|medical[_-]?record|phone|first[_-]?name(?![a-z])|last[_-]?name(?![a-z])|full[_-]?name(?![a-z])|(?<![a-z])patient";
 
 /**
  * Span attribute / header KEY deny-list. Matches loosely on purpose — a key that merely LOOKS
@@ -38,8 +54,33 @@ import type {
  * key (NFKC + camelCase/snake_case word split) first. Tested raw, this regex misses `userEmail`,
  * `user_email`, and a fullwidth `ｅmail` (audit finding 19d1af0e70d0c2d7). Export kept for back-compat.
  */
-export const SENSITIVE_ATTRIBUTE_KEY =
-  /(?:secret|token|password|passwd|api[_-]?key|apikey|authoriz|bearer|credential|cookie|session|private[_-]?key|access[_-]?key|signing[_-]?key|encryption[_-]?key|(?<![a-z])ssns?|ssns?(?![a-z])|social[_-]?security|e[_.-]?mail|date[_-]?of[_-]?birth|birth[_-]?date|(?<![a-z])dobs?(?![a-z])|(?<![a-z])mrns?(?![a-z])|medical[_-]?record|phone|first[_-]?name(?![a-z])|last[_-]?name(?![a-z])|full[_-]?name(?![a-z])|(?<![a-z])patient)/i;
+export const SENSITIVE_ATTRIBUTE_KEY = new RegExp(
+  `(?:${CREDENTIAL_TERMS}|${PII_TERMS})`,
+  "i",
+);
+
+/**
+ * The deny-list's two arms, derived from the same term sources as the union above. They stay
+ * separate because {@link isSensitiveAttributeKey} treats them differently: the PII arm is
+ * unconditional; the credential arm yields to an exact OTel semantic-convention name.
+ */
+const CREDENTIAL_KEY = new RegExp(`(?:${CREDENTIAL_TERMS})`, "i");
+const PII_KEY = new RegExp(`(?:${PII_TERMS})`, "i");
+
+/**
+ * Every attribute NAME `@opentelemetry/semantic-conventions` exports (stable + incubating, ~890).
+ * Read from the package, never hand-copied, so the set follows the pinned version. Exact-match
+ * only: template attributes (`http.request.header.<key>`) are exported as functions, not strings,
+ * so `http.request.header.authorization` is NOT a member and still redacts.
+ */
+const SEMCONV_ATTRIBUTE_NAMES: ReadonlySet<string> = new Set(
+  Object.entries(semconv as Record<string, unknown>)
+    .filter(
+      (entry): entry is [string, string] =>
+        entry[0].startsWith("ATTR_") && typeof entry[1] === "string",
+    )
+    .map(([, name]) => name),
+);
 
 /**
  * Split camelCase/PascalCase runs and `_`/`-` separators into space-delimited words, so the
@@ -68,6 +109,16 @@ function splitKeyWords(key: string): string {
  * the split arm adds the lookaround-guarded PII terms. Over-redaction is the fail-safe direction
  * here, per this module's stated philosophy.
  *
+ * Semantic-convention exemption: the credential terms `token` / `session` /
+ * `authoriz` / `password` / `secret` also sit inside 19 real OTel attribute names —
+ * `gen_ai.usage.input_tokens`, `session.id`, `mcp.session.id`, `aspnetcore.authorization.policy`,
+ * … — none of which carries a credential, so redacting them blanked LLM usage and session
+ * correlation on every span. A key that is an EXACT member of {@link SEMCONV_ATTRIBUTE_NAMES}
+ * skips the credential arm. It never skips the PII arm: `user.email` and `user.full_name` are
+ * semconv names too, and they stay redacted. Anything not an exact member — `Session.Id`, a
+ * `session.token` that merely looks conventional, the `http.request.header.authorization`
+ * template — goes through both arms as before.
+ *
  * Known residual (accepted, no clean regex answer): a 3-letter token fused lowercase in the MIDDLE
  * of a key (`userdob`, `recdob`), and homoglyph / invisible-character spellings (Cyrillic `е`,
  * soft hyphen, ZWJ) that NFKC does not fold — an attacker names attributes only on their own
@@ -76,10 +127,10 @@ function splitKeyWords(key: string): string {
  */
 export function isSensitiveAttributeKey(key: string): boolean {
   const normalized = key.normalize("NFKC");
-  return (
-    SENSITIVE_ATTRIBUTE_KEY.test(normalized) ||
-    SENSITIVE_ATTRIBUTE_KEY.test(splitKeyWords(normalized))
-  );
+  const split = splitKeyWords(normalized);
+  if (PII_KEY.test(normalized) || PII_KEY.test(split)) return true;
+  if (SEMCONV_ATTRIBUTE_NAMES.has(normalized)) return false;
+  return CREDENTIAL_KEY.test(normalized) || CREDENTIAL_KEY.test(split);
 }
 
 /** A value-level backstop: a raw `Authorization: Bearer <token>` string under an unsuspicious key. */
