@@ -25,8 +25,15 @@ while IFS= read -r -d '' f; do
       fail=1
     fi
   done < <(grep -iE '^[[:space:]]*FROM[[:space:]]' "$f")
+# `mirror-out/` is the gitignored public-mirror export. It carries a COPY of
+# packages/cli/templates/, so the same template Dockerfiles reappear under a path the
+# templates exclude above does not match, and this walks the raw filesystem (`find .`)
+# rather than `git ls-files`. CI never has the directory so it never saw them; a local
+# tree with a stale export fails --strict-digests on files that are not first-party
+# source. Excluded here so the local run and the CI run agree.
 done < <(find . -type f \( -name 'Dockerfile' -o -name 'Dockerfile.*' \) \
   -not -path './packages/cli/templates/*' \
+  -not -path './mirror-out/*' \
   -not -path './node_modules/*' -not -path '*/node_modules/*' \
   -not -path '*/.next/*' -print0)
 
