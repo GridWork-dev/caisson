@@ -58,6 +58,7 @@ const ObservationConfigSchema = z
     const hasId = config.accessClientId !== undefined;
     const hasSecret = config.accessClientSecret !== undefined;
     if (
+      // nosemgrep: tools.security.semgrep-rules.no-insecure-token-compare -- `hasId`/`hasSecret` are boolean presence flags (`!== undefined`), not credential bytes; this enforces both-or-neither of the Access pair. No timing side channel on presence booleans.
       hasId !== hasSecret ||
       (config.environment === "staging" && !hasId) ||
       (config.services.includes("caisson-admin") && !hasId)
