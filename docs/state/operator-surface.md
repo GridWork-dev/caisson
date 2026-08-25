@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-19
+updated: 2026-08-25
 status: live
 grounds:
   - docs/state/production-readiness.md
@@ -94,8 +94,10 @@ parity (interactive `op signin` + personal Railway login). Detail + evidence for
 | auth session-token-hashing precondition ADR | future-trigger spec — do not build until the trigger fires; opening the ADR also fixes the spec's stale lift-sweep pointer                                                                                                                                                                                                                                                                                                                                                                                                                           | `outputs/specs/deferred-respec/SPEC-auth-session-token-hashing.md` |
 | Railway PITR                                | standing declined (2026-07-11, reconfirmed twice) — reopens only if real commerce data raises the recovery-point bar                                                                                                                                                                                                                                                                                                                                                                                                                                 | `docs/state/decisions-and-forks.md`                                |
 
-Every other fork is locked — the fork board's open table has exactly one row (PITR), and
-`CLAUDE.md` §Still-open reads "Nothing."
+Every other fork is locked — the fork board's open table has three rows: PITR plus the two
+consolidation rows surfaced 2026-08-25 (C10 `PgKeyVersionStore` removal, C16 tarball-sidecar
+schema fold; both above). `CLAUDE.md` §Still-open still reads "Nothing." — that clause is
+operator-owned and is not edited without a lock, so the two disagree until the operator rules.
 
 ## 7. Held / self-healing / watches (no operator action now)
 

@@ -1,13 +1,16 @@
 ---
-updated: 2026-08-19
+updated: 2026-08-25
 status: live
 ---
 
 # Build state & roadmap
 
-## Current state (2026-08-09)
+## Current state (2026-08-25)
 
-**ADR ceiling is `0401`; the latest release tag is `v2026.08.06.1`, signed and cut 2026-08-06 on
+**ADR ceiling is `0414`; the latest release tag is `v2026.08.18`.** Its release-train `propagate`
+leg FAILED at the `mirror-sync` "verify export — test" step and has not been re-run, so the tag
+exists but its propagation is unproven — do not read the tag alone as "shipped" (`gh run view
+32196107596`). The prior tag `v2026.08.06.1` was signed and cut 2026-08-06 on
 the repair/attestation commit atop `aa6f4f17` (the version-PR merge) — the clean-main
 wave: ADR-0396 Wave B browser entries (guardrails / local-inference / local-privacy over the
 kernel/browser strict subset) with the poke retirement and demo-truthfulness fix (#402), the
