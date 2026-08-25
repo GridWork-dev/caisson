@@ -4,36 +4,26 @@
 // `ADMIN_AUTH_DATABASE_URL` 500s the OAuth callback on relation-does-not-exist and the operator is
 // locked out of their own control-plane on the very deploy meant to grant them access.
 //
-// WHERE it runs (CAISSON-48): the real caller is the Next `instrumentation.register()` boot hook
-// (apps/admin/src/instrumentation.ts), NOT a Railway `preDeployCommand`. The standalone runtime
-// image copies only `.next/standalone` (which strips `src/`), so a
-// `bun apps/admin/src/lib/admin-deploy-migrate.ts` preDeployCommand can never find this file and is
-// a silent no-op — unlike services/license (a plain Bun image that keeps its `src/`, where that
-// pattern does work). `register()` ships in standalone and Next awaits it before serving.
-// `ensureAdminAuthTables` is exported for that hook; this file also stays runnable as a CLI
-// (`bun apps/admin/src/lib/admin-deploy-migrate.ts`) for a manual box-side migration. Idempotent +
-// forward-only: better-auth's migrator tracks its own applied state, so a re-run on an
+// WHERE it runs (Cloud Run T22): an explicit migration Job built from the Dockerfile's `migrate`
+// target. The normal runtime image is Next standalone and deliberately contains no source tree,
+// so schema work cannot accidentally reappear in process boot. This file remains runnable as a
+// CLI (`bun apps/admin/src/lib/admin-deploy-migrate.ts`) for the finite Job. Idempotent +
+// forward-only: better-auth's migrator tracks its own applied state, so a re-run against an
 // already-migrated database is a safe no-op.
 //
 // The auth instance built here is MIGRATION-ONLY — its secret/client id/client secret are
 // placeholders (never used for table DDL, and this path never serves a request), so it runs from
-// just `ADMIN_AUTH_DATABASE_URL` with no OAuth app or session secret provisioned yet.
+// just `ADMIN_AUTH_DIRECT_DATABASE_URL` with no OAuth app or session secret provisioned yet.
 // `getAdminAuth()` (admin-auth-server.ts) is NOT reused here: it fails closed to `null` without the
 // OAuth credentials, which a migration-only run must not require.
-import { Pool } from "pg";
+import { createPgPool } from "@caisson/tenancy-rls";
 import { getMigrations } from "better-auth/db/migration";
 import { createAdminAuth } from "./admin-auth-server.ts";
 
-/** Ensure admin's better-auth tables exist against `url`. Idempotent + forward-only. Called by the
- *  Next instrumentation boot hook (the path that actually runs in prod — see the header) and by the
- *  CLI `main()` below. Opens and closes its own short-lived pg pool. */
+/** Ensure admin's better-auth tables exist against `url`. Idempotent + forward-only. Called only
+ * by the finite migration entrypoint. Opens and closes its own short-lived pg pool. */
 export async function ensureAdminAuthTables(url: string): Promise<void> {
-  const pool = new Pool({ connectionString: url });
-  pool.on("error", (err) => {
-    process.stderr.write(
-      `[admin-migrate] idle pg client error: ${err.message}\n`,
-    );
-  });
+  const pool = createPgPool(url, { purpose: "migration" });
   try {
     const auth = createAdminAuth({
       database: pool,
@@ -56,12 +46,14 @@ export async function ensureAdminAuthTables(url: string): Promise<void> {
   }
 }
 
-async function main(): Promise<void> {
+export async function runAdminDeployMigration(
+  env: Record<string, string | undefined> = process.env,
+): Promise<void> {
   // Fail loud: a deploy migration against no DB is never a silent no-op.
-  const url = process.env.ADMIN_AUTH_DATABASE_URL?.trim();
+  const url = env.ADMIN_AUTH_DIRECT_DATABASE_URL?.trim();
   if (url === undefined || url.length === 0) {
     throw new Error(
-      "ADMIN_AUTH_DATABASE_URL is required (the admin deploy migration needs its own Postgres " +
+      "ADMIN_AUTH_DIRECT_DATABASE_URL is required (the admin deploy migration needs its own direct Postgres " +
         "connection) — refusing to run.",
     );
   }
@@ -70,5 +62,5 @@ async function main(): Promise<void> {
 }
 
 if (import.meta.main) {
-  await main();
+  await runAdminDeployMigration();
 }

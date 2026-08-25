@@ -124,6 +124,25 @@ describe("LocalStore hybrid retrieval (ADR-0067)", () => {
   test("a non-positive dim is rejected at open", () => {
     expect(() => LocalStore.open({ dim: 0 })).toThrow(ValidationError);
   });
+
+  test("bulk upsert writes a queryable corpus through one transaction", () => {
+    const store = LocalStore.open({ dim: 3 });
+    const bulkStore = store as unknown as {
+      upsertMany?: (docs: { id: string; text: string }[]) => void;
+    };
+    try {
+      expect(typeof bulkStore.upsertMany).toBe("function");
+      bulkStore.upsertMany?.([
+        { id: "one", text: "artifact billing" },
+        { id: "two", text: "artifact compliance" },
+      ]);
+      expect(
+        store.hybridSearch({ queryText: "billing" }).map((hit) => hit.id),
+      ).toEqual(["one"]);
+    } finally {
+      store.close();
+    }
+  });
 });
 
 describe("LocalStore.list (read-only agent-memory paging)", () => {

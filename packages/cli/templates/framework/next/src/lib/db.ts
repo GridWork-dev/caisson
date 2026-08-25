@@ -2,13 +2,14 @@
 // (`createPgTransactor`) over a Pool this app owns. The pool is constructed lazily (on first
 // `.transaction()` call, not at import time) so a missing `DATABASE_URL` never breaks a
 // build/typecheck, only a real query at runtime.
-import { Pool } from "pg";
 import { ConfigError } from "@caisson/kernel";
 import {
+  createPgPool,
   createPgTransactor,
   type TenantExecutor,
   type Transactor,
 } from "@caisson/tenancy-rls";
+import type { Pool } from "pg";
 
 let pool: Pool | undefined;
 
@@ -18,7 +19,7 @@ function getPool(): Pool {
     if (connectionString === undefined) {
       throw new ConfigError("DATABASE_URL is not set");
     }
-    pool = new Pool({ connectionString });
+    pool = createPgPool(connectionString);
   }
   return pool;
 }

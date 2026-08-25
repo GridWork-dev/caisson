@@ -1,8 +1,6 @@
 // Railway readiness probe (ADR-0114/0138). Mirrors apps/site's `/healthz` — no DB round-trip (the
 // admin's own routes prove DB connectivity per-request; the probe itself must stay cheap so it never
-// flaps on a slow query). The ONE gate it honors is the boot-migration flag (CAISSON-48): if the
-// better-auth migration failed at boot, this reports 503 so Railway fails the deploy closed rather
-// than promote a control-plane whose every OAuth callback 500s. Reading the flag is a cheap boolean.
+// flaps on a slow query). Schema migration is an explicit finite Job and never part of process boot.
 //
 // CAISSON-37 (F-1 residual): also reports the baked registry/index.json digest — the admin leg of
 // registry/scripts/index-parity-probe.ts's three-way parity check (repo file / license service /
@@ -16,7 +14,6 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { isAuthMigrationHealthy } from "../../lib/admin-boot-state.ts";
 
 export const dynamic = "force-dynamic";
 
@@ -44,11 +41,10 @@ function registryIndexDigest():
 }
 
 export function GET(): Response {
-  const ok = isAuthMigrationHealthy();
   return new Response(
-    JSON.stringify({ ok, ...(registryIndexDigest() ?? {}) }),
+    JSON.stringify({ ok: true, ...(registryIndexDigest() ?? {}) }),
     {
-      status: ok ? 200 : 503,
+      status: 200,
       headers: { "Content-Type": "application/json; charset=utf-8" },
     },
   );

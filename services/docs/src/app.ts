@@ -2,9 +2,15 @@
 // it is trivially testable without a live socket. Public read surfaces (health + the llms artifacts);
 // the retrieval endpoint POST /query is Bearer-gated (timing-safe). Every response carries the security
 // headers from the standard security floor (nosniff / frame-deny / HSTS). No CORS header is set — this
-// is a server-to-server contract for the support-bot, not a browser surface.
+// is a server-to-server contract for the support-bot, not a browser surface. `/ready` exists only
+// after the versioned local artifact validates and opens; it never rebuilds or calls a dependency.
 import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
+import {
+  loadOriginGateConfig,
+  originRequestAuthorized,
+  type OriginGateConfig,
+} from "@caisson/kernel/node";
 import { withRequestSpan } from "@caisson/observability";
 import type { DocsIndex } from "./index-store.ts";
 import { clientIp, type RateBucket, type RateLimiter } from "./rate-limit.ts";
@@ -17,6 +23,8 @@ export interface AppDeps {
   token: string;
   /** Per-IP token-bucket limiter (hardening #1). Static routes get a looser budget than POST /query. */
   limiter: RateLimiter;
+  /** Cloudflare Worker origin gate. Omitted only when the runtime loader supplies the config. */
+  originGate?: OriginGateConfig;
 }
 
 /** POST /query body. `.strict()` rejects unknown fields; query + k are bounded (no unbounded compute). */
@@ -29,15 +37,14 @@ export const QuerySchema = z
   })
   .strict();
 
-// Exported: server.ts's pre-ready warmup handler serves this same header set (its 503 is a real
-// production response on the wire during every cold boot, not exempt from the security floor).
+// Exported for tests and any future response adapter; every production response uses this floor.
 export const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
   "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
 };
 
-// The /llms*.txt artifacts are byte-stable (rebuilt only at boot from the committed corpus), so they are
+// The /llms*.txt artifacts are byte-stable (rebuilt only with the versioned artifact), so they are
 // safe to cache at the edge/CDN — this lets Railway/a fronting CDN absorb repeat scrapes instead of every
 // hit reaching the origin. NOT applied to POST /query (dynamic, retrieval-dependent).
 const LLMS_CACHE_HEADERS: Record<string, string> = {
@@ -82,6 +89,7 @@ function authorized(req: Request, token: string): boolean {
 
 /** Build the request handler. Async because /query awaits retrieval. */
 export function createApp(deps: AppDeps): (req: Request) => Promise<Response> {
+  const originGate = deps.originGate ?? loadOriginGateConfig(process.env);
   /**
    * Per-IP rate gate. Returns a 429 Response when the bucket is exhausted, or `null` to proceed. FAILS OPEN
    * on any limiter internal error (logs to stderr — never silently disables the limiter) so a limiter bug
@@ -116,6 +124,9 @@ export function createApp(deps: AppDeps): (req: Request) => Promise<Response> {
   };
 
   return withRequestSpan(async (req: Request): Promise<Response> => {
+    if (!originRequestAuthorized(req, originGate)) {
+      return json({ error: "forbidden" }, 403);
+    }
     const url = new URL(req.url);
     const { pathname } = url;
     const method = req.method.toUpperCase();
@@ -124,6 +135,14 @@ export function createApp(deps: AppDeps): (req: Request) => Promise<Response> {
     if (pathname === "/health") {
       return method === "GET"
         ? json({ ok: true, chunks: deps.index.size })
+        : text("method not allowed", 405);
+    }
+    // The router is constructed only after the artifact's strict manifest + checksum validate and
+    // its SQLite index opens. Reaching this route therefore proves the required local artifact is
+    // ready; it never triggers a rebuild or an external dependency check.
+    if (pathname === "/ready") {
+      return method === "GET"
+        ? json({ ready: true })
         : text("method not allowed", 405);
     }
     if (pathname === "/llms.txt") {

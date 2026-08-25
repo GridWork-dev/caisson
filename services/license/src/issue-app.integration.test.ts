@@ -28,6 +28,7 @@ import {
   type RegistryIndex,
   loadRegistryIndex,
 } from "@caisson/registry-schema";
+import { loadOriginGateConfig } from "@caisson/kernel/node";
 import { Ed25519Signer } from "@caisson/license-issue";
 import { verifyLicenseWithKey } from "@caisson/license-verify";
 import { type TestPg, newTestPg } from "@caisson/testing";
@@ -111,6 +112,10 @@ const index: RegistryIndex = loadRegistryIndex({
 
 let tp: TestPg;
 let app: (req: Request) => Promise<Response>;
+let gatedApp: (req: Request) => Promise<Response>;
+
+const ORIGIN_CURRENT = Buffer.alloc(32, 0x61).toString("base64url");
+const ORIGIN_NEXT = Buffer.alloc(32, 0x62).toString("base64url");
 
 beforeAll(async () => {
   tp = await newTestPg();
@@ -139,6 +144,30 @@ beforeAll(async () => {
     revokeEmailNotify: async () => {},
     chargebackAlert: async () => {},
     rateLimiterAlert: async () => {},
+    originGate: loadOriginGateConfig({
+      NODE_ENV: "test",
+      ORIGIN_SECRET_MODE: "disabled",
+    }),
+  });
+  gatedApp = createApp({
+    token: TOKEN,
+    signer,
+    index,
+    db: tp.pg,
+    provider: null,
+    limiter: new TokenBucketLimiter(loadRateLimitConfig()),
+    discordNotify: null,
+    posthogCapture: null,
+    purchaseEmailNotify: async () => {},
+    renewalEmailNotify: async () => {},
+    revokeEmailNotify: async () => {},
+    chargebackAlert: async () => {},
+    rateLimiterAlert: async () => {},
+    originGate: loadOriginGateConfig({
+      NODE_ENV: "production",
+      ORIGIN_SECRET: ORIGIN_CURRENT,
+      ORIGIN_SECRET_NEXT: ORIGIN_NEXT,
+    }),
   });
 });
 afterAll(async () => {
@@ -183,6 +212,10 @@ describe("POST /issue (ADR-0110)", () => {
           renewalEmailNotify: async () => {},
           revokeEmailNotify: async () => {},
           chargebackAlert: async () => {},
+          originGate: loadOriginGateConfig({
+            NODE_ENV: "test",
+            ORIGIN_SECRET_MODE: "disabled",
+          }),
           rateLimiterAlert: async (alert) => {
             alerts.push(alert);
           },
@@ -488,6 +521,10 @@ describe("POST /issue admin-scoped credential (ADR-0220)", () => {
       revokeEmailNotify: async () => {},
       chargebackAlert: async () => {},
       rateLimiterAlert: async () => {},
+      originGate: loadOriginGateConfig({
+        NODE_ENV: "test",
+        ORIGIN_SECRET_MODE: "disabled",
+      }),
     });
   });
 
@@ -832,6 +869,31 @@ describe("issuer non-issue routes", () => {
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(res.headers.get("X-Frame-Options")).toBe("DENY");
     expect(res.headers.get("Strict-Transport-Security")).toContain("max-age=");
+  });
+
+  test("origin gate rejects direct /health requests and accepts both rotation secrets", async () => {
+    const missing = await gatedApp(new Request("http://license.test/health"));
+    const current = await gatedApp(
+      new Request("http://license.test/health", {
+        headers: { "x-gridwork-origin-secret": ORIGIN_CURRENT },
+      }),
+    );
+    const next = await gatedApp(
+      new Request("http://license.test/health", {
+        headers: { "x-gridwork-origin-secret": ORIGIN_NEXT },
+      }),
+    );
+
+    expect(missing.status).toBe(403);
+    expect(current.status).toBe(200);
+    expect(next.status).toBe(200);
+  });
+
+  test("origin gate independently rejects a direct /issue request", async () => {
+    const response = await gatedApp(
+      new Request("http://license.test/issue", { method: "POST" }),
+    );
+    expect(response.status).toBe(403);
   });
 
   test("unknown path → 404", async () => {

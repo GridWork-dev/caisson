@@ -20,7 +20,8 @@
 // session check denies. The complementary "session ... destroyed" half (re-checking the CURRENT
 // allowlist on every already-authenticated request, so narrowing the allowlist after the fact
 // still takes effect) lives in `admin-session.ts`'s `verifyAdminSession`.
-import { Pool } from "pg";
+import { createPgPool } from "@caisson/tenancy-rls";
+import type { Pool } from "pg";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import {
@@ -133,10 +134,7 @@ export function getAdminAuth(): AdminAuthInstance | null {
     cachedAuth = null;
     return cachedAuth;
   }
-  const pool = new Pool({ connectionString: url });
-  pool.on("error", (err) => {
-    process.stderr.write(`[apps/admin] idle pg client error: ${err.message}\n`);
-  });
+  const pool = createPgPool(url);
   cachedAuth = createAdminAuth({
     database: pool,
     secret,

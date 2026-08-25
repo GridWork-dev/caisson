@@ -150,10 +150,17 @@ export class DocsIndex {
   static async build(
     chunks: DocChunk[],
     embedder?: Embedder,
-    opts?: { embedPhaseDeadlineMs?: number; queryEmbedDeadlineMs?: number },
+    opts?: {
+      embedPhaseDeadlineMs?: number;
+      queryEmbedDeadlineMs?: number;
+      storePath?: string;
+    },
   ): Promise<DocsIndex> {
     const dim = embedder?.dim ?? FTS_FLOOR_DIM;
-    const store = LocalStore.open({ dim });
+    const store = LocalStore.open({
+      dim,
+      ...(opts?.storePath !== undefined ? { path: opts.storePath } : {}),
+    });
     const byId = new Map<string, DocChunk>();
     const deadlineAt =
       Date.now() +
@@ -190,18 +197,42 @@ export class DocsIndex {
         `[service-docs] embed-phase deadline hit — ${String(embedded)}/${String(chunks.length)} chunks got a real embedding, the rest are FTS-only\n`,
       );
     }
-    chunks.forEach((chunk, i) => {
-      const embedding = embeddings[i];
-      store.upsert({
-        id: chunk.id,
-        text: texts[i] ?? indexText(chunk),
-        ...(embedding !== undefined ? { embedding } : {}),
-      });
-      byId.set(chunk.id, chunk);
-    });
+    store.upsertMany(
+      chunks.map((chunk, i) => {
+        const embedding = embeddings[i];
+        byId.set(chunk.id, chunk);
+        return {
+          id: chunk.id,
+          text: texts[i] ?? indexText(chunk),
+          ...(embedding !== undefined ? { embedding } : {}),
+        };
+      }),
+    );
     return new DocsIndex(
       store,
       byId,
+      embedder,
+      opts?.queryEmbedDeadlineMs ?? DEFAULT_QUERY_EMBED_DEADLINE_MS,
+    );
+  }
+
+  /** Open a prebuilt local SQLite artifact without rebuilding or re-embedding the corpus. */
+  static load(
+    chunks: DocChunk[],
+    storePath: string,
+    dim: number,
+    embedder?: Embedder,
+    opts?: { queryEmbedDeadlineMs?: number },
+  ): DocsIndex {
+    if (embedder !== undefined && embedder.dim !== dim) {
+      throw new ValidationError("artifact/query embedder dimension mismatch", {
+        artifact: dim,
+        embedder: embedder.dim,
+      });
+    }
+    return new DocsIndex(
+      LocalStore.open({ dim, path: storePath }),
+      new Map(chunks.map((chunk) => [chunk.id, chunk])),
       embedder,
       opts?.queryEmbedDeadlineMs ?? DEFAULT_QUERY_EMBED_DEADLINE_MS,
     );
@@ -240,9 +271,9 @@ export class DocsIndex {
     const perSourceCap = tuning?.perSourceCap ?? DEFAULT_PER_SOURCE_CAP;
     // Fail CLOSED like hybridSearch's ftsWeight guard: `used >= NaN` is always false, so an
     // unguarded NaN cap would silently disable per-source dedup instead of erroring.
-    if (!Number.isFinite(perSourceCap) || perSourceCap < 1) {
+    if (!Number.isSafeInteger(perSourceCap) || perSourceCap < 1) {
       throw new ValidationError(
-        `perSourceCap must be a finite number >= 1, got ${String(perSourceCap)}`,
+        `perSourceCap must be a positive safe integer, got ${String(perSourceCap)}`,
       );
     }
     // Over-fetch so the per-source cap has surplus candidates to promote into freed window slots.

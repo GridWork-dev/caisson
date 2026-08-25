@@ -11,9 +11,9 @@
 // ONLY a session-mode pooler or a direct connection (both default to port 5432) and fails closed
 // at CONSTRUCTION — never at the first silently-unscoped query — when the connection string is
 // shaped like the transaction-mode pooler.
-import { Pool } from "pg";
 import { ConfigError } from "@caisson/kernel";
 import { createPgTransactor } from "./node-pg.ts";
+import { createPgPool } from "./pool.ts";
 import type { Transactor } from "./rls.ts";
 
 /** Supavisor's transaction-mode pooler defaults to this port; `SET LOCAL` cannot survive it. */
@@ -67,15 +67,6 @@ export function createSupabaseTransactor(
   if (config.driver !== undefined) {
     return config.driver;
   }
-  const pool = new Pool({ connectionString: config.connectionString });
-  // An idle pooled connection dying emits `error` on the Pool itself; with no listener node-postgres
-  // rethrows it as an uncaught exception and kills the host process (this exact failure took down
-  // caisson-admin). Log-and-survive: `pg` has already discarded the dead client, so the next
-  // checkout dials a fresh connection — nothing to clean up here.
-  pool.on("error", (err) => {
-    process.stderr.write(
-      `[tenancy-rls] idle pooled connection error (survived): ${err.message}\n`,
-    );
-  });
+  const pool = createPgPool(config.connectionString);
   return createPgTransactor(pool);
 }

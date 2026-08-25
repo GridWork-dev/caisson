@@ -1,7 +1,7 @@
 // scripts/provision-admin-mutation-surface.ts — the CAISSON-17 DEPLOY provisioning (ADR-0220 +
 // ADR-0141), operator-run against the live Railway Postgres:
 //
-//   DATABASE_URL=<public PG url> bun apps/admin/scripts/provision-admin-mutation-surface.ts [admin-db-user]
+//   DATABASE_DIRECT_URL=<direct PG url> bun apps/admin/scripts/provision-admin-mutation-surface.ts [admin-db-user]
 //
 // Idempotent and re-runnable. Applies, in the PGlite-bootstrap order (apps/admin/src/lib/admin-db.ts
 // is the parity reference; the base tenant tables themselves are deploy-migrate's job and are NOT
@@ -19,7 +19,7 @@ import {
   ENTITLEMENT_ADMIN_COMP_MIGRATION_SQL,
 } from "@caisson/service-license";
 import { ADMIN_WRITE_ROLE_BOOTSTRAP_SQL } from "@caisson/org-controls";
-import { Pool } from "pg";
+import { createPgPool } from "@caisson/tenancy-rls";
 import {
   ADMIN_ROLE_BOOTSTRAP_SQL,
   buildAdminReadPolicySql,
@@ -96,10 +96,10 @@ async function main(): Promise<void> {
       `invalid grantee "${grantee}" — must be a bare Postgres identifier matching ${PG_IDENTIFIER_RE.toString()}; refusing to interpolate into GRANT SQL`,
     );
   }
-  const url = process.env.DATABASE_URL ?? "";
+  const url = process.env.DATABASE_DIRECT_URL ?? "";
   if (url.length === 0) {
     throw new Error(
-      "DATABASE_URL is required (the admin provisioning needs the live Postgres) — refusing to run.",
+      "DATABASE_DIRECT_URL is required (admin provisioning needs a direct Postgres connection) — refusing to run.",
     );
   }
   if (grantee === "CURRENT_USER") {
@@ -108,7 +108,7 @@ async function main(): Promise<void> {
         "[provision-admin] the superuser, the service role gets nothing; pass it explicitly (e.g. admin_app).\n",
     );
   }
-  const pool = new Pool({ connectionString: url });
+  const pool = createPgPool(url, { purpose: "migration" });
   const steps: Array<[string, string]> = [
     ["admin role bootstrap", ADMIN_ROLE_BOOTSTRAP_SQL],
     ["admin_write role bootstrap", ADMIN_WRITE_ROLE_BOOTSTRAP_SQL],

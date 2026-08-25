@@ -19,8 +19,9 @@
 // computing 44px), and the hit-area overhang pass (adjacent 44px overlays in the nav-utils
 // cluster and the media-carousel arrows must not swallow each other's centers at mobile widths).
 //
-// Unlike `live/` this targets a LOCAL `next start` over the committed build — no env, no CF
-// Access, no network beyond localhost — so it runs deterministically on any PR. How to run:
+// Unlike `live/` this targets a LOCAL `next start` over the committed build — one generated
+// test-only origin credential, no CF Access, and no network beyond localhost — so it runs
+// deterministically on any PR. How to run:
 // `bunx turbo run test:e2e --filter=@caisson/site` (builds first via the task's dependsOn), or
 // `bun run build && bun run test:e2e` from apps/site.
 //
@@ -29,6 +30,7 @@
 // the "Close Search" accessible name on the dialog's close control. A fumadocs bump that renames
 // either breaks that test with a locator timeout, not a product regression; re-anchor there.
 import { fetchWithTimeout } from "@caisson/kernel";
+import { ORIGIN_SECRET_HEADER } from "@caisson/kernel/node";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -45,6 +47,7 @@ const PORT = 3947; // not 3030 — never collide with an operator dev server
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const NAV_TIMEOUT = 30_000;
 const TEST_TIMEOUT = 60_000;
+const TEST_ORIGIN_SECRET = Buffer.alloc(32, 0x2a).toString("base64url");
 
 const DESKTOP = { width: 1280, height: 900 } as const;
 const MOBILE = { width: 375, height: 800 } as const; // the audit's mobile breakpoint
@@ -57,7 +60,10 @@ async function newPage(viewport: {
   height: number;
 }): Promise<{ ctx: BrowserContext; page: Page }> {
   if (browser === null) throw new Error("browser not initialized");
-  const ctx = await browser.newContext({ viewport });
+  const ctx = await browser.newContext({
+    viewport,
+    extraHTTPHeaders: { [ORIGIN_SECRET_HEADER]: TEST_ORIGIN_SECRET },
+  });
   const page = await ctx.newPage();
   return { ctx, page };
 }
@@ -123,9 +129,14 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
     // spawn the next bin directly under bun (no bunx wrapper) so afterAll's kill() reaches the
     // real server process instead of orphaning it on port 3947 after a local re-run.
     const nextBin = Bun.resolveSync("next/dist/bin/next", SITE_DIR);
+    const serverEnvironment = { ...process.env };
+    Reflect.deleteProperty(serverEnvironment, "ORIGIN_SECRET_NEXT");
+    Reflect.set(serverEnvironment, "ORIGIN_SECRET_MODE", "enabled");
+    Reflect.set(serverEnvironment, "ORIGIN_SECRET", TEST_ORIGIN_SECRET);
     server = Bun.spawn({
       cmd: ["bun", nextBin, "start", "-p", String(PORT)],
       cwd: SITE_DIR,
+      env: serverEnvironment,
       stdout: "ignore",
       stderr: "ignore",
     });
@@ -135,7 +146,7 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
       try {
         const res = await fetchWithTimeout(
           `${BASE_URL}/`,
-          {},
+          { headers: { [ORIGIN_SECRET_HEADER]: TEST_ORIGIN_SECRET } },
           { timeoutMs: 2_000 },
         );
         if (res.ok) break;

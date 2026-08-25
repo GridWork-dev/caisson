@@ -1,6 +1,7 @@
-# services/docs — cloud-runner image (ADR-0096, P6). Bun service: builds a chunked corpus + a
-# bun:sqlite (FTS5 + sqlite-vec) index ONCE at boot from the repo's authoritative docs, then serves
-# retrieval. Inbound: GET /health · /llms.txt · /llms-full.txt (public) + POST /query (Bearer
+# services/docs — cloud-runner image (ADR-0096, P6). The image build produces a versioned,
+# checksummed bun:sqlite FTS5 artifact from the authoritative docs, then upgrades it to an ephemeral
+# sqlite-vec index when a runtime embedder is armed. Inbound: GET /health · /llms.txt · /llms-full.txt
+# (public) + POST /query (Bearer
 # DOCS_SERVICE_TOKEN, fail-closed). Target: Railway (ADR-0105), operator-gated at DEPLOY.
 #
 # BUILD CONTEXT = the REPO ROOT, not services/docs: buildCorpus() reads apps/site/content/docs/**.mdx
@@ -19,23 +20,17 @@ ENV NODE_ENV=production \
 # prebuild step) — services/docs `start` runs TS directly.
 COPY . .
 RUN bun install --frozen-lockfile
+RUN bun services/docs/src/build-artifact.ts
 
-# Non-root runtime via the entrypoint: the process runs as `bun` (uid/gid 1000, the oven/bun
-# base image's baked-in non-root user), but the entrypoint starts as root exactly long enough
-# to chown the Railway volume mount (attached ROOT-owned) so the embed cache
-# (src/embed-cache.ts) can persist there, then drops privileges with setpriv. The index itself
-# stays :memory: (LocalStore.open({ dim }) — no path); the volume holds only the embed cache.
-RUN chmod +x services/docs/entrypoint.sh
-ENTRYPOINT ["/app/services/docs/entrypoint.sh"]
+# The artifact is image-local and immutable; runtime needs no writable volume or root handoff.
+USER bun
 
 # DOCS_SERVICE_TOKEN is injected by the platform secret store at run time (server.ts refuses to start
-# without it). The real OpenRouter embedder (qwen3-embedding-8b) is a CODE-TRACK wire at
-# services/docs/src/server.ts (DocsIndex.build 2nd arg); until it lands this serves the FTS5 floor.
+# without it). OPENROUTER_API_KEY is optional at runtime: when present, the verified artifact's chunk
+# set is rebuilt at the live embedder's dimension; the image build stays deterministic and secret-free.
 EXPOSE 8788
-# The healthcheck exec spawns as the image's default user (root now that the entrypoint owns the
-# privilege drop) — drop it to bun the same way, so no periodic root-context process exists.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=25s \
-  CMD setpriv --reuid=bun --regid=bun --init-groups bun -e "fetch('http://127.0.0.1:'+(process.env.PORT||8788)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+  CMD bun -e "fetch('http://127.0.0.1:'+(process.env.PORT||8788)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 # cwd = /app → findRepoRoot resolves /app immediately (root package.json has `workspaces`).
 CMD ["bun", "services/docs/src/server.ts"]

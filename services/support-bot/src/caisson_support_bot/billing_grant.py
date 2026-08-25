@@ -40,6 +40,7 @@ from .bot import linear_issue_tracker
 from .config import Settings
 from .contracts import Brief
 from .escalation import Escalator, IssueTracker, TicketStore
+from .lifecycle import PrivilegedWorkClosed, PrivilegedWorkGate
 from .member_mgmt import (
     PRIORITY_SUPPORT_ENTITLEMENT_ID,
     edition_role_id,
@@ -133,6 +134,7 @@ class _Deps:
     escalate_token: str
     store: TicketStore | None
     issue_tracker: IssueTracker | None
+    work_gate: PrivilegedWorkGate
 
 
 _DEPS: web.AppKey[_Deps] = web.AppKey("caisson_billing_grant_deps")
@@ -182,19 +184,22 @@ async def _handle_site_escalate(request: web.Request) -> web.Response:
     if not bearer_ok(request.headers.get("Authorization"), deps.escalate_token):
         return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
     try:
-        payload = SiteEscalateRequest.model_validate_json(await request.read())
-    except ValidationError:
-        return web.json_response({"ok": False, "error": "invalid body"}, status=400)
+        async with deps.work_gate.track():
+            try:
+                payload = SiteEscalateRequest.model_validate_json(await request.read())
+            except ValidationError:
+                return web.json_response({"ok": False, "error": "invalid body"}, status=400)
 
-    # Reuses the SAME Escalator + Linear Triage sink the Discord bot's own unresolved questions file
-    # through (ADR-0206) — no second Linear client, no second ticket table. No thread_opener: a site
-    # visitor has no Discord channel context, so the escalation is ticket/Triage-only.
-    brief = Brief(
-        question=payload.question,
-        summary=f"Escalated from the site Ask-AI widget (reason: {payload.reason}).",
-    )
-    await Escalator(store=deps.store, issue_tracker=deps.issue_tracker).escalate(brief)
-    return web.json_response({"ok": True})
+            # Reuses the SAME Escalator + Linear Triage sink the Discord bot's own unresolved
+            # questions file through (ADR-0206) — no second Linear client, no second ticket table.
+            brief = Brief(
+                question=payload.question,
+                summary=f"Escalated from the site Ask-AI widget (reason: {payload.reason}).",
+            )
+            await Escalator(store=deps.store, issue_tracker=deps.issue_tracker).escalate(brief)
+            return web.json_response({"ok": True})
+    except PrivilegedWorkClosed:
+        return web.json_response({"ok": False, "error": "shutting down"}, status=503)
 
 
 async def _handle_billing_grant(request: web.Request) -> web.Response:
@@ -202,6 +207,15 @@ async def _handle_billing_grant(request: web.Request) -> web.Response:
     # Auth FIRST — before any body read, mirroring the license service's verify-before-parse posture.
     if not bearer_ok(request.headers.get("Authorization"), deps.token):
         return web.json_response({"ok": False, "error": "unauthorized"}, status=401)
+    try:
+        async with deps.work_gate.track():
+            return await _apply_billing_grant(request, deps)
+    except PrivilegedWorkClosed:
+        return web.json_response({"ok": False, "error": "shutting down"}, status=503)
+
+
+async def _apply_billing_grant(request: web.Request, deps: _Deps) -> web.Response:
+    """Validate and apply one retry-safe grant while the shutdown gate tracks this task."""
     if not deps.bot.is_ready():
         # The gateway is not up yet — the caller's fetch fails visibly and its push is fire-and-forget;
         # the site backfill can simply be retried by re-visiting the page.
@@ -222,26 +236,31 @@ async def _handle_billing_grant(request: web.Request) -> web.Response:
     if member is None:
         return web.json_response({"ok": False, "error": "member not found"}, status=404)
 
-    # Editions with a configured role, plus the Customer umbrella (any successful purchase). Roles the
-    # bot cannot manage (at/above its top role) are skipped rather than failing the whole grant.
+    # Idempotency is explicit rather than merely relying on Discord add_roles' set-like semantics:
+    # a retry filters every role the member already holds and becomes a no-op.
+    existing_role_ids = {role.id for role in member.roles}
     roles: list[discord.Role] = []
+
+    def add_if_grantable(role: discord.Role | None) -> None:
+        if (
+            role is not None
+            and role.id not in existing_role_ids
+            and all(candidate.id != role.id for candidate in roles)
+            and not role_outranks_bot(role, guild.me.top_role)
+        ):
+            roles.append(role)
+
     for edition in editions_for_entitlements(list(payload.entitlements)):
         role_id = edition_role_id(deps.settings, edition)
-        role = guild.get_role(role_id) if role_id is not None else None
-        if role is not None and not role_outranks_bot(role, guild.me.top_role):
-            roles.append(role)
+        add_if_grantable(guild.get_role(role_id) if role_id is not None else None)
     # Priority-support (ADR-0278/0288): a standalone id, deliberately outside `editions_for_
     # entitlements` (a plain bundle purchase must never grant it). Fail-closed like every other
     # role here — an unset role id or an unmanageable role is a benign no-op, never an error.
     if PRIORITY_SUPPORT_ENTITLEMENT_ID in payload.entitlements:
         role_id = priority_support_role_id(deps.settings)
-        role = guild.get_role(role_id) if role_id is not None else None
-        if role is not None and not role_outranks_bot(role, guild.me.top_role):
-            roles.append(role)
+        add_if_grantable(guild.get_role(role_id) if role_id is not None else None)
     if deps.settings.customer_role_id is not None:
-        customer = guild.get_role(deps.settings.customer_role_id)
-        if customer is not None and not role_outranks_bot(customer, guild.me.top_role):
-            roles.append(customer)
+        add_if_grantable(guild.get_role(deps.settings.customer_role_id))
     if not roles:
         # Nothing configured/manageable for these entitlements — a benign no-op, not an error.
         return web.json_response({"ok": True, "granted": []})
@@ -250,8 +269,7 @@ async def _handle_billing_grant(request: web.Request) -> web.Response:
         reason = f"billing-grant: {', '.join(payload.entitlements[:8])}"[:400]
         await member.add_roles(*roles, reason=reason)
     except discord.HTTPException:
-        # Forbidden (hierarchy/permission misconfig) or a transient API failure — surface non-2xx so
-        # the caller's fire-and-forget log line shows it; never crash the bot.
+        # A caller retry is safe: already-applied roles are filtered on its next attempt.
         return web.json_response({"ok": False, "error": "role grant failed"}, status=502)
     return web.json_response({"ok": True, "granted": [r.name for r in roles]})
 
@@ -262,6 +280,7 @@ def build_app(
     settings: Settings,
     store: TicketStore | None = None,
     http_client: httpx.AsyncClient | None = None,
+    work_gate: PrivilegedWorkGate | None = None,
 ) -> web.Application:
     """The inbound app: /health always; /billing-grant and /escalate each only when their own token
     is configured. ``store``/``http_client`` back /escalate's ticket persistence + Linear sink
@@ -277,6 +296,7 @@ def build_app(
         escalate_token=settings.site_escalate_token or "",
         store=store,
         issue_tracker=linear_issue_tracker(settings, http_client),
+        work_gate=work_gate or PrivilegedWorkGate(),
     )
     app.router.add_get("/health", _handle_health)
     if settings.billing_grant_token:
@@ -293,11 +313,18 @@ async def serve_http(
     port: int,
     store: TicketStore | None = None,
     http_client: httpx.AsyncClient | None = None,
+    work_gate: PrivilegedWorkGate | None = None,
     host: str = "0.0.0.0",  # noqa: S104 - container inbound bind; the intended surface (was health.py's).
 ) -> web.AppRunner:
     """Start the inbound HTTP server; the caller owns ``await runner.cleanup()`` on shutdown."""
     runner = web.AppRunner(
-        build_app(bot=bot, settings=settings, store=store, http_client=http_client)
+        build_app(
+            bot=bot,
+            settings=settings,
+            store=store,
+            http_client=http_client,
+            work_gate=work_gate,
+        )
     )
     await runner.setup()
     site = web.TCPSite(runner, host, port)

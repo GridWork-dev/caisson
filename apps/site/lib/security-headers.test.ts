@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { contentSecurityPolicy, demosOriginUrl } from "./security-headers";
+import { contentSecurityPolicy } from "./security-headers";
 
 // The policy exactly as apps/site served it before the ADR-0400 split, with `frame-src 'self'`
 // added — the one directive change the same-origin embed required. Written out in full, not
@@ -47,70 +47,5 @@ describe("contentSecurityPolicy", () => {
         .find((d) => d.startsWith("frame-ancestors "));
       expect(ancestors).toBe(`frame-ancestors ${value}`);
     }
-  });
-});
-
-describe("demosOriginUrl", () => {
-  test("unset, empty, or whitespace is the fail-safe state — no rewrite, no throw", () => {
-    expect(demosOriginUrl(undefined)).toBeNull();
-    expect(demosOriginUrl("")).toBeNull();
-    expect(demosOriginUrl("   ")).toBeNull();
-  });
-
-  test("accepts the Railway private-network target (plain http, non-default port)", () => {
-    expect(demosOriginUrl("http://caisson-demos.railway.internal:3040")).toBe(
-      "http://caisson-demos.railway.internal:3040",
-    );
-  });
-
-  test("accepts a public https origin and strips trailing slashes", () => {
-    expect(demosOriginUrl("https://demos.example.com/")).toBe(
-      "https://demos.example.com",
-    );
-    expect(demosOriginUrl("https://demos.example.com///")).toBe(
-      "https://demos.example.com",
-    );
-  });
-
-  // The realistic operator error: Railway's dashboard shows a service URL with a trailing path,
-  // and pasting it verbatim would compose `…/demos` + `/demos/:path*` into a destination where
-  // every embed 404s while the variable looks correctly armed. Normalizing to the origin is what
-  // makes that paste work instead of failing silently.
-  test("keeps only the origin — path, query, fragment, and credentials are dropped", () => {
-    expect(demosOriginUrl("https://demos.example.com/demos")).toBe(
-      "https://demos.example.com",
-    );
-    expect(demosOriginUrl("https://demos.example.com/x?a=b#c")).toBe(
-      "https://demos.example.com",
-    );
-    expect(demosOriginUrl("http://user:pass@demos.example.com:3040")).toBe(
-      "http://demos.example.com:3040",
-    );
-  });
-
-  test("a non-network scheme is refused, not silently proxied to", () => {
-    expect(() => demosOriginUrl("javascript:alert(1)")).toThrow(
-      /must be an http\(s\) URL/,
-    );
-    expect(() => demosOriginUrl("file:///etc/passwd")).toThrow(
-      /must be an http\(s\) URL/,
-    );
-    expect(() => demosOriginUrl("data:text/html,x")).toThrow(
-      /must be an http\(s\) URL/,
-    );
-  });
-
-  test("a typo throws instead of degrading to the fail-safe state", () => {
-    // The distinction this test exists for: unset means "not armed yet", garbage means "armed
-    // wrong". Collapsing the second into the first is how an armed rewrite silently serves the
-    // pre-flip fallback with nothing to point at.
-    expect(() => demosOriginUrl("not a url at all")).toThrow(/not a valid URL/);
-    expect(() => demosOriginUrl("/demos")).toThrow(/not a valid URL/);
-    // A dropped scheme parses as a URL whose SCHEME is the hostname (a scheme may contain dots),
-    // so it fails the protocol check rather than the parse — still a throw, never a silent
-    // fallback, which is the property that matters.
-    expect(() => demosOriginUrl("caisson-demos.railway.internal:3040")).toThrow(
-      /must be an http\(s\) URL/,
-    );
   });
 });

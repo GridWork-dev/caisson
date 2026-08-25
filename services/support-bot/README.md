@@ -52,6 +52,8 @@ export SUPPORT_HUMAN_ROLE_ID=...    # role to tag on escalation
 export DATABASE_URL=postgres://...  # support_ticket persistence (omit ⇒ thread-only escalation)
 export OPENROUTER_MODEL=anthropic/claude-sonnet-4.6   # default; any OpenRouter slug (ADR-0105/0234)
 export BILLING_GRANT_TOKEN=...      # Bearer for POST /billing-grant (entitlement→role push); route not served when unset
+export HEARTBEAT_ENABLED=false      # T41 enables the Google custom dead-man metric on GCE
+export GOOGLE_CLOUD_PROJECT=...     # required only when HEARTBEAT_ENABLED=true; ADC supplies auth
 export GUILD_ID=...                 # pins billing grants to the Caisson guild (sole-guild fallback when unset)
 export LINEAR_API_KEY=...           # Linear personal API key; all 3 LINEAR_* must be set together or the sink stays off
 export LINEAR_TEAM_ID=...           # the CAISSON team issueCreate files the Triage issue under
@@ -78,3 +80,21 @@ inbound is one aiohttp app on `health_port` — `GET /health` (always, the runne
 `POST /billing-grant` (ADR-0203 — token-gated entitlement→Discord-role push, called by `services/license`
 and `apps/site`; not served when `BILLING_GRANT_TOKEN` is unset). Set the env above as the platform's
 secrets.
+
+### Disposable GCE worker contract
+
+`gce-deploy.toml` is the values-free handoff to T41. It maps every startup-required bot value
+(`DISCORD_TOKEN`, `OPENROUTER_API_KEY`, `DOCS_SERVICE_URL`, and `DOCS_SERVICE_TOKEN`) plus the
+optional `DATABASE_URL` and `BILLING_GRANT_TOKEN`; cloudflared separately maps `TUNNEL_TOKEN`.
+Each mapping names a dedicated Secret Manager container. Secret values stay operator-seeded out of
+band.
+
+The process handles `SIGTERM` directly: it closes the authenticated mutation gate first, drains
+in-flight callbacks within `SHUTDOWN_GRACE_S`, asks Discord to close, then bounds HTTP and asyncpg
+cleanup. Gateway reconnect/resume uses discord.py's native exponential full-jitter loop.
+Billing grants are retry-safe because roles already held by the member are filtered before
+`add_roles`.
+
+When `HEARTBEAT_ENABLED=true`, the bot writes
+`custom.googleapis.com/caisson/support_bot/heartbeat` only while the Discord Gateway is ready. The
+loop has no database dependency and keeps no local state; T41 owns the missing-data alert policy.

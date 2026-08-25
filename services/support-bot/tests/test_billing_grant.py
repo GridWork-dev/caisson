@@ -14,6 +14,7 @@ from discord.ext import commands
 from caisson_support_bot.billing_grant import bearer_ok, build_app
 from caisson_support_bot.config import Settings
 from caisson_support_bot.escalation import InMemoryTicketStore
+from caisson_support_bot.lifecycle import PrivilegedWorkGate
 from caisson_support_bot.member_mgmt import editions_for_entitlements
 
 TOKEN = "grant-token-value"
@@ -73,7 +74,7 @@ def _guild_with_member(
         555: _role(555, "Customer"),
         666: _role(666, "Priority Support"),
     }
-    member = SimpleNamespace(add_roles=AsyncMock(), guild=None)
+    member = SimpleNamespace(add_roles=AsyncMock(), guild=None, roles=[])
     guild = SimpleNamespace(
         id=guild_id,
         get_role=lambda rid: roles.get(rid),
@@ -97,6 +98,14 @@ def _bot(guild: SimpleNamespace | list[SimpleNamespace] | None, ready: bool = Tr
 
 async def _client(bot: commands.Bot, settings: Settings) -> TestClient:
     client = TestClient(TestServer(build_app(bot=bot, settings=settings)))
+    await client.start_server()
+    return client
+
+
+async def _gated_client(
+    bot: commands.Bot, settings: Settings, work_gate: PrivilegedWorkGate
+) -> TestClient:
+    client = TestClient(TestServer(build_app(bot=bot, settings=settings, work_gate=work_gate)))
     await client.start_server()
     return client
 
@@ -214,6 +223,42 @@ async def test_happy_path_grants_edition_roles_plus_customer() -> None:
         member.add_roles.assert_awaited_once()
         granted_ids = [r.id for r in member.add_roles.await_args.args]
         assert granted_ids == [111, 222, 333, 444, 555]
+    finally:
+        await client.close()
+
+
+async def test_replayed_grant_skips_roles_the_member_already_has() -> None:
+    """A retry converges without a second Discord mutation, independent of caller delivery."""
+    guild, member = _guild_with_member()
+    member.roles = [guild.get_role(111), guild.get_role(555)]
+    client = await _client(_bot(guild), _settings())
+    try:
+        res = await client.post(
+            "/billing-grant",
+            json={"discord_user_id": "42", "entitlements": ["compliance"]},
+            headers={"Authorization": f"Bearer {TOKEN}"},
+        )
+        assert res.status == 200
+        assert (await res.json())["granted"] == []
+        member.add_roles.assert_not_awaited()
+    finally:
+        await client.close()
+
+
+async def test_shutdown_gate_rejects_new_grants_before_discord_mutation() -> None:
+    guild, member = _guild_with_member()
+    gate = PrivilegedWorkGate()
+    gate.stop_accepting()
+    client = await _gated_client(_bot(guild), _settings(), gate)
+    try:
+        res = await client.post(
+            "/billing-grant",
+            json={"discord_user_id": "42", "entitlements": ["compliance"]},
+            headers={"Authorization": f"Bearer {TOKEN}"},
+        )
+        assert res.status == 503
+        assert (await res.json())["error"] == "shutting down"
+        member.add_roles.assert_not_awaited()
     finally:
         await client.close()
 

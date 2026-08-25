@@ -24,6 +24,11 @@ import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import type { BillingProvider } from "@caisson/billing";
 import { AuthnError, ConflictError } from "@caisson/kernel";
+import {
+  loadOriginGateConfig,
+  originRequestAuthorized,
+  type OriginGateConfig,
+} from "@caisson/kernel/node";
 import { issueLicense, type Signer } from "@caisson/license-issue";
 import {
   decodeToken,
@@ -104,6 +109,8 @@ export interface IssueAppDeps {
    * primary auth — this only caps an abusive flood. server.ts injects it.
    */
   limiter: RateLimiter;
+  /** Cloudflare Worker origin gate. Omitted only when the runtime loader supplies the config. */
+  originGate?: OriginGateConfig;
   /**
    * Detached operational alert for limiter infrastructure failures. The payload is intentionally
    * redacted to route bucket + applied failure policy; it never receives request or error data.
@@ -562,6 +569,7 @@ async function mintLicensePostCommit(
 export function createApp(
   deps: IssueAppDeps,
 ): (req: Request) => Promise<Response> {
+  const originGate = deps.originGate ?? loadOriginGateConfig(process.env);
   /** Per-IP rate gate. A real bucket denial is always 429. Infrastructure failure follows the
    * caller's explicit route policy and emits a detached, redacted operational alert. */
   const rateLimited = (
@@ -611,6 +619,9 @@ export function createApp(
   };
 
   return withRequestSpan(async (req: Request): Promise<Response> => {
+    if (!originRequestAuthorized(req, originGate)) {
+      return json({ error: "forbidden" }, 403);
+    }
     const url = new URL(req.url);
     const { pathname } = url;
     const method = req.method.toUpperCase();

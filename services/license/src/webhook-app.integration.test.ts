@@ -30,13 +30,14 @@ import {
   balance,
 } from "@caisson/credits";
 import { Ed25519Signer, type Signer } from "@caisson/license-issue";
+import { loadOriginGateConfig } from "@caisson/kernel/node";
 import {
   type RegistryIndex,
   loadRegistryIndex,
 } from "@caisson/registry-schema";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
-import { createApp, type IssueAppDeps } from "./app.ts";
+import { createApp as createIssueApp, type IssueAppDeps } from "./app.ts";
 import type { RateLimiterInfraAlert } from "./alerting.ts";
 import type { ChargebackAlert } from "./chargeback-notify.ts";
 import type {
@@ -44,6 +45,7 @@ import type {
   RenewalEmailNotice,
   RevokeEmailNotice,
 } from "./email-notify.ts";
+
 import {
   ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL,
   ENTITLEMENT_GRANT_LINE_ITEM_MIGRATION_SQL,
@@ -71,6 +73,15 @@ import {
   ORDER_RECORD_DISCOUNT_MIGRATION_SQL,
   SUBSCRIPTION_STATUS_SCHEMA_SQL,
 } from "./subscription-history-store.ts";
+
+const TEST_ORIGIN_GATE = loadOriginGateConfig({
+  NODE_ENV: "test",
+  ORIGIN_SECRET_MODE: "disabled",
+});
+const createApp = (
+  deps: Parameters<typeof createIssueApp>[0],
+): ReturnType<typeof createIssueApp> =>
+  createIssueApp({ ...deps, originGate: TEST_ORIGIN_GATE });
 
 const SECRET = "pdl_ntfset_webhook_route_secret";
 
