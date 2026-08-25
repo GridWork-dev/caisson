@@ -39,7 +39,7 @@ import type {
  * `user_email`, and a fullwidth `ｅmail` (audit finding 19d1af0e70d0c2d7). Export kept for back-compat.
  */
 export const SENSITIVE_ATTRIBUTE_KEY =
-  /(?:secret|token|password|passwd|api[_-]?key|apikey|authoriz|bearer|credential|cookie|session|private[_-]?key|access[_-]?key|signing[_-]?key|encryption[_-]?key|(?<![a-z])ssns?|ssns?(?![a-z])|social[_-]?security|email|date[_-]?of[_-]?birth|birth[_-]?date|(?<![a-z])dobs?(?![a-z])|(?<![a-z])mrns?(?![a-z])|phone|first[_-]?name(?![a-z])|last[_-]?name(?![a-z])|full[_-]?name(?![a-z])|(?<![a-z])patient)/i;
+  /(?:secret|token|password|passwd|api[_-]?key|apikey|authoriz|bearer|credential|cookie|session|private[_-]?key|access[_-]?key|signing[_-]?key|encryption[_-]?key|(?<![a-z])ssns?|ssns?(?![a-z])|social[_-]?security|e[_.-]?mail|date[_-]?of[_-]?birth|birth[_-]?date|(?<![a-z])dobs?(?![a-z])|(?<![a-z])mrns?(?![a-z])|medical[_-]?record|phone|first[_-]?name(?![a-z])|last[_-]?name(?![a-z])|full[_-]?name(?![a-z])|(?<![a-z])patient)/i;
 
 /**
  * Split camelCase/PascalCase runs and `_`/`-` separators into space-delimited words, so the
@@ -68,8 +68,11 @@ function splitKeyWords(key: string): string {
  * the split arm adds the lookaround-guarded PII terms. Over-redaction is the fail-safe direction
  * here, per this module's stated philosophy.
  *
- * Known residual (accepted, no clean regex answer): a short token fused lowercase in the MIDDLE of a
- * key — `userdob`, `recdob`, `e_mail`. Enumerated in `outputs/audit/2026-08-25-false-close-19d1af0e.md`.
+ * Known residual (accepted, no clean regex answer): a 3-letter token fused lowercase in the MIDDLE
+ * of a key (`userdob`, `recdob`), and homoglyph / invisible-character spellings (Cyrillic `е`,
+ * soft hyphen, ZWJ) that NFKC does not fold — an attacker names attributes only on their own
+ * requests, so that bypass exfiltrates their own data. Enumerated in
+ * `outputs/audit/2026-08-25-false-close-19d1af0e.md`.
  */
 export function isSensitiveAttributeKey(key: string): boolean {
   const normalized = key.normalize("NFKC");

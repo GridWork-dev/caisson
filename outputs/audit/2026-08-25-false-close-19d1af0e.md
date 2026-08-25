@@ -94,16 +94,34 @@ mutation check below), and an attribute NAME is attacker-controlled from any ins
 | Probe set                                                                                | Round 1 | Round 2   |
 | ---------------------------------------------------------------------------------------- | ------- | --------- |
 | Core camelCase/snake_case/dot PII keys (20)                                              | 20/20   | **20/20** |
-| Auditor's hardening residual — plural/digit/fused/caps/fullwidth (36)                    | 1/36    | **32/36** |
+| Auditor's hardening residual — plural/digit/fused/caps/fullwidth (36)                    | 1/36    | **34/36** |
 | Secret/credential controls incl. fullwidth `ａpiKey` (17)                                | 16/17   | **17/17** |
 | OTel semconv attribute names that must SURVIVE (24)                                      | 24/24   | **24/24** |
 | Benign keys that must survive incl. `className`/`outpatientVisits`/`lastNameserver` (22) | 19/22   | **22/22** |
 
-**Accepted residual (4/36):** `userdob`, `recdob`, `e_mail`, `E_MAIL` — a 3-letter token fused
-lowercase in the MIDDLE of a key, or `email` with a separator inside the word. No regex catches
-these without also catching `adobe`; a value-level scrub is the tool for them.
-**Accepted over-redaction (3):** `phoneticKey`, `iPhoneVersion`, `telephoneBooth` — non-semconv,
-fail-safe direction.
+**Accepted residual (2/36):** `userdob`, `recdob` — a 3-letter token fused lowercase in the MIDDLE
+of a key. No regex catches these without also catching `adobe`; a value-level scrub is the tool.
+(`e_mail`/`E_MAIL` were residual until the re-verification round; `e[_.-]?mail` now covers the
+separator-inside-the-word spellings `e-mail`/`e.mail`/`e_mail`, and `medical[_-]?record` covers the
+spelled-out MRN.) **Also accepted:** homoglyph and invisible-character spellings that NFKC does not
+fold — Cyrillic `еmail`, `em\u00ADail` (soft hyphen), ZWJ/ZWSP, a combining acute — all pass
+through. Threat model: an attacker names attributes only on their OWN requests, so this bypass
+exfiltrates their own data to the operator's sink; first-party developer naming does not use
+homoglyphs. Enumerated, not fixed.
+**Accepted over-redaction:** `phoneticKey`, `iPhoneVersion`, `telephoneBooth`, `microphoneEnabled`
+(unanchored `phone`); `assn`, `ssnr`, `ssnapshot` (the one-side `ssn` anchor at a word edge) — all
+non-semconv, fail-safe direction.
+
+**Independent re-verification (opus, own probe set, after round 2):** F1–F6 all CLOSED; 66/67 on
+its 67-key redact set (the miss was the spelled-out MRN, since added), 38/39 benign survive
+(`microphoneEnabled`), linear timing across 12 adversarial shapes to 256k chars against a
+superlinear greedy control, kernel golden byte-identical to main. It also swept all **889** real
+`@opentelemetry/semantic-conventions` names against main and this branch: `newly redacted: []`,
+`no-longer redacted: []`. **Pre-existing, out of scope, worth its own ticket:** 21 semconv names
+redact on main and here alike via the unchanged `token`/`session`/`authoriz` terms — including
+`gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `session.id`, `mcp.session.id` — which
+blunts LLM-usage telemetry in a repo that ships AI observability. The "24/24 semconv survive" row
+above is true of its own 24-name list only.
 
 **Ledger.** The row keeps `status = "fixed"`. The ledger schema is `open | accepted | fixed` with no
 evidence field, and `reconcile()` regenerates every row, so a "partially fixed" status cannot live

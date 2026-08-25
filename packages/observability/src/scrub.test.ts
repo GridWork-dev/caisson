@@ -179,6 +179,13 @@ describe("isSensitiveAttributeKey — plural / numbered / fused / unicode forms"
     "eMailAddress",
     "\uff45mail", // fullwidth ｅ — NFKC folds it to `email`
     "\uff41piKey", // fullwidth ａ on a SECRET term — NFKC must run on the raw arm too
+    "e-mail", // re-verification round: the separator-inside-the-word spellings
+    "E-Mail",
+    "e.mail",
+    "e_mail",
+    "E_MAIL",
+    "medical-record-number", // spelled-out mrn
+    "medicalRecordNumber",
   ];
   for (const key of MUST_REDACT) {
     test(`redacts ${JSON.stringify(key)}`, () => {
