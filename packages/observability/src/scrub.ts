@@ -53,7 +53,7 @@ export const SENSITIVE_ATTRIBUTE_KEY =
  * (`scrub.test.ts` pins the union) — extend all three together.
  */
 const CREDENTIAL_KEY =
-  /(?:secret|token|password|passwd|api[_-]?key|apikey|authoriz|bearer|credential|cookie|session|private[_-]?key|access[_-]?key|signing[_-]?key|encryption[_-]?key)/i;
+  /(?:secret|token|password|passwd|api[_-]?key|apikey|authoriz|bearer|credential|cookie|session|private[_-]?key|access[_-]?key|signing[_-]?key)/i;
 const PII_KEY =
   /(?:(?<![a-z])ssns?|ssns?(?![a-z])|social[_-]?security|e[_.-]?mail|date[_-]?of[_-]?birth|birth[_-]?date|(?<![a-z])dobs?(?![a-z])|(?<![a-z])mrns?(?![a-z])|medical[_-]?record|phone|first[_-]?name(?![a-z])|last[_-]?name(?![a-z])|full[_-]?name(?![a-z])|(?<![a-z])patient)/i;
 

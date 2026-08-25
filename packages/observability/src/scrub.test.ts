@@ -262,7 +262,7 @@ describe("isSensitiveAttributeKey — plural / numbered / fused / unicode forms"
   });
 });
 
-// CAISSON-205. The credential terms (`token`, `session`, `authoriz`, `password`, `secret`) sit
+// The credential terms (`token`, `session`, `authoriz`, `password`, `secret`) sit
 // inside real OTel attribute names, so the scrub blanked LLM usage and session correlation on
 // every span. An EXACT semconv name skips the credential arm only — the PII arm is unconditional,
 // because `user.email` and `user.full_name` are semconv names too. The census below is the full
