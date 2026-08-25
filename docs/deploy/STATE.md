@@ -11,6 +11,80 @@ grounds:
 
 # Deploy log
 
+## 2026-08-25 — Cloud Run Wave-3 prerequisites merged; BOTH triggered workflows FAILED, prod unaffected (runs 32904702977, 32904702863)
+
+PR #448 (`498b279c`, 34 commits, 144 files) merged under operator ruling CAI-ASK-1b — taken in full
+knowledge that merging would fail the Railway deploy. **This entry records a ride that did not
+happen.** Nothing was deployed and nothing was published.
+
+**Live traffic was never affected.** Measured immediately after both failures: `caisson.sh/healthz`,
+`admin.caisson.sh/healthz`, `license.caisson.sh/health`, `docs-api.caisson.sh/health` — all **200**.
+Railway keeps the prior revision serving when a new deployment fails its healthcheck; that is now
+measured here rather than assumed.
+
+### `deploy-railway` (run 32904702977) — FAILED at admin's healthcheck
+
+Deployment `15308a5d-83fb-45a8-a48f-613f791f742b` ended FAILED after five attempts. The image
+**built** (`bun install --frozen-lockfile` and the turbo build both completed) — the failure is
+after build. Because `apps/admin` is the fail-fast verifier step ("MUST precede both issuers"),
+site, demos, docs and support-bot were never attempted.
+
+**Cause — deliberate, tested, and not a misconfiguration.** #448 gives `apps/site/proxy.ts` (new;
+absent from the pre-merge tree) and `apps/admin/src/proxy.ts` a `matcher: ["/:path*"]` with the
+origin gate as the first check, removing the `/healthz` exclusion the admin matcher previously
+carried. `apps/site/lib/origin-gate.test.ts` asserts the resulting behaviour at exactly the deployed
+configuration — `NODE_ENV: "production"` with `ORIGIN_SECRET` present, header-less `/healthz` →
+**403** — and a sibling test pins `matcher` to `["/:path*"]`. Railway's internal probe cannot carry
+`x-gridwork-origin-secret`, so it gets the 403 the tests specify. #448 was designed for a Cloud Run
+topology where the probe arrives through the Worker.
+
+**Consequence: main is undeployable to Railway until the health-path carve lands** (CAISSON-208).
+`deploy-railway` fires on `apps/site/**`, `apps/admin/**`, `apps/demos/**`, `services/docs/**`,
+`services/support-bot/**`, `packages/**`, `tooling/audit-harness/**`, `tooling/demo-registry/**`
+and `bun.lock`, so every push touching those fails the same way. Nothing on a clock re-deploys:
+the four `schedule:` workflows (`nist-catalog-watch`, `pgrls-advisory`, `r2-parity-probe`,
+`regulatory-claim-watch`) are advisory/probe jobs and none references `deploy-railway`. The only
+non-push deploy paths are `release: published` (train leg 4) and `workflow_dispatch`.
+
+**Two hypotheses were checked and killed — recorded so nobody re-runs them.** `HOSTNAME` (the
+container-id bind trap): `apps/admin/Dockerfile:42` already sets `HOSTNAME=0.0.0.0` with a comment
+naming that exact class. Dockerfile stage hijack: #448 adds a `migrate` stage whose CMD runs
+`admin-deploy-migrate.ts`, which would fit "nothing answering" if it were last — it is **middle**,
+and `runtime` (`CMD ["bun", "apps/admin/server.js"]`, `EXPOSE 3020`) is last.
+
+**Two wrong diagnoses preceded the right one, both the same error.** First, a repo-wide grep found
+`ORIGIN_SECRET` only in Cloud Run plumbing, and that was reported as "not provisioned" — but it is a
+Railway **service** variable, structurally invisible to a repo grep; gridwork-infra measured it
+present and canonical on all four services. Second, Railway's `"failed with service unavailable"`
+retry text was read as evidence of a non-booting process rather than a 403. **Absent from the
+config-as-code file is not absent from the applied service, and vendor log prose is not evidence
+about our code** — a test at the exact deployed configuration outranks both, and that test existed
+the whole time.
+
+### `publish image` (run 32904702863) — FAILED at `gates`, first push-triggered run ever
+
+All six matrix jobs (site, migrate, docs, admin, license, demos) died at the `gates` step;
+`collect` skipped, so no `digests` output. Cause: `deploy/gates.sh` shells `depcruise`, and
+`publish-image.yml` sets up Bun but never Node — so dependency-cruiser ran on the Blacksmith
+runner's system Node 20.20.0 against its `^22||^24||>=26` floor. Same class as the earlier
+wrangler-needs-22 finding.
+
+**No image reached Artifact Registry** — `gates` precedes `prepare build context`, `auth`, the
+Docker build and `attest provenance`. So the prediction that attestation would fail on a
+free-plan private org repo (leaving images published and the run red) is **untested**; this run
+died four steps earlier and is evidence in neither direction. Tracked as CAISSON-209, which also
+carries the second blocker waiting behind the Node pin: the T28 vulnerability scan fires once
+`gates` passes, and its SARIF upload steps sit after the failing step and skip, so the run blocks
+on a CVE it never names (`if: always()`, folded into infra's R44 template pass — not patched
+locally, since the workflow's header requires all four repo copies to stay byte-identical).
+
+### Follow-ups opened
+
+`CAISSON-208` (health-path carve + document `ORIGIN_SECRET` in `railway.toml`/this log + the
+`caisson-demos` gate design question), `CAISSON-209` (publish-path Node pin + SARIF `if: always()`),
+`CAISSON-206` (client-IP keying collapse behind the Worker — pre-existing, unrelated to #448).
+`ADR-0415` ratifies the admin Cloudflare Access re-coupling #448 introduced.
+
 ## 2026-08-25 — Semconv exemption in the span scrub (run 32892857628)
 
 PR #455 (`9cb7681c`) merged and took the automatic path. All five push-path legs SUCCESS in
