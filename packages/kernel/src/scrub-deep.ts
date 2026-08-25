@@ -44,6 +44,21 @@ function normalizeKey(key: string): string {
 }
 
 /**
+ * Split camelCase/PascalCase runs into space-delimited words so the ANCHORED short tokens
+ * (`dob`, `mrn`) see a real boundary in a camelCase key. Neither existing form can: stripping
+ * fuses `userDob` to `userdob` (lookbehind sees `r`), and the raw lowercased form is `userdob`
+ * too. Only a separator inserted at the case change exposes the boundary. `user_dob` already
+ * worked via the raw arm; `userDob` did not, and the golden fixture happens to carry only the
+ * snake_case form, which is why it went unnoticed.
+ */
+function splitWords(key: string): string {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
+    .toLowerCase();
+}
+
+/**
  * A key whose NAME alone means its whole subtree must drop (a PHI/PII field or a secret name).
  * PHI_KEY runs against both the stripped `norm` form (multi-word literals) and the raw lowercased
  * key (separators intact, so the anchored `dob`/`mrn` tokens see a real boundary) — see the
@@ -55,6 +70,7 @@ function isRedactedKey(key: string): boolean {
   return (
     PHI_KEY.test(norm) ||
     PHI_KEY.test(key.toLowerCase()) ||
+    PHI_KEY.test(splitWords(key)) ||
     SECRET_KEY_NAME.test(norm)
   );
 }

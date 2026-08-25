@@ -21,7 +21,7 @@ OTLP-compatible sink works.
   path (UUIDs/emails/numeric ids/long tokens → `:id`) when no `routeTemplate` is supplied.
 - Span attributes are scrubbed on a conservative deny-list (secrets, `Authorization`, cookies,
   tokens, `*-key` headers, and a small PII key set) before they ever leave the process —
-  `scrubAttributes` / `SENSITIVE_ATTRIBUTE_KEY` / the `ScrubbingSpanProcessor` decorator in
+  `scrubAttributes` / `isSensitiveAttributeKey` (the raw `SENSITIVE_ATTRIBUTE_KEY` regex is deprecated for direct use) / the `ScrubbingSpanProcessor` decorator in
   `src/scrub.ts`. This is independent of, and narrower-scoped than, `@caisson/kernel`'s
   `redactEvent` (that one redacts the operational-telemetry `OpsEvent` envelope; this one redacts
   OTel span attributes — two different telemetry paths that never share a write path).

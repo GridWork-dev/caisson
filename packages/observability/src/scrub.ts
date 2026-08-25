@@ -18,9 +18,69 @@ import type {
 /**
  * Span attribute / header KEY deny-list. Matches loosely on purpose — a key that merely LOOKS
  * sensitive is redacted rather than risk a false negative. Extend this list, don't replace it.
+ *
+ * Anchoring, per term: the long words (`email`, `phone`, `password`, …) are unanchored — no common
+ * attribute name contains them by accident, and unanchored is what catches fused/plural/numbered
+ * forms (`homephone`, `emails`, `email2`). The SHORT tokens need guards because they hide inside
+ * ordinary words: `dob` in `adobe`, `mrn` in `mrna`, `ssn` in `className`/`businessName`/
+ * `processName`, `patient` in `outpatient`/`impatient`, `lastName` in `lastNameserver`. Those use
+ * `(?<![a-z])` / `(?![a-z])` letter-lookarounds rather than `\b`, because `\b` treats `_` and a
+ * case change as NON-boundaries (`user_dob`, `userDob`) while a lookaround sees the space that
+ * {@link splitKeyWords} inserts. `ssn` is anchored on ONE side only so `userssn`/`SSNVALUE` still
+ * hit while a mid-word `ssN` does not.
+ *
+ * Deliberately NOT included: `address`. The sibling deep scrubber (`@caisson/kernel` `PHI_KEY`)
+ * accepts `ipAddress` over-redaction as fail-safe for compliance-evidence egress; on a span it would
+ * drop `net.peer.address` / `server.address` / `client.address` and blind tracing. Value-level
+ * scrubbing is the right tool for an address, not a key match.
+ *
+ * @deprecated for direct `.test()` use — call {@link isSensitiveAttributeKey}, which normalizes the
+ * key (NFKC + camelCase/snake_case word split) first. Tested raw, this regex misses `userEmail`,
+ * `user_email`, and a fullwidth `ｅmail` (audit finding 19d1af0e70d0c2d7). Export kept for back-compat.
  */
 export const SENSITIVE_ATTRIBUTE_KEY =
-  /(?:secret|token|password|passwd|api[_-]?key|apikey|authoriz|bearer|credential|cookie|session|private[_-]?key|access[_-]?key|signing[_-]?key|encryption[_-]?key|\bssn\b|social[_-]?security|\bemail\b|\bphone\b|date[_-]?of[_-]?birth|\bdob\b)/i;
+  /(?:secret|token|password|passwd|api[_-]?key|apikey|authoriz|bearer|credential|cookie|session|private[_-]?key|access[_-]?key|signing[_-]?key|encryption[_-]?key|(?<![a-z])ssns?|ssns?(?![a-z])|social[_-]?security|e[_.-]?mail|date[_-]?of[_-]?birth|birth[_-]?date|(?<![a-z])dobs?(?![a-z])|(?<![a-z])mrns?(?![a-z])|medical[_-]?record|phone|first[_-]?name(?![a-z])|last[_-]?name(?![a-z])|full[_-]?name(?![a-z])|(?<![a-z])patient)/i;
+
+/**
+ * Split camelCase/PascalCase runs and `_`/`-` separators into space-delimited words, so the
+ * lookaround-guarded deny-list terms above see a real boundary. `userEmail` -> `user Email`,
+ * `user_email` -> `user email`, `userDOBValue` -> `user DOB Value`. Deliberately does NOT lowercase
+ * (the deny-list is already `/i`) and does NOT strip separators — stripping would re-fuse
+ * `user_dob` into `userdob` and lose the boundary this exists to create.
+ *
+ * Both replaces are linear: single-character groups only. The acronym split MUST stay `([A-Z])`,
+ * not `([A-Z]+)` — the greedy form backtracks quadratically on a long all-caps key (~850 ms at 32k
+ * chars, attacker-controlled attribute names reach this from any instrumented request).
+ */
+function splitKeyWords(key: string): string {
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z])([A-Z][a-z])/g, "$1 $2")
+    .replace(/[_-]/g, " ");
+}
+
+/**
+ * The real key predicate: NFKC-normalizes the key (a fullwidth `ｅmail` folds to `email`), then
+ * tests the deny-list against BOTH the raw key and its word-split form. Testing both is monotone —
+ * it can only ever redact MORE keys than the raw regex alone, never fewer — so it cannot regress an
+ * already-redacted key. The raw arm keeps terms whose own optional separator already spans the case
+ * change (`api[_-]?key` matches `apiKey` directly, but would NOT match the split form `api Key`);
+ * the split arm adds the lookaround-guarded PII terms. Over-redaction is the fail-safe direction
+ * here, per this module's stated philosophy.
+ *
+ * Known residual (accepted, no clean regex answer): a 3-letter token fused lowercase in the MIDDLE
+ * of a key (`userdob`, `recdob`), and homoglyph / invisible-character spellings (Cyrillic `е`,
+ * soft hyphen, ZWJ) that NFKC does not fold — an attacker names attributes only on their own
+ * requests, so that bypass exfiltrates their own data. Enumerated in
+ * `outputs/audit/2026-08-25-false-close-19d1af0e.md`.
+ */
+export function isSensitiveAttributeKey(key: string): boolean {
+  const normalized = key.normalize("NFKC");
+  return (
+    SENSITIVE_ATTRIBUTE_KEY.test(normalized) ||
+    SENSITIVE_ATTRIBUTE_KEY.test(splitKeyWords(normalized))
+  );
+}
 
 /** A value-level backstop: a raw `Authorization: Bearer <token>` string under an unsuspicious key. */
 const BEARER_VALUE = /^bearer\s+\S+/i;
@@ -80,14 +140,14 @@ export function scrubPath(path: string): string {
 }
 
 /**
- * Redact `attributes` IN PLACE: any key matching `SENSITIVE_ATTRIBUTE_KEY`, or any string value
+ * Redact `attributes` IN PLACE: any key matching {@link isSensitiveAttributeKey}, or any string value
  * shaped like a raw bearer token, is replaced with `"[REDACTED]"`. Mutating in place (rather than
  * returning a copy) is required by the `SpanProcessor#onEnd` seam below — `ReadableSpan.attributes`
  * is the live object the next processor in the chain reads.
  */
 export function scrubAttributes(attributes: Record<string, unknown>): void {
   for (const key of Object.keys(attributes)) {
-    if (SENSITIVE_ATTRIBUTE_KEY.test(key)) {
+    if (isSensitiveAttributeKey(key)) {
       attributes[key] = REDACTED;
       continue;
     }
