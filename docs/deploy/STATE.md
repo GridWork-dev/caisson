@@ -11,6 +11,34 @@ grounds:
 
 # Deploy log
 
+## 2026-08-25 — Semconv exemption in the span scrub (run 32892857628)
+
+PR #455 (`9cb7681c`) merged and took the automatic path. All five push-path legs SUCCESS in
+**7m36s** (20:00:47 → 20:08:23Z); `services/license` skipped (dispatch-only). The diff touched
+`packages/observability`, so every service compiling it re-rode.
+
+**What shipped.** CAISSON-205: the deny-list's unanchored credential terms (`token`, `session`,
+`authoriz`) matched 21 real `@opentelemetry/semantic-conventions` attribute names, blanking LLM
+usage (`gen_ai.usage.*_tokens`) and session correlation (`session.id`, `mcp.session.id`) on every
+span. Fix: a key that is an exact member of the semconv name set (read from
+`@opentelemetry/semantic-conventions/incubating` at module load, never hand-copied) skips the
+credential arm only — the PII arm is unconditional, so `user.email` / `user.full_name` (semconv
+names too) still redact. 19 names newly pass, 2 stay redacted; templates
+(`http.request.header.authorization`) are exported as functions, never members, and still redact.
+The three deny regexes (union + both arms) are now derived from one term-source pair — a
+mid-review CI failure proved the drift class real (a mutation-check state with one term dropped
+was accidentally committed and only the hand-written regression list caught it), so the class was
+deleted by construction rather than tested for. Review: gw-code-reviewer + gw-security-auditor
+(PII tag) both MERGE_WITH_FIXES, zero blockers; 4 confirmed findings fixed on-branch, 3 refuted in
+adversarial verify; operator ruled merge via the in-session ask, keeping `mcp.session.id` exempt
+(nothing in-repo emits it; the value-level bearer backstop stands).
+
+**Verification.** Suite 136/136 including the full-census sweep (889 exported names →
+exactly `user.email` + `user.full_name` flagged, pinned as a literal), 13 exact-match-only
+guards, and per-term mutation proof (every load-bearing term deletion reds a named test).
+Export-side scrubbing has no served surface to probe; the proof is the merged suite plus the six
+green required checks. No receipt file — CI deploys commit none.
+
 ## 2026-08-25 — Organization entity edges to the GridWork hub (run 32870028441)
 
 PR #453 (`4087f8e0`) merged and took the automatic path. All five push-path legs SUCCESS in
