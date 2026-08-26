@@ -1,6 +1,6 @@
 # SPEC — Per-row tamperproof verification UI (audit surfaces)
 
-- **Status:** PARTIAL — proof primitives and endpoint shipped in PR #240 (forks locked → ADR-0331, PLAN locks ADR-0344); admin page wiring, provenance, redacted export/count, and tenant self-service integration remain under ADR-0379
+- **Status:** SHIPPED — proof primitives and endpoint in PR #240 (forks locked → ADR-0331, PLAN locks ADR-0344); the residual admin page wiring, provenance, redacted export/count and tenant self-service integration landed under ADR-0379 as T5B/T5C/T5E in PR #335 (T5 recorded **complete** in `docs/state/outstanding-work.md`). Status line corrected 2026-08-26 — it had stayed PARTIAL after the work merged.
 - **Tags:** `frontend` `ui` `security` (security tag fires the SHIP audit; this amendment adds a dedicated `gw-security-auditor` pass before PLAN per the adversarial review's own recommendation)
 - **Repo:** caisson · **Packages touched:** `kernel` (pure check helpers) · `audit-worm` (+ its `src/ui`) · `ui-pro` (audit-timeline, payload-viewer) · `apps/admin` (proof-bundle endpoint + consuming UI) · evidence-pack format
 - **Prior art:** Pangea `react-mui-audit-log-viewer` (`verificationOptions.onFetchRoot` → client-side per-row `membership_proof` checks against a published root; `fpeOptions.highlightRedaction` for redaction display)
