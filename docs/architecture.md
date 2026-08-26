@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-25
+updated: 2026-08-26
 status: live
 grounds:
   - package.json
@@ -60,8 +60,13 @@ Core contracts receive injected clients/config and do not read ambient provider 
   integer units; unknown SKU IDs fail closed.
 - **Rate limiting:** Paddle webhook limiter-infrastructure failures fail open and alert; issuer,
   admin, and evaluation routes fail closed with 503.
-- **Admin:** in-app GitHub OAuth plus immutable numeric-user-ID allowlist. Admin is not protected
-  by the retired Cloudflare Access/JWT design.
+- **Admin:** in-app GitHub OAuth plus immutable numeric-user-ID allowlist (ADR-0283), **and**
+  Cloudflare Access. PR #448 re-coupled admin to Access and **ADR-0415** ratified it, retiring
+  ADR-0283's "no longer depends on it either way" claim; the better-auth session gate is unchanged.
+  `apps/admin` now requires `CF_ACCESS_TEAM_DOMAIN` and `CF_ACCESS_AUD` at startup and verifies an
+  Access assertion on every request except the `/healthz` canary. **Not yet true in production:**
+  the serving revision predates #448, and no Access application fronts `admin.caisson.sh` today
+  (measured 2026-08-26) — production Access is deferred to the Wave-5 edge sequencing.
 - **Buyer gates:** marketing/docs/API are public; `/dashboard*` and `/cart*` are Cloudflare Access
   gated pre-launch.
 - **Evidence:** audit chains, signed anchors, proof endpoints, and WORM exports keep redaction and
@@ -77,18 +82,20 @@ contrast implementation, including semantic, functional, and code-syntax colors.
 
 ## Live fleet
 
-| Host                  | Runtime                   | Access posture                         |
-| --------------------- | ------------------------- | -------------------------------------- |
-| `caisson.sh` / `www`  | Railway `caisson-site`    | marketing public; dashboard/cart gated |
-| `admin.caisson.sh`    | Railway `caisson-admin`   | GitHub OAuth + numeric allowlist       |
-| `license.caisson.sh`  | Railway `caisson-license` | DNS-only so Paddle can reach webhook   |
-| `docs-api.caisson.sh` | Railway `caisson-docs`    | public API with route controls         |
-| support bot           | Railway Python service    | no public hostname                     |
-| `registry.caisson.sh` | Cloudflare Worker         | live authenticated npm protocol        |
+| Host                  | Runtime                   | Access posture                                       |
+| --------------------- | ------------------------- | ---------------------------------------------------- |
+| `caisson.sh` / `www`  | Railway `caisson-site`    | marketing public; dashboard/cart gated               |
+| `admin.caisson.sh`    | Railway `caisson-admin`   | OAuth + numeric allowlist; Access in code, unfronted |
+| `license.caisson.sh`  | Railway `caisson-license` | DNS-only so Paddle can reach webhook                 |
+| `docs-api.caisson.sh` | Railway `caisson-docs`    | public API with route controls                       |
+| support bot           | Railway Python service    | no public hostname                                   |
+| `registry.caisson.sh` | Cloudflare Worker         | live authenticated npm protocol                      |
 
-Admin, site and license run the `v2026.07.30` release commit `d9ae893e`; docs-RAG and support-bot
-still carry their 2026-07-29 receipts at `f9c04f33`
-([`docs/deploy/receipts/`](deploy/receipts/)). The index parity probe reports
+All six services run `9cb7681c` (the 2026-08-25 #455 ride, run `32892857628` — deployment ids
+`4294e507` site, `52b14a07` admin, `cd0fa10b` demos, `e1656466` docs, `86599eee` license,
+`2cc0825f` support-bot, verified against the applied manifests 2026-08-26). **`main` is ahead by
+4 commits / 151 files:** #448's ride failed on admin's healthcheck and Railway deploys are frozen
+until the gate topology is decided — see [deploy state](deploy/STATE.md) and CAISSON-208. The index parity probe reports
 `dc5ee000aebf`/54 entries equal across repo, license, Worker, and admin. Docs-RAG and support-bot
 are private services reachable only through a Turnstile-gated site proxy, so their source parity
 still has no automatable receipt — see
