@@ -31,9 +31,11 @@ each fact carries its observer.
   `portal.gridworkdigital.com`, `gridwork.sh`, `gridwork.dev`. The Worker custom domain replaced
   each hostname's DNS record, so nothing reaches Railway through the orange cloud any more.
 - **The nine Worker Secrets are seeded.** Proven by construction: the router returns 503 on a
-  missing or empty binding, and every hostname answers non-503. Names are
-  `ORIGIN_SECRET_<HOSTNAME_UPPERCASED>`; bindings are **per-hostname, not per-service**, so apex and
-  `www` are two separate bindings both fronting `caisson-site`.
+  missing or empty binding, and every hostname answers non-503. Naming is `ORIGIN_SECRET_` +
+  the hostname uppercased with **every** non-alphanumeric character replaced by an underscore — so
+  `docs-api.caisson.sh` → `ORIGIN_SECRET_DOCS_API_CAISSON_SH`, hyphen included. Bindings are
+  **per-hostname, not per-service**, so apex and `www` are two separate bindings both fronting
+  `caisson-site` and both must carry that service's one value.
 - **The Worker injects but never enforces.** Enforcement is app-side only. The router also strips
   client-supplied `x-gridwork-origin-secret`, so the header cannot be replayed in through the edge.
 - **Exactly one production Access application exists, and it fronts `caisson.sh`** (`/dashboard`
@@ -58,9 +60,22 @@ demos, docs and support-bot were never attempted.
 Prod is unaffected and healthy — Railway keeps the prior revision serving. All six services run
 `9cb7681c`; `main` is 4 commits / 151 files ahead.
 
-**The pairing is the unverified half.** The Worker holds a value per hostname and the Railway
-services hold `ORIGIN_SECRET`; nothing has proven the two sides carry the _same_ value. Until that
-is proven, no option below can be called safe on the strength of the injector alone.
+**The pairing is the unverified half, and it cannot be passively verified.** The Worker holds a
+value per hostname and the Railway services hold `ORIGIN_SECRET`; nothing has proven the two sides
+carry the _same_ value. Split the claim, because the halves have very different costs
+(gridwork-infra, 2026-08-26):
+
+- **Names** are verifiable in minutes — `wrangler secret list` returns binding names, and Railway
+  var presence is readable.
+- **Value-equality is not verifiable by any read.** Cloudflare exposes no API that returns a Worker
+  Secret's value. Only two proofs exist: **constructive** — re-seed both sides with one fresh pair as
+  a single act, which _is_ the held secrets authorization; or **behavioural** — an armed canary
+  observing accept/reject, which is circular while deploys are frozen and the serving revisions
+  predate the gate.
+
+**Consequence for every option below: there is no passive pre-verification to wait on.** Whoever
+authorizes seeding gets pairing by construction in the same minutes. "Prove the pairing first" is
+not a separable step — it collapses into the seeding act itself.
 
 ### The same class at gridwork-studio (measured 2026-08-26 by that session)
 
@@ -94,14 +109,27 @@ until `admin.caisson.sh` gets its Access application at its own cutover gate.
 - **Cost:** re-introduces a configuration-shaped opt-out on the Access side — the exact thing
   ADR-0415 ratified away. It would need its own ADR and a hard constraint that the variable cannot
   disable the _origin_ gate, only the Access assertion, and only while no Access app exists.
-- **Requires first:** the pairing proof. A carve that lets a deploy succeed while the Worker and the
-  service disagree on the secret would ship a fleet that 403s all public traffic — a strictly worse
-  failure than today's, because today's fails loudly at deploy time.
-- **Sharp edge:** "carve the healthcheck" is not one change. The Railway probe is internal, so the
-  carve must key on something the internal probe has and a public client cannot forge through the
-  edge. Path alone (`/healthz`) is forgeable from the public side unless the Worker strips it — it
-  strips the _secret_ header, not the path. Getting this wrong converts a readiness carve into an
-  unauthenticated bypass.
+- **Requires alongside, not before:** the seeding act. A carve that lets a deploy succeed while the
+  Worker and the service disagree on the secret would ship a fleet that 403s all public traffic — a
+  strictly worse failure than today's, which at least fails loudly at deploy time. Since
+  value-equality is only provable by re-seeding, the carve and the seeding land together or the
+  carve is a gamble.
+- **Sharp edge — and no edge change can file it down.** The forgery path is the raw
+  `*.up.railway.app` origin, which the Worker never sees, so this cannot be fixed at the edge:
+  `router.js` has no path logic at all (hostname key-select, method allowlist, 1MiB body cap) and
+  none could help. Only app-side or Railway-side changes reach it. Sizing the exposure honestly
+  (gridwork-infra, 2026-08-26):
+  - Through the Worker, `/healthz` arrives **with** a valid injected secret once pairing holds. So
+    the class the carve admits is exactly _requests without a valid header_ = the internal probe
+    (intended) **plus** raw-origin public clients (the entire exposure).
+  - Blast radius is therefore bounded by **what `/healthz` reveals**. Specifying it status-only —
+    no build sha, no config, no dependency detail — converts the exposure from an information leak
+    into an unauthenticated liveness ping. Note today's admin `/healthz` returns
+    `{"ok":true,"indexDigest":"…","indexEntries":52}`, which is already more than status-only.
+  - The discriminator search is **bleak, and this is the ceiling rather than a fallback from
+    something better**: Railway's probe sets no signed or inimitable header, `healthcheckPath`
+    configures a path and nothing else, and keying on a non-public `Host` is forgeable via the raw
+    name. Path-plus-inert-response is realistically the strongest carve available.
 
 ### Option B — Bring Wave-5 steps 2 and 4 forward for the blocked hostnames
 
@@ -117,9 +145,12 @@ ahead of its cutover gate.
 - **Buys less than it looks:** while the origin stays Railway, edge Access is defense-in-depth only
   — the raw `*.up.railway.app` origin bypasses it. For caisson that bypass is real; for studio it is
   narrower (custom-domain Host only).
-- **Still does not fix the healthcheck.** The internal probe carries neither the secret nor an
-  Access JWT regardless of what exists at the edge. **Option B alone does not unfreeze the deploy.**
-  It must be paired with A's carve or with C.
+- **Still does not fix the healthcheck, and the reason is mechanical rather than configurational.**
+  Railway's healthcheck validates the **new** deployment _pre-promotion_, while the public hostname
+  still routes to the **old** one during that window. A probe arriving through the public hostname
+  could not reach the instance being validated even in principle — so there is no Railway setting
+  that routes the gate-relevant probe through the edge. **Option B alone does not unfreeze the
+  deploy.** It must be paired with A's carve or with C.
 
 ### Option C — Hold the freeze to T35–T40 and deploy nothing to Railway
 
@@ -137,10 +168,22 @@ carry the divergence until each hostname cuts over to Cloud Run.
 
 ### Recommendation
 
-**B-then-A, scoped to caisson only, with C's mechanical block adopted regardless.** Prove the
-pairing first (it is a prerequisite for A and a no-op risk on its own), then carve the healthcheck
-with a forgery-proof discriminator, and leave admin's Access application at its own gate rather
-than dragging the MFA acceptance forward. Do not apply B to `portal.gridworkdigital.com`.
+**Option B's step 2 plus Option A's carve, as one authorized act, scoped to caisson — and C's
+mechanical block adopted regardless of the pick.** Concretely:
+
+1. **Seed both sides of caisson's hostnames with one fresh pair per service** (apex and `www` share
+   `caisson-site`'s value). This _is_ the pairing proof; there is nothing to verify beforehand.
+2. **Land the carve in the same change**, keyed on path, with `/healthz` reduced to status-only on
+   both `apps/admin` and `apps/site` so the admitted raw-origin class learns nothing. Accept that
+   this is the ceiling, not a compromise — no better discriminator exists.
+3. **Leave admin's Access application at its own cutover gate.** Skip Option B's step 4: it does not
+   help the healthcheck, and it drags the OTP/MFA/IdP acceptance forward for defence-in-depth that
+   the raw origin bypasses anyway.
+4. **Do not apply any of this to `portal.gridworkdigital.com`** — its Access app locks out every
+   studio client the instant it exists.
+
+An earlier draft of this document recommended proving the pairing as a separate first step. That was
+wrong: value-equality has no passive proof, so the "prerequisite" and the seeding are the same act.
 
 This is a recommendation, not a lock. The operator decides.
 
@@ -177,7 +220,8 @@ in an untracked brief cannot block `gh pr merge`. Whether that check is a requir
 
 ## Open questions for the operator
 
-1. **Which option** — A, B-then-A, C, or a composition.
+1. **Which option** — A, B, C, or the composition recommended above (B-step-2 + A's carve as one
+   act). Note that A and B-step-2 are not independently orderable: the pairing proof is the seeding.
 2. **Is the studio brief's freeze (a) stale or (b) released with its precondition unmet?** Neither
    caisson nor studio can discriminate this from inside their own repos.
 3. **Demos:** verify the injected header, or drop the injection and record mesh-internal as the
@@ -204,3 +248,10 @@ in an untracked brief cannot block `gh pr merge`. Whether that check is a requir
   #448 diff, 2026-08-25/26.
 - Prior art in-repo: `docs/deploy/STATE.md` (2026-08-25 entry) reached the same root cause
   independently; ADR-0415 ratifies the admin Access re-coupling; CAISSON-208 tracks the unfreeze.
+- Reviewed for factual accuracy against the edge by the `gridwork-infra` session, 2026-08-26. That
+  pass confirmed all three claims it was asked to check, strengthened two of them, and corrected the
+  pairing framing this document originally carried (see the Recommendation's closing note).
+- `gridwork-infra#48` (open at time of writing) fixes a stale `terraform.tfvars` comment that still
+  named `admin.caisson.sh` as the Access **import**. The corrected fact — one live production Access
+  app, on `caisson.sh` — is what this document uses; the tfvars file stops contradicting it once #48
+  merges.
