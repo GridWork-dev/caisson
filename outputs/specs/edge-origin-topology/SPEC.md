@@ -179,11 +179,28 @@ mechanical block adopted regardless of the pick.** Concretely:
 3. **Leave admin's Access application at its own cutover gate.** Skip Option B's step 4: it does not
    help the healthcheck, and it drags the OTP/MFA/IdP acceptance forward for defence-in-depth that
    the raw origin bypasses anyway.
-4. **Do not apply any of this to `portal.gridworkdigital.com`** — its Access app locks out every
-   studio client the instant it exists.
+4. **Apply the same answer to `portal.gridworkdigital.com`** (operator ruling 2026-08-26: portal
+   follows caisson). Under this composition that is safe, and the reason is worth stating rather
+   than assuming — see the blast-radius note directly below.
+
+**Blast-radius note, and it decides whether ruling 4 is safe.** Creating an Access application on
+`portal.gridworkdigital.com` locks out **every studio client** the moment it exists; the equivalent
+act on `admin.caisson.sh` locks out **one operator**. That asymmetry is real and does not go away.
+
+It does not bite _this_ composition, because **step 3 creates no Access application at all** — the
+recommendation skips Option B's step 4 for caisson, so "portal follows caisson" inherits the skip.
+Portal gets seeding plus the carve, which touch no Access surface.
+
+**It bites hard under Option B taken whole.** If the operator locks B including step 4, "portal
+follows caisson" means creating portal's Access app, and every studio client is locked out until its
+allowlist carries real identities. So ruling 4 is safe under the recommendation and dangerous under
+a different pick of ruling 1 — the two rulings are not independent, and the lock should name both
+together.
 
 An earlier draft of this document recommended proving the pairing as a separate first step. That was
 wrong: value-equality has no passive proof, so the "prerequisite" and the seeding are the same act.
+An earlier draft also recommended excluding portal entirely; the operator has since ruled that portal
+follows caisson, and the note above is what that ruling costs or does not cost per option.
 
 This is a recommendation, not a lock. The operator decides.
 
@@ -227,8 +244,10 @@ in an untracked brief cannot block `gh pr merge`. Whether that check is a requir
 3. **Demos:** verify the injected header, or drop the injection and record mesh-internal as the
    whole boundary.
 4. **The durable rule above:** adopt, and in what mechanical form.
-5. **Does `portal.gridworkdigital.com` follow caisson's answer or get its own?** The lockout
-   asymmetry argues for its own.
+5. ~~**Does `portal.gridworkdigital.com` follow caisson's answer or get its own?**~~ **RULED
+   2026-08-26: portal follows caisson.** Carried into the recommendation as step 4. Read it together
+   with question 1 — the ruling is safe under the recommended composition (which creates no Access
+   application) and locks out every studio client under Option B taken whole.
 
 ## Failure modes this doc is guarding against
 
