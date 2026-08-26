@@ -6,3 +6,8 @@ status = "live"
 
 # Name + positioning LOCKED (ADR-0041 Caisson · ADR-0040 hero · ADR-0042 design). `@caisson/*`, caisson.sh.
 # Provenance: outputs/research/ (capability corpus, market research, specs, decisions).
+
+[merge_hold]
+posture = "self"
+governed_by = "gridwork-core-infra:infra-gcp-topology"
+expires = "2026-11-23"
