@@ -177,6 +177,23 @@ branch-protection gate). `semgrep-pro` stays advisory/non-required (dormant unti
 - `semgrep-pro` — dormant until the `SEMGREP_APP_TOKEN` repo secret is set; then runs `semgrep ci`
   (interfile/cross-function taint from the org policy).
 
+### Image-publish scan (`publish-image.yml`) — record, never block
+
+The T28 publish template scans each published image digest with Trivy (CRITICAL,HIGH) and uploads
+the SARIF as publish evidence. Its blocking dial is the **`TRIVY_EXIT_CODE` repo variable**, and
+**caisson leaves it absent, deliberately.** Image-layer CVEs are recorded, not gated, because the
+blocking supply-chain gate is layer 2 above — `scan.sh --layer ci`, required as `deterministic` —
+and a publish that reds on an unfixable base-image CVE is precisely the disabled scan this playbook
+argues against two sections up.
+
+Absence is the posture, not an oversight. The template resolves an unset variable to `'0'`, so
+absent and `TRIVY_EXIT_CODE=0` are indistinguishable template-side and this line is the only record
+of which one caisson chose — the default is upstream's to change, this posture is ours. It also
+keeps the re-dispatch property: post-CORE-73 a `workflow_dispatch` re-run of an already-published
+sha re-scans rather than skipping, so with the variable set to `1` a re-dispatch of an old green sha
+could red on a CVE published since. Setting it to `1` is a policy change and belongs in an ADR
+(precedent: ADR-0327 flipped the scan gate to required), never a bare variable edit.
+
 ## Accepted findings (suppression policy)
 
 Suppressions live in three auto-loaded config files so `scan.sh --layer ci` goes green without a
