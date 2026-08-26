@@ -1,7 +1,7 @@
 # SPEC — Module-depth pages for the three compliance-gap SKUs
 
 - **Date:** 2026-07-25
-- **Status:** LOCKED (operator, 2026-07-25 design grill)
+- **Status:** SHIPPED — locked at the 2026-07-25 operator design grill, three module-depth pages merged in PR #332 (fork closed by ADR-0380 lock 6; CAISSON-134 **Done**). Status line corrected 2026-08-26.
 - **Tags:** `ui` `frontend`
 - **Decision:** ADR-0380 (locks 6 and 7) · extends ADR-0237 F2/F6, ADR-0290, ADR-0308, ADR-0373
 - **Tracker:** CAISSON-134

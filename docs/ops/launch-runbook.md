@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-25
+updated: 2026-08-26
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -23,8 +23,10 @@ corresponding hold being released.
 - Railway runs site, admin, license, docs-RAG, and support-bot; Cloudflare runs the registry Worker.
 - Marketing, docs, marketplace, and public APIs are public.
 - `/dashboard*` and `/cart*` remain Cloudflare Access gated. Checkout remains sandbox-only.
-- Admin uses in-app GitHub OAuth plus immutable numeric-user-ID allowlisting; no admin
-  Cloudflare Access/JWT gate remains.
+- Admin uses in-app GitHub OAuth plus immutable numeric-user-ID allowlisting **and**, since PR
+  #448 / **ADR-0415**, a Cloudflare Access requirement in `apps/admin` itself. Access is not
+  fronting `admin.caisson.sh` in production yet (deferred to the Wave-5 edge sequencing), and the
+  serving revision predates #448.
 - Paddle is the sole merchant of record. The catalog is six bundles and 27 modules; production
   recreation is **36 products and 68 prices**.
 - Compliance is **$1,649** and Everything is **$2,259** (ADR-0383/0384). This runbook does not

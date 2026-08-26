@@ -1,7 +1,7 @@
 # SPEC — Full-state reconciliation and completion
 
 - **Date:** 2026-07-25
-- **Status:** LOCKED by operator instruction
+- **Status:** SHIPPED — locked by operator instruction 2026-07-25, program closed 2026-08-09/10: the fork walk disposed all fifteen board rows (ADR-0403–0406) and the execution wave landed (CAISSON-150 **Done**). Status line corrected 2026-08-26.
 - **Tags:** `security` `external-system` `data-migration` `infra` `frontend` `ui`
 - **Decision:** ADR-0379
 

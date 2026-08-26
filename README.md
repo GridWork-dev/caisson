@@ -42,14 +42,14 @@ What is actually on disk (verify against `packages/*/src` + `*.test.ts`; live pe
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
 | Substrate       | kernel · tenancy-rls · field-crypto · auth · billing · credits                                                                             | built + tested |
 | Generator       | cli (`create-caisson`)                                                                                                                     | built + tested |
-| Bundle packages | Compliance · AI-Production · Local-first · Agentic-Dev · Provenance · Everything (61 packages total — see `docs/state/package-catalog.md`) | shipped + live |
+| Bundle packages | Compliance · AI-Production · Local-first · Agentic-Dev · Provenance · Everything (58 packages total — see `docs/state/package-catalog.md`) | shipped + live |
 | Base + shared   | mcp-server · license-verify · email · jobs · ui                                                                                            | built          |
 
 ## Layout
 
 ```
 tooling/      # the one standards gate (lint-policy/tsconfig/testing)
-packages/     # 61 packages: kernel + base substrate + bundle packages + shared/harvest packages + cli
+packages/     # 58 packages: kernel + base substrate + bundle packages + shared/harvest packages + cli
 registry/     # versioned module sources the generator + buyer's agent pull from
 apps/         # 7 apps: 5 Next.js (ADR-0044) — site (marketing+docs) · admin (control-plane, absorbed studio) · compliance/ai-kit/local-ai reference; base + agent-dev = plain-TS consumers
 services/     # support-bot (Python) · license · docs · intel · betterstack-adapter
