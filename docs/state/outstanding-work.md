@@ -265,6 +265,21 @@ until now.
   (four byte-identical repo copies); caisson verifies the propagation PR and proves it on the next
   real publish. The two green `publish image` runs after #448 are **no-ops** — `select` ran, `publish`
   and `collect` skipped — so nothing is proven yet.
+- **ADR-0416 execution residual — seeding + `/healthz`.** The ADR locks the _shape_, not the act.
+  Seeding both sides of caisson's hostnames is an always-page secrets class and stays operator-
+  authorized; reducing `/healthz` to status-only in `apps/admin` and `apps/site` is real work
+  (admin's currently returns `indexDigest` and `indexEntries`). Both land together per ruling 1 —
+  the carve without the seeding is a gamble, because value-equality has no passive proof.
+- **ADR-0416 ruling 4 has no mechanism yet — and the posture append does NOT supply one.** Ruling 4
+  adopts "a merge precondition naming an out-of-band credential state needs a mechanical check,"
+  enforced as a `[merge_hold]` posture entry. **Today's `[merge_hold]` schema cannot express that.**
+  Both twins — `gridwork-core claude/hooks/hooks.py` `_merge_hold_posture` and its TS validator
+  `tools/lib/merge-hold-posture.ts` — read exactly four fields: `posture`, `governed_by`, `expires`,
+  `reason`. There is no credential-precondition, env-gate, or blocked-until concept in either. So
+  landing caisson's own posture table (the four-line append that currently unblocks merges here)
+  satisfies the _manifest_ requirement and leaves ruling 4 unimplemented. Closing it needs a schema
+  extension in gridwork-core, which owns both twins — not a caisson change. Filed here so the two
+  are not mistaken for one.
 - **CAISSON-206 (High)** — client-IP rate-limit keying needs re-measurement behind the Worker front;
   buckets may have collapsed to one global bucket. Pre-existing, unrelated to #448.
 - **CAISSON-207 (Low)** — GridWork-hub backlinks from #453's R19 work. Correctly blocked: do not ship
