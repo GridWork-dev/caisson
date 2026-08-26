@@ -252,9 +252,14 @@ until now.
   services are never attempted. Every push touching `apps/site|admin|demos`, `services/docs|support-bot`,
   `packages/**`, `tooling/audit-harness`, `tooling/demo-registry`, `package.json` or `bun.lock` fails
   identically. **Blocked on a design pass** (operator ruling 2026-08-26): the health-path carve alone
-  is not sufficient — no Access application fronts `admin.caisson.sh` and nothing injects the origin
-  secret inbound today, so carving the probe would ship a green deploy of a 403-ing fleet. Carries the
-  `caisson-demos` gate question (mesh-internal, no proxy, no secret).
+  is not sufficient. The edge Worker **does** front all nine production hostnames and injects
+  `x-gridwork-origin-secret` unconditionally, and its nine Worker Secrets are seeded (gridwork-infra,
+  measured 2026-08-26) — so public traffic would carry the header. Two things still bite: the
+  Worker-to-Railway secret **pairing** is unverified, and **no Access application fronts
+  `admin.caisson.sh`** (the one live production Access app fronts `caisson.sh`), so admin's per-request
+  Access check would 403 everything except `/healthz` even with the origin gate satisfied. Carving the
+  probe alone would turn a red deploy into a green deploy of a locked-out admin. Carries the
+  `caisson-demos` gate question (mesh-internal, no proxy, no secret, never fronted by the edge).
 - **CAISSON-209 (High)** — `publish-image.yml`'s `gates` step runs `depcruise` on the runner's system
   Node 20.20.0 against a `^22||^24||>=26` floor. Owned by gridwork-infra as an R44 template change
   (four byte-identical repo copies); caisson verifies the propagation PR and proves it on the next
