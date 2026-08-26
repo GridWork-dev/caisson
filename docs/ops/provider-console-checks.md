@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-25
+updated: 2026-08-26
 status: live
 grounds:
   - docs/ops/probe-accounts.md
