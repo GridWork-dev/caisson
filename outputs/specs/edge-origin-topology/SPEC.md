@@ -1,10 +1,10 @@
 # SPEC — Edge/origin gate topology for the Railway-behind-Cloudflare estate
 
 - **Date:** 2026-08-26
-- **Status:** DECISION PENDING — operator fork. Nothing in this document may be executed before the operator picks. Drafted under the 2026-08-26 ruling "design pass first: no carve, no `deploy-railway` ride, no ORIGIN_SECRET seeding until the topology decision doc exists."
+- **Status:** LOCKED 2026-08-26 → **ADR-0416** (all four rulings; portal ruled in the same sitting). Execution remains gated on the secrets authorization — the ADR locks the shape, not the act. Originally drafted as DECISION PENDING — operator fork. Nothing in this document may be executed before the operator picks. Drafted under the 2026-08-26 ruling "design pass first: no carve, no `deploy-railway` ride, no ORIGIN_SECRET seeding until the topology decision doc exists."
 - **Tags:** `security` `infra` `external-system`
 - **Scope:** the whole Railway-behind-Cloudflare estate — `caisson` (6 services) and `gridwork-studio` (2 services), fronted by the shared `gridwork-origin-router` Worker owned by `gridwork-infra`.
-- **Decision:** none yet. The operator pick becomes an ADR in `knowledge/decisions/`; a Linear issue may reference it but never replaces it.
+- **Decision:** **ADR-0416**. A Linear issue may reference it but never replaces it.
 
 ## Goal
 
