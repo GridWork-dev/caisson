@@ -29,8 +29,22 @@ Merchant-of-Record billing webhook + idempotent credit grants. Commercial servic
   turns a buyer's purchases into the edition/bundle/module set they hold.
 - The Ed25519 offline-license issuer (ADR-0010) — signs offline license tokens for a granted
   entitlement via `@caisson/license-issue`.
-- The HTTP transport (`src/server.ts`, `Bun.serve`) — serves `POST /webhook` (billing), `POST /issue`
-  (license issuance), and `/health` over `handleBillingWebhook` and the issuer above.
+- The HTTP transport (`src/server.ts` → `src/app.ts`, `Bun.serve`) — the router serves **six** routes,
+  not the three this list used to name. Every route below except `/health` is Bearer-gated by
+  `authorized()`, which accepts EITHER the `LICENSE_ISSUE_TOKEN` or the admin token (constant-time
+  compare via `tokenMatches`), and is rate-limited fail-closed (`rateLimited(…, "closed")`) — a
+  limiter that cannot reach its backing store rejects rather than admits.
+  - `GET /health` — the only ungated route (GET only; any other method 405s).
+  - `POST /webhook` — billing, over `handleBillingWebhook`. Gated by provider signature, not Bearer.
+  - `POST /issue` — offline license issuance, over the Ed25519 issuer above.
+  - `POST /admin/affiliate/mint` — affiliate-code mint.
+  - `POST /eval/apply` · `POST /eval/issue` — the evaluation-license seam.
+
+  The three `admin`/`eval` routes were live and undocumented until 2026-08-26. Auditing this
+  service's HTTP surface from this README alone would have missed two privileged endpoints, which is
+  why the list is now exhaustive rather than illustrative: a partial route list on a money seam reads
+  as a complete one.
+
 - `email-notify.ts` — the `@caisson/email` wiring for this service. `resolveEmailer()` builds the
   Resend driver when `RESEND_API_KEY` is set (`RESEND_FROM` optional, defaults to
   `Caisson <no-reply@caisson.sh>`), the in-memory capture driver otherwise — same env vars and
