@@ -80,6 +80,11 @@ import type {
   RateLimiterInfraAlert,
 } from "./alerting.ts";
 
+/** The one path exempt from the origin gate. MUST equal `healthcheckPath` in
+ *  services/license/railway.toml — a test pins the pair, because a drift there silently re-freezes
+ *  the fleet deploy with no local signal. */
+export const HEALTH_PROBE_PATH = "/health";
+
 export interface IssueAppDeps {
   /** Bearer secret for POST /issue. Must be non-empty — server.ts fails closed if it is unset. */
   token: string;
@@ -619,20 +624,30 @@ export function createApp(
   };
 
   return withRequestSpan(async (req: Request): Promise<Response> => {
-    if (!originRequestAuthorized(req, originGate)) {
-      return json({ error: "forbidden" }, 403);
-    }
     const url = new URL(req.url);
     const { pathname } = url;
     const method = req.method.toUpperCase();
 
-    if (pathname === "/health") {
+    // Railway's platform healthcheck reaches the container internally and cannot carry the
+    // Worker-injected secret, so gating the probe path froze every deploy in the fleet (ADR-0416
+    // ruling 1). Exact equality, never a prefix — Railway probes the configured healthcheckPath
+    // and nothing else, so exempting more than the literal string widens the carve for no benefit.
+    const healthProbe = pathname === HEALTH_PROBE_PATH;
+    const originAuthorized = originRequestAuthorized(req, originGate);
+    if (!healthProbe && !originAuthorized) {
+      return json({ error: "forbidden" }, 403);
+    }
+
+    if (healthProbe) {
       if (method !== "GET") return text("method not allowed", 405);
       // Additive: `ok` stays first + always present (existing probes grep it). The index digest +
-      // entry count ride alongside for the F-1 index-parity drift probe when server.ts supplies them.
+      // entry count ride alongside for the F-1 index-parity drift probe when server.ts supplies
+      // them — but only for callers that proved the origin secret. index-parity-probe.ts reaches
+      // license.caisson.sh THROUGH the Worker, which injects it, so the probe is unaffected; the
+      // raw *.up.railway.app origin the carve admits gets liveness only.
       return json({
         ok: true,
-        ...(deps.indexDigest !== undefined
+        ...(originAuthorized && deps.indexDigest !== undefined
           ? { indexDigest: deps.indexDigest, indexEntries: deps.indexEntries }
           : {}),
       });

@@ -48,6 +48,9 @@ const createAdminProxy = Reflect.get(proxyModule, "createAdminProxy") as
       access: TestAccessConfig;
     }) => (request: NextRequest) => Promise<NextResponse>)
   | undefined;
+const HEALTH_PROBE_PATH = Reflect.get(proxyModule, "HEALTH_PROBE_PATH") as
+  | string
+  | undefined;
 
 interface TestAccessConfig {
   required: true;
@@ -287,13 +290,48 @@ describe("admin proxy edge composition", () => {
     });
   }
 
-  test("rejects /healthz without the origin secret even when Access is valid", async () => {
-    const response = await handler()(
+  test("exempts the exact health probe path from BOTH edge layers", async () => {
+    // ADR-0416 ruling 1. Railway's platform healthcheck reaches the container internally and can
+    // carry neither the Worker-injected origin secret nor an Access JWT. apps/admin is the
+    // fail-fast first leg of deploy-railway, so gating this path did not just break admin — it
+    // froze the whole fleet, and site/demos/docs/support-bot were never even attempted. This test
+    // previously asserted the 403 on purpose; the carve is the deliberate reversal.
+    const bare = await handler()(
+      new NextRequest("https://admin.caisson.sh/healthz"),
+    );
+    const accessOnly = await handler()(
       new NextRequest("https://admin.caisson.sh/healthz", {
         headers: { "Cf-Access-Jwt-Assertion": await token() },
       }),
     );
-    expect(response.status).toBe(403);
+    expect(bare.status).toBe(200);
+    expect(accessOnly.status).toBe(200);
+  });
+
+  test("the admin health carve is exact — near-miss paths keep both edge layers", async () => {
+    // The carve's whole risk is width. A prefix match would hand `/healthz/../api/admin/fleet`
+    // and every `/healthz*` route to the raw *.up.railway.app origin the Worker never sees.
+    for (const path of [
+      "/healthz/",
+      "/healthzz",
+      "/healthz/x",
+      "/api/healthz",
+    ]) {
+      const response = await handler()(
+        new NextRequest(`https://admin.caisson.sh${path}`),
+      );
+      expect({ path, status: response.status }).toEqual({ path, status: 403 });
+    }
+  });
+
+  test("the carved path equals the healthcheckPath Railway actually probes", async () => {
+    // Drift here silently re-freezes the fleet with no local signal: the code would exempt a path
+    // nothing probes while the probed path 403s. Derived from the manifest, not restated.
+    const manifest = await Bun.file(
+      new URL("../../railway.toml", import.meta.url),
+    ).text();
+    const probed = /^healthcheckPath\s*=\s*"([^"]+)"/m.exec(manifest)?.[1];
+    expect(probed).toBe(HEALTH_PROBE_PATH);
   });
 
   test("rejects a trailing-slash path that Next used to redirect ahead of both gates", async () => {

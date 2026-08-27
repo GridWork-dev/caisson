@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { loadOriginGateConfig } from "@caisson/kernel/node";
-import { createApp } from "./app.ts";
+import { createApp, HEALTH_PROBE_PATH } from "./app.ts";
 import { FakeEmbedder } from "./embedder.ts";
 import { DocsIndex } from "./index-store.ts";
 import { loadRateLimitConfig, TokenBucketLimiter } from "./rate-limit.ts";
@@ -81,7 +81,9 @@ describe("createApp routing", () => {
     expect(await res.json()).toEqual({ ready: true });
   });
 
-  test("origin gate rejects direct /health requests and accepts both rotation secrets", async () => {
+  test("origin gate exempts the exact health probe path and accepts both rotation secrets", async () => {
+    // ADR-0416 ruling 1: Railway's internal probe carries no Worker-injected secret, so gating
+    // this path froze every fleet deploy. It answers without one — and reports liveness ONLY.
     const missing = await gatedApp(new Request("http://docs.test/health"));
     const current = await gatedApp(
       new Request("http://docs.test/health", {
@@ -94,9 +96,48 @@ describe("createApp routing", () => {
       }),
     );
 
-    expect(missing.status).toBe(403);
+    expect(missing.status).toBe(200);
+    expect(await missing.json()).toEqual({ ok: true });
     expect(current.status).toBe(200);
     expect(next.status).toBe(200);
+    // Corpus size is the field the carve must not hand to an unauthenticated raw-origin caller.
+    expect(await current.json()).toHaveProperty("chunks");
+  });
+
+  test("the health carve is exact — near-miss paths stay behind the origin gate", async () => {
+    // The carve's whole risk is width. A prefix match would hand `/health/../query` and every
+    // `/health*` route to the raw *.up.railway.app origin, which the Worker never sees.
+    for (const path of [
+      "/health/",
+      "/healthz",
+      "/health/x",
+      "/HEALTH",
+      "/health/../query",
+    ]) {
+      const response = await gatedApp(new Request(`http://docs.test${path}`));
+      expect({ path, status: response.status }).toEqual({ path, status: 403 });
+    }
+  });
+
+  test("a query string does not widen the carve — same path, still status-only", async () => {
+    // `?x=1` is not part of `pathname`, so this IS the probe path and answers 200. Asserted
+    // explicitly because the reflex reading is that it is a near-miss: it is not, and the thing
+    // that actually matters is that it still cannot pull the corpus size out unauthenticated.
+    const response = await gatedApp(
+      new Request("http://docs.test/health?x=1&"),
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+  });
+
+  test("the carved path equals the healthcheckPath Railway actually probes", async () => {
+    // Drift here silently re-freezes the deploy with no local signal: the code would exempt a path
+    // nothing probes while the probed path 403s. Derived from the manifest, not restated.
+    const manifest = await Bun.file(
+      new URL("../railway.toml", import.meta.url),
+    ).text();
+    const probed = /^healthcheckPath\s*=\s*"([^"]+)"/m.exec(manifest)?.[1];
+    expect(probed).toBe(HEALTH_PROBE_PATH);
   });
 
   test("origin gate independently rejects a direct /query request", async () => {

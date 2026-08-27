@@ -15,6 +15,11 @@ import { withRequestSpan } from "@caisson/observability";
 import type { DocsIndex } from "./index-store.ts";
 import { clientIp, type RateBucket, type RateLimiter } from "./rate-limit.ts";
 
+/** The one path exempt from the origin gate. MUST equal `healthcheckPath` in
+ *  services/docs/railway.toml — a test pins the pair, because a drift there silently re-freezes
+ *  the fleet deploy with no local signal. */
+export const HEALTH_PROBE_PATH = "/health";
+
 export interface AppDeps {
   index: DocsIndex;
   llmsTxt: string;
@@ -124,18 +129,29 @@ export function createApp(deps: AppDeps): (req: Request) => Promise<Response> {
   };
 
   return withRequestSpan(async (req: Request): Promise<Response> => {
-    if (!originRequestAuthorized(req, originGate)) {
-      return json({ error: "forbidden" }, 403);
-    }
     const url = new URL(req.url);
     const { pathname } = url;
     const method = req.method.toUpperCase();
 
+    // Railway's platform healthcheck reaches the container internally and cannot carry the
+    // Worker-injected secret, so gating the probe path froze every deploy in the fleet (ADR-0416
+    // ruling 1). Exact equality, never a prefix — Railway probes the configured healthcheckPath
+    // and nothing else, so exempting more than the literal string widens the carve for no benefit.
+    const healthProbe = pathname === HEALTH_PROBE_PATH;
+    const originAuthorized = originRequestAuthorized(req, originGate);
+    if (!healthProbe && !originAuthorized) {
+      return json({ error: "forbidden" }, 403);
+    }
+
     // /health is intentionally NOT rate-limited — liveness/readiness probes must never be throttled.
-    if (pathname === "/health") {
-      return method === "GET"
-        ? json({ ok: true, chunks: deps.index.size })
-        : text("method not allowed", 405);
+    if (healthProbe) {
+      if (method !== "GET") return text("method not allowed", 405);
+      // Corpus size rides only for callers that proved the origin secret. Through the Worker that
+      // is every real probe; the raw *.up.railway.app origin the carve admits gets liveness only.
+      return json({
+        ok: true,
+        ...(originAuthorized ? { chunks: deps.index.size } : {}),
+      });
     }
     // The router is constructed only after the artifact's strict manifest + checksum validate and
     // its SQLite index opens. Reaching this route therefore proves the required local artifact is

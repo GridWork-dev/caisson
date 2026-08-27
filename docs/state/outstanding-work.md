@@ -95,7 +95,7 @@ fleet deploy off `f9c04f33` used.
 | CAISSON-78  | Backlog  | trigger: material competitor event                                                                                                           |
 | CAISSON-130 | Backlog  | trigger: future copy wave; frozen now                                                                                                        |
 | CAISSON-131 | **Done** | July persona findings absorbed into the completed audit/remediation program                                                                  |
-| CAISSON-208 | Triage   | Railway deploys frozen by #448's origin gate; blocked on the edge-topology design pass — see the open section above                          |
+| CAISSON-208 | Triage   | carve landed for all FOUR gated services; deploy still blocked on operator seeding + admin's Access posture — see the open section above     |
 | CAISSON-209 | Triage   | publish-image `gates` on Node 20; gridwork-infra owns the R44 template fix, caisson verifies propagation                                     |
 | CAISSON-206 | Triage   | re-measure client-IP rate-limit keying behind the Worker front                                                                               |
 | CAISSON-207 | Backlog  | GridWork-hub backlinks; blocked until the hub is live                                                                                        |
@@ -244,32 +244,63 @@ The CI-coverage item that used to be the last entry here closed 2026-08-25 (#450
 then opened four new ones the same day; all four are Linear-tracked and none had reached this file
 until now.
 
-- **CAISSON-208 (Urgent)** — **Railway deploys are frozen.** #448 made the origin gate the first
-  check in `apps/admin/src/proxy.ts` and the new `apps/site/proxy.ts` (`matcher: ["/:path*"]`), and
-  `packages/kernel/src/origin-gate.ts` fails closed — an absent `ORIGIN_SECRET_MODE` stays armed and
-  production cannot opt out. Railway's internal probe cannot carry `x-gridwork-origin-secret`, so
-  `/healthz` 403s and the deploy fails; admin is the fail-fast verifier step, so the other five
-  services are never attempted. Every push touching `apps/site|admin|demos`, `services/docs|support-bot`,
-  `packages/**`, `tooling/audit-harness`, `tooling/demo-registry`, `package.json` or `bun.lock` fails
-  identically. **Blocked on a design pass** (operator ruling 2026-08-26): the health-path carve alone
-  is not sufficient. The edge Worker **does** front all nine production hostnames and injects
-  `x-gridwork-origin-secret` unconditionally, and its nine Worker Secrets are seeded (gridwork-infra,
-  measured 2026-08-26) — so public traffic would carry the header. Two things still bite: the
-  Worker-to-Railway secret **pairing** is unverified, and **no Access application fronts
-  `admin.caisson.sh`** (the one live production Access app fronts `caisson.sh`), so admin's per-request
-  Access check would 403 everything except `/healthz` even with the origin gate satisfied. Carving the
-  probe alone would turn a red deploy into a green deploy of a locked-out admin. Carries the
-  `caisson-demos` gate question (mesh-internal, no proxy, no secret, never fronted by the edge).
+- **CAISSON-208 (Urgent)** — **Railway deploys are frozen. The carve is written; the deploy is still
+  operator-gated.** #448 made the origin gate the first check in `apps/admin/src/proxy.ts` and the new
+  `apps/site/proxy.ts` (`matcher: ["/:path*"]`), and `packages/kernel/src/origin-gate.ts` fails closed —
+  an absent `ORIGIN_SECRET_MODE` stays armed and production cannot opt out. Railway's internal probe
+  cannot carry `x-gridwork-origin-secret`, so the probe path 403s and the deploy fails; admin is the
+  fail-fast verifier step, so the other five services are never attempted. Every push touching
+  `apps/site|admin|demos`, `services/docs|support-bot`, `packages/**`, `tooling/audit-harness`,
+  `tooling/demo-registry`, `package.json` or `bun.lock` fails identically.
+
+  **Correction to the scope this entry previously carried: the freeze is FOUR services deep, not two.**
+  #448 (`498b279c`) armed the gate ahead of the health route in `apps/admin`, `apps/site`,
+  **`services/docs`** and **`services/license`** in one commit, and all four shipped a test asserting
+  their own health path 403s. Admin merely fails first. Patching only the two Next proxies — the shape
+  ADR-0416 names and this entry previously assumed — would have moved the failure to docs, then license.
+
+  **Done (this PR):** the path carve on all four, keyed on exact equality against each service's own
+  `railway.toml` `healthcheckPath` (a test pins the pair per service, so drift cannot silently
+  re-freeze the fleet), the four tests amended off their deliberate 403 assertions, and ADR-0416
+  ruling 1 step 2's status-only reduction applied — as a condition on the origin secret rather than a
+  deletion, so `registry/scripts/index-parity-probe.ts` (which reaches admin and license **through**
+  the Worker, and therefore carries the secret) keeps both of its digest legs. **That reading of
+  "status-only" is the one judgement call in the change and is flagged for operator confirmation** —
+  the strict reading is unconditional, which would cost those two parity legs.
+
+  **Still blocked, both operator-only:** (1) **seeding** both sides of caisson's hostnames — an
+  always-page secrets class; ADR-0416 locks the shape, not the act, and value-equality of the
+  Worker-to-Railway pair has no passive proof, so carve-without-seed is a gamble on every public
+  request. (2) **admin's Access posture** — `verifyCloudflareAccessRequest` also entered the proxy in
+  #448 and, like the origin gate, cannot be disabled in production; **no Access application fronts
+  `admin.caisson.sh`**, so once the probe is carved admin's deploy goes green while every non-probe
+  route 403s. ADR-0416 ruling 1 step 3 deliberately defers that app to the T35–T40 cutover, so the
+  carve unfreezes site/demos/docs/support-bot and leaves admin green-but-locked-out **by the ADR's own
+  sequencing** — intended, but it must not be mistaken for a working admin.
+
+  **Pre-deploy env checklist** (every throw-at-load loader, enumerated from source rather than from
+  `railway.toml`, which documents none of the CF_ACCESS pair): `caisson-site` → `ORIGIN_SECRET`;
+  `caisson-admin` → `ORIGIN_SECRET` + `CF_ACCESS_TEAM_DOMAIN` + `CF_ACCESS_AUD`; `caisson-docs` →
+  `ORIGIN_SECRET`; `caisson-license` → `ORIGIN_SECRET`; `caisson-demos` and `caisson-support-bot` →
+  neither gate, nothing to set. Any of these missing is a `ConfigError` at module load, which presents
+  as a failed healthcheck and is indistinguishable from the 403 this PR fixes.
+
+  Carries the `caisson-demos` gate question (mesh-internal, no proxy, no secret, never fronted by the
+  edge — ADR-0416 ruling 3 records that as the whole boundary).
+
 - **CAISSON-209 (High)** — `publish-image.yml`'s `gates` step runs `depcruise` on the runner's system
   Node 20.20.0 against a `^22||^24||>=26` floor. Owned by gridwork-infra as an R44 template change
   (four byte-identical repo copies); caisson verifies the propagation PR and proves it on the next
   real publish. The two green `publish image` runs after #448 are **no-ops** — `select` ran, `publish`
   and `collect` skipped — so nothing is proven yet.
-- **ADR-0416 execution residual — seeding + `/healthz`.** The ADR locks the _shape_, not the act.
-  Seeding both sides of caisson's hostnames is an always-page secrets class and stays operator-
-  authorized; reducing `/healthz` to status-only in `apps/admin` and `apps/site` is real work
-  (admin's currently returns `indexDigest` and `indexEntries`). Both land together per ruling 1 —
-  the carve without the seeding is a gamble, because value-equality has no passive proof.
+- **ADR-0416 execution residual — seeding only; the `/healthz` half is done.** The ADR locks the
+  _shape_, not the act. Seeding both sides of caisson's hostnames is an always-page secrets class and
+  stays operator-authorized; the carve without the seeding is a gamble, because value-equality has no
+  passive proof. The status-only reduction shipped with the carve (CAISSON-208 above) — applied as a
+  condition on the origin secret rather than a deletion, which preserves the two `index-parity-probe`
+  digest legs and is the one reading in that change awaiting operator confirmation. Note ruling 1 says
+  seed and carve land "as one act"; they are split here because only the carve is a session-authorized
+  class, so the merged carve sits armed-but-undeployed until the seeding act.
 - **ADR-0416 ruling 4 has no mechanism yet — and the posture append does NOT supply one.** Ruling 4
   adopts "a merge precondition naming an out-of-band credential state needs a mechanical check,"
   enforced as a `[merge_hold]` posture entry. **Today's `[merge_hold]` schema cannot express that.**

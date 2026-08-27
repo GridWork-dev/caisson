@@ -24,6 +24,10 @@ const createSiteProxy =
 const proxyConfig = Reflect.get(proxyModule ?? {}, "config") as
   | { matcher?: readonly string[] }
   | undefined;
+const HEALTH_PROBE_PATH = Reflect.get(
+  proxyModule ?? {},
+  "HEALTH_PROBE_PATH",
+) as string | undefined;
 
 const CURRENT = Buffer.alloc(32, 0x41).toString("base64url");
 const NEXT = Buffer.alloc(32, 0x42).toString("base64url");
@@ -50,7 +54,11 @@ test("site proxy matches API and metadata routes instead of excluding security-r
   expect(proxyConfig?.matcher).toEqual(["/:path*"]);
 });
 
-test("site proxy rejects missing and wrong origin secrets on /healthz", async () => {
+test("site proxy exempts the exact health probe path from the origin gate", async () => {
+  // ADR-0416 ruling 1. Railway's platform healthcheck reaches the container internally and cannot
+  // carry the Worker-injected secret; gating it made `main` undeployable and froze the whole
+  // fleet, since apps/admin is the fail-fast first leg. This test previously asserted the 403 on
+  // purpose — the carve is the deliberate reversal, not a regression.
   const proxy = requireProxy({
     NODE_ENV: "production",
     ORIGIN_SECRET: CURRENT,
@@ -64,8 +72,36 @@ test("site proxy rejects missing and wrong origin secrets on /healthz", async ()
     }),
   );
 
-  expect(missing.status).toBe(403);
-  expect(wrong.status).toBe(403);
+  // A wrong secret is not rejected either: the path answers ahead of the gate, so the header is
+  // never read. That is the honest contract — the route is a bare `{ ok: true }` with nothing to
+  // protect. Anything that ever needs protecting must not live on this path.
+  expect(missing.status).toBe(200);
+  expect(wrong.status).toBe(200);
+});
+
+test("the site health carve is exact — near-miss paths stay behind the origin gate", async () => {
+  // The carve's whole risk is width. A prefix match would hand `/healthz/../api/ask` and every
+  // `/healthz*` route to the raw *.up.railway.app origin, which the Worker never sees.
+  const proxy = requireProxy({
+    NODE_ENV: "production",
+    ORIGIN_SECRET: CURRENT,
+    ORIGIN_SECRET_NEXT: NEXT,
+  });
+
+  for (const path of ["/healthz/", "/healthzz", "/healthz/x", "/api/healthz"]) {
+    const response = await proxy(new NextRequest(`https://caisson.sh${path}`));
+    expect({ path, status: response.status }).toEqual({ path, status: 403 });
+  }
+});
+
+test("the carved path equals the healthcheckPath Railway actually probes", async () => {
+  // Drift here silently re-freezes the deploy with no local signal: the code would exempt a path
+  // nothing probes while the probed path 403s. Derived from the manifest, not restated.
+  const manifest = await Bun.file(
+    new URL("../railway.toml", import.meta.url),
+  ).text();
+  const probed = /^healthcheckPath\s*=\s*"([^"]+)"/m.exec(manifest)?.[1];
+  expect(probed).toBe(HEALTH_PROBE_PATH);
 });
 
 test("site proxy independently rejects a direct /api request without the origin secret", async () => {
