@@ -1,0 +1,291 @@
+---
+title: Governed agent loop
+description: Run a bounded tool loop with runToolLoop, where every model and tool step reserves credits before it executes, a gated tool parks the run for an operator decision, and an approval resumes it from durable state.
+---
+
+`@caisson/ai-kit` is the metered inference layer of the AI-Production bundle: it composes
+`@caisson/ai-meter`, `@caisson/guardrails`, `@caisson/prompt-registry`, and
+`@caisson/ai-config` behind one chokepoint so a provider SDK is never called directly from
+your app. `runToolLoop` is that chokepoint for agents. A raw provider tool loop spends
+whatever the model asks for and executes whatever the model proposes; `runToolLoop` prices
+and debits each step before it runs, records the whole run as an append-only trajectory, and
+stops on any tool you mark as needing a human decision.
+
+## What it does
+
+- **Reserve before every step.** Each model step and each tool step takes an `ai-meter`
+  reservation before it executes. A short wallet or an open circuit breaker fails the run with
+  `reserve-402`. On a model step that happens before the provider is called; on a tool step the
+  turn's model call has already settled, so read `creditsSpent` rather than assuming zero.
+- **A caller-side credit budget.** `creditBudget` is an integer ceiling across the whole run.
+  A step whose priced estimate would cross the remaining budget fails the run before it
+  reserves anything, so a loop cannot walk past its budget one step at a time.
+- **A hard step ceiling.** `maxSteps` bounds the loop. A model still asking for tools at the
+  ceiling fails the run with `step-ceiling` rather than looping.
+- **The loop executes tools, not the SDK.** Tools are declared to the provider schema-only.
+  The model proposes, the SDK validates the input against your `inputSchema`, and the loop
+  executes the call between steps, meters it, and appends the result.
+- **Approval parking.** A tool marked `approvalRequired` is never executed by the loop. The
+  run appends `tool.proposed`, writes a durable resumable snapshot, and returns
+  `status: "parked"` with the `toolCallId` awaiting a decision.
+- **A fail-closed audit envelope.** Every event is appended to a `TrajectoryStore` before the
+  step it describes proceeds; an append failure stops the run (`trajectory-append`) instead
+  of letting an unrecorded step spend money. Tool arguments and results travel as SHA-256
+  digests, never as bodies.
+
+## Install
+
+```bash
+bun add @caisson/ai-kit
+```
+
+## Prerequisites
+
+Four things must be wired before the first run.
+
+1. **The money tables.** Apply `CREDIT_SCHEMA_SQL` from `@caisson/credits` and
+   `AI_METER_SCHEMA_SQL` from `@caisson/ai-meter`, and fund the account with `grant()`. The
+   loop debits the same integer credit ledger the rest of AI-Production meters against, see
+   [ai-meter](/docs/ai-production/ai-meter).
+2. **The trajectory tables.** Apply `@caisson/agent-trajectory`'s three SQL files under
+   `src/migrations/`: `0001_trajectory_event.sql`, `0002_agent_run_state.sql`, and
+   `0003_agent_run_state_parked_state_encrypted.sql`. The first is the append-only run log;
+   the other two hold the parked-run state, encrypted at rest.
+3. **Lane settings.** An `AiSettings` object, validated with `parseAiSettings` from
+   `@caisson/ai-config`, mapping each lane to a `provider`/`model` and the env-var name
+   holding its key.
+4. **A guard config.** A `GuardPolicy` plus a `GuardRuntime`, exactly as
+   [guardrails](/docs/ai-production/guardrails) describes. The opening prompt is
+   input-guarded before any spend and the final text is output-guarded before it is returned.
+
+```ts
+import { parseAiSettings } from "@caisson/ai-config";
+import { createPgTrajectoryStore, createPgRunStateStore } from "@caisson/agent-trajectory";
+import { DerivedKeyProvider, derivedContext } from "@caisson/field-crypto";
+
+const settings = parseAiSettings({
+  defaultLane: "default",
+  lanes: {
+    // The lane's provider/model pair must have a bundled price-book row, or `runToolLoop`
+    // throws `ConfigError` before the run starts. Pass `meter.priceBook` to price your own.
+    default: { provider: "openai", model: "gpt-4o-mini", apiKeyEnv: "OPENAI_API_KEY" },
+  },
+});
+
+// The append-only run log. Required on every run.
+const store = createPgTrajectoryStore(tx, accountId);
+
+// Durable run state for parked runs. Required only when a tool is gated.
+const keys = new DerivedKeyProvider(masterKey, salt); // 32 bytes each
+const runState = createPgRunStateStore(tx, accountId, derivedContext(keys, accountId));
+```
+
+`tx` is a `Transactor` from `@caisson/tenancy-rls`; every meter and store call the loop makes
+runs inside `withTenant`, so a run is scoped to one tenant end to end.
+
+## Quickstart
+
+```ts
+import { z } from "zod";
+import { buildRegistryResolver, defaultProviders, runToolLoop } from "@caisson/ai-kit";
+import { localModerator } from "@caisson/guardrails";
+
+const TicketQuery = z.object({ account: z.string() });
+
+const result = await runToolLoop({
+  tx,
+  accountId,
+  settings,
+  resolveModel: buildRegistryResolver(settings, defaultProviders(settings)),
+  guard: {
+    policy: { policyName: "default", moderator: localModerator([]) },
+    runtime: { tenantId: accountId, sink: eventSink },
+  },
+  lane: "default",
+  agentId: "support-agent",
+  prompt: "Summarize the open tickets for acme-co.",
+  tools: {
+    list_tickets: {
+      description: "list open tickets for an account",
+      inputSchema: TicketQuery,
+      execute: async (input) => listOpenTickets(TicketQuery.parse(input)),
+    },
+  },
+  maxSteps: 8,
+  creditBudget: 500,
+  store,
+});
+
+if (result.status === "completed") {
+  console.info(result.text, result.creditsSpent, result.stepsUsed);
+}
+```
+
+`maxSteps` and `creditBudget` must both be positive integers; anything else throws a
+`RangeError` before the run starts. Pass `runId` to make the run idempotent under a retry:
+per-step meter call ids derive from it, so the same `runId` settles exactly once. It must be
+server-controlled, a client-supplied `runId` turns a replay into free inference.
+
+## Gating a tool on operator approval
+
+Add `approvalRequired: true` to any tool whose side effects need a human, and pass the
+`runState` store. Everything else about the tool is unchanged.
+
+```ts
+import type { LoopTool } from "@caisson/ai-kit";
+
+const RefundInput = z.object({ invoiceId: z.string(), amountCents: z.number().int() });
+
+const tools: Readonly<Record<string, LoopTool>> = {
+  list_tickets: {
+    description: "list open tickets for an account",
+    inputSchema: TicketQuery,
+    execute: async (input) => listOpenTickets(TicketQuery.parse(input)),
+  },
+  issue_refund: {
+    description: "refund a customer invoice",
+    inputSchema: RefundInput,
+    execute: async (input) => refundInvoice(RefundInput.parse(input)),
+    approvalRequired: true,
+  },
+};
+
+const result = await runToolLoop({ ...config, tools, store, runState });
+```
+
+A gated tool invoked without a `runState` store does not silently execute: the run fails with
+`failure.code === "tool"`.
+
+## Handling a parked run
+
+When the model proposes a gated call, `runToolLoop` returns instead of executing it:
+
+```ts
+if (result.status === "parked") {
+  // result.toolCallId is the call awaiting a decision.
+  // result.text is "" — the run is paused, not finished.
+  await notifyOperator(result.runId, result.toolCallId);
+}
+```
+
+What the run process can do at that point is: nothing more with this run. The loop appended
+`tool.proposed` and no `tool.result`, and deliberately appended no `run.finished` — a parked
+run is paused, not decided. `execute` was never called. The durable snapshot holding the
+conversation, the step's remaining proposed calls, and the step/credit counters lives in
+`agent_run_state`, encrypted at rest. Nothing else advances the run until a decision lands;
+the resume job that wakes it is only enqueued on approval.
+
+Read the pending decision back at any time:
+
+```bash
+caisson run status <runId>
+```
+
+That prints the run-state row (`status` is `running`, `parked`, or `finished`,
+`pendingToolCallId` is the call awaiting a decision) plus a trajectory summary. It never
+returns the parked snapshot.
+
+## Approving and denying
+
+`approve`, `deny`, and `status` talk directly to your own Postgres, no MCP round-trip. Set
+`DATABASE_URL` and `CAISSON_ACCOUNT_ID` in the environment. `--actor` is required on both
+decisions and is recorded in the trajectory.
+
+```bash
+caisson run approve <runId> <toolCallId> --actor ops@example.com
+caisson run deny    <runId> <toolCallId> --actor ops@example.com --reason "amount over limit"
+```
+
+Approve transitions the run state from `parked` to `running`, appends an actor-carrying
+`tool.approved` event, and enqueues the resume job under the singleton key `runId`. That
+enqueue is the wake signal, since no job exists for a run while it is parked. Repeating the
+command is safe: the transition reports a no-op, the event is never appended twice, and the
+resume path's own compare-and-swap is the final guard.
+
+Deny transitions the run to `finished`, appends `tool.denied` followed by
+`run.finished` with `status: "failed"` and reason `tool-denied`, clears the stored snapshot,
+and enqueues nothing. A denied run never resumes: calling `resumeToolLoop` on it throws
+`ConflictError` from `@caisson/kernel` before any tool or model logic runs.
+
+The same two decisions are available in-process as `approveToolCall(deps, runId, toolCallId,
+actor)` and `denyToolCall(deps, runId, toolCallId, actor, reason?)`, where `deps` is
+`{ store, runState, jobs }`. Use those when an admin surface in your own app owns the
+decision instead of the CLI.
+
+## Resuming after an approval
+
+The resume job's payload is `{ runId }` under the task name `RESUME_TASK_NAME`
+(`agent-run.resume`). Handle it by calling `resumeToolLoop` with the same configuration the
+run started with, minus `prompt` and with `runId` and `runState` both required:
+
+```ts
+import { z } from "zod";
+import { RESUME_TASK_NAME, resumeToolLoop } from "@caisson/ai-kit";
+import { createPgBossJobQueue, defineTask } from "@caisson/jobs";
+
+const jobs = createPgBossJobQueue(
+  [
+    defineTask(
+      RESUME_TASK_NAME,
+      z.object({ runId: z.string() }).strict(),
+      async ({ runId }) => {
+        const resumed = await resumeToolLoop({ ...config, tools, store, runState, runId });
+        if (resumed.status === "completed") await deliver(resumed.text);
+      },
+    ),
+  ],
+  { connectionString: databaseUrl },
+);
+
+await jobs.work(RESUME_TASK_NAME);
+```
+
+`resumeToolLoop` claims the pending call with a compare-and-swap, re-hydrates the
+conversation from the stored snapshot rather than from the log, executes the approved call,
+continues any remaining proposed calls in that same step, and then runs the ordinary step
+loop from the next step. Credit and step counters resume where they stopped, so the run's
+`creditBudget` and `maxSteps` still bound the whole run and not just the tail. A second
+concurrent resume of the same approval throws `ConflictError` instead of executing the tool
+twice. On completion the snapshot is cleared and the run-state row is marked `finished`.
+
+Because a resumed run continues the same `runId`, the trajectory reads as one run end to end:
+`run.started`, the first step's `model.call`/`model.usage`/`tool.proposed`, then
+`tool.approved`, `tool.result`, and the remaining steps through `run.finished`.
+
+## Outcomes and failures
+
+`ToolLoopResult.status` is one of exactly three values:
+
+| `status` | Meaning |
+| --- | --- |
+| `completed` | The model stopped on its own and the output guard passed. `text` holds the final text. |
+| `parked` | A gated tool was proposed. `toolCallId` holds the call awaiting a decision; `text` is `""`. |
+| `failed` | The run stopped. `failure` holds `{ code, message }`; `text` is `""`. |
+
+Budget exhaustion is not its own status: it is `status: "failed"` with
+`failure.code === "budget-exceeded"`. The full code set:
+
+| `failure.code` | Cause |
+| --- | --- |
+| `budget-exceeded` | The next step's priced estimate would cross `creditBudget`. Nothing was reserved for it. |
+| `reserve-402` | A reservation was refused — a short wallet or an open spend breaker. On a model step the provider was not called; on a tool step that turn's model call had already settled, so check `creditsSpent`. |
+| `step-ceiling` | The model still wanted tools at `maxSteps`. |
+| `provider` | The provider call threw. The reservation is refunded. |
+| `tool` | A tool threw, the model proposed a tool that is not declared, or a gated tool was invoked with no `runState` store. |
+| `guard` | The output guard blocked the final text. The step had already settled, so the spend is real. |
+| `trajectory-append` | A required append failed, so the step it describes never ran. |
+| `settle` | A settle or refund failed after its reserve committed, leaving an orphaned hold. Distinct so orphans are discoverable. |
+
+`creditsSpent` and `stepsUsed` are populated on every outcome, including failures and parks,
+so a failed run still reports what it actually cost.
+
+Some failures throw instead of returning a result, and all of them happen before the run starts:
+a non-positive-integer `maxSteps` or `creditBudget` raises `RangeError`, an unknown lane raises
+`NotFoundError`, a lane whose `provider`/`model` pair has no price-book row raises `ConfigError`,
+and a blocked opening prompt raises `GuardrailError`. None of them writes an event or moves a
+credit. Once `run.started` is appended, every outcome is a returned `ToolLoopResult`.
+
+<Callout type="info" title="Commercial, AI-Production">
+  `@caisson/ai-kit` ships under the AI-Production bundle license
+  (`LicenseRef-Caisson-Commercial`). The legacy `ai-kit` id resolves to `ai-production`.
+</Callout>

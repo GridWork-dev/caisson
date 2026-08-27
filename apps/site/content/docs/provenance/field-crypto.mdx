@@ -51,17 +51,19 @@ FIELD_CRYPTO_SALT=...
 import { DerivedKeyProvider, TenantFieldCrypto } from "@caisson/field-crypto";
 
 const provider = DerivedKeyProvider.fromEnv(); // reads MASTER_FIELD_KEY + FIELD_CRYPTO_SALT
-const crypto = new TenantFieldCrypto(provider);
+// Not named `crypto`: that would shadow the global WebCrypto object this page later tells you to
+// call for `crypto.randomUUID()` row ids.
+const fieldCrypto = new TenantFieldCrypto(provider);
 
-const sealed = await crypto.encryptField(
+const sealed = await fieldCrypto.encryptField(
   tenantId,
   "424-00-1234",
   "patient.ssn",
 );
-const plain = await crypto.decryptField(tenantId, sealed, "patient.ssn");
+const plain = await fieldCrypto.decryptField(tenantId, sealed, "patient.ssn");
 
 // A different tenant's id derives a different subkey → fails closed.
-await crypto.decryptField(otherTenantId, sealed, "patient.ssn"); // throws: AEAD authentication error
+await fieldCrypto.decryptField(otherTenantId, sealed, "patient.ssn"); // throws: AEAD authentication error
 ```
 
 ## The guarantee
@@ -116,11 +118,22 @@ const plain = decryptField(ctx, "patient.ssn", rowId, sealed);
 
 ## Rotation
 
+Rotate through the registry the provider actually reads. `DerivedKeyProvider.fromEnv()` constructs
+its own `KeyVersionRegistry` unless you inject one, so a freestanding registry bumps a map nothing
+consults and no write ever picks up the new version:
+
 ```ts
-import { KeyVersionRegistry } from "@caisson/field-crypto";
+provider.registry.rotate(tenantId); // bumps the current version; new writes use it immediately
+```
+
+To own the registry yourself, inject it at construction and rotate on that same instance:
+
+```ts
+import { DerivedKeyProvider, KeyVersionRegistry } from "@caisson/field-crypto";
 
 const registry = new KeyVersionRegistry();
-registry.rotate(tenantId); // bumps the current version; new writes use it immediately
+const provider = DerivedKeyProvider.fromEnv(process.env, registry);
+registry.rotate(tenantId);
 ```
 
 There's no bulk re-encrypt job, every envelope carries its own `key_version`, so a value
@@ -231,5 +244,159 @@ so an erasure is recorded without ever mutating the chain's committed bytes.
   determination is your organization's and its auditor's to make.
 </Callout>
 
-field-crypto is sold standalone, or as one of the primitives composing the Compliance
-bundle alongside `@caisson/audit-worm`, `@caisson/retention-runner`, and the alert pipeline.
+field-crypto is sold standalone, or as one of the primitives composing the **Compliance** and
+**Provenance** bundles, alongside `@caisson/audit-worm`, `@caisson/signing-primitive`,
+`@caisson/retention-runner`, and the alert pipeline.
+
+## Migrating from pre-1.0
+
+The current release is `1.1.1`. Three API changes landed in `1.0.0` and nothing since has
+moved them: the request context lends key material instead of returning it, `WrappedKeyStore`
+gained an atomic first-write member, and `@caisson/ai-kit`'s `buildRunTools` takes a context
+runner instead of a key provider. The wire format did not change, so no stored ciphertext
+needs re-encrypting, an envelope written by a pre-1.0 build opens under `1.1.1` unchanged.
+
+### `deriveKey(version)` became `withKey(version, use)`
+
+`FieldCryptoContext.deriveKey(keyVersion)` returned a key buffer the caller held until the
+request ended, one live copy per call. It is replaced by `withKey(keyVersion, use)`, which
+lends the key to one operation and zeroizes it when that operation returns or throws.
+
+If your code calls `sealField`, `openField`, or reads and writes through `encryptedColumn`,
+there is nothing to change, those moved to `withKey` internally. Direct key callers wrap the
+body instead:
+
+```ts
+import { aesGcm, buildAad, serializeEnvelope } from "@caisson/field-crypto";
+
+const keyVersion = ctx.currentVersion();
+const aad = buildAad(ctx.tenantId, keyVersion, "patient.ssn");
+
+// Before (pre-1.0): the buffer is yours, and stays live for the rest of the request.
+const key = ctx.deriveKey(keyVersion);
+const { nonce, ciphertext, tag } = aesGcm.encrypt(key, Buffer.from(plaintext, "utf8"), aad);
+const sealed = serializeEnvelope({ algId: aesGcm.algId, keyVersion, nonce, ciphertext, tag });
+```
+
+After — the same body, moved inside the lend:
+
+```ts
+import { aesGcm, buildAad, serializeEnvelope } from "@caisson/field-crypto";
+
+const keyVersion = ctx.currentVersion();
+const aad = buildAad(ctx.tenantId, keyVersion, "patient.ssn");
+
+const sealed = ctx.withKey(keyVersion, (key) => {
+  const { nonce, ciphertext, tag } = aesGcm.encrypt(key, Buffer.from(plaintext, "utf8"), aad);
+  return serializeEnvelope({ algId: aesGcm.algId, keyVersion, nonce, ciphertext, tag });
+});
+```
+
+The callback must be synchronous. An `async` or otherwise promise-returning callback is a
+type error at `bun run check`, and it is also refused at runtime with an error naming the
+misuse, because the key is wiped before the continuation would resume, and encrypting under
+the resulting all-zero key round-trips successfully and would otherwise fail silently. A
+callback returning an array or any other non-thenable value passes through unchanged.
+
+Building a context has not changed, `derivedContext(provider, tenantId)` and
+`withKmsFieldCryptoContext(provider, tenantId, fn)` produce contexts that already implement
+`withKey`. If you hand-rolled a `FieldCryptoContext`, swap the member and wipe what you lend:
+
+```ts
+import type { FieldCryptoContext } from "@caisson/field-crypto";
+
+const ctx: FieldCryptoContext = {
+  tenantId,
+  withKey(keyVersion, use) {
+    const key = provider.deriveKey(tenantId, keyVersion);
+    try {
+      return use(key);
+    } finally {
+      key.fill(0);
+    }
+  },
+  currentVersion: () => provider.currentVersionSync(tenantId),
+};
+```
+
+`FieldKeyProvider.keyFor` is unchanged, and `SyncFieldKeyProvider.deriveKey` keeps its
+signature. Its contract tightened: it must return fresh, caller-owned material, because
+`derivedContext` now zeroizes the returned buffer in place with no defensive copy. A provider
+that hands back a cached buffer has that cache wiped by the first operation, so the second
+operation is rejected with an all-zero-key error rather than encrypting under a publicly
+known key. A KMS provider that unwraps to an all-zero DEK is rejected at bind for the same
+reason.
+
+### `WrappedKeyStore` requires `putWrappedIfAbsent`
+
+External implementations of `WrappedKeyStore` add one member. It inserts only when the tenant
+and version have no wrapped DEK yet, and returns `true` for the winner and `false` when an
+append-only winner already exists, which is what elects a single first-provision writer under
+concurrent binds:
+
+```ts
+import type { WrappedKeyStore } from "@caisson/field-crypto";
+
+class MyWrappedKeyStore implements WrappedKeyStore {
+  // getWrapped / putWrapped / currentVersion / setCurrentVersion are unchanged.
+  async putWrappedIfAbsent(
+    tenantId: string,
+    keyVersion: number,
+    wrapped: Buffer,
+  ): Promise<boolean> {
+    // INSERT ... ON CONFLICT (tenant_id, key_version) DO NOTHING
+    // → true when this statement inserted the row, false when it hit the conflict.
+  }
+}
+```
+
+`InMemoryWrappedKeyStore`, `DbWrappedKeyStore`, and `PgWrappedKeyStore` already implement it.
+If you inject your own `KeyValueStore` into `DbWrappedKeyStore`, that port grew from `get` and
+`put` to four members: add `putIfAbsent(key, value)`, returning whether it inserted, and
+`compareAndSwap(key, expected, next)`, returning whether it swapped, where an `expected` of
+`undefined` means the key must not already exist. Both back the monotonic current-version
+transitions that stop an overlapping recovery writer from lowering a newer durable version.
+
+### `buildRunTools` takes a `fieldCryptoContext` runner
+
+In `@caisson/ai-kit`, `RunToolsDeps.keyProvider` (a `SyncFieldKeyProvider`) is removed and
+replaced by a required `fieldCryptoContext` runner. Callers still passing a key provider do
+not compile. The runner receives an account id and a callback, and binds the tenant executor
+and the field-crypto context together in one transaction, so `parked_state` is sealed under a
+context that retains no plaintext key between requests:
+
+```ts
+import { buildRunTools } from "@caisson/ai-kit";
+import {
+  KmsKeyProvider,
+  PgWrappedKeyStore,
+  withKmsFieldCryptoContext,
+} from "@caisson/field-crypto";
+import { withTenant } from "@caisson/tenancy-rls";
+
+const tools = buildRunTools({
+  ...deps, // tx, settings, resolveModel, guard, lane, agentId, tools, maxSteps, creditBudget
+  fieldCryptoContext: (accountId, fn) =>
+    withTenant(tx, accountId, async (exec) => {
+      const provider = new KmsKeyProvider(kmsClient, new PgWrappedKeyStore(exec));
+      await provider.ensureProvisioned(accountId);
+      return withKmsFieldCryptoContext(provider, accountId, (ctx) => fn(exec, ctx));
+    }),
+});
+```
+
+A deployment on the derived path supplies the same runner shape with
+`derivedContext(provider, accountId)` in place of the KMS bind.
+
+### Check your rotation depth before you upgrade
+
+A KMS context prefetches every historical key version at bind, and `1.0.0` bounded that at
+`maxPrefetchVersions`, default 64. A tenant rotated past the cap now fails the bind with an
+error naming both the depth and the limit, where before it ran until it hit the request
+deadline. Read each tenant's current version first; raise the bound through the
+`maxPrefetchVersions` option on `kmsContext` or `withKmsFieldCryptoContext` only with evidence
+that the KMS request budget still holds at that depth.
+
+Everything else on the surface is additive. `1.1.0` added the `@caisson/field-crypto/browser`
+entry and its `…Async` and `…Bytes` names alongside the existing exports, over the same wire
+format, so a value sealed in a browser opens under `decryptField` and the reverse.

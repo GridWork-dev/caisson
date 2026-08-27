@@ -4,6 +4,7 @@
     "index",
     "compliance-core",
     "frameworks-pack",
+    "oscal-spine",
     "retention-runner",
     "alerting"
   ]
