@@ -30,6 +30,10 @@ import {
   scrubForEgress,
   strictObject,
 } from "@caisson/kernel";
+// The `/node` subpath, not the root: `ssrf.ts` reaches `node:dns/promises`. Safe here because
+// `createCloudEmbedder` is exported only from the node entry (`index.ts`) — never from
+// `./browser`, whose graph deliberately excludes this module.
+import { assertSafePublicUrl } from "@caisson/kernel/node";
 import { assertEmbeddingDim } from "./embedder.ts";
 import type { Embedder } from "./embedder.ts";
 
@@ -100,6 +104,12 @@ export function createCloudEmbedder(
   fetchImpl: EmbedFetch = fetchWithTimeout,
 ): Embedder {
   const config = parseStrict(CloudEmbedConfigSchema, rawConfig);
+  // The schema's `.refine` proves the SCHEME; it says nothing about the DESTINATION. Without this,
+  // `https://169.254.169.254/…` or any internal host is a valid config and `embed()` POSTs the
+  // Bearer credential there. Checked once at construction, not per-embed: `guardEmbedder` wraps
+  // per-text, so a resolving (DNS) guard on that path would cost a lookup per embedded string and
+  // break split-horizon deployments. Literal-host containment is what this seam can honestly claim.
+  assertSafePublicUrl(config.endpoint);
   return guardEmbedder({
     dim: config.dim,
     // `text` is ALREADY scrubbed by the `guardEmbedder` wrapper — scrub-before-egress is structural.
@@ -116,6 +126,9 @@ export function createCloudEmbedder(
             authorization: `Bearer ${config.apiKey}`,
           },
           body: JSON.stringify({ model: config.model, input: text }),
+          // A 3xx to a private host would otherwise re-target the credential-bearing POST past the
+          // construction-time check above, which only ever saw the configured origin.
+          redirect: "error",
         },
         timeout,
       );

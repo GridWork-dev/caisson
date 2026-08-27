@@ -115,7 +115,12 @@ export function buildEngineEnv(
   } catch {
     throw new ValidationError("buildEngineEnv: baseUrl is not a URL");
   }
-  // http is admitted for local-first providers (e.g. a loopback Ollama); everything else is https.
+  // Both http and https are admitted, for ANY host — not just loopback. That is deliberate: the
+  // canonical local-first endpoints are named services (`http://ollama:11434` under compose/K8s),
+  // not literal loopback, so a loopback allowlist would reject the common case. It is also not a
+  // trust boundary to defend: the same options object carries `provider.binary`, which reaches
+  // `spawnChild` unchanged, so a caller who can set `baseUrl` already has arbitrary local
+  // execution. Narrow the caller, not this check.
   if (protocol !== "https:" && protocol !== "http:") {
     throw new ValidationError("buildEngineEnv: baseUrl must be http(s)", {
       protocol,

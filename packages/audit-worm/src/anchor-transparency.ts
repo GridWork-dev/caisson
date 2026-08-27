@@ -485,6 +485,11 @@ export class TsaAnchorLog implements TrustedTimestampLog {
           accept: "application/timestamp-reply",
         },
         body: reqBer,
+        // `http:` is a deliberate RFC-3161 decision here (only a sha256 imprint transits, and the
+        // CMS/EKU verification below is what establishes trust), and a private TSA is a supported
+        // deployment — so a public-host SSRF guard would be wrong on this seam. Refusing redirects
+        // is the part that is right regardless: it keeps the request on the configured endpoint.
+        redirect: "error",
       },
       { timeoutMs: this.#timeoutMs },
     );
