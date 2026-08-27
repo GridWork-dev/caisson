@@ -7,6 +7,13 @@ import { NextResponse, type NextRequest } from "next/server";
 
 export const config = { matcher: ["/:path*"] };
 
+/** The one path exempt from the origin gate: Railway's platform healthcheck reaches the container
+ *  internally and cannot carry the Worker-injected secret, so gating it froze every deploy in the
+ *  fleet (ADR-0416 ruling 1). MUST equal `healthcheckPath` in apps/site/railway.toml — a test pins
+ *  the pair. The route is a bare `{ ok: true }`, so the raw-origin class this admits gets a
+ *  liveness ping and nothing more. */
+export const HEALTH_PROBE_PATH = "/healthz";
+
 // This proves Worker-to-origin authenticity only. Route handlers and Server Functions retain
 // their own session/authorization checks; Next delivers Server Function calls as POSTs here too.
 
@@ -45,6 +52,10 @@ export function createSiteProxy(
   originGate: OriginGateConfig = loadOriginGateConfig(process.env),
 ): (request: NextRequest) => NextResponse {
   return (request: NextRequest): NextResponse => {
+    // Exact equality, never a prefix: `/healthz/` and `/healthzz` are not the probe path and stay
+    // behind the gate. Railway probes the configured healthcheckPath and nothing else.
+    if (request.nextUrl.pathname === HEALTH_PROBE_PATH)
+      return NextResponse.next();
     if (!originRequestAuthorized(request, originGate)) return forbidden();
     return normalizeTrailingSlash(request) ?? NextResponse.next();
   };
