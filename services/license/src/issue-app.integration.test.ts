@@ -33,7 +33,12 @@ import { Ed25519Signer } from "@caisson/license-issue";
 import { verifyLicenseWithKey } from "@caisson/license-verify";
 import { type TestPg, newTestPg } from "@caisson/testing";
 import { withTenant } from "@caisson/tenancy-rls";
-import { createApp } from "./app.ts";
+import { createApp, HEALTH_PROBE_PATH } from "./app.ts";
+
+/** Stand-in for the baked registry index digest server.ts computes at boot. Any non-empty value
+ *  works — what matters is that the field EXISTS, so the status-only assertions can discriminate. */
+const HEALTH_INDEX_DIGEST = "0123456789ab";
+const HEALTH_INDEX_ENTRIES = 7;
 import type { RateLimiterInfraAlert } from "./alerting.ts";
 import {
   ENTITLEMENT_GRANT_CHARGED_AMOUNT_MIGRATION_SQL,
@@ -163,6 +168,12 @@ beforeAll(async () => {
     revokeEmailNotify: async () => {},
     chargebackAlert: async () => {},
     rateLimiterAlert: async () => {},
+    // Supplied ONLY on the gated app, and load-bearing: these are the fields ADR-0416's carve must
+    // withhold from an unauthenticated caller. Without them present the status-only assertions
+    // below pass whether or not the authorization condition exists — measured, not assumed: with
+    // `deps.indexDigest` absent, deleting that condition left the suite fully green.
+    indexDigest: HEALTH_INDEX_DIGEST,
+    indexEntries: HEALTH_INDEX_ENTRIES,
     originGate: loadOriginGateConfig({
       NODE_ENV: "production",
       ORIGIN_SECRET: ORIGIN_CURRENT,
@@ -871,7 +882,9 @@ describe("issuer non-issue routes", () => {
     expect(res.headers.get("Strict-Transport-Security")).toContain("max-age=");
   });
 
-  test("origin gate rejects direct /health requests and accepts both rotation secrets", async () => {
+  test("origin gate exempts the exact health probe path and accepts both rotation secrets", async () => {
+    // ADR-0416 ruling 1: Railway's internal probe carries no Worker-injected secret, so gating
+    // this path froze every fleet deploy. It answers without one — and reports liveness ONLY.
     const missing = await gatedApp(new Request("http://license.test/health"));
     const current = await gatedApp(
       new Request("http://license.test/health", {
@@ -884,9 +897,58 @@ describe("issuer non-issue routes", () => {
       }),
     );
 
-    expect(missing.status).toBe(403);
+    expect(missing.status).toBe(200);
+    // Status-only for the unauthenticated raw-origin class the carve admits. The registry digest
+    // is the field that must not leak there; index-parity-probe.ts reads it THROUGH the Worker,
+    // which injects the secret, so its license leg keeps working.
+    expect(await missing.json()).toEqual({ ok: true });
     expect(current.status).toBe(200);
     expect(next.status).toBe(200);
+    // The positive control that makes the line above mean something: an authenticated caller DOES
+    // get the digest, so its absence for `missing` is the authorization check and not an empty dep.
+    expect(await current.json()).toEqual({
+      ok: true,
+      indexDigest: HEALTH_INDEX_DIGEST,
+      indexEntries: HEALTH_INDEX_ENTRIES,
+    });
+  });
+
+  test("the health carve is exact — near-miss paths stay behind the origin gate", async () => {
+    // The carve's whole risk is width. A prefix match would hand `/health/../issue` and every
+    // `/health*` route to the raw *.up.railway.app origin, which the Worker never sees.
+    for (const path of [
+      "/health/",
+      "/healthz",
+      "/health/x",
+      "/HEALTH",
+      "/health/../issue",
+    ]) {
+      const response = await gatedApp(
+        new Request(`http://license.test${path}`),
+      );
+      expect({ path, status: response.status }).toEqual({ path, status: 403 });
+    }
+  });
+
+  test("a query string does not widen the carve — same path, still status-only", async () => {
+    // `?x=1` is not part of `pathname`, so this IS the probe path and answers 200. Asserted
+    // explicitly because the reflex reading is that it is a near-miss: it is not, and the thing
+    // that actually matters is that it still cannot pull the registry digest out unauthenticated.
+    const response = await gatedApp(
+      new Request("http://license.test/health?x=1&"),
+    );
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+  });
+
+  test("the carved path equals the healthcheckPath Railway actually probes", async () => {
+    // Drift here silently re-freezes the deploy with no local signal: the code would exempt a path
+    // nothing probes while the probed path 403s. Derived from the manifest, not restated.
+    const manifest = await Bun.file(
+      new URL("../railway.toml", import.meta.url),
+    ).text();
+    const probed = /^healthcheckPath\s*=\s*"([^"]+)"/m.exec(manifest)?.[1];
+    expect(probed).toBe(HEALTH_PROBE_PATH);
   });
 
   test("origin gate independently rejects a direct /issue request", async () => {

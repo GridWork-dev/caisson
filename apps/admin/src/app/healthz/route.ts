@@ -14,6 +14,10 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import {
+  loadOriginGateConfig,
+  originRequestAuthorized,
+} from "@caisson/kernel/node";
 
 export const dynamic = "force-dynamic";
 
@@ -40,9 +44,22 @@ function registryIndexDigest():
   }
 }
 
-export function GET(): Response {
+// ADR-0416 ruling 1: this path answers ahead of both edge layers so Railway's internal probe can
+// reach it, which means an unauthenticated raw *.up.railway.app caller reaches it too. The digest
+// therefore rides only for callers that proved the origin secret — index-parity-probe.ts reaches
+// admin.caisson.sh THROUGH the Worker, which injects it, so the parity leg is unaffected. Checked
+// here rather than threaded from the proxy: the proxy exempts this path before it ever evaluates
+// the gate, so the request arrives with nothing recorded about its origin.
+export function GET(request: Request): Response {
+  const authorized = originRequestAuthorized(
+    request,
+    loadOriginGateConfig(process.env),
+  );
   return new Response(
-    JSON.stringify({ ok: true, ...(registryIndexDigest() ?? {}) }),
+    JSON.stringify({
+      ok: true,
+      ...(authorized ? (registryIndexDigest() ?? {}) : {}),
+    }),
     {
       status: 200,
       headers: { "Content-Type": "application/json; charset=utf-8" },

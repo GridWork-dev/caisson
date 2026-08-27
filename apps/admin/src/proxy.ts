@@ -1,9 +1,12 @@
 // App-wide edge + auth gate. The Cloudflare origin secret and Access JWT layers are armed by
 // default; only exact development/test mode opt-outs disable them. Exact `/healthz` is the narrow
-// exception: an origin-authenticated zero-traffic Cloud Run revision cannot receive Cloudflare's
-// injected Access JWT, so that one readiness path admits the rotating origin secret by itself.
-// Better-auth plus the immutable numeric GitHub-ID allowlist remains the independent application
-// authorization layer for every non-bootstrap route.
+// exception: it answers ahead of BOTH edge layers, because Railway's platform healthcheck reaches
+// the container internally and can carry neither the Worker-injected origin secret nor an Access
+// JWT (ADR-0416 ruling 1 — before this carve every deploy failed at admin's healthcheck and froze
+// the whole fleet). The route itself is status-only for unauthenticated callers, so the class the
+// carve admits — the raw *.up.railway.app origin the Worker never sees — gets a liveness ping and
+// nothing more. Better-auth plus the immutable numeric GitHub-ID allowlist remains the independent
+// application authorization layer for every non-bootstrap route.
 //
 // Named `proxy.ts` (not `middleware.ts`): Next 16 deprecated `middleware.ts` in favor of
 // `proxy.ts`, which defaults to the Node.js runtime (no `export const runtime` — Next throws if
@@ -40,6 +43,11 @@ export const config = {
  *  only the verification mechanism behind it moved from CF-Access-JWT to better-auth+allowlist). */
 const ACTOR_HEADER = "x-admin-actor";
 const INTERNAL_PROOF_PATH = "/api/internal/audit/proof";
+
+/** The one path exempt from both edge layers. MUST equal `healthcheckPath` in
+ *  apps/admin/railway.toml — a test pins the pair, because a drift there silently re-freezes the
+ *  fleet deploy with no local signal. */
+export const HEALTH_PROBE_PATH = "/healthz";
 
 export interface AdminProxyOptions {
   originGate?: OriginGateConfig;
@@ -116,12 +124,12 @@ export function createAdminProxy(
   const access = options.access ?? loadCloudflareAccessConfig(process.env);
 
   return async (req: NextRequest): Promise<NextResponse> => {
+    // Exact equality, never a prefix: `/healthz/`, `/healthzz` and `/healthz/anything` are not the
+    // probe path and stay behind both gates. Railway probes the configured healthcheckPath and
+    // nothing else, so exempting more than the literal string widens the carve for no benefit.
+    if (req.nextUrl.pathname === HEALTH_PROBE_PATH) return NextResponse.next();
     if (!originRequestAuthorized(req, originGate)) return edgeForbidden();
-    const directCanaryHealth = req.nextUrl.pathname === "/healthz";
-    if (
-      !directCanaryHealth &&
-      !(await verifyCloudflareAccessRequest(req, access))
-    ) {
+    if (!(await verifyCloudflareAccessRequest(req, access))) {
       return edgeForbidden();
     }
 
