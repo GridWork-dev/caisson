@@ -162,6 +162,20 @@ describe("TsaAnchorLog (constructor guards, no network)", () => {
     expect(() => new TsaAnchorLog({ url: "not a url" })).toThrow();
   });
 
+  test("an http endpoint and a private-network endpoint are ACCEPTED, deliberately", () => {
+    // Pinned so this is not re-filed as an SSRF/cleartext defect. Only a sha256 imprint transits,
+    // trust comes from the CMS/EKU verification of the response rather than the transport, and an
+    // internal TSA is a supported deployment (docs/security/external-anchoring.md Fork C).
+    // Applying the public-host SSRF guard here would break mainstream http public TSAs and every
+    // internal-TSA buyer.
+    expect(
+      () => new TsaAnchorLog({ url: "http://timestamp.digicert.com" }),
+    ).not.toThrow();
+    expect(
+      () => new TsaAnchorLog({ url: "http://10.0.0.5/tsr" }),
+    ).not.toThrow();
+  });
+
   test("a sub-second timeout is refused", () => {
     expect(
       () => new TsaAnchorLog({ url: "https://tsa.example", timeoutMs: 10 }),

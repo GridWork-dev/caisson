@@ -39,7 +39,16 @@ import { safeEqualVariable } from "@caisson/kernel/crypto";
 export type Fetcher = typeof fetchWithTimeout;
 
 const HEADER_NAME = "x-betterstack-secret";
-const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
+// The security-floor headers ride every response, including the 401 — `jsonResponse` is the sole
+// constructor for all of this Worker's return paths, so setting them here covers the surface by
+// construction. HSTS matches the sibling Worker (registry/worker/handler.ts) rather than the Node
+// services' longer max-age: both run on the same runtime behind the same edge.
+const JSON_HEADERS = {
+  "content-type": "application/json; charset=utf-8",
+  "x-content-type-options": "nosniff",
+  "x-frame-options": "DENY",
+  "strict-transport-security": "max-age=31536000; includeSubDomains",
+};
 
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });

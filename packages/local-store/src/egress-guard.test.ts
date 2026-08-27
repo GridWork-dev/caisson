@@ -86,6 +86,71 @@ describe("createCloudEmbedder (test-doubled transport — no live call)", () => 
     });
   }
 
+  test("rejects a private, loopback or metadata endpoint at construction", () => {
+    // The schema's `.refine` proves only the SCHEME. Every host below is valid https, so a
+    // scheme-only check admits all of them and `embed()` would POST the Bearer credential there.
+    const reached: string[] = [];
+    const spy: EmbedFetch = (url) => {
+      reached.push(String(url));
+      return Promise.resolve(okResponse([0.1, 0.2]));
+    };
+    for (const endpoint of [
+      "https://169.254.169.254/latest/meta-data/", // cloud metadata
+      "https://127.0.0.1/v1",
+      "https://localhost/v1",
+      "https://10.0.0.5/v1",
+      "https://192.168.1.10/v1",
+      "https://user:pw@embed.example.com/v1", // credentials in URL
+    ]) {
+      expect(() =>
+        createCloudEmbedder(
+          { endpoint, apiKey: "key-123", model: "m", dim: 2 },
+          spy,
+        ),
+      ).toThrow();
+    }
+    // Nothing was attempted: the guard runs at construction, before any transport exists.
+    expect(reached).toEqual([]);
+  });
+
+  test("a public https endpoint still constructs and embeds", async () => {
+    // The positive control. Without it the rejection sweep above passes just as well against a
+    // `createCloudEmbedder` that throws on everything.
+    const fetchDouble: EmbedFetch = () =>
+      Promise.resolve(okResponse([0.1, 0.2]));
+    const embedder = createCloudEmbedder(
+      {
+        endpoint: "https://embed.example.com/v1",
+        apiKey: "key-123",
+        model: "m",
+        dim: 2,
+      },
+      fetchDouble,
+    );
+    expect(await embedder.embed("hello")).toEqual([0.1, 0.2]);
+  });
+
+  test("refuses to follow a redirect on the credential-bearing POST", async () => {
+    // A 3xx would re-target the Bearer POST past the construction-time host check, which only
+    // ever saw the configured origin.
+    let init: RequestInit | undefined;
+    const fetchDouble: EmbedFetch = (_url, requestInit) => {
+      init = requestInit;
+      return Promise.resolve(okResponse([0.1, 0.2]));
+    };
+    const embedder = createCloudEmbedder(
+      {
+        endpoint: "https://embed.example.com/v1",
+        apiKey: "key-123",
+        model: "m",
+        dim: 2,
+      },
+      fetchDouble,
+    );
+    await embedder.embed("hello");
+    expect(init?.redirect).toBe("error");
+  });
+
   test("scrubs content before the request body leaves the box", async () => {
     let sentBody = "";
     const fetchDouble: EmbedFetch = (_url, init) => {

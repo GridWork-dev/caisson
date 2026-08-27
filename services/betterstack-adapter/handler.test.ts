@@ -144,6 +144,51 @@ describe("handleRequest", () => {
     expect(res.status).toBe(405);
   });
 
+  test("every response path carries the security-floor headers, the 401 included", async () => {
+    // The absence of this assertion is the mechanism that let the headers go missing: nothing
+    // repo-wide enforces the floor (a grep of tooling/, tools/ and .github/workflows/ for
+    // `nosniff` returns zero hits), so each service asserts its own. Swept per path rather than
+    // once on the happy path — a single sampled response cannot show that the deny paths, which
+    // are the ones an attacker actually reaches, carry them too.
+    const { fetcher } = fakeFetch(200);
+    const paths: ReadonlyArray<readonly [string, Request]> = [
+      [
+        "405 non-POST",
+        new Request("https://adapter.example.com/", { method: "GET" }),
+      ],
+      ["401 no secret", postRequest(INCIDENT_BODY, {})],
+      [
+        "401 wrong secret",
+        postRequest(INCIDENT_BODY, { "x-betterstack-secret": "wrong" }),
+      ],
+      [
+        "400 invalid JSON",
+        new Request("https://adapter.example.com/", {
+          method: "POST",
+          headers: AUTH_HEADER,
+          body: "not json",
+        }),
+      ],
+      ["400 wrong shape", authedPost({ hello: "world" })],
+      ["200 delivered", authedPost(INCIDENT_BODY)],
+    ];
+
+    for (const [label, req] of paths) {
+      const res = await handleRequest(req, okEnv, fetcher);
+      expect({
+        label,
+        nosniff: res.headers.get("x-content-type-options"),
+        frame: res.headers.get("x-frame-options"),
+        hsts: res.headers.get("strict-transport-security"),
+      }).toEqual({
+        label,
+        nosniff: "nosniff",
+        frame: "DENY",
+        hsts: "max-age=31536000; includeSubDomains",
+      });
+    }
+  });
+
   test("rejects invalid JSON", async () => {
     const { fetcher } = fakeFetch(200);
     const req = new Request("https://adapter.example.com/", {
