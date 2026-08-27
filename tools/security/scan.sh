@@ -95,10 +95,34 @@ secrets_trufflehog() {
   # key format and Lob's verification endpoint accepts them — observed 2026-08-06). This repo has
   # no Lob account or integration, so a real Lob credential cannot be ours; excluding the detector
   # is the root-cause fix rather than path-excluding every test directory.
+  # stderr is KEPT, not sent to /dev/null. A clean verified-only run writes ZERO bytes of JSON, so
+  # the success artifact and the artifact of a scanner that died on startup are the same empty file
+  # — and with stderr discarded there was no other signal either. Same class as the semgrep
+  # io_uring death documented at the top of this file: absence of findings and absence of a scan
+  # are indistinguishable unless something counts what was actually examined.
+  local err="$OUT_DIR/trufflehog.stderr"
   trufflehog git "file://$REPO" --results=verified --fail --no-update \
     --exclude-detectors=lob \
-    --json > "$OUT_DIR/trufflehog.json" 2>/dev/null \
-    && ok "trufflehog: no verified secrets" || { RC=1; warn "trufflehog verified secret(s) → $OUT_DIR/trufflehog.json"; }
+    --json > "$OUT_DIR/trufflehog.json" 2>"$err"
+  local rc=$?
+  # trufflehog's own completion record, on stderr as structured JSON. Its `chunks` count is the
+  # proof the scan had a subject: a repo that scanned nothing reports zero, which is a dead run
+  # wearing a clean run's exit code.
+  # `|| chunks=""` is load-bearing, not defensive noise: _common.sh sets `-e` and `pipefail`, so on
+  # the no-match case this pipeline's exit 1 would abort the whole driver — killing the scan on
+  # precisely the input this guard exists to report. Measured: without it, the empty-stderr arm
+  # terminated the run silently, right after the assignment.
+  local chunks
+  chunks=$(grep -o '"chunks":[0-9]*' "$err" | tail -1 | cut -d: -f2) || chunks=""
+  if [ $rc -ne 0 ]; then
+    RC=1; warn "trufflehog verified secret(s) → $OUT_DIR/trufflehog.json"
+  elif [ -z "$chunks" ]; then
+    RC=1; warn "trufflehog exited 0 but never reported completion — treat as NOT scanned → $err"
+  elif [ "$chunks" -eq 0 ]; then
+    RC=1; warn "trufflehog scanned 0 chunks — a clean result over nothing → $err"
+  else
+    ok "trufflehog: no verified secrets ($chunks chunks scanned)"
+  fi
 }
 
 supply_digests() {
