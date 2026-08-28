@@ -228,6 +228,32 @@ export function archiveRefToDir(
   exec("tar", ["-x", "-C", stageDir], { input: archive });
 }
 
+/** The repo-root carrier `@caisson/kernel`'s `servingRevision()` reads at runtime to answer the
+ *  `x-caisson-revision` response header. Re-declared here rather than imported because it CANNOT be
+ *  imported by specifier: `tooling/scripts/` has no package.json, so it is not a workspace and bun
+ *  never links `@caisson/*` into scope here (`bun test` resolves the bare specifier to nothing).
+ *  The pair is pinned instead by a round-trip test that stamps with this constant and reads back
+ *  through the kernel's own reader -- without that guard a rename on either side would fail
+ *  nothing, and every service in the fleet would report `unknown` forever, which is exactly the
+ *  silent blind spot this mechanism exists to remove. */
+const REVISION_FILENAME = ".caisson-revision";
+
+/** Overwrite the committed `unknown` placeholder in the STAGING tree with the sha being deployed.
+ *
+ *  This is the entire delivery mechanism. A Railway CLI upload carries no git ref
+ *  (`RAILWAY_GIT_COMMIT_SHA` is populated for repo-triggered builds only), so the sha cannot arrive
+ *  as a platform variable -- it has to be inside the uploaded bytes. `railway up` runs with
+ *  `cwd: stageDir` and uploads that directory, so writing here puts the sha in the Docker build
+ *  context and NOWHERE else: the operator's working tree is never touched, and the committed
+ *  placeholder still reads `unknown` after a deploy.
+ *
+ *  Called after `archiveRefToDir`, which extracts the committed placeholder -- so this is always an
+ *  overwrite of an existing file, never a create. That is what lets every Dockerfile COPY it
+ *  unconditionally, with no glob and no missing-file fallback. */
+export function stampRevision(stageDir: string, sha: string): void {
+  writeFileSync(join(stageDir, REVISION_FILENAME), `${sha}\n`);
+}
+
 /** `git config user.name`, falling back to $USER/$USERNAME then a literal "unknown" -- never
  *  throws, a receipt always gets a deployedBy. */
 export function resolveDeployedBy(
@@ -374,6 +400,8 @@ export async function main(
   const stageDir = mkdtempSync(join(tmpdir(), "railway-deploy-"));
   try {
     archiveRefToDir(sha, REPO_ROOT, stageDir, exec);
+    // Must follow the archive: it overwrites the placeholder that extraction just laid down.
+    stampRevision(stageDir, sha);
 
     const deployedBy = resolveDeployedBy(REPO_ROOT, exec);
     const deployedAt = new Date().toISOString();
@@ -386,6 +414,9 @@ export async function main(
       );
       process.stdout.write(
         `[railway-deploy] dry-run: staged a clean tree at ${stageDir}\n`,
+      );
+      process.stdout.write(
+        `[railway-deploy] dry-run: stamped ${REVISION_FILENAME} = ${sha}\n`,
       );
       process.stdout.write(
         `[railway-deploy] dry-run: would run: railway ${railwayArgs.join(" ")} (cwd=${stageDir})\n`,

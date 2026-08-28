@@ -24,6 +24,23 @@ private key lives solely with the issuer service.
 - **Pure wire codec.** `PREFIX-TIER-base64url(payload ‖ 64-byte signature)` encode/decode, framework
   -free, fail-closed on any malformed shape.
 
+## When a license key stops working
+
+Nothing throws and nothing logs an error, so a key that has stopped working looks like a paid
+surface quietly going missing. It is the fail-safe path above, and there are three usual causes:
+
+- **The renewal never reached the process.** `verifyLicense` verifies the token it is handed, so a
+  renewed subscription changes nothing until the new token replaces the old one wherever the app
+  reads it from. This is the most common one: billing renewed, the environment did not.
+- **The expiry has elapsed.** An expired token is not an error — it resolves to the free
+  `community` tier, and the install keeps running with the paid entitlements withdrawn.
+- **The installed major moved past the token's `major`.** Licenses are perpetual per major, so
+  upgrading across a major boundary needs a token covering the new one.
+
+All three resolve identically: `valid: false`, tier `community`, empty entitlements. To tell them
+apart, decode the token and read its `expiry` and `major` claims against today's date and the
+version you are running.
+
 ## Usage
 
 ```ts

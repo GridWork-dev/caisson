@@ -61,10 +61,16 @@ WORKDIR /app
 # server.js runs `process.chdir(__dirname)` on boot, so at runtime cwd is /app/apps/site — the env var
 # is honored FIRST, before the cwd-relative fallback would ENOENT on /app/apps/site/registry/index.json.
 # Without it every /api/demo/run POST 500s in prod (fail-closed generation_failed).
+#
+# CAISSON_REVISION_PATH is load-bearing for the same reason, and for the same standalone quirk:
+# server.js chdir's to /app/apps/site, so the kernel's cwd-relative lookup for `.caisson-revision`
+# would miss the repo-root carrier that `x-caisson-revision` is read from. Absent ⇒ every response
+# reports `unknown` — silently, which is the one failure mode this header exists to remove.
 ENV NODE_ENV=production \
     PORT=3030 \
     HOSTNAME=0.0.0.0 \
-    CAISSON_REGISTRY_INDEX_PATH=/app/registry/index.json
+    CAISSON_REGISTRY_INDEX_PATH=/app/registry/index.json \
+    CAISSON_REVISION_PATH=/app/.caisson-revision
 
 # output:'standalone' traces the minimal node_modules subset the server actually needs into
 # .next/standalone, preserving the monorepo-relative path (server.js lands at apps/site/server.js,
@@ -80,6 +86,12 @@ COPY --from=build /app/apps/site/public ./apps/site/public
 # path CAISSON_REGISTRY_INDEX_PATH points at above. EXACT precedent: apps/admin/Dockerfile copies the
 # same index for its comp-grant boundary (ADR-0278 F1) for the identical tracer-miss reason.
 COPY --from=build /app/registry/index.json ./registry/index.json
+
+# The serving-revision carrier. Committed to the repo holding `unknown`, so this COPY always has a
+# source and needs no glob; tooling/scripts/railway-deploy.ts overwrites it in the staging tree with
+# the deployed sha, which is the only way a sha reaches this image — a Railway CLI upload carries no
+# git ref, so it has to travel inside the uploaded bytes.
+COPY --from=build /app/.caisson-revision ./.caisson-revision
 
 # Non-root: the standalone server never writes to disk at runtime (no ISR/revalidate — see
 # next.config.ts), so the root-owned, world-readable copies above need no chown. `bun` (uid/gid

@@ -37,10 +37,15 @@ WORKDIR /app
 # a cwd-relative join — without it every comp-grant call would ENOENT on
 # /app/apps/admin/registry/index.json (which does not exist) instead of finding the file this
 # Dockerfile actually copies to /app/registry/index.json below.
+#
+# CAISSON_REVISION_PATH is the same class of fix for the same chdir: the kernel's cwd-relative
+# lookup for the `.caisson-revision` carrier would resolve /app/apps/admin/.caisson-revision. Absent
+# ⇒ every response reports `unknown` silently, which is the blind spot x-caisson-revision removes.
 ENV NODE_ENV=production \
     PORT=3020 \
     HOSTNAME=0.0.0.0 \
-    CAISSON_REGISTRY_INDEX_PATH=/app/registry/index.json
+    CAISSON_REGISTRY_INDEX_PATH=/app/registry/index.json \
+    CAISSON_REVISION_PATH=/app/.caisson-revision
 
 # output:'standalone' traces the minimal node_modules subset the server needs into .next/standalone,
 # preserving the monorepo-relative path (server.js lands at apps/admin/server.js, NOT flattened to
@@ -59,6 +64,10 @@ COPY --from=build /app/apps/admin/.next/static ./apps/admin/.next/static
 # Next standalone server has no such module-relative anchor available at runtime, hence the explicit
 # env var above rather than a computed path.
 COPY --from=build /app/registry/index.json ./registry/index.json
+
+# The serving-revision carrier. Committed holding `unknown`, so this COPY always has a source and
+# needs no glob; railway-deploy.ts overwrites it in the staging tree with the deployed sha.
+COPY --from=build /app/.caisson-revision ./.caisson-revision
 
 # Non-root: the standalone server never writes to disk at runtime (no ISR/revalidate — see
 # next.config.ts), so the root-owned, world-readable copies above need no chown. `bun` (uid/gid

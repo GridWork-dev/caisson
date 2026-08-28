@@ -28,7 +28,10 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import os
+import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Annotated
 
 import discord
@@ -153,6 +156,44 @@ SECURITY_HEADERS: dict[str, str] = {
     "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
 }
 
+# The serving revision — which commit this container was built from. The Python port of
+# packages/kernel/src/revision.ts; same carrier file, same strictness, same `unknown` fallback.
+#
+# Kept OUT of SECURITY_HEADERS above because that dict carries a documented byte-identity claim
+# against the three TypeScript SECURITY_HEADERS consts, and quietly adding a fourth key would make
+# that comment false. The middleware applies the merged dict instead.
+REVISION_HEADER = "x-caisson-revision"
+UNKNOWN_REVISION = "unknown"
+_COMMIT_SHA = re.compile(r"^[0-9a-f]{40}$")
+
+
+def _read_serving_revision() -> str:
+    """Read the repo-root ``.caisson-revision`` carrier once, at import.
+
+    Anything that is not a full 40-char commit sha — the committed ``unknown`` placeholder, a
+    truncated write, a missing file on a local run — collapses to ``unknown``. A header that
+    reports a half-written value is worse than one that admits it does not know.
+
+    Unlike the three Next services this needs no path override: WORKDIR is ``/app`` and the CMD
+    does not chdir, so the cwd-relative default already resolves ``/app/.caisson-revision``. The
+    override is honoured anyway so the two implementations stay behaviourally identical.
+    """
+    override = os.environ.get("CAISSON_REVISION_PATH", "").strip()
+    path = Path(override) if override else Path.cwd() / ".caisson-revision"
+    try:
+        raw = path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return UNKNOWN_REVISION
+    return raw if _COMMIT_SHA.fullmatch(raw) else UNKNOWN_REVISION
+
+
+# Resolved once: the answer cannot change for the lifetime of a process, and this is applied to
+# every response.
+RESPONSE_HEADERS: dict[str, str] = {
+    **SECURITY_HEADERS,
+    REVISION_HEADER: _read_serving_revision(),
+}
+
 
 @web.middleware
 async def _security_headers(request: web.Request, handler: Handler) -> web.StreamResponse:
@@ -166,9 +207,9 @@ async def _security_headers(request: web.Request, handler: Handler) -> web.Strea
     try:
         response = await handler(request)
     except web.HTTPException as exc:
-        exc.headers.update(SECURITY_HEADERS)
+        exc.headers.update(RESPONSE_HEADERS)
         raise
-    response.headers.update(SECURITY_HEADERS)
+    response.headers.update(RESPONSE_HEADERS)
     return response
 
 

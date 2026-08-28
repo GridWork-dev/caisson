@@ -882,6 +882,25 @@ describe("issuer non-issue routes", () => {
     expect(res.headers.get("Strict-Transport-Security")).toContain("max-age=");
   });
 
+  // The serving-revision header, asserted through the REAL app rather than the kernel unit that
+  // computes it: the unit tests prove the value is right, this proves it is actually plumbed into
+  // responses. Nothing else would notice its removal — `respond()` is a shared funnel, so a
+  // deletion there is silent everywhere at once.
+  //
+  // `unknown` is the correct value under test and not a weak assertion: no test run goes through
+  // railway-deploy.ts, so the carrier is either absent or the committed placeholder. A real sha
+  // appearing here would mean a deploy-time artifact had leaked into the repo.
+  test("every response carries the serving revision, gate or no gate", async () => {
+    const open = await app(new Request("http://license.test/health"));
+    expect(open.headers.get("x-caisson-revision")).toBe("unknown");
+
+    // The 403 path matters most: it is what an operator stares at when the origin gate is
+    // misbehaving, which is exactly when "which build is this?" needs an answer.
+    const gated = await gatedApp(new Request("http://license.test/issue"));
+    expect(gated.status).toBe(403);
+    expect(gated.headers.get("x-caisson-revision")).toBe("unknown");
+  });
+
   test("origin gate exempts the exact health probe path and accepts both rotation secrets", async () => {
     // ADR-0416 ruling 1: Railway's internal probe carries no Worker-injected secret, so gating
     // this path froze every fleet deploy. It answers without one — and reports liveness ONLY.

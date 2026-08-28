@@ -27,6 +27,8 @@ import { AuthnError, ConflictError } from "@caisson/kernel";
 import {
   loadOriginGateConfig,
   originRequestAuthorized,
+  servingRevision,
+  REVISION_HEADER,
   type OriginGateConfig,
 } from "@caisson/kernel/node";
 import { issueLicense, type Signer } from "@caisson/license-issue";
@@ -284,7 +286,15 @@ function respond(
 ): Response {
   return new Response(body, {
     status,
-    headers: { ...SECURITY_HEADERS, "Content-Type": contentType, ...extra },
+    headers: {
+      ...SECURITY_HEADERS,
+      // Ungated on purpose, unlike the health body's indexDigest: this must stay readable exactly
+      // when the origin gate is the thing misbehaving, which is the case it exists to diagnose.
+      // An opaque commit id for a private repo discloses nothing actionable on its own.
+      [REVISION_HEADER]: servingRevision(),
+      "Content-Type": contentType,
+      ...extra,
+    },
   });
 }
 

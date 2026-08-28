@@ -2,7 +2,24 @@
 // no real git-archive/railway subprocess anywhere in this file (mirrors the `fakeExecFn` double
 // pattern in packages/tool-exec/src/tool-exec.test.ts).
 import { describe, expect, test } from "bun:test";
-import { existsSync, readFileSync, rmSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+// Reached by relative path, not the `@caisson/kernel/node` specifier: `tooling/scripts/` has no
+// package.json, so it is not a workspace and bun's workspace resolution never links `@caisson/*`
+// here. That is also why railway-deploy.ts re-declares the carrier filename instead of importing
+// it — and why the round-trip below is the only thing holding the two declarations together.
+import {
+  readRevision,
+  REVISION_FILENAME,
+  UNKNOWN_REVISION,
+} from "../../packages/kernel/src/revision.ts";
 import type { Args, ExecFileSyncFn } from "./railway-deploy";
 import {
   appendReceipt,
@@ -22,6 +39,7 @@ import {
   receiptsPath,
   resolveDeployedBy,
   resolveRef,
+  stampRevision,
   type Receipt,
 } from "./railway-deploy";
 
@@ -544,5 +562,61 @@ describe("receiptEvidenceMarkdown", () => {
     expect(md).toContain("caisson-site");
     expect(md).toContain("not** committed");
     expect(md).toContain("docs/deploy/receipts/");
+  });
+});
+
+// The serving-revision stamp. Its two halves live in different trees (this script writes the
+// carrier; packages/kernel/src/revision.ts reads it) and are wired together by nothing but a
+// filename string, so the test that earns its place is the ROUND TRIP: what the deploy stamps must
+// be what the kernel reader — the code that actually answers x-caisson-revision — reads back.
+//
+// Without it, a rename or a format change on either side fails NOTHING. Every service in the fleet
+// would quietly report `unknown` forever, which is indistinguishable from the pre-existing state
+// this whole mechanism exists to end. That silence is the failure mode worth a test.
+describe("stampRevision", () => {
+  const SHA = "8619c41e0f2a4b6d9c1e3f5a7b8d0c2e4f6a8b0d";
+
+  const withStageDir = (fn: (dir: string) => void): void => {
+    const dir = mkdtempSync(join(tmpdir(), "stamp-revision-"));
+    try {
+      fn(dir);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  };
+
+  test("round-trips through the kernel reader that serves the header", () => {
+    withStageDir((dir) => {
+      stampRevision(dir, SHA);
+      expect(readRevision({}, dir)).toBe(SHA);
+    });
+  });
+
+  test("overwrites the extracted placeholder rather than landing beside it", () => {
+    withStageDir((dir) => {
+      // What `git archive` extraction leaves behind: the committed carrier, reading `unknown`.
+      writeFileSync(join(dir, REVISION_FILENAME), "unknown\n");
+      expect(readRevision({}, dir)).toBe(UNKNOWN_REVISION);
+      stampRevision(dir, SHA);
+      expect(readRevision({}, dir)).toBe(SHA);
+    });
+  });
+
+  test("writes the carrier filename the Dockerfiles COPY", () => {
+    withStageDir((dir) => {
+      stampRevision(dir, SHA);
+      expect(existsSync(join(dir, REVISION_FILENAME))).toBe(true);
+      expect(readFileSync(join(dir, REVISION_FILENAME), "utf8")).toBe(
+        `${SHA}\n`,
+      );
+    });
+  });
+
+  test("stamps into the staging dir only — never the caller's cwd", () => {
+    withStageDir((dir) => {
+      stampRevision(dir, SHA);
+      // The operator's working tree keeps its committed placeholder after every deploy.
+      expect(readRevision({}, process.cwd())).toBe(UNKNOWN_REVISION);
+    });
   });
 });
