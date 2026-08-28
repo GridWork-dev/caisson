@@ -41,7 +41,7 @@ await withTenant(db, accountId, async (tx) => {
     accountId,
     callId,
     provider: "openai",
-    model: "gpt-4o",
+    model: "gpt-4o-mini",
     lane: "default",
     messages: [{ role: "user", content: "hello" }],
   });
@@ -52,7 +52,7 @@ await withTenant(db, accountId, async (tx) => {
     accountId,
     callId,
     provider: "openai",
-    model: "gpt-4o",
+    model: "gpt-4o-mini",
     lane: "default",
     reservedCredits: reserved.reservedCredits,
     usage: { inputTokens: 12, outputTokens: 40, cachedInputTokens: 0 },

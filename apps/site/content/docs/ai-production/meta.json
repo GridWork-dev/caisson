@@ -3,6 +3,7 @@
   "pages": [
     "index",
     "ai-meter",
+    "governed-agent-loop",
     "ai-evals",
     "guardrails",
     "prompt-registry",
