@@ -60,6 +60,11 @@ const IGNORE_GLOBS: readonly string[] = [
   // the Node pin file publish-image.yml reads via the NODE_VERSION_FILE repository variable
   // (T28/CAISSON-209) — tool version config, same class as the other root pins
   ".node-version",
+  // the serving-revision carrier: a single token that railway-deploy.ts overwrites in the staging
+  // tree with the deployed sha, committed holding `unknown` only so every Dockerfile COPY has a
+  // source. Deploy-time metadata with no standing content — the committed value is never the
+  // interesting one, and the mechanism's own audit lives in packages/kernel + tooling/scripts.
+  ".caisson-revision",
   // graphify's scan-scope list — keeps the code-graph indexer off the archived audit ledgers and
   // the browser-audit dumps. Same class as the other ignore-dotfiles: a tool's scope config.
   ".graphifyignore",

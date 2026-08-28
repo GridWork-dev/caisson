@@ -1,6 +1,8 @@
 import {
   loadOriginGateConfig,
   originRequestAuthorized,
+  servingRevision,
+  REVISION_HEADER,
   type OriginGateConfig,
 } from "@caisson/kernel/node";
 import { NextResponse, type NextRequest } from "next/server";
@@ -48,10 +50,20 @@ export function normalizeTrailingSlash(
   return NextResponse.redirect(url, 308);
 }
 
+/** Stamp the serving revision on whatever the proxy decided to return. Applied at the ONE exit
+ *  point rather than on each branch, so the health passthrough, the 403, the 308 and the normal
+ *  pass-through all carry it — including the 403, which is the response you are most likely to be
+ *  staring at when you need to know which build is answering. Ungated for that same reason: the
+ *  header has to survive the gate being misconfigured. */
+function withRevision(response: NextResponse): NextResponse {
+  response.headers.set(REVISION_HEADER, servingRevision());
+  return response;
+}
+
 export function createSiteProxy(
   originGate: OriginGateConfig = loadOriginGateConfig(process.env),
 ): (request: NextRequest) => NextResponse {
-  return (request: NextRequest): NextResponse => {
+  const route = (request: NextRequest): NextResponse => {
     // Exact equality, never a prefix: `/healthz/` and `/healthzz` are not the probe path and stay
     // behind the gate. Railway probes the configured healthcheckPath and nothing else.
     if (request.nextUrl.pathname === HEALTH_PROBE_PATH)
@@ -59,6 +71,7 @@ export function createSiteProxy(
     if (!originRequestAuthorized(request, originGate)) return forbidden();
     return normalizeTrailingSlash(request) ?? NextResponse.next();
   };
+  return (request: NextRequest): NextResponse => withRevision(route(request));
 }
 
 // Resolve once while the proxy module loads. An absent mode is armed; only the exact explicit

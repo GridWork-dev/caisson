@@ -9,6 +9,8 @@ import { z } from "zod";
 import {
   loadOriginGateConfig,
   originRequestAuthorized,
+  servingRevision,
+  REVISION_HEADER,
   type OriginGateConfig,
 } from "@caisson/kernel/node";
 import { withRequestSpan } from "@caisson/observability";
@@ -64,7 +66,14 @@ function respond(
 ): Response {
   return new Response(body, {
     status,
-    headers: { ...SECURITY_HEADERS, "Content-Type": contentType, ...extra },
+    headers: {
+      ...SECURITY_HEADERS,
+      // Ungated on purpose (same rule as services/license): the serving revision must stay
+      // readable exactly when the origin gate is the thing misbehaving.
+      [REVISION_HEADER]: servingRevision(),
+      "Content-Type": contentType,
+      ...extra,
+    },
   });
 }
 

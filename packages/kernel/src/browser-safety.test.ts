@@ -57,6 +57,7 @@ describe("the `.` barrel is browser-safe", () => {
       `${KERNEL_SRC}/crypto.ts`,
       `${KERNEL_SRC}/migration-assembly.ts`,
       `${KERNEL_SRC}/origin-gate.ts`,
+      `${KERNEL_SRC}/revision.ts`,
       `${KERNEL_SRC}/ssrf.ts`,
     ]);
   });
