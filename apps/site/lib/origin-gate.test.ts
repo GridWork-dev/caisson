@@ -201,3 +201,40 @@ test("site proxy accepts current and next origin secrets during rotation", async
   expect(current.status).toBe(200);
   expect(next.status).toBe(200);
 });
+
+// The serving-revision header. Asserted through the proxy rather than the kernel unit that computes
+// the value: the unit tests prove the value is right, this proves it survives the Next response
+// path. The stamp is applied at the proxy's single exit point, so one assertion per BRANCH is what
+// makes that claim checkable — a refactor that returns early past the wrapper would only show up on
+// the branch it skipped.
+//
+// `unknown` is the correct value under test: no test run goes through railway-deploy.ts, so the
+// carrier is either absent or the committed placeholder.
+test("site proxy stamps the serving revision on the health, 403 and redirect branches", async () => {
+  const proxy = requireProxy({
+    NODE_ENV: "production",
+    ORIGIN_SECRET_MODE: "enabled",
+    ORIGIN_SECRET: CURRENT,
+    ORIGIN_SECRET_NEXT: NEXT,
+  });
+
+  // Health passthrough — answered before the gate, so it carries the header without a secret.
+  const health = await proxy(new NextRequest("https://caisson.sh/healthz"));
+  expect(health.headers.get("x-caisson-revision")).toBe("unknown");
+
+  // The 403 branch. This is the one that matters: it is the response an operator is staring at
+  // when the origin gate is the thing misbehaving, which is exactly when the serving build is in
+  // question — and a 403 body says nothing about which build produced it.
+  const forbidden = await proxy(new NextRequest("https://caisson.sh/pricing"));
+  expect(forbidden.status).toBe(403);
+  expect(forbidden.headers.get("x-caisson-revision")).toBe("unknown");
+
+  // The 308 branch, reached only once the secret checks out.
+  const redirected = await proxy(
+    new NextRequest("https://caisson.sh/pricing/", {
+      headers: { "x-gridwork-origin-secret": CURRENT },
+    }),
+  );
+  expect(redirected.status).toBe(308);
+  expect(redirected.headers.get("x-caisson-revision")).toBe("unknown");
+});

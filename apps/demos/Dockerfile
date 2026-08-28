@@ -23,9 +23,13 @@ WORKDIR /app
 # HOSTNAME is load-bearing: Next's standalone server.js binds to process.env.HOSTNAME, while Docker
 # otherwise injects the container id. 0.0.0.0 is portable across Cloud Run and ordinary container
 # runtimes and keeps the loopback healthcheck reachable.
+#
+# CAISSON_REVISION_PATH: server.js chdir's to /app/apps/demos, so the kernel's cwd-relative lookup
+# for the `.caisson-revision` carrier would miss the repo-root file /demos/healthz reports from.
 ENV NODE_ENV=production \
     PORT=3040 \
-    HOSTNAME=0.0.0.0
+    HOSTNAME=0.0.0.0 \
+    CAISSON_REVISION_PATH=/app/.caisson-revision
 
 # output:'standalone' preserves the monorepo-relative path (server.js lands at apps/demos/server.js,
 # NOT flattened to the image root), so the copies below mirror apps/site's exactly.
@@ -33,6 +37,10 @@ COPY --from=build /app/apps/demos/.next/standalone ./
 COPY --from=build /app/apps/demos/.next/static ./apps/demos/.next/static
 COPY --from=build /app/apps/demos/public ./apps/demos/public
 COPY --from=build /app/apps/demos/entrypoint.sh ./apps/demos/entrypoint.sh
+
+# The serving-revision carrier. Committed holding `unknown`, so this COPY always has a source;
+# railway-deploy.ts overwrites it in the staging tree with the deployed sha.
+COPY --from=build /app/.caisson-revision ./.caisson-revision
 
 # Non-root: the standalone server never writes to disk at runtime, so the root-owned,
 # world-readable copies above need no chown. `bun` (uid/gid 1000) is the oven/bun base image's

@@ -486,6 +486,34 @@ async def test_framework_raised_404_carries_the_security_header_floor() -> None:
         await client.close()
 
 
+async def test_responses_carry_the_serving_revision() -> None:
+    """The serving revision rides the same middleware as the header floor — and both its arms.
+
+    Asserted through the real app rather than against ``_read_serving_revision`` directly: whether
+    the reader parses correctly is one question, whether it is actually plumbed onto responses is
+    another, and only this notices if the middleware stops applying it. The raised-exception arm is
+    included for the same reason it is above — that split is precisely where the header floor was
+    once missed, and a bare 404 is what an unauthenticated scanner receives here.
+
+    ``unknown`` is the correct value under test and not a weak assertion: no test run goes through
+    ``tooling/scripts/railway-deploy.ts``, so the carrier is either absent or holds the committed
+    placeholder. A real sha appearing here would mean a deploy artifact had leaked into the repo.
+    """
+    guild, _ = _guild_with_member()
+    client = await _client(
+        _bot(guild), _settings(billing_grant_token=None, site_escalate_token=None)
+    )
+    try:
+        returned = await client.get("/health")
+        assert returned.headers["x-caisson-revision"] == "unknown"
+
+        raised = await client.post("/billing-grant", json={})
+        assert raised.status == 404
+        assert raised.headers["x-caisson-revision"] == "unknown"
+    finally:
+        await client.close()
+
+
 # --- POST /escalate (apps/site Ask-AI parity — reuses the same Escalator/Linear sink) --------------
 
 

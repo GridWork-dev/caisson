@@ -22,6 +22,14 @@ COPY services/support-bot/pyproject.toml services/support-bot/uv.lock ./
 RUN uv sync --no-dev --no-install-project --frozen
 
 COPY services/support-bot/ ./
+
+# The serving-revision carrier, read at import by billing_grant.py to answer x-caisson-revision.
+# This service's build context is the repo ROOT (see railway.toml), so the repo-root file is
+# reachable even though every other COPY here is scoped to services/support-bot/. Committed holding
+# `unknown`, so this COPY always has a source; railway-deploy.ts overwrites it in the staging tree
+# with the deployed sha, which is the only way a sha reaches this image.
+COPY .caisson-revision ./
+
 RUN uv sync --no-dev --no-editable --frozen
 
 # Non-root: the venv + app code are root-owned but world-readable (default COPY/uv perms); the

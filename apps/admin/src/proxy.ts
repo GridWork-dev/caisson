@@ -18,6 +18,8 @@
 import {
   loadOriginGateConfig,
   originRequestAuthorized,
+  servingRevision,
+  REVISION_HEADER,
   type OriginGateConfig,
 } from "@caisson/kernel/node";
 import { NextResponse, type NextRequest } from "next/server";
@@ -123,7 +125,7 @@ export function createAdminProxy(
   const originGate = options.originGate ?? loadOriginGateConfig(process.env);
   const access = options.access ?? loadCloudflareAccessConfig(process.env);
 
-  return async (req: NextRequest): Promise<NextResponse> => {
+  const route = async (req: NextRequest): Promise<NextResponse> => {
     // Exact equality, never a prefix: `/healthz/`, `/healthzz` and `/healthz/anything` are not the
     // probe path and stay behind both gates. Railway probes the configured healthcheckPath and
     // nothing else, so exempting more than the literal string widens the carve for no benefit.
@@ -162,6 +164,17 @@ export function createAdminProxy(
     const headers = new Headers(req.headers);
     headers.set(ACTOR_HEADER, actor.email);
     return NextResponse.next({ request: { headers } });
+  };
+
+  // Stamp the serving revision at the ONE exit point, so every branch above carries it — the
+  // health passthrough, both edge 403s, the 308, the session redirect, the authed pass-through.
+  // The 403 and the redirect matter most: admin is fronted by Cloudflare Access, so those are the
+  // responses an operator actually sees while diagnosing, and a body tells them nothing about
+  // which build produced it. Ungated for the same reason the site's is.
+  return async (req: NextRequest): Promise<NextResponse> => {
+    const response = await route(req);
+    response.headers.set(REVISION_HEADER, servingRevision());
+    return response;
   };
 }
 

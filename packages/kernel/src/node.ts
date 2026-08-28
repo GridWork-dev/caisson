@@ -48,6 +48,18 @@ export {
   assembleMigrationsWithPinnedPrefix,
 } from "./migration-assembly.ts";
 
+// --- Serving revision (node:fs readFileSync of the repo-root `.caisson-revision` carrier). -------
+export {
+  parseRevision,
+  readRevision,
+  resetServingRevisionCache,
+  revisionFilePath,
+  servingRevision,
+  REVISION_FILENAME,
+  REVISION_HEADER,
+  UNKNOWN_REVISION,
+} from "./revision.ts";
+
 // --- SSRF guard (node:dns/promises lookup). ------------------------------------------------------
 export {
   assertResolvedHostPublic,
