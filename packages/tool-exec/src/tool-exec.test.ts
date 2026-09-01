@@ -128,6 +128,55 @@ describe("createToolExec — real spawn (default ExecFn), a safe binary", () => 
   });
 });
 
+describe("createToolExec — env leak guard (THREAT: parent-secret inheritance), real default execFn", () => {
+  const CANARY_KEY = "CAISSON_LEAK_CANARY";
+
+  test("with env supplied on the allowlist entry, the child does NOT see the canary and DOES see PATH", async () => {
+    process.env[CANARY_KEY] = "leak";
+    try {
+      const toolExec = createToolExec({
+        allowlist: [
+          {
+            name: "node-eval",
+            command: process.execPath,
+            argsSchema: z.array(z.string()),
+            env: { PATH: process.env.PATH ?? "" },
+          },
+        ],
+      });
+      const result = await toolExec.run("node-eval", [
+        "-e",
+        `process.stdout.write(process.env.${CANARY_KEY} ? "leaked" : (process.env.PATH ? "clean" : "no-path"))`,
+      ]);
+      expect(result.stdout).toBe("clean");
+    } finally {
+      delete process.env[CANARY_KEY];
+    }
+  });
+
+  test("with no env on the allowlist entry (today's default), the child DOES see the canary — pins the inherit-everything default so a future flip shows up in CI", async () => {
+    process.env[CANARY_KEY] = "leak";
+    try {
+      const toolExec = createToolExec({
+        allowlist: [
+          {
+            name: "node-eval",
+            command: process.execPath,
+            argsSchema: z.array(z.string()),
+          },
+        ],
+      });
+      const result = await toolExec.run("node-eval", [
+        "-e",
+        `process.stdout.write(process.env.${CANARY_KEY} ? "leaked" : "clean")`,
+      ]);
+      expect(result.stdout).toBe("leaked");
+    } finally {
+      delete process.env[CANARY_KEY];
+    }
+  });
+});
+
 describe("createToolExec — two-phase gate (ADR-0360 S3): propose() then execute()", () => {
   test("propose validates + parks without spawning; execute later runs the SAME validated argv", async () => {
     const { fn, calls } = fakeExecFn();
