@@ -168,10 +168,14 @@ beforeAll(async () => {
     revokeEmailNotify: async () => {},
     chargebackAlert: async () => {},
     rateLimiterAlert: async () => {},
-    // Supplied ONLY on the gated app, and load-bearing: these are the fields ADR-0416's carve must
-    // withhold from an unauthenticated caller. Without them present the status-only assertions
-    // below pass whether or not the authorization condition exists — measured, not assumed: with
-    // `deps.indexDigest` absent, deleting that condition left the suite fully green.
+    // Supplied ONLY on this fixture — a fixture-shape choice now, not an authorization demo
+    // (ADR-0417 deleted the origin-secret gate on these fields; see the health-probe test below).
+    // What they still prove: the handler emits `deps.indexDigest`/`indexEntries` whenever the
+    // dep supplies them, with NO dependence on the origin header — `missing`/`current`/`next` all
+    // get the identical digest below. The other half of the pair is the plain `app` fixture (no
+    // `indexDigest` given), asserted json-body-empty-of-digest in "GET /health" further down: that
+    // is what still fails if the handler started emitting the fields unconditionally even when
+    // `deps.indexDigest` is undefined.
     indexDigest: HEALTH_INDEX_DIGEST,
     indexEntries: HEALTH_INDEX_ENTRIES,
     originGate: loadOriginGateConfig({
@@ -880,6 +884,11 @@ describe("issuer non-issue routes", () => {
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(res.headers.get("X-Frame-Options")).toBe("DENY");
     expect(res.headers.get("Strict-Transport-Security")).toContain("max-age=");
+    // The negative half of the digest pair (positive half: `gatedApp` below). This fixture never
+    // supplies `deps.indexDigest`, so the field must be entirely absent — proving the field tracks
+    // deps supply, not the (now-deleted) origin-secret condition. If the handler started emitting
+    // the fields unconditionally even when `deps.indexDigest` is undefined, this would fail.
+    expect(await res.json()).toEqual({ ok: true });
   });
 
   // The serving-revision header, asserted through the REAL app rather than the kernel unit that
@@ -903,7 +912,14 @@ describe("issuer non-issue routes", () => {
 
   test("origin gate exempts the exact health probe path and accepts both rotation secrets", async () => {
     // ADR-0416 ruling 1: Railway's internal probe carries no Worker-injected secret, so gating
-    // this path froze every fleet deploy. It answers without one — and reports liveness ONLY.
+    // this path froze every fleet deploy. It answers without one — and, since ADR-0417, that
+    // includes the digest: the origin secret proves PROVENANCE (arrived through the Cloudflare
+    // Worker), not caller identity, and the Worker injects it into every edge request, so every
+    // public caller was already "authorized" by construction. The old gate withheld the digest
+    // from exactly one class (a direct-to-origin *.up.railway.app caller, i.e. `missing` below)
+    // while the front door handed it to the whole internet — and there was no secret to protect
+    // either way, since the digest is a hash of registry/index.json, a file the registry Worker
+    // already serves publicly. So `missing` now gets the identical digest `current`/`next` get.
     const missing = await gatedApp(new Request("http://license.test/health"));
     const current = await gatedApp(
       new Request("http://license.test/health", {
@@ -916,20 +932,17 @@ describe("issuer non-issue routes", () => {
       }),
     );
 
-    expect(missing.status).toBe(200);
-    // Status-only for the unauthenticated raw-origin class the carve admits. The registry digest
-    // is the field that must not leak there; index-parity-probe.ts reads it THROUGH the Worker,
-    // which injects the secret, so its license leg keeps working.
-    expect(await missing.json()).toEqual({ ok: true });
-    expect(current.status).toBe(200);
-    expect(next.status).toBe(200);
-    // The positive control that makes the line above mean something: an authenticated caller DOES
-    // get the digest, so its absence for `missing` is the authorization check and not an empty dep.
-    expect(await current.json()).toEqual({
+    const withDigest = {
       ok: true,
       indexDigest: HEALTH_INDEX_DIGEST,
       indexEntries: HEALTH_INDEX_ENTRIES,
-    });
+    };
+    expect(missing.status).toBe(200);
+    expect(current.status).toBe(200);
+    expect(next.status).toBe(200);
+    expect(await missing.json()).toEqual(withDigest);
+    expect(await current.json()).toEqual(withDigest);
+    expect(await next.json()).toEqual(withDigest);
   });
 
   test("the health carve is exact — near-miss paths stay behind the origin gate", async () => {
@@ -949,15 +962,19 @@ describe("issuer non-issue routes", () => {
     }
   });
 
-  test("a query string does not widen the carve — same path, still status-only", async () => {
-    // `?x=1` is not part of `pathname`, so this IS the probe path and answers 200. Asserted
-    // explicitly because the reflex reading is that it is a near-miss: it is not, and the thing
-    // that actually matters is that it still cannot pull the registry digest out unauthenticated.
+  test("a query string does not widen the carve — same path, same response", async () => {
+    // `?x=1` is not part of `pathname`, so this IS the probe path and answers 200 with the digest
+    // (ADR-0417 — the digest no longer depends on the origin header at all, unauthenticated or
+    // not). Asserted explicitly because the reflex reading is that it is a near-miss: it is not.
     const response = await gatedApp(
       new Request("http://license.test/health?x=1&"),
     );
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true });
+    expect(await response.json()).toEqual({
+      ok: true,
+      indexDigest: HEALTH_INDEX_DIGEST,
+      indexEntries: HEALTH_INDEX_ENTRIES,
+    });
   });
 
   test("the carved path equals the healthcheckPath Railway actually probes", async () => {

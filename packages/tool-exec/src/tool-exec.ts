@@ -3,6 +3,10 @@
 // executable + a Zod-`.strict()` argument schema; a call is validated against that schema BEFORE
 // spawn, and the validated result is used directly as an `execFile` argv array — never a shell
 // string, never concatenated. `execSync`/`exec`/`shell: true` are never used anywhere in this file.
+// ENV DEFAULT: an allowlist entry's optional `env` is absent by default, so a spawned process
+// inherits the parent's full environment (Node's `execFile` default) — unchanged today. Set
+// `env` on a `CommandSpec` to narrow a child to exactly the vars it needs (used verbatim, never
+// merged with `process.env`). Flipping the default to always-narrow is a separate major bump.
 import { execFile as execFileCb } from "node:child_process";
 import { NotFoundError } from "@caisson/kernel";
 import { createToolProposer } from "./propose.ts";
@@ -29,7 +33,12 @@ export interface ExecResult {
 export type ExecFn = (
   command: string,
   args: readonly string[],
-  opts: { cwd: string; timeoutMs: number },
+  opts: {
+    cwd: string;
+    timeoutMs: number;
+    /** Optional child environment. Absent → inherits the parent's full env (the default). */
+    env?: Readonly<Record<string, string>>;
+  },
 ) => Promise<{ stdout: string; stderr: string; exitCode: number }>;
 
 const DEFAULT_TIMEOUT_MS = 30_000;
@@ -51,25 +60,29 @@ function bound(output: string): string {
  */
 const defaultExecFn: ExecFn = (command, args, opts) =>
   new Promise((resolve) => {
-    execFileCb(
-      command,
-      [...args],
-      { cwd: opts.cwd, timeout: opts.timeoutMs, maxBuffer: NODE_MAX_BUFFER },
-      (error, stdout, stderr) => {
-        const out = bound(stdout);
-        const err = bound(stderr);
-        if (error === null) {
-          resolve({ stdout: out, stderr: err, exitCode: 0 });
-          return;
-        }
-        const code = (error as { code?: unknown }).code;
-        resolve({
-          stdout: out,
-          stderr: err,
-          exitCode: typeof code === "number" ? code : -1,
-        });
-      },
-    );
+    const execOpts =
+      opts.env === undefined
+        ? { cwd: opts.cwd, timeout: opts.timeoutMs, maxBuffer: NODE_MAX_BUFFER }
+        : {
+            cwd: opts.cwd,
+            timeout: opts.timeoutMs,
+            maxBuffer: NODE_MAX_BUFFER,
+            env: opts.env,
+          };
+    execFileCb(command, [...args], execOpts, (error, stdout, stderr) => {
+      const out = bound(stdout);
+      const err = bound(stderr);
+      if (error === null) {
+        resolve({ stdout: out, stderr: err, exitCode: 0 });
+        return;
+      }
+      const code = (error as { code?: unknown }).code;
+      resolve({
+        stdout: out,
+        stderr: err,
+        exitCode: typeof code === "number" ? code : -1,
+      });
+    });
   });
 
 export interface ToolExecConfig {
@@ -129,11 +142,13 @@ export function createToolExec(config: ToolExecConfig): ToolExec {
     command: string,
     args: readonly string[],
     reason: string | undefined,
+    env: Readonly<Record<string, string>> | undefined,
   ): Promise<ExecResult> => {
-    const { stdout, stderr, exitCode } = await execFn(command, args, {
-      cwd,
-      timeoutMs,
-    });
+    const { stdout, stderr, exitCode } = await execFn(
+      command,
+      args,
+      env === undefined ? { cwd, timeoutMs } : { cwd, timeoutMs, env },
+    );
     const result: ExecResult = {
       command,
       args,
@@ -153,7 +168,7 @@ export function createToolExec(config: ToolExecConfig): ToolExec {
       reason?: string,
     ): Promise<ExecResult> {
       const proposed = gate.propose(name, args, reason);
-      return spawn(proposed.command, proposed.args, reason);
+      return spawn(proposed.command, proposed.args, reason, proposed.env);
     },
 
     async propose(
@@ -172,7 +187,7 @@ export function createToolExec(config: ToolExecConfig): ToolExec {
           { command: proposed.name },
         );
       }
-      return spawn(spec.command, proposed.args, proposed.reason);
+      return spawn(spec.command, proposed.args, proposed.reason, proposed.env);
     },
   };
 }

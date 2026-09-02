@@ -14,10 +14,6 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  loadOriginGateConfig,
-  originRequestAuthorized,
-} from "@caisson/kernel/node";
 
 export const dynamic = "force-dynamic";
 
@@ -45,20 +41,24 @@ function registryIndexDigest():
 }
 
 // ADR-0416 ruling 1: this path answers ahead of both edge layers so Railway's internal probe can
-// reach it, which means an unauthenticated raw *.up.railway.app caller reaches it too. The digest
-// therefore rides only for callers that proved the origin secret — index-parity-probe.ts reaches
-// admin.caisson.sh THROUGH the Worker, which injects it, so the parity leg is unaffected. Checked
-// here rather than threaded from the proxy: the proxy exempts this path before it ever evaluates
-// the gate, so the request arrives with nothing recorded about its origin.
-export function GET(request: Request): Response {
-  const authorized = originRequestAuthorized(
-    request,
-    loadOriginGateConfig(process.env),
-  );
+// reach it, which means an unauthenticated raw *.up.railway.app caller reaches it too — that half
+// of ruling 1 (the health-path carve itself) stands unchanged. What ADR-0417 supersedes is the
+// OTHER half: ruling 1 also gated the digest on the origin secret, and that gate was vacuous. The
+// secret proves PROVENANCE — that a request arrived through the Cloudflare Worker — not
+// authentication of who sent it, and the Worker injects the secret into every edge request, so
+// every public caller on admin.caisson.sh is already "authorized" by construction. Gating withheld
+// the field from exactly one class (a direct-to-origin *.up.railway.app caller) while the front
+// door handed it to the entire internet; there was also no secret to protect, since the digest is
+// a sha256-first-12 of registry/index.json, a file the registry Worker already serves publicly at
+// registry.caisson.sh. Measured 2026-09-01: the raw origin previously returned bare {ok:true}
+// while the edge path returned the digest for the identical file. Publish it to every caller;
+// `registryIndexDigest()`'s own fail-closed-to-undefined (an unreadable/missing index) is what
+// still legitimately omits the field, and stays the only thing that does.
+export function GET(_request: Request): Response {
   return new Response(
     JSON.stringify({
       ok: true,
-      ...(authorized ? (registryIndexDigest() ?? {}) : {}),
+      ...(registryIndexDigest() ?? {}),
     }),
     {
       status: 200,

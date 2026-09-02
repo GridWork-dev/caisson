@@ -16,6 +16,11 @@ on.
 stderr, ok, reason?, at }` — a plain-data audit record (not WORM), with output bounded to 64KB.
 - **Injected everything.** `cwd`, `timeoutMs`, the spawn seam (`execFn`), and the clock (`now`) are
   all config — no module-level secrets/constants for endpoints or executables.
+- **Optional per-command `env`.** A `CommandSpec` may set `env: { … }` to narrow the spawned
+  child's environment. Absent (the default), the child inherits the parent's full environment —
+  unchanged from before this option existed. When supplied, the object is used verbatim (never
+  merged with `process.env`), so include `PATH` explicitly if the command needs it. A default flip
+  to always-narrow would be a separate major version.
 
 ## Entry points
 
