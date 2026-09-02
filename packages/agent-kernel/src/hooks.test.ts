@@ -262,3 +262,38 @@ describe("commandHandler — safe shell hooks (THREAT: shell injection / secret 
     expect(captured).toEqual({ args: [], timeoutMs: 30_000 });
   });
 });
+
+describe("commandHandler — env leak guard (THREAT: parent-secret inheritance), real default runner", () => {
+  const CANARY_KEY = "CAISSON_LEAK_CANARY";
+
+  test("with env supplied, the child does NOT see the canary and DOES see PATH", async () => {
+    process.env[CANARY_KEY] = "leak";
+    try {
+      const handler = commandHandler<Ctx>({
+        command: process.execPath,
+        args: [
+          "-e",
+          `process.exit(process.env.${CANARY_KEY} ? 3 : (process.env.PATH ? 0 : 4))`,
+        ],
+        env: { PATH: process.env.PATH ?? "" },
+      });
+      // exit 0 → allow (no throw); exit 3 (canary leaked) or 4 (PATH missing) would throw.
+      await expect(handler(BASE)).resolves.toBeUndefined();
+    } finally {
+      delete process.env[CANARY_KEY];
+    }
+  });
+
+  test("with no env supplied (today's default), the child DOES see the canary — pins the inherit-everything default so a future flip shows up in CI", async () => {
+    process.env[CANARY_KEY] = "leak";
+    try {
+      const handler = commandHandler<Ctx>({
+        command: process.execPath,
+        args: ["-e", `process.exit(process.env.${CANARY_KEY} ? 3 : 0)`],
+      });
+      await expect(handler(BASE)).rejects.toThrow("command hook exited 3");
+    } finally {
+      delete process.env[CANARY_KEY];
+    }
+  });
+});

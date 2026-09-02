@@ -651,13 +651,20 @@ export function createApp(
     if (healthProbe) {
       if (method !== "GET") return text("method not allowed", 405);
       // Additive: `ok` stays first + always present (existing probes grep it). The index digest +
-      // entry count ride alongside for the F-1 index-parity drift probe when server.ts supplies
-      // them — but only for callers that proved the origin secret. index-parity-probe.ts reaches
-      // license.caisson.sh THROUGH the Worker, which injects it, so the probe is unaffected; the
-      // raw *.up.railway.app origin the carve admits gets liveness only.
+      // entry count ride alongside whenever server.ts supplies them, with no origin-secret gate
+      // (ADR-0417, superseding the gated half of ADR-0416 ruling 1). The gate never protected
+      // anything: originRequestAuthorized proves PROVENANCE (the request arrived through the
+      // Cloudflare Worker), not authentication of caller identity, and the Worker injects the
+      // secret into every edge request — so every public caller on license.caisson.sh is already
+      // "authorized" by construction. Gating on it withheld the field from exactly one class (a
+      // direct-to-origin *.up.railway.app caller) while the front door handed it to the entire
+      // internet. And there was no secret to protect in the first place: the digest is a
+      // sha256-first-12 of registry/index.json, a file the registry Worker already serves
+      // publicly at registry.caisson.sh. Measured 2026-09-01: the edge and the raw origin both
+      // reach this handler; only the edge path used to carry the fields. Publish unconditionally.
       return json({
         ok: true,
-        ...(originAuthorized && deps.indexDigest !== undefined
+        ...(deps.indexDigest !== undefined
           ? { indexDigest: deps.indexDigest, indexEntries: deps.indexEntries }
           : {}),
       });

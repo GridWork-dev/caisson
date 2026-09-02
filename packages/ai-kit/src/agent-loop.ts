@@ -29,7 +29,7 @@
 // Guard boundary (documented, deliberate): the opening prompt is input-guarded (moderation + PII)
 // before any spend, and the final text is output-guarded before it is returned. Intermediate
 // tool-conversation traffic is digest-referenced in the trajectory but not re-guarded per step —
-// the approval seam is the gate for tool content.
+// see `LoopTool.approvalRequired` below for what that means for a tool author.
 //
 // ACCEPTED RESIDUALS (2026-07-17 SHIP audit, recorded): (F3) reserve and settle are separate
 // transactions — a settle/refund transaction that itself fails leaves an orphaned hold, classified
@@ -98,6 +98,13 @@ export interface LoopTool {
    * `tool.proposed`, records durable run-state) and waits for an external `approveToolCall`/
    * `denyToolCall` decision. Requires `RunToolLoopOptions.runState` — omitting it while a gated
    * tool is invoked is a caller config error (`ToolLoopFailureCode: "tool"`).
+   *
+   * Guard boundary (documented, deliberate): only the opening prompt (input) and the final text
+   * (output) are guarded (moderation + PII). Intermediate tool output — this tool's `execute`
+   * result — is appended straight into model context UN-GUARDED; it is digest-referenced in the
+   * trajectory but not re-guarded per step. Any tool with side effects or egress (writes data,
+   * calls an external system, spends money) should set `approvalRequired: true` — the approval
+   * seam is the gate for tool content, not per-step guarding.
    */
   readonly approvalRequired?: boolean;
 }

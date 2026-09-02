@@ -14,6 +14,10 @@
 //   - SHELL SAFETY: TS handlers are first-class. A shell-command hook is admitted ONLY through
 //     `commandHandler`, which spawns via `execFile` with an argv ARRAY — no shell, no interpolation,
 //     no `HookContext` value can reach argv (interpolation is structurally impossible).
+//   - ENV DEFAULT: a `CommandHookSpec` inherits the parent's full environment by default (Node's
+//     `execFile` default) — pass the optional `env` field to narrow the child to exactly the vars
+//     it needs (used verbatim, never merged with `process.env`). Flipping the default to
+//     always-narrow is a separate major-version change, not made here.
 import type { EventSink, OpsEvent } from "@caisson/kernel";
 import type { Act } from "./lifecycle.ts";
 import { allow, mutate } from "./governance.ts";
@@ -161,7 +165,15 @@ export class HookDispatcher<C = unknown> {
 
 // --- Safe shell-command hooks -----------------------------------------------------------------
 
-/** A shell-command hook spec. `args` is a FIXED argv array — never derived from a `HookContext`. */
+/**
+ * A shell-command hook spec. `args` is a FIXED argv array — never derived from a `HookContext`.
+ *
+ * `env` is OPTIONAL and additive: when absent, the spawned process inherits the parent's full
+ * environment (Node's `execFile` default) — today's behavior, unchanged. Pass `env` to narrow the
+ * child to exactly the vars it needs; the object is used VERBATIM (never merged with
+ * `process.env`), so a caller that wants `PATH` must include it explicitly. Flipping the default
+ * to always-narrow is a separate, deliberate major-version change — not made here.
+ */
 export interface CommandHookSpec {
   /** The executable to run — a program path/name, NEVER a shell string. */
   readonly command: string;
@@ -169,36 +181,46 @@ export interface CommandHookSpec {
   readonly args?: readonly string[];
   /** Per-invocation timeout (default 30s). */
   readonly timeoutMs?: number;
+  /** Optional child environment. Absent → inherits the parent's full env (the default). */
+  readonly env?: Readonly<Record<string, string>>;
 }
 
 /**
- * The spawn seam: `(command, args, timeoutMs) => exitCode`. Defaults to `execFile` with an argv
- * array; tests inject a double so CI never spawns a real process (the transport stays a port).
+ * The spawn seam: `(command, args, timeoutMs, env?) => exitCode`. Defaults to `execFile` with an
+ * argv array; tests inject a double so CI never spawns a real process (the transport stays a
+ * port). `env` is an OPTIONAL 4th parameter so every existing custom runner keeps compiling.
  */
 export type CommandRunner = (
   command: string,
   args: readonly string[],
   timeoutMs: number,
+  env?: Readonly<Record<string, string>>,
 ) => Promise<number>;
 
-const defaultRunner: CommandRunner = (command, args, timeoutMs) =>
+const defaultRunner: CommandRunner = (command, args, timeoutMs, env) =>
   new Promise<number>((resolve, reject) => {
     // `execFile` with an argv ARRAY — no shell is spawned, so there is no injection surface; the
     // command and args are passed verbatim. Process output is intentionally NOT captured (it could
-    // carry a secret), so only the exit status is observed.
-    execFile(command, [...args], { timeout: timeoutMs }, (error) => {
-      if (error === null) {
-        resolve(0);
-        return;
-      }
-      const code = (error as { code?: unknown }).code;
-      if (typeof code === "number") {
-        resolve(code); // a non-zero process exit
-        return;
-      }
-      // Spawn failure / timeout: reject with a marker carrying NO command output.
-      reject(new Error("command hook spawn failed"));
-    });
+    // carry a secret), so only the exit status is observed. `env`, when supplied, is passed exactly
+    // as given (never merged with `process.env`); absent, `execFile` inherits the parent env.
+    execFile(
+      command,
+      [...args],
+      env === undefined ? { timeout: timeoutMs } : { timeout: timeoutMs, env },
+      (error) => {
+        if (error === null) {
+          resolve(0);
+          return;
+        }
+        const code = (error as { code?: unknown }).code;
+        if (typeof code === "number") {
+          resolve(code); // a non-zero process exit
+          return;
+        }
+        // Spawn failure / timeout: reject with a marker carrying NO command output.
+        reject(new Error("command hook spawn failed"));
+      },
+    );
   });
 
 /**
@@ -215,8 +237,9 @@ export function commandHandler<C = unknown>(
   const command = spec.command;
   const args: readonly string[] = spec.args ?? [];
   const timeoutMs = spec.timeoutMs ?? 30_000;
+  const env = spec.env;
   return async () => {
-    const code = await runner(command, args, timeoutMs);
+    const code = await runner(command, args, timeoutMs, env);
     if (code !== 0) throw new Error(`command hook exited ${code}`);
   };
 }

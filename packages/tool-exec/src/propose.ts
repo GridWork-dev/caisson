@@ -9,12 +9,22 @@
 import type { ZodType } from "zod";
 import { NotFoundError, parseStrict } from "@caisson/kernel";
 
-/** A registered allowlist entry: a logical name, the real executable, and its argv-array schema. */
+/**
+ * A registered allowlist entry: a logical name, the real executable, and its argv-array schema.
+ *
+ * `env` is OPTIONAL and additive: when absent, the spawned process inherits the parent's full
+ * environment (Node's `execFile` default) — today's behavior, unchanged. Pass `env` to narrow the
+ * child to exactly the vars it needs; the object is used VERBATIM (never merged with
+ * `process.env`), so a caller that wants `PATH` must include it explicitly. Flipping the default
+ * to always-narrow is a separate, deliberate major-version change — not made here.
+ */
 export interface CommandSpec {
   readonly name: string;
   readonly command: string;
   /** Validates the caller-supplied `args` INTO the exact argv array passed to `execFile`. */
   readonly argsSchema: ZodType<string[]>;
+  /** Optional child environment. Absent → inherits the parent's full env (the default). */
+  readonly env?: Readonly<Record<string, string>>;
 }
 
 /**
@@ -28,6 +38,8 @@ export interface ProposedToolCall {
   readonly command: string;
   readonly args: readonly string[];
   readonly reason?: string;
+  /** The allowlist entry's `env`, resolved at propose time and carried through unmodified. */
+  readonly env?: Readonly<Record<string, string>>;
 }
 
 /** The gate itself, with no spawn seam attached — safe to run anywhere, including a browser. */
@@ -70,7 +82,11 @@ export function createToolProposer(
         command: spec.command,
         args: validatedArgs,
       };
-      return reason === undefined ? proposed : { ...proposed, reason };
+      const withReason =
+        reason === undefined ? proposed : { ...proposed, reason };
+      return spec.env === undefined
+        ? withReason
+        : { ...withReason, env: spec.env };
     },
   };
 }

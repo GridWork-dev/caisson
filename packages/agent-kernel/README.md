@@ -17,6 +17,10 @@ import an edition (ADR-0022 down-only), so the shared layer sits below the editi
   skip. `runLifecycle` produces a deterministic, golden-pinnable transition trace.
 - **Hooks dispatcher.** Register handlers at `${'before'|'after'}:${act}` points; `dispatch` runs them
   in registration order and awaits each. An unregistered point is a no-op (0 handlers), never a throw.
+  A `commandHandler`'s `CommandHookSpec` may set an optional `env: { … }` to narrow the spawned
+  process's environment; absent (the default), the child inherits the parent's full environment —
+  unchanged from before this option existed. Supplied, the object is used verbatim (never merged
+  with `process.env`). A default flip to always-narrow would be a separate major version.
 
 ## Entry points
 
