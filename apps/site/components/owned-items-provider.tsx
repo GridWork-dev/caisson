@@ -7,7 +7,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { SESSION_HINT_COOKIE_NAME } from "@/lib/session-hint-cookie";
 
 /**
  * The signed-in account's already-owned catalog cart-item ids (G16), fetched client-side from
@@ -18,34 +17,24 @@ import { SESSION_HINT_COOKIE_NAME } from "@/lib/session-hint-cookie";
  * the worst case is a buyer sees an un-disabled Buy button for something they already own, not a
  * broken cart.
  *
- * The fetch is gated on `SESSION_HINT_COOKIE_NAME` (CAISSON-81, ADR-0315), NOT the real better-auth
- * session cookie — that one is HttpOnly (identity/security.md) so `document.cookie` reads it as
- * absent for EVERYONE, which is the exact bug a prior "skip when signed out" attempt shipped (it
- * silently disabled owned-item marking for signed-in buyers too — the double-pay guard
- * add-to-cart-button.tsx depends on). The hint cookie is server-minted alongside the real session
- * (`lib/auth-server.ts`) specifically so this check works. FAIL-OPEN both directions: hint absent
- * → skip the fetch, `owned` stays empty (same as today's signed-out steady state — never blocks
- * the page). Hint present but the session is actually dead (stale/revoked) → the fetch still runs,
- * `/api/cart/owned` resolves no session server-side and returns `{owned: []}` — degrades to no
- * marking, never a false "owned".
+ * The fetch ALWAYS fires on mount now (ADR-0418) — a prior revision skipped it for a signed-out
+ * visitor by reading a server-minted hint cookie via `document.cookie`, which required that hint
+ * to be readable by page JS: a same-origin auth SIGNAL any script on the page, including a
+ * third-party one, could then observe for the saving of one request. The ruling moved that
+ * optimization server-side instead: the hint cookie is now `HttpOnly` (invisible to
+ * `document.cookie`), and `/api/cart/owned` itself short-circuits on the cookie's absence before
+ * resolving a session or touching the DB (`app/api/cart/owned/route.ts`) — the cheap path for a
+ * signed-out visitor is preserved, just moved behind the origin instead of in front of it. The
+ * fail-open contract is unchanged: a failed/erroring fetch, or a `{owned: []}` response (no
+ * session, or a stale one the route can't resolve), both leave `owned` empty — never a false
+ * "owned".
  */
 const OwnedItemsContext = createContext<ReadonlySet<string>>(new Set());
-
-/** True when the non-HttpOnly hint cookie is present — a plain substring check is safe here (the
- *  value is always the literal `"1"`, never attacker-influenced free text) and avoids parsing the
- *  whole `document.cookie` string into a map for one lookup. */
-function hasSessionHint(): boolean {
-  if (typeof document === "undefined") return false;
-  return document.cookie
-    .split("; ")
-    .some((entry) => entry === `${SESSION_HINT_COOKIE_NAME}=1`);
-}
 
 export function OwnedItemsProvider({ children }: { children: ReactNode }) {
   const [owned, setOwned] = useState<ReadonlySet<string>>(new Set());
 
   useEffect(() => {
-    if (!hasSessionHint()) return;
     let cancelled = false;
     fetch("/api/cart/owned", { credentials: "same-origin" })
       .then((r) => (r.ok ? r.json() : { owned: [] }))

@@ -1,5 +1,5 @@
-// Regression coverage for CAISSON-81 (ADR-0315): the server-minted, non-HttpOnly session-hint
-// cookie mint/clear wiring inside `createAuth()`'s `databaseHooks.session`. Exercised end-to-end
+// Regression coverage for ADR-0418: the server-minted, HttpOnly session-hint cookie mint/clear
+// wiring inside `createAuth()`'s `hooks.after` (`sessionHintCookieHook`). Exercised end-to-end
 // against a REAL magic-link sign-in + sign-out — same pattern as `auth-flow.test.ts` (in-memory
 // bun:sqlite via better-auth's own Kysely adapter, no live Postgres, the capture email transport).
 //
@@ -65,7 +65,7 @@ function sessionTokenFromCookies(setCookies: string[]): {
   return { signed, bareToken: signed.split(".")[0] ?? signed };
 }
 
-test("sign-in mints the hint cookie: Secure + SameSite=Strict + not-HttpOnly + expiry matching the session cookie", async () => {
+test("sign-in mints the hint cookie: Secure + SameSite=Strict + HttpOnly + expiry matching the session cookie", async () => {
   const { verifyRes } = await buildSignedInAuth();
   const setCookies = verifyRes.headers.getSetCookie();
 
@@ -80,7 +80,7 @@ test("sign-in mints the hint cookie: Secure + SameSite=Strict + not-HttpOnly + e
   expect(hint).toContain(`${SESSION_HINT_COOKIE_NAME}=1`);
   expect(hint).toContain("Secure");
   expect(hint).toMatch(/SameSite=Strict/i);
-  expect(hint).not.toContain("HttpOnly");
+  expect(hint).toContain("HttpOnly");
 
   // Minted from the SAME `session.expiresAt` the real session cookie carries — never a
   // separately-tracked lifetime. The two cookies serialize their lifetime differently

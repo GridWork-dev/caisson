@@ -1,6 +1,6 @@
-// The name of the server-minted, non-HttpOnly session-HINT cookie (CAISSON-81, ADR-0315). Split
-// into its own zero-dependency module so both the server (`auth-server.ts`, mints/clears it via
-// better-auth's databaseHooks) and the client (`components/owned-items-provider.tsx`, reads it to
-// gate the owned-items fetch) share ONE literal — `auth-server.ts` pulls in `pg` + `better-auth`
-// server SDK and must never be imported from a "use client" component.
+// The name of the server-minted, HttpOnly session-HINT cookie (ADR-0418). Split into its own
+// zero-dependency module so `app/api/cart/owned/route.ts` (which reads the cookie directly via
+// `cookies()` to short-circuit before resolving a session) doesn't have to import `auth-server.ts`
+// — which mints/clears the cookie via `sessionHintCookieHook` — just for one string literal:
+// `auth-server.ts` pulls in `pg` + the full `better-auth` server SDK.
 export const SESSION_HINT_COOKIE_NAME = "caisson_sess_hint";

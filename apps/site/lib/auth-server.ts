@@ -48,15 +48,19 @@ export { SESSION_HINT_COOKIE_NAME } from "./session-hint-cookie.ts";
 export const SESSION_COOKIE_NAME = "caisson.session_token";
 
 /**
- * `SESSION_HINT_COOKIE_NAME` (CAISSON-81, ADR-0315) is the server-minted session-HINT cookie.
- * `SESSION_COOKIE_NAME` above is `HttpOnly` (by design — no client JS should ever read the real
- * session token), which means the owned-items provider (`components/owned-items-provider.tsx`)
- * can never use it to skip its fetch for signed-out visitors: `document.cookie` reads it as
- * absent for EVERYONE, signed-in or not. This cookie carries no session material (just `"1"`) and
- * is deliberately NOT HttpOnly so client JS can read its presence — Secure + SameSite=Strict still
- * apply since it's still a same-origin auth signal worth protecting from cross-site reuse. It is a
- * fail-open HINT, not a trust boundary: every server route still resolves the real session via
- * `getSession()`.
+ * `SESSION_HINT_COOKIE_NAME` (ADR-0418) is the server-minted session-HINT cookie. It carries no
+ * session material (just `"1"`) and exists purely so `GET /api/cart/owned`
+ * (`app/api/cart/owned/route.ts`) can short-circuit BEFORE resolving a session or touching the DB,
+ * for the common signed-out visitor on every marketing page. A prior revision saved that same cost
+ * client-side instead: the owned-items provider (`components/owned-items-provider.tsx`) read this
+ * cookie via `document.cookie` to skip its fetch entirely, which required the cookie to be
+ * readable by page JS — a same-origin auth SIGNAL any script on the page, including a third-party
+ * one, could then observe for the saving of one request. ADR-0418 moved the optimization
+ * server-side instead: the cookie is now `HttpOnly` (same as `SESSION_COOKIE_NAME` above — invisible
+ * to `document.cookie`), the client always fetches, and only the route handler reads it (via
+ * `cookies()`) to decide whether resolving a session is worth doing at all. It stays a fail-open
+ * HINT, not a trust boundary either way: the cookie's PRESENCE never grants anything — a request
+ * that carries it still goes through the real session resolution in `getOwnedCartItemIds()`.
  *
  * Wired as a top-level `hooks.after` (NOT `databaseHooks.session.*`, which was tried first and
  * discarded — its `context` is scoped to the internal adapter-write's OWN endpoint context, which
@@ -84,7 +88,7 @@ const sessionHintCookieHook = createAuthMiddleware(async (ctx) => {
     ctx.setCookie(SESSION_HINT_COOKIE_NAME, "1", {
       secure: true,
       sameSite: "strict",
-      httpOnly: false,
+      httpOnly: true,
       path: "/",
       expires: ctx.context.newSession.session.expiresAt,
     });
@@ -95,7 +99,7 @@ const sessionHintCookieHook = createAuthMiddleware(async (ctx) => {
     ctx.setCookie(SESSION_HINT_COOKIE_NAME, "", {
       secure: true,
       sameSite: "strict",
-      httpOnly: false,
+      httpOnly: true,
       path: "/",
       maxAge: 0,
     });
@@ -213,8 +217,8 @@ export async function createAuth(params: {
       autoSignInAfterVerification: true,
     },
     socialProviders: resolveSocialProviders(process.env),
-    // CAISSON-81 (ADR-0315): mint/refresh the non-HttpOnly hint cookie alongside every real
-    // session create/refresh, clear it on sign-out. See `sessionHintCookieHook` above.
+    // ADR-0418: mint/refresh the HttpOnly hint cookie alongside every real session
+    // create/refresh, clear it on sign-out. See `sessionHintCookieHook` above.
     hooks: { after: sessionHintCookieHook },
     advanced: {
       cookiePrefix: "caisson",
