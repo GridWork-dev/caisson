@@ -49,7 +49,7 @@
     "@caisson/registry-schema": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "msw": "^2.14.6",
     "typescript": "catalog:"
   }
