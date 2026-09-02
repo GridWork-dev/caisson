@@ -38,7 +38,7 @@
     "@caisson/registry-schema": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
     "@clack/prompts": "^1.7.0",
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "pg": "catalog:",
     "zod": "catalog:"
   },
