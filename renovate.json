@@ -1,7 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", "group:allNonMajor", "docker:pinDigests"],
-  "schedule": ["before 6am on monday"],
   "timezone": "UTC",
   "minimumReleaseAge": "7 days",
   "automerge": false,
