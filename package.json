@@ -72,6 +72,7 @@
   },
   "overrides": {
     "@hono/node-server": "^2.0.10",
+    "browserslist": "^4.28.7",
     "engine.io": "^6.6.9",
     "fast-uri": "^4.0.0",
     "ip-address": "^10.3.1",
