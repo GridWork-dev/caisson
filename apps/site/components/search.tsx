@@ -1,5 +1,6 @@
 "use client";
 
+import { create } from "@orama/orama";
 import { useDocsSearch } from "fumadocs-core/search/client";
 import { oramaStaticClient } from "fumadocs-core/search/client/orama-static";
 import {
@@ -22,8 +23,12 @@ import { AskAiPanel } from "./ask-ai/ask-ai-panel";
 import styles from "./search.module.css";
 
 // The sitewide ⌘K palette (ADR-0196) gains an "Ask AI" tab (ADR-0234 F3, placement 2), wired to the same
-// /api/ask route as the docs widget. The keyword tab stays the Fumadocs static search index (browser-side,
+// /api/ask route as the docs widget. The keyword tab stays the Fumadocs static Orama index (browser-side,
 // pre-built at /api/search); the Ask tab renders the shared AskAiPanel — grounded, cited, streamed.
+function initOrama() {
+  return create({ schema: { _: "string" }, language: "english" });
+}
+
 type Tab = "search" | "ask";
 const TAB_ORDER: readonly Tab[] = ["search", "ask"];
 
@@ -39,7 +44,7 @@ const SUGGESTED_PAGES: readonly { href: string; label: string }[] = [
 
 export default function DefaultSearchDialog(props: SharedProps) {
   const { search, setSearch, query } = useDocsSearch({
-    client: oramaStaticClient(),
+    client: oramaStaticClient({ initOrama }),
   });
   const [tab, setTab] = useState<Tab>("search");
   const uid = useId();
