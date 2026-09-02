@@ -5,6 +5,9 @@
 - **Scope:** `tooling/audit-harness` (the new guard) · `docs/security/tooling-playbook.md` (the prose it pins) · `.github/workflows/publish-image.yml` (read-only — a byte-identical template copy this repo must never edit)
 - **Parent:** ADR-0327 / CAISSON-95 (the pinned `deterministic` security-scan gate) · ADR-0314 (the repo-local security tooling stack)
 - **Tracks:** CAISSON-221 (image-publish scan posture)
+- **Ships in:** PR #470 (`fix/trivy-default-guard`), still open when this record merged. This ADR
+  locks the ruling ahead of its implementation: until #470 lands, the guard described below does
+  **not** exist in the repo, and an upstream flip of the template default would go unnoticed.
 
 ## Context
 
@@ -28,7 +31,8 @@ Two facts make that posture fragile in a way prose alone cannot hold:
 
 ### Ruling 2c — "Land a local static guard on the template default"
 
-`tooling/audit-harness/src/publish-scan-posture.test.ts` reads both files off disk and fails if they
+The guard is one test file, and it ships in PR #470, not in the change that carries this
+record. As specified: `tooling/audit-harness/src/publish-scan-posture.test.ts` reads both files off disk and fails if they
 drift apart. It asserts the template still carries the `'0'` fallback expression, that no workflow in
 this repo sets `TRIVY_EXIT_CODE` locally, and that the playbook still carries its "record, never
 block" section — so deleting the prose without deleting the posture reds too.
@@ -57,5 +61,9 @@ Two options were declined:
 - The guard reds on a **legitimate** change too — the day caisson decides to gate on image CVEs, the
   test must be updated in the same change as the variable. That is intended; the posture is supposed
   to cost one edit to change.
+- **Until #470 merges there is a gap, and it is this ADR's own subject.** The ruling is locked and
+  the record is public, but nothing executable pins the posture yet. A reader who finds this ADR,
+  the index row, or the board row in that window must not conclude the drift is caught — it is
+  not, until the guard file exists on main.
 - The playbook section heading is now load-bearing. Renaming it breaks the build, which is the
   cheapest available way to keep the prose and the posture from separating.

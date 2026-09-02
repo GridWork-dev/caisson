@@ -18,11 +18,11 @@ released the registry-index digest only to callers that did.
 A peer session re-raised that shape as a leak. Measured here 2026-09-01, both halves of its premise
 hold, and together they refute the protection rather than the field:
 
-| Surface | Response |
-|---|---|
-| `https://license.caisson.sh/health` (through Cloudflare) | `{"ok":true,"indexDigest":"8835d704a8c7","indexEntries":52}` |
-| `https://admin.caisson.sh/healthz` (through Cloudflare) | `{"ok":true,"indexDigest":"8835d704a8c7","indexEntries":52}` |
-| `https://caisson-license-production.up.railway.app/health` (raw origin) | `{"ok":true}` |
+| Surface                                                                 | Response                                                     |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `https://license.caisson.sh/health` (through Cloudflare)                | `{"ok":true,"indexDigest":"8835d704a8c7","indexEntries":52}` |
+| `https://admin.caisson.sh/healthz` (through Cloudflare)                 | `{"ok":true,"indexDigest":"8835d704a8c7","indexEntries":52}` |
+| `https://caisson-license-production.up.railway.app/health` (raw origin) | `{"ok":true}`                                                |
 
 The Worker **injects** the secret into every request it forwards. So the digest is already served to
 the entire internet through the front door, and the gate's only effect is to withhold it from a
