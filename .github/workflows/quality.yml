@@ -14,7 +14,7 @@ name: quality
 # outputs empty, and `github.event_name == 'push'` is false on a PR, so their `if` reads false.
 on:
   push:
-    branches: [main]
+    branches: [main, 'renovate/**']
   pull_request:
     # Defaults plus ready_for_review — flipping a draft to ready fires the full run (CAISSON-96).
     types: [opened, synchronize, reopened, ready_for_review]

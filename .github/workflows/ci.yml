@@ -1,7 +1,7 @@
 name: ci
 on:
   push:
-    branches: [main]
+    branches: [main, 'renovate/**']
   pull_request:
     # Explicit types (CAISSON-96): the GitHub defaults plus ready_for_review, so flipping a draft
     # to ready fires a fresh full run — the draft guard below suppressed the runs while drafting.
