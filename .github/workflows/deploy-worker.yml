@@ -41,7 +41,7 @@ jobs:
   deploy:
     if: github.ref == 'refs/heads/main'
     # Blacksmith per ADR-0365/0367: a credentialed deploy belongs on VM-per-job hosted compute.
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
     timeout-minutes: 20
     environment: release # ADR-0327 rider 2 (definition-first; free-plan protection rules can't enforce yet)
     steps:

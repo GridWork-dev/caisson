@@ -39,7 +39,7 @@ jobs:
   deterministic:
     # CAISSON-96 draft guard — drafts skip; the ready_for_review trigger runs the full scan.
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
     timeout-minutes: 20
     env:
       SEMGREP_JOBS: "1"
@@ -118,7 +118,7 @@ jobs:
   semgrep-pro:
     # CAISSON-96 draft guard — drafts skip; the ready_for_review trigger runs the full scan.
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
     # 45, not 20: this job's runtime swings hard. On 2026-07-27 it hit the old 20-minute ceiling on
     # `87202cd9` and then passed in ~3 minutes on an immediate re-run of the identical tree — a 7x
     # spread. A timed-out job reports as `cancelled`, which reads like someone aborted it rather
@@ -169,7 +169,7 @@ jobs:
   zizmor:
     # CAISSON-96 draft guard — drafts skip; the ready_for_review trigger runs the full scan.
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
