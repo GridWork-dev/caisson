@@ -1,0 +1,14 @@
+{
+  "prefix": "cs",
+  "defaultTheme": "dark",
+  "css": ["packages/ui/styles/tokens.css"],
+  "extensions": [
+    "surface-1", "surface-2", "fg", "fg-muted", "on-accent", "accent-tint", "glow-accent",
+    "code-string", "code-keyword", "text-xs", "text-sm", "text-base", "text-lg", "text-xl",
+    "text-2xl", "text-3xl", "text-4xl", "text-5xl", "text-display", "weight-body",
+    "weight-regular", "weight-medium", "weight-semibold", "weight-bold", "leading-tight",
+    "leading-snug", "leading-normal", "leading-relaxed", "tracking-tighter", "tracking-tight",
+    "tracking-normal", "tracking-wide", "ease-out", "ease-reveal"
+  ],
+  "foreignPrefixes": ["font"]
+}
