@@ -30,6 +30,7 @@ describe("deriveDomains — the mechanical tree partition (ADR-0233, Fork A)", (
       "generator-templates",
       "docs-content",
       "scripts",
+      "root-config",
       "oss-mirror",
       "registry/worker",
       "registry/scripts",
@@ -47,6 +48,7 @@ describe("deriveDomains — the mechanical tree partition (ADR-0233, Fork A)", (
     expect(byId.get("tooling/demo-registry")?.class).toBe("internal-only");
     expect(byId.get("apps/admin")?.class).toBe("internal-only");
     expect(byId.get("apps/site")?.class).toBe("buyer-runtime");
+    expect(byId.get("root-config")?.class).toBe("internal-only");
     expect(byId.get("oss-mirror")?.class).toBe("oss-source");
     expect(byId.get("generator-templates")?.class).toBe("sold-source");
   });
@@ -81,6 +83,13 @@ describe("domainForPath — every path resolves to exactly one owner (longest-ro
     // cli's own source stays with cli — the carve is nested, resolved by longest root.
     expect(domainForPath("packages/cli/src/generate.ts", domains)?.id).toBe(
       "packages/cli",
+    );
+  });
+
+  test("audit-relevant root configuration resolves to the root-config domain", () => {
+    expect(domainForPath("orca.yaml", domains)?.id).toBe("root-config");
+    expect(domainForPath("tokens.config.json", domains)?.id).toBe(
+      "root-config",
     );
   });
 
