@@ -84,3 +84,17 @@ All three probe commands returned exit 0 and the predicted HTTP statuses/count. 
 This is evidence against the hypothesized substitution for this request. It is **not** a measurement of the application's `x-real-ip`, `cf-connecting-ip`, or resolved limiter key: the HTTP log schema exposes proxy `srcIp`, not those application values. Neither bucket collapse nor correct isolation across distinct clients is established. Do not change the helpers or mark task 1 complete on this evidence alone.
 
 No limiter fix, mutation test, release step, schedule edit, branch fold/deletion, publish, or deploy followed. Only the run notes and receipt were updated for the new hold; no post-stop commit or `sot` run was performed.
+
+## Direct-key ruling — preparation completed, live observation pending
+
+The operator accepted the source-IP refutation and instructed direct application-key measurement, with a prediction written first and no-defect accepted when demonstrated. The outstanding receipt updates were committed as `8950afe3` (`docs(state): record S8 live proxy IP refutation`); immediate readback was clean, two commits ahead of origin/main.
+
+Fresh source tracing identifies the actual map key as `${bucket}|${ip}` in `TokenBucketLimiter.check` / `#charge`. The license call supplies bucket `issue` and the shared `clientIp(req)`. Ask AI passes its selected `ip` to Turnstile; the four named siblings have the distinct contracts already listed above. The reviewed request-span wrapper records method, route and status, not this private map key.
+
+Prediction recorded before any direct application measurement: `outputs/audit/s8-direct-key-prediction.md`. For the previously measured client A, predict `issue|2600:1702:7e60:3c0::31` and Ask AI IP `2600:1702:7e60:3c0::31`; forged IP headers should not alter either. Client B must have its own ingress value measured and exact key predicted before its application probe.
+
+A temporary diagnostic patch is proposed under the handoff directory as `S8-DIRECT-KEY-PROBE.patch`, SHA-256 `b96599aaf464f43b1fa177410a579d0569c3496661f5cf3b9c814130d97d0766`. It observes the exact key variable used by the real charge and the actual Ask AI IP argument. Four one-use markers and a ten-minute per-process window constrain output. Header precedence and limiter decisions remain unchanged. It adds a temporary optional observer callback to the shared method; that design remains proposed, not operator-locked or applied to product source.
+
+Local proposal checks: patch applicability exit 0; Bun 1.3.14 verification **3 pass, 0 fail, 19 expectations**, covering decision parity, a throwing observation sink, and TypeScript parsing. These do not substitute for integration tests, code/security review, CI or a live measurement.
+
+Decision packet: `/home/gw/lab/briefs/estate-2026-09/handoff/OPERATOR-ACT-S8-DIRECT-KEY-OBSERVATION.md`. The packet distinguishes approval of the diagnostic approach from the later per-PR merge and operator deployment acts. No diagnostic PR, merge, runtime instrumentation or deployment has occurred. Task 1 remains open; neither a defect nor no-defect verdict is claimed.

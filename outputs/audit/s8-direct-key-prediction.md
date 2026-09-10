@@ -1,0 +1,39 @@
+# S8 direct application-key prediction — recorded before measurement
+
+Date: 2026-09-10. Authority: the operator's ruling to observe the application key directly, accepting a demonstrated correct per-client key as a no-defect outcome. The unchanged R203 boundary reserves deployment dispatches to the operator.
+
+The previous receipt updates are committed in `8950afe3`. No direct application-key measurement has run.
+
+## Source trace
+
+- `apps/site/lib/ask-ai/handler.ts:127`: choose trimmed X-Real-IP when nonempty, else the first trimmed XFF hop, else empty string. The resulting `ip` is passed to `verifyTurnstile` at line 165. This is an IP resolution seam, not an IP token bucket.
+- `services/license/src/app.ts:600`: pass `clientIp(req)` as the second argument of `deps.limiter.check(bucket, ...)`. `/issue` selects bucket `issue` before the Bearer check.
+- `services/license/src/rate-limit.ts`: the adapter imports the shared `clientIp` and extends the shared class without overriding `check`.
+- `packages/rate-limit/src/token-bucket.ts:77`: `check(bucket, ip)` passes `${bucket}|${ip}` to `#charge`; line 89 uses that exact key in the private entries map. `clientIp` chooses trimmed X-Real-IP or `unknown`.
+- `apps/site/lib/tenant-evidence-rate-limit.ts:34`: key `tenant-proof|<accountId>` and independent `global|tenant-proof` ceiling. The argument is an account identity, not a forwarded IP.
+- `apps/site/lib/ask-ai/escalate-throttle.ts:44`: duplicate key SHA-256 of trimmed, lowercased, whitespace-collapsed question; independent global count. Not a per-IP limiter.
+- `apps/site/lib/demos-proxy.ts:37`: XFF is stripped; all `cf-*` headers are stripped in `upstreamHeaders`; X-Real-IP is copied by that function. This is a forwarding seam, not a token bucket.
+- `apps/site/app/api/waitlist/route.ts:87`: first trimmed XFF hop becomes Turnstile `remoteip`. Not a token bucket.
+
+## Prediction
+
+For a real-edge request from the same host and IPv6 egress as the previous measured probes:
+
+1. The license limiter will charge exactly **`issue|2600:1702:7e60:3c0::31`**, not `issue|unknown` and not a Worker-egress key. Its unsigned `/issue` request will return HTTP 401 after the charge.
+2. The site's Ask AI helper will resolve exactly **`2600:1702:7e60:3c0::31`**. A valid question body with no challenge token will then return HTTP 403 before session, database, retrieval, model, or escalation work.
+3. Supplying forged X-Real-IP `203.0.113.91`, XFF `198.51.100.92, 198.51.100.93`, and CF-Connecting-IP `203.0.113.94` will not change the selected license key or Ask AI IP on the real edge.
+4. A second independently measured client egress B should produce `issue|<B>` and Ask AI IP `<B>`, distinct from A. The exact B value must be observed at ingress and recorded here **before** sending its application probe; no unknown value is a completed prediction.
+
+The IPv6 prediction is tied to the prior actual ingress observation. Recheck that ingress immediately before application measurement. An unexpected change is a stop, not permission to rewrite the prediction after observing the key.
+
+## Required evidence and decision
+
+Capture the actual `key` variable passed to the shared limiter's private map operation, scoped to an identified probe request. Capture the actual `ip` passed to Ask AI's Turnstile dependency. Bind observations to deployed source, service, timestamp and probe marker. Proxy `srcIp`, synthetic local Requests, and reconstructed keys alone do not satisfy this measurement.
+
+After direct A/B observations and forged-header checks match their recorded predictions, close task 1 as **NO DEFECT: per-client keying demonstrated**, with the measured deployment/client scope stated. Do not change header precedence or write a bug-fix changeset. Remove temporary observation code before any release cut.
+
+An unexpected key, response, failed gate or authority denial triggers the existing stop rule. Do not manufacture traffic volume to exhaust a production bucket. No branch deletion is authorized.
+
+## Execution status
+
+PREDICTED, NOT MEASURED. The reviewed service responses and request-span wrapper do not expose the private key. A proposed temporary diagnostic patch and operator action packet are being prepared; no live instrumentation, restart or deployment is authorized by this prediction record.

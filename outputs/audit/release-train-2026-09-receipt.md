@@ -6,7 +6,7 @@ Entry prerequisites passed from the landing and T39 completion receipts. Local H
 
 The initial missing-path hold was accepted by the brief author as a brief defect. Both original hold artifacts were committed unchanged as `714c813a` before the author-authorized resumption. The corrected source census and bounded live probe are recorded in `RUN-NOTES.md`.
 
-**Current hold:** the correlated Railway HTTP log recorded the same source IP as the public Cloudflare trace, contradicting the predicted Worker-egress substitution. Execution stopped on that unexpected result under the unchanged stop rule. This observation does not directly expose the application's resolved limiter key.
+**Current status:** the operator accepted the source-IP refutation and authorized direct-key investigation. The prior evidence is committed as `8950afe3`. Direct application-key measurement is pending an operator ruling on the proposed temporary diagnostic mechanism and its later deployment; the application key remains unobserved.
 
 At `2026-09-10T19:41:58Z`, one unsigned POST to `https://license.caisson.sh/issue` returned the predicted 401. Railway request `cpbMpVZTQF-EqIubLPU1MQ` matched the unique probe User-Agent, method, path, host and status; its `srcIp` was `2600:1702:7e60:3c0::31`, identical to the ingress IP measured four seconds earlier. Deployment: `ea0bb9c8-aa36-425e-804a-cf08d9dd4928`. No application-header or bucket-key readback was obtained, so neither collapse nor correct per-client isolation is claimed.
 
@@ -25,4 +25,8 @@ At `2026-09-10T19:41:58Z`, one unsigned POST to `https://license.caisson.sh/issu
 | Rescan cron and first firing | NOT IMPLEMENTED / NOT DERIVED |
 | Consumers moved off the pre-fix line by this run | NONE |
 
-No product code or workflow was changed. The initial hold was committed as `714c813a`; this continuation's evidence updates remain uncommitted following the new stop. No PR, merge, tag push, package publication, deploy dispatch, or branch deletion was performed. The session-wrap `bun run sot` was not run because the brief's stop condition had fired; no green-gates or completion claim is made.
+The exact map key construction and sibling contracts are recorded in `outputs/audit/s8-direct-key-prediction.md`. Prediction for the previous client A is `issue|2600:1702:7e60:3c0::31` and the same Ask AI IP, including under forged forwarded-IP headers. The second client's ingress must be measured and its exact prediction written before its application probe.
+
+A temporary diagnostic patch exists only in the handoff directory. Applicability passed; local verification returned **3 pass, 0 fail, 19 expectations** for decision parity, sink-error isolation and TypeScript parsing. Full integration/review/CI and live observation remain outstanding. The decision packet is `OPERATOR-ACT-S8-DIRECT-KEY-OBSERVATION.md` in the estate handoff directory; it is not a deployment-ready packet or deployment authority.
+
+No product code or workflow was changed. The two prior holds were committed as `714c813a` and `8950afe3`. No PR, merge, tag push, package publication, deploy dispatch, or branch deletion was performed. No green-gates or task-completion claim is made.
