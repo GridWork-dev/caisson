@@ -4,6 +4,16 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### Current hold: review admission refused
+
+The formatter unblock completed normally. Receipt commit `24229e8c` passed hooks. Diagnostic commit `38631ed48a035b717ee163e8564e057478f5e2d0` then passed hooks after 67 tests / 194 assertions, changed-file lint, whole-tree format and 46 successful build/typecheck tasks. Corrected Changesets status passed with an explicit empty no-release changeset. Full local evidence: `s8-diagnostic-verification.md`.
+
+The code and security reviews were dispatched concurrently through the governed `gw dispatch` adapter, with `--codex-only`, a shared read-only brief, current source bundles and the exact diagnostic head. Both returned exit 2 before starting a reviewer. The admission gate reported: quota gauge 89%, estimated 180,000 tokens over a 2,000,000-token basis, zero existing reservations, projected 98.0% versus ceiling 95%. Both also reported `admission receipt telemetry skipped: dispatch admission sink returned 404`.
+
+The earlier read-only `gw codex limits` preflight had reported 88%; that gauge was not an admission guarantee. No force override, retry, alternate-provider dispatch, policy/configuration edit, PR, deployment or live application probe followed the refusal. The S8 stop rule applies; task 1 remains open. Last product commit is `38631ed4`; source prediction remains `issue|2600:1702:7e60:3c0::31` for client A, unmeasured in the application.
+
+Review logs: `/tmp/s8-code-review.log` and `/tmp/s8-security-review.log`. The scoped operator packet is `S8-REVIEW-ADMISSION-HOLD-20260910.md` in the estate handoff directory. These notes supersede the historical formatter stops below.
+
 ### Formatter unblock — operator-authorized continuation
 
 The operator diagnosed the pre-commit gate as a whole-tree formatter check: uncommitted diagnostic edits can block a receipt-only commit. The eight reported unformatted files all belonged to this task. The operator authorized `bun run format`, required an ownership readback before staging, and retained normal hooks.

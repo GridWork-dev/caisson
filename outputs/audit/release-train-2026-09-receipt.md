@@ -1,6 +1,8 @@
-# S8 release train receipt — IN PROGRESS, 2026-09-10
+# S8 release train receipt — REVIEW ADMISSION HOLD, 2026-09-10
 
 Governing brief: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`.
+
+**Latest state:** formatter recovery and receipt commit `24229e8c` passed normal hooks. The temporary diagnostic is committed as `38631ed48a035b717ee163e8564e057478f5e2d0`; [local validation](s8-diagnostic-verification.md) passed 67 tests / 194 assertions, lint, formatting, 46 build/typecheck tasks and no-release Changesets status. Both governed code/security review dispatches then refused admission (exit 2): 89% gauge plus estimated 180,000 tokens projected 98%, above the 95% ceiling. Neither reviewer started. A secondary telemetry message reported the admission sink returned 404. No override, retry, alternate dispatch, PR, deployment or live key probe followed. Task 1 remains open; no defect/no-defect verdict is established.
 
 Latest ruling: the operator diagnosed and unblocked the whole-tree formatting gate. Authorized `bun run format` passed; porcelain then listed only the 11 task-owned paths before any new staging. The prior formatter hold is resolved. Diagnostic verification resumes; direct live measurement remains outstanding. Historical stop records below are retained.
 

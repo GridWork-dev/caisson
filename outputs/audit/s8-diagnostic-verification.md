@@ -31,4 +31,6 @@ The optional callback is temporary and source-compatible with existing two-argum
 
 Code/security review and CI remain pending. Deployment remains an operator act under R203; the direct-key prediction is already committed and must not be rewritten after measurement.
 
+Diagnostic commit: `38631ed48a035b717ee163e8564e057478f5e2d0`, parent `24229e8c1ba446e360f0cd28005e4a289fec88ed`. The subsequent governed code/security review attempts both refused quota admission before reviewer startup: exit 2, gauge 89%, estimate 180,000 tokens, projected 98% versus ceiling 95%. No audit verdict exists. The admission telemetry sink also returned 404. No bypass, retry or alternate dispatch followed; the lane is held under the operator's stop rule.
+
 The corrected `bunx @changesets/cli status --since=origin/main` preflight also passed with the supported empty changeset staged: no patch, minor or major bumps. After frozen installation this resolves the repository's installed CLI 2.31.1 (the earlier dependency-free invocation used 3.0.2).
