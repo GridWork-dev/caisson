@@ -60,8 +60,8 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@vitest/browser": "4.1.10",
-    "@vitest/browser-playwright": "4.1.10",
+    "@vitest/browser": "4.1.11",
+    "@vitest/browser-playwright": "4.1.11",
     "eslint-plugin-storybook": "10.5.6",
     "lucide-react": "catalog:",
     "playwright": "1.62.1",
@@ -70,7 +70,7 @@
     "storybook": "10.5.6",
     "typescript": "catalog:",
     "vite": "8.2.0",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   },
   "peerDependencies": {
     "lucide-react": "^1.21.0",

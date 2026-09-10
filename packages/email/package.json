@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@caisson/kernel": "workspace:*",
-    "nodemailer": "^9.0.5",
+    "nodemailer": "^9.1.1",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-email": "^6.0.0"

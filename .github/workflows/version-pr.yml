@@ -42,7 +42,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     # Blacksmith per ADR-0365 (the 2026-07-19 fleet-only sweep; write perms accepted on VM-per-job runners).
     # Write privilege belongs on a clean hosted runner, not third-party compute.
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
     timeout-minutes: 15
     environment: release # ADR-0327 rider 2: the release-family boundary (definition-first; free-plan protection rules can't enforce yet)
     permissions:
@@ -138,7 +138,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       startsWith(github.event.pull_request.head.ref, 'release/version-')
     # Blacksmith per ADR-0365 (fleet-only sweep; release-branch write accepted on VM-per-job runners).
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
     timeout-minutes: 15
     environment: release
     permissions:

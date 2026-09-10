@@ -248,6 +248,16 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
     class: "internal-only",
   });
 
+  // Root-level policy inputs that alter agent worktree exposure or the design-token gate. These
+  // are audit-relevant configuration, not generic build/lint config, so keep them in the derived
+  // partition instead of adding them to coverage-gate's reviewed ignore list.
+  domains.push({
+    id: "root-config",
+    roots: ["orca.yaml", "tokens.config.json"],
+    globs: ["orca.yaml", "tokens.config.json"],
+    class: "internal-only",
+  });
+
   // Fork D — the exporter's OUTPUT view of the 16 Apache packages as it lands on public GitHub
   // (@caisson/ → @caisson-sh/ rename, dropped tests, restamped licenses). Synthetic: no in-repo root;
   // the driver runs scripts/export-public-mirror.ts and audits the produced diff, so a dangling

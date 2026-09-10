@@ -41,14 +41,15 @@ test("no bucket env falls back to the local write-once store", () => {
 });
 
 test("production refuses to downgrade to ephemeral local WORM storage", () => {
-  const originalNodeEnv = process.env.NODE_ENV;
+  const mutableEnv = process.env as Record<string, string | undefined>;
+  const originalNodeEnv = mutableEnv.NODE_ENV;
   delete process.env.CAISSON_ADMIN_WORM_BUCKET;
-  process.env.NODE_ENV = "production";
+  mutableEnv.NODE_ENV = "production";
   try {
     expect(() => wormStore()).toThrow(/required in production/);
   } finally {
-    if (originalNodeEnv === undefined) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = originalNodeEnv;
+    if (originalNodeEnv === undefined) delete mutableEnv.NODE_ENV;
+    else mutableEnv.NODE_ENV = originalNodeEnv;
   }
 });
 

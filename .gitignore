@@ -83,3 +83,7 @@ apps/admin/.caisson-admin-worm/
 
 # session handoff/resume brief for this branch — local working note, never committed
 BRIEF.md
+
+# Local codebase-memory index artifacts.
+.codebase-memory/
+.codebase-memory.json

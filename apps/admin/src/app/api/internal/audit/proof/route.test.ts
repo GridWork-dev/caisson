@@ -21,7 +21,7 @@ const PROXY_SECRET = "test-proof-proxy-secret-with-32-bytes";
 
 type AdminDbGlobal = {
   caissonAdminTransactor?: unknown;
-  caissonAdminPglite?: { close(): Promise<void> };
+  caissonAdminPglite?: { close(): Promise<void> } | undefined;
 };
 const originalDbUrl = process.env.CAISSON_ADMIN_DB_URL;
 const originalBucket = process.env.CAISSON_ADMIN_WORM_BUCKET;
