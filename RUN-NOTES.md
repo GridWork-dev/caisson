@@ -37,3 +37,50 @@ No retry, product edit, test, commit, PR, merge, tag, publication, deploy, or br
 3. Complete the end-to-end pipeline reading, derive current gate and tarball counts, and record predictions before execution. The train includes Worker/Railway deploy dispatches, which the brief reserves to operator packets even after package-publication approval.
 4. Prepare the required changes and green PR; obtain the brief's per-PR approval before merge, tag push, or package publish.
 5. Execute the remaining ordered tasks only within that authority, including scheduled scanner work and final publication/consumer evidence.
+
+## Author correction and authorized resume
+
+The brief author accepted the missing path as a brief defect and authorized resumption against `apps/site/lib/ask-ai/handler.ts`, with four named sibling surfaces. The author expressly retained the stop rule and **no branch deletes**; that resolves the deletion conflict above in favor of preserving all branches.
+
+Before resuming, the two original hold artifacts were committed unchanged as `714c813a` (`docs(state): preserve S8 release-train hold evidence`). Staged whitespace verification passed; the commit contained exactly two files, 63 insertions. Immediate status readback was clean and one commit ahead of origin/main.
+
+### Corrected source census
+
+| Surface | Observed behavior |
+|---|---|
+| `packages/rate-limit/src/token-bucket.ts` | `clientIp` selects trimmed `x-real-ip`, otherwise the shared `unknown` key. |
+| `apps/site/lib/ask-ai/handler.ts` | `clientIp` selects trimmed `x-real-ip`, then XFF's first comma-separated hop, then empty string; passed to Turnstile. |
+| `apps/site/lib/tenant-evidence-rate-limit.ts` | Charges the tenant-proof bucket with the supplied account ID and also charges a global ceiling. |
+| `apps/site/lib/ask-ai/escalate-throttle.ts` | Deduplicates by normalized-question SHA-256 and applies a global per-minute cap. |
+| `apps/site/lib/demos-proxy.ts` | Denies XFF and other forwarding headers, strips every `cf-*` header, and copies other allowed incoming headers; `x-real-ip` is not a denylist member. |
+| `apps/site/app/api/waitlist/route.ts` | Sends the first XFF hop as Turnstile `remoteip` when present. |
+
+These are distinct identity/forwarding contracts; they were inspected without changes.
+
+### Bounded real-edge probe
+
+Installed Railway CLI: `5.49.1`; its `logs --help` supports HTTP logs filtered by request ID. Read-only status identified the configured project as `caisson-prod`, with the six Caisson services and Postgres. Credential/binding checks printed SET/UNSET only; no credential-store file was read.
+
+Before execution, predicted Cloudflare trace HTTP 200, one unsigned license `/issue` request HTTP 401, and exactly one correlated Railway HTTP log row. The final prediction also stated that the brief's hypothesis would put a different, Worker-egress IP in that row.
+
+| Observation | Measured result |
+|---|---|
+| Trace | `GET https://caisson.sh/cdn-cgi/trace`, HTTP 200 at `2026-09-10T19:41:54.801212+00:00` |
+| Public ingress IP | `2600:1702:7e60:3c0::31`; Cloudflare colo ATL, warp off |
+| Limiter-bearing probe | One unsigned `POST https://license.caisson.sh/issue`, body `{}`, HTTP 401 with `{"error":"unauthorized"}` at `2026-09-10T19:41:58.639313+00:00` |
+| Probe User-Agent | `s8-client-ip-4a8bd9c5-1ae4-4326-974c-c937cf6ef57d` |
+| Railway request ID | `cpbMpVZTQF-EqIubLPU1MQ` |
+| Worker response request ID | `5316a55a-afa1-4159-88d3-3035c7883a6d` |
+| HTTP log lookup | `railway logs --http --json --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT_ID" --service caisson-license --request-id cpbMpVZTQF-EqIubLPU1MQ --since 10m --lines 1`, invoked with argument arrays under `snip proxy bash -c` |
+| Correlation | Exactly one row; same request ID, probe User-Agent, `/issue`, POST, host `license.caisson.sh`, HTTP 401 |
+| Log timestamp | `2026-09-10T19:41:58.596768453Z` |
+| Railway `srcIp` | `2600:1702:7e60:3c0::31` — **equal to public ingress IP**, not a different Worker-egress IP |
+| Deployment | `ea0bb9c8-aa36-425e-804a-cf08d9dd4928`, instance `aaa19987-22f2-49b6-a8d5-25bf08507169`, region `us-west2` |
+
+### New stop: source-IP prediction contradicted
+
+All three probe commands returned exit 0 and the predicted HTTP statuses/count. The final source-IP prediction was contradicted: Railway recorded the original ingress IP. Under the unchanged stop rule, execution stopped immediately after this readback.
+
+This is evidence against the hypothesized substitution for this request. It is **not** a measurement of the application's `x-real-ip`, `cf-connecting-ip`, or resolved limiter key: the HTTP log schema exposes proxy `srcIp`, not those application values. Neither bucket collapse nor correct isolation across distinct clients is established. Do not change the helpers or mark task 1 complete on this evidence alone.
+
+No limiter fix, mutation test, release step, schedule edit, branch fold/deletion, publish, or deploy followed. Only the run notes and receipt were updated for the new hold; no post-stop commit or `sot` run was performed.
