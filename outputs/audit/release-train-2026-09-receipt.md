@@ -1,12 +1,12 @@
-# S8 release train receipt — HOLD, 2026-09-10
+# S8 release train receipt — IN PROGRESS, 2026-09-10
 
 Governing brief: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`.
 
 Entry prerequisites passed from the landing and T39 completion receipts. Local HEAD and the live remote main advertisement both name `e2116849082f57c1d5fdaf6b309086813f48e4f4` (Caisson #475).
 
-The initial missing-path hold was accepted by the brief author as a brief defect. Both original hold artifacts were committed unchanged as `714c813a` before the author-authorized resumption. The corrected source census and bounded live probe are recorded in `RUN-NOTES.md`.
+The initial missing-path hold was accepted by the brief author as a brief defect. Both original hold artifacts were committed unchanged as `714c813a` before the author-authorized resumption. The corrected source census and bounded live probe are recorded in [the run notes](release-train-2026-09-RUN-NOTES.md).
 
-**Current status:** the operator accepted the source-IP refutation and authorized direct-key investigation. The prior evidence is committed as `8950afe3`. Direct application-key measurement is pending an operator ruling on the proposed temporary diagnostic mechanism and its later deployment; the application key remains unobserved.
+**Current status:** the operator accepted the source-IP refutation, resolved the SOT stop, and directed continuation of direct-key investigation. Branch preservation is EXPECTED-DRIFT; the run notes are relocated under `outputs/audit/`. Corrected Changesets preflight passed using `bunx @changesets/cli status --since=origin/main` (v3.0.2, exit 0). The [SOT disposition](s8-sot-disposition.md) lists all 16 lagging documents, their declared dates and newer source dates; dates remain unchanged. The application key remains unobserved. Deployment remains separately operator-gated under R203.
 
 At `2026-09-10T19:41:58Z`, one unsigned POST to `https://license.caisson.sh/issue` returned the predicted 401. Railway request `cpbMpVZTQF-EqIubLPU1MQ` matched the unique probe User-Agent, method, path, host and status; its `srcIp` was `2600:1702:7e60:3c0::31`, identical to the ingress IP measured four seconds earlier. Deployment: `ea0bb9c8-aa36-425e-804a-cf08d9dd4928`. No application-header or bucket-key readback was obtained, so neither collapse nor correct per-client isolation is claimed.
 

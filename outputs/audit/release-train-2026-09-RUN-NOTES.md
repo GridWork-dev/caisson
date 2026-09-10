@@ -1,5 +1,20 @@
 # S8 release train run notes — 2026-09-10
 
+Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated from the repository root by the operator's SOT ruling. Earlier root-path diagnostics below describe historical runs.
+
+## Compact continuation checkpoint — operator SOT ruling
+
+Completed disposition evidence: [SOT disposition and freshness report](s8-sot-disposition.md). Corrected CLI returned exit 0, v3.0.2, no branch packages to bump; no repository lockfile delta. The 16 stale documents are reported with their newer source dates, all 2026-09-09. No date stamps changed.
+
+- Preserve `docs/sweep-2026-09-01`, `fix/session-hint-httponly`, and `probe/fumadocs-16.15`. Their branch-hygiene finding is **EXPECTED-DRIFT**, because the operator's preservation instruction overrides that advisory gate. It is not a stop condition.
+- Root run notes were relocated here; active references must use this path.
+- Use `bunx @changesets/cli status --since=origin/main` for the corrected changeset preflight. The root manifest declares `@changesets/cli`; it has no dedicated Changesets status script. The historical bare-package invocation was wrong.
+- Report frontmatter lag with document/source dates; do not change dates to silence it. The operator has directed continuation after that report.
+- Prior durable receipts: `714c813a`, `8950afe3`, `33bc343d`; product source is still the #475 source at `e2116849`.
+- Task 1 is open. The proxy-source-IP hypothesis was refuted; that was not direct application evidence. Source key construction and the predicted client-A key are in `outputs/audit/s8-direct-key-prediction.md`.
+- A tested temporary diagnostic patch exists in the handoff directory. It has not been applied to product source or deployed. Direct measurement remains required before a defect/no-defect verdict.
+- Continue in the original task order. No merges, tag pushes, or package publish without per-PR approval; deployments remain operator acts. No branch deletion. Preserve the stop rule for new failures or unpredicted results.
+
 Authority: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`.
 
 ## Entry evidence

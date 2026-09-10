@@ -1,0 +1,39 @@
+# S8 SOT disposition — 2026-09-10
+
+The operator resolved the prior SOT stop and directed continuation. This is a scoped disposition, not a claim that the unmodified aggregate SOT command is green.
+
+| Check | Disposition |
+|---|---|
+| Branch hygiene | **EXPECTED-DRIFT**: the brief and repeated operator rulings require preserving all three R212 branches. That instruction wins over the advisory deletion check. |
+| Docs surface | **PASS**, exit 0: repository `checkDocsSurface` reports root/state allowlists and AGENTS symlink intact. Root `RUN-NOTES.md` moved to `outputs/audit/release-train-2026-09-RUN-NOTES.md`; current receipt reference updated. Historical command transcripts retain their historical paths. |
+| Changeset preflight | **PASS**, exit 0 using `bunx @changesets/cli status --since=origin/main` through `snip proxy bash -c`. CLI reported v3.0.2 and an empty “Packages to be bumped” list. No repository lockfile change. The root manifest declares `@changesets/cli` but no dedicated status script. This branch comparison does not count the pending release backlog. |
+| Frontmatter freshness | **REPORTED; dates unchanged**, per operator ruling. Exact stale documents and source dates below. |
+
+## Freshness evidence
+
+Recomputed with the repository's exported `checkDocFreshness` over its exact freshness scope: `docs/state/*.md`, `docs/ops/*.md`, `docs/architecture.md`, `docs/build-state.md`, and `docs/deploy/STATE.md`. Dates came from `git -C <worktree> log -1 --format=%cs -- <path>`. The read-only driver `/tmp/s8-freshness-report.ts` exited 0. All findings below are date lag, not dead pointers.
+
+Every source listed in the last column has last-commit date **2026-09-09**. “Self” means the document's own last commit. Commit-date comparison identifies review candidates; it does not establish that every passage is factually wrong.
+
+| Document | Declared `updated` | Newer sources (all 2026-09-09) |
+|---|---|---|
+| `docs/architecture.md` | 2026-09-05 | Self; `package.json`; `.github/workflows/ci.yml`; `docs/deploy/STATE.md` |
+| `docs/build-state.md` | 2026-09-05 | Self |
+| `docs/deploy/STATE.md` | 2026-09-05 | Self; `docs/build-state.md`; `docs/ops/launch-runbook.md` |
+| `docs/ops/db-restore.md` | 2026-08-28 | `docs/deploy/STATE.md` |
+| `docs/ops/launch-runbook.md` | 2026-09-05 | Self; `docs/state/outstanding-work.md`; `docs/state/production-readiness.md`; `docs/deploy/STATE.md`; `docs/ops/provider-console-checks.md` |
+| `docs/ops/operator-walkthrough.md` | 2026-09-05 | Self; `docs/state/outstanding-work.md`; `docs/state/decisions-and-forks.md`; `docs/state/production-readiness.md`; `docs/deploy/STATE.md`; `docs/ops/provider-console-checks.md` |
+| `docs/ops/parallel-session-waves.md` | 2026-09-05 | Self; `docs/state/decisions-and-forks.md` |
+| `docs/ops/probe-accounts.md` | 2026-09-05 | Self; `docs/state/outstanding-work.md`; `docs/deploy/STATE.md` |
+| `docs/ops/provider-console-checks.md` | 2026-09-05 | Self; `docs/ops/probe-accounts.md`; `docs/ops/operator-walkthrough.md`; `docs/ops/launch-runbook.md`; `docs/state/outstanding-work.md`; `docs/state/production-readiness.md`; `docs/state/decisions-and-forks.md` |
+| `docs/ops/release-tag-signing.md` | 2026-08-19 | `.github/workflows/release-train.yml` |
+| `docs/state/compatibility-matrix.md` | 2026-08-25 | `packages/cli/templates/` |
+| `docs/state/decisions-and-forks.md` | 2026-09-05 | Self |
+| `docs/state/operator-surface.md` | 2026-09-05 | Self; `docs/state/production-readiness.md`; `docs/ops/launch-runbook.md`; `docs/ops/operator-walkthrough.md`; `docs/ops/provider-console-checks.md`; `docs/ops/probe-accounts.md`; `docs/state/outstanding-work.md`; `docs/state/decisions-and-forks.md` |
+| `docs/state/outstanding-work.md` | 2026-09-05 | Self; `docs/state/decisions-and-forks.md`; `docs/state/production-readiness.md`; `docs/deploy/STATE.md`; `docs/ops/provider-console-checks.md` |
+| `docs/state/package-catalog.md` | 2026-09-02 | `package.json`; `packages/`; `apps/`; `tooling/` |
+| `docs/state/production-readiness.md` | 2026-09-05 | Self; `docs/state/outstanding-work.md`; `docs/ops/launch-runbook.md`; `docs/deploy/STATE.md`; `docs/ops/provider-console-checks.md` |
+
+No dates were bumped. Task 1 resumes under the existing prediction and stop rule; application key observation remains outstanding.
+
+Readback confirms all three named branches remain present. `git diff --check` passed before staging.
