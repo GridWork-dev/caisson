@@ -4,6 +4,24 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### Formatter unblock — operator-authorized continuation
+
+The operator diagnosed the pre-commit gate as a whole-tree formatter check: uncommitted diagnostic edits can block a receipt-only commit. The eight reported unformatted files all belonged to this task. The operator authorized `bun run format`, required an ownership readback before staging, and retained normal hooks.
+
+`bun run format` passed (exit 0; 3,476 files visited). Subsequent `git status --porcelain=v1 --untracked-files=all` listed only this task's six diagnostic source/test files, three audit documents, and SPEC/PLAN. No unrelated path or dependency manifest/lockfile changed. This supersedes the formatter hold below. Commit the formatted receipts normally, then resume diagnostic verification; no hook bypass or live-key claim.
+
+### Latest stop: formatter tool invocation
+
+The SOT dispositions were committed as `3e549193`; immediate readback was clean, four commits ahead of origin/main. All three R212 branches remain. `bun install --frozen-lockfile` then passed under Bun 1.3.14, installing 3,303 packages without a manifest or lockfile delta.
+
+Task 1 resumed as authorized. Temporary diagnostic source and focused tests were prepared in the shared limiter, license application/integration suite, and Ask AI handler/suite. Draft SPEC/PLAN files were added under `outputs/{specs,plans}/release-train-2026-09/`. These edits remain uncommitted and unverified. They preserve header precedence and are not a bug fix or a live measurement.
+
+Before tests, an in-memory formatting attempt used the installed Oxfmt API through the file-tool JavaScript runtime so edits could still be applied via `apply_patch`. The returned content was not the expected JSON; its displayed prefix was `process is...`. The orchestration parser failed with `SyntaxError: Unexpected token 'p', "process is"... is not valid JSON`. The full underlying formatter diagnostic was not retained in the tool output, so no more specific root cause is asserted. The dependent formatting patch was never applied.
+
+This was an **unexpected tool result**, not a failing product test. Under the operator's unchanged rule, execution stopped without retry, formatter workaround, integration test, review, PR, deployment or live probe. Only stop receipts were updated afterward. Direct-key prediction remains recorded; task 1 remains open, with neither a defect nor no-defect verdict.
+
+Receipt persistence attempt: staged whitespace verification passed, but `git commit -F /tmp/s8-formatter-stop-commit-message.txt` exited 1 with `pre-commit: oxfmt check failed (run: bun run format)`. The commit was not created. No bypass, formatting retry or further gate run followed. The latest successful commit remains `3e549193`; these stop updates and the diagnostic preparation remain uncommitted. This additional failed gate is recorded without attributing it to a particular file, since the hook output did not name one.
+
 Completed disposition evidence: [SOT disposition and freshness report](s8-sot-disposition.md). Corrected CLI returned exit 0, v3.0.2, no branch packages to bump; no repository lockfile delta. The 16 stale documents are reported with their newer source dates, all 2026-09-09. No date stamps changed.
 
 - Preserve `docs/sweep-2026-09-01`, `fix/session-hint-httponly`, and `probe/fumadocs-16.15`. Their branch-hygiene finding is **EXPECTED-DRIFT**, because the operator's preservation instruction overrides that advisory gate. It is not a stop condition.
@@ -61,14 +79,14 @@ Before resuming, the two original hold artifacts were committed unchanged as `71
 
 ### Corrected source census
 
-| Surface | Observed behavior |
-|---|---|
-| `packages/rate-limit/src/token-bucket.ts` | `clientIp` selects trimmed `x-real-ip`, otherwise the shared `unknown` key. |
-| `apps/site/lib/ask-ai/handler.ts` | `clientIp` selects trimmed `x-real-ip`, then XFF's first comma-separated hop, then empty string; passed to Turnstile. |
-| `apps/site/lib/tenant-evidence-rate-limit.ts` | Charges the tenant-proof bucket with the supplied account ID and also charges a global ceiling. |
-| `apps/site/lib/ask-ai/escalate-throttle.ts` | Deduplicates by normalized-question SHA-256 and applies a global per-minute cap. |
-| `apps/site/lib/demos-proxy.ts` | Denies XFF and other forwarding headers, strips every `cf-*` header, and copies other allowed incoming headers; `x-real-ip` is not a denylist member. |
-| `apps/site/app/api/waitlist/route.ts` | Sends the first XFF hop as Turnstile `remoteip` when present. |
+| Surface                                       | Observed behavior                                                                                                                                     |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/rate-limit/src/token-bucket.ts`     | `clientIp` selects trimmed `x-real-ip`, otherwise the shared `unknown` key.                                                                           |
+| `apps/site/lib/ask-ai/handler.ts`             | `clientIp` selects trimmed `x-real-ip`, then XFF's first comma-separated hop, then empty string; passed to Turnstile.                                 |
+| `apps/site/lib/tenant-evidence-rate-limit.ts` | Charges the tenant-proof bucket with the supplied account ID and also charges a global ceiling.                                                       |
+| `apps/site/lib/ask-ai/escalate-throttle.ts`   | Deduplicates by normalized-question SHA-256 and applies a global per-minute cap.                                                                      |
+| `apps/site/lib/demos-proxy.ts`                | Denies XFF and other forwarding headers, strips every `cf-*` header, and copies other allowed incoming headers; `x-real-ip` is not a denylist member. |
+| `apps/site/app/api/waitlist/route.ts`         | Sends the first XFF hop as Turnstile `remoteip` when present.                                                                                         |
 
 These are distinct identity/forwarding contracts; they were inspected without changes.
 
@@ -78,19 +96,19 @@ Installed Railway CLI: `5.49.1`; its `logs --help` supports HTTP logs filtered b
 
 Before execution, predicted Cloudflare trace HTTP 200, one unsigned license `/issue` request HTTP 401, and exactly one correlated Railway HTTP log row. The final prediction also stated that the brief's hypothesis would put a different, Worker-egress IP in that row.
 
-| Observation | Measured result |
-|---|---|
-| Trace | `GET https://caisson.sh/cdn-cgi/trace`, HTTP 200 at `2026-09-10T19:41:54.801212+00:00` |
-| Public ingress IP | `2600:1702:7e60:3c0::31`; Cloudflare colo ATL, warp off |
-| Limiter-bearing probe | One unsigned `POST https://license.caisson.sh/issue`, body `{}`, HTTP 401 with `{"error":"unauthorized"}` at `2026-09-10T19:41:58.639313+00:00` |
-| Probe User-Agent | `s8-client-ip-4a8bd9c5-1ae4-4326-974c-c937cf6ef57d` |
-| Railway request ID | `cpbMpVZTQF-EqIubLPU1MQ` |
-| Worker response request ID | `5316a55a-afa1-4159-88d3-3035c7883a6d` |
-| HTTP log lookup | `railway logs --http --json --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT_ID" --service caisson-license --request-id cpbMpVZTQF-EqIubLPU1MQ --since 10m --lines 1`, invoked with argument arrays under `snip proxy bash -c` |
-| Correlation | Exactly one row; same request ID, probe User-Agent, `/issue`, POST, host `license.caisson.sh`, HTTP 401 |
-| Log timestamp | `2026-09-10T19:41:58.596768453Z` |
-| Railway `srcIp` | `2600:1702:7e60:3c0::31` — **equal to public ingress IP**, not a different Worker-egress IP |
-| Deployment | `ea0bb9c8-aa36-425e-804a-cf08d9dd4928`, instance `aaa19987-22f2-49b6-a8d5-25bf08507169`, region `us-west2` |
+| Observation                | Measured result                                                                                                                                                                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trace                      | `GET https://caisson.sh/cdn-cgi/trace`, HTTP 200 at `2026-09-10T19:41:54.801212+00:00`                                                                                                                                                            |
+| Public ingress IP          | `2600:1702:7e60:3c0::31`; Cloudflare colo ATL, warp off                                                                                                                                                                                           |
+| Limiter-bearing probe      | One unsigned `POST https://license.caisson.sh/issue`, body `{}`, HTTP 401 with `{"error":"unauthorized"}` at `2026-09-10T19:41:58.639313+00:00`                                                                                                   |
+| Probe User-Agent           | `s8-client-ip-4a8bd9c5-1ae4-4326-974c-c937cf6ef57d`                                                                                                                                                                                               |
+| Railway request ID         | `cpbMpVZTQF-EqIubLPU1MQ`                                                                                                                                                                                                                          |
+| Worker response request ID | `5316a55a-afa1-4159-88d3-3035c7883a6d`                                                                                                                                                                                                            |
+| HTTP log lookup            | `railway logs --http --json --project "$RAILWAY_PROJECT_ID" --environment "$RAILWAY_ENVIRONMENT_ID" --service caisson-license --request-id cpbMpVZTQF-EqIubLPU1MQ --since 10m --lines 1`, invoked with argument arrays under `snip proxy bash -c` |
+| Correlation                | Exactly one row; same request ID, probe User-Agent, `/issue`, POST, host `license.caisson.sh`, HTTP 401                                                                                                                                           |
+| Log timestamp              | `2026-09-10T19:41:58.596768453Z`                                                                                                                                                                                                                  |
+| Railway `srcIp`            | `2600:1702:7e60:3c0::31` — **equal to public ingress IP**, not a different Worker-egress IP                                                                                                                                                       |
+| Deployment                 | `ea0bb9c8-aa36-425e-804a-cf08d9dd4928`, instance `aaa19987-22f2-49b6-a8d5-25bf08507169`, region `us-west2`                                                                                                                                        |
 
 ### New stop: source-IP prediction contradicted
 
