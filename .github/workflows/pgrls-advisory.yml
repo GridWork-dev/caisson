@@ -71,7 +71,7 @@ jobs:
   pgrls:
     # CAISSON-96 draft guard — drafts skip; the ready_for_review trigger runs the full scan.
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
     timeout-minutes: 15
     services:
       # An ephemeral Postgres the job owns start-to-finish — never a shared/long-lived instance.

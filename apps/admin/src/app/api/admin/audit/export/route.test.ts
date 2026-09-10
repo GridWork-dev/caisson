@@ -20,7 +20,7 @@ const { GET, createAdminAuditExportRoute } = await import("./route.ts");
 
 type AdminDbGlobal = {
   caissonAdminTransactor?: unknown;
-  caissonAdminPglite?: { close(): Promise<void> };
+  caissonAdminPglite?: { close(): Promise<void> } | undefined;
 };
 const originalDbUrl = process.env.CAISSON_ADMIN_DB_URL;
 const originalBucket = process.env.CAISSON_ADMIN_WORM_BUCKET;
@@ -136,10 +136,13 @@ describe("GET /api/admin/audit/export", () => {
       tenantId,
       now: new Date(generatedAt),
     });
+    const evidencePack = expected.evidencePack;
+    expect(evidencePack).not.toBeNull();
+    if (evidencePack === null) throw new Error("expected evidence pack");
 
     expect(response.status).toBe(200);
-    expect(body).toEqual(expected.evidencePack);
-    expect(body.sha256).toBe(expected.evidencePack?.sha256);
+    expect(body).toEqual(evidencePack);
+    expect(body.sha256).toBe(evidencePack.sha256);
     expect(JSON.stringify(body)).not.toContain("secret-a");
     expect(JSON.stringify(body)).not.toContain("secret-b");
   });

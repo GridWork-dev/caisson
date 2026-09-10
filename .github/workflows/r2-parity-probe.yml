@@ -39,7 +39,7 @@ jobs:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     # Blacksmith per ADR-0365 (fleet-only sweep; R2 read creds accepted, same posture as publish.yml). `aws` CLI is
     # preinstalled on ubuntu-latest.
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
     timeout-minutes: 15
     environment: release
     steps:

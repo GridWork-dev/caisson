@@ -33,7 +33,7 @@ let pg: {
 /** The `globalThis`-cached admin transactor (admin-db.ts) — reset so getAdminDb rebuilds under our env. */
 type AdminDbGlobal = {
   caissonAdminTransactor?: unknown;
-  caissonAdminPglite?: { close(): Promise<void> };
+  caissonAdminPglite?: { close(): Promise<void> } | undefined;
 };
 const origDbUrl = process.env.CAISSON_ADMIN_DB_URL;
 const origBucket = process.env.CAISSON_ADMIN_WORM_BUCKET;
@@ -97,7 +97,7 @@ function get(account: string, seq: number | string): Promise<Response> {
 /** Seed a real chain (entries + per-length WORM anchors) for a fresh random account; return its id. */
 async function seed(
   payloads: JsonValue[],
-  account = randomUUID(),
+  account: string = randomUUID(),
 ): Promise<string> {
   const anchorAccount = wormAnchorAccount(account);
   for (const p of payloads) await store.append(anchorAccount, p);

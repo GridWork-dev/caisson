@@ -9,5 +9,5 @@ status = "live"
 
 [merge_hold]
 posture = "self"
-governed_by = "gridwork-core-infra:infra-gcp-topology"
-expires = "2026-11-23"
+governed_by = "gridwork-core:infra-gcp-topology"
+expires = "2026-11-16"
