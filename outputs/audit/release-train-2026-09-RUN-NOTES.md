@@ -4,6 +4,19 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R298 — operator-reported deployment hold and future packet corrections
+
+For the record only: the following deployment state is supplied by the operator, not independently re-probed in this turn. R292 authorized deployment, but its preflight stopped: the main-push `deploy-railway` run at `7e54ddc5` had already deployed `caisson-admin` (Railway `631bed9f`) automatically, then failed building demos at Next's "Running TypeScript" step. Site was skipped and license was untouched. After the operator merged #477 (`127db655`), the fleet workflow redeployed admin at `127db655` (`b4cccb72`); demos failed again (`0b6161c2`). The operator reports that this demos failure predates the diagnostic and has occurred on every main push since `2026-09-10T02:53Z`.
+
+R298 orders the separate S15 lane (`S15-demos-build.md`) to fix demos first, followed by the fleet path deploying demos and site, then license through the S8 helper, then probes. S8 remains idle; this record does not dispatch any step. Preserve the per-service ten-minute observation constraint when preparing the eventual authorized sequence; no window extension or marker re-arming is implied by this order.
+
+Two corrections must be incorporated when the operator next requests packet preparation:
+
+1. Bind the deployment to the full main-tip SHA at that time, with `7e54ddc5b05a4ee922468790efec2654666840da` proven as an ancestor and the diagnostic proven unchanged. Do not deploy the old squash merely because the current packet names it. The diagnostic squash remains the identity of the change to remove; a future removal candidate must accommodate the later main tree.
+2. State admin's diagnostic-bearing deployment as a pre-existing fact in the receipts, not as a pending S8 deployment. Its latest operator-reported revision is `127db655` (`b4cccb72`). Site currently serves `69b3ba35` and would receive #475, #476, #477 and the demos fix. License remains untouched by the reported fleet runs.
+
+Both operator packets remain unchanged as instructed: `OPERATOR-ACT-S8-DIAG-DEPLOY.md` and `OPERATOR-ACT-S8-DIAG-REMOVE.md`. Their earlier deployment target/order must be reconciled with R298 before future use; they are not current execution authority. No forge/runtime lookup, packet rewrite, deployment, probe, revert, branch deletion or lane push was performed. Record this note and idle.
+
 ### R288/R290 — merge verified; deployment and removal packets prepared
 
 Audited forge readback confirms PR #476 is MERGED into `main` at `2026-09-11T02:21:38Z`, squash **`7e54ddc5b05a4ee922468790efec2654666840da`**. The commit API confirms one parent, `e2116849082f57c1d5fdaf6b309086813f48e4f4`, and exactly the seven diagnostic files. The old PR head `aa71ff4e911250a5e9804e5b2c541a15d90a3c4c` is not a deployment or revert target.
