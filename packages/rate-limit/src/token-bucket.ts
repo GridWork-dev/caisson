@@ -32,7 +32,11 @@ export interface RateDecision {
 
 export interface RateLimiter<B extends string = string> {
   /** Charge the per-client (derived-IP) bucket. */
-  check(bucket: B, ip: string): RateDecision;
+  check(
+    bucket: B,
+    ip: string,
+    observeKey?: (key: string) => void,
+  ): RateDecision;
   /** Charge the header-independent service-wide bucket — the flood ceiling that holds even when the
    * per-IP identity is spoofed or collapses to the shared "unknown" key. */
   checkGlobal(bucket: B): RateDecision;
@@ -74,8 +78,22 @@ export class TokenBucketLimiter<B extends string> implements RateLimiter<B> {
     this.#now = now;
   }
 
-  check(bucket: B, ip: string): RateDecision {
-    return this.#charge(`${bucket}|${ip}`, this.#perIp[bucket]);
+  check(
+    bucket: B,
+    ip: string,
+    observeKey?: (key: string) => void,
+  ): RateDecision {
+    // TEMPORARY S8 diagnostic: observe the exact key passed to the real map operation.
+    const key = `${bucket}|${ip}`;
+    const decision = this.#charge(key, this.#perIp[bucket]);
+    if (observeKey !== undefined) {
+      try {
+        observeKey(key);
+      } catch {
+        // Diagnostic output must never change the limiter verdict.
+      }
+    }
+    return decision;
   }
 
   checkGlobal(bucket: B): RateDecision {

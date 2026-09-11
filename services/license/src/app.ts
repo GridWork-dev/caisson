@@ -585,6 +585,14 @@ export function createApp(
   deps: IssueAppDeps,
 ): (req: Request) => Promise<Response> {
   const originGate = deps.originGate ?? loadOriginGateConfig(process.env);
+  // TEMPORARY S8: four named requests, once each per instance, ten minutes after boot.
+  const s8ProbeDeadline = Date.now() + 600_000;
+  const s8ProbeMarkers = new Set([
+    "92c71b83-737c-493b-b87d-e3c470e0075a",
+    "4747a030-572b-4e80-b82f-693c074525d3",
+    "ececae63-b992-4c4f-96fe-ee080b7de94d",
+    "d22df131-3dd4-4fd8-ac7b-c9397bb8f1da",
+  ]);
   /** Per-IP rate gate. A real bucket denial is always 429. Infrastructure failure follows the
    * caller's explicit route policy and emits a detached, redacted operational alert. */
   const rateLimited = (
@@ -597,7 +605,26 @@ export function createApp(
       // request then charges the header-independent service-wide ceiling (Strix vuln-0001 defense-in-
       // depth) — charging global first would let one throttled IP drain it and 429 everyone else
       // (self-DoS amplification). Deny if EITHER trips.
-      const decision = deps.limiter.check(bucket, clientIp(req));
+      const probeId = req.headers.get("user-agent") ?? "";
+      const probe =
+        req.method === "POST" &&
+        new URL(req.url).pathname === "/issue" &&
+        Date.now() < s8ProbeDeadline &&
+        s8ProbeMarkers.delete(probeId);
+      const decision = deps.limiter.check(
+        bucket,
+        clientIp(req),
+        probe
+          ? (key) => {
+              process.stderr.write(
+                `[s8-direct-key] ${JSON.stringify({
+                  probeId,
+                  key,
+                })}\n`,
+              );
+            }
+          : undefined,
+      );
       if (!decision.allowed) {
         return text("rate limit exceeded", 429, {
           "Retry-After": String(decision.retryAfterSec),
