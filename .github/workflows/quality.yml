@@ -40,7 +40,7 @@ jobs:
   changes:
     # CAISSON-96 draft guard (header comment) — skipping this job also skips every path-conditioned job.
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     timeout-minutes: 5
     permissions:
       contents: read
@@ -99,7 +99,7 @@ jobs:
   eval:
     needs: changes
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.eval == 'true') }}
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -115,7 +115,7 @@ jobs:
   intel-eval:
     needs: changes
     if: ${{ !cancelled() && github.event_name != 'pull_request' }}
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     timeout-minutes: 20
     permissions:
       contents: read
@@ -138,7 +138,7 @@ jobs:
   token-drift:
     needs: changes
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.ui == 'true') }}
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -159,7 +159,7 @@ jobs:
   knip:
     # CAISSON-96 draft guard — unconditioned job, needs its own (header comment).
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -179,7 +179,7 @@ jobs:
   anti-slop:
     needs: changes
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.site == 'true') }}
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -209,14 +209,14 @@ jobs:
     # `native-ext (macos, macos-15)` and orphaned the `native-ext (macos)` name the required-check
     # convention pins. Keep the runner out of the matrix and the name stays stable across a runner swap.
     #
-    # The macOS leg moved off GitHub-hosted `macos-15` to Blacksmith 2026-08-01. The hosted runner
-    # had failed in ~9s with ZERO steps on every main push — "recent account payments have failed or
-    # your spending limit needs to be increased" — so macOS coverage for the local-store native
-    # extension was dark while the check sat permanently red. Blacksmith's macOS runners are Apple
-    # Silicon M4 (ARM64, the same architecture GitHub's macos-15 already used) and track GitHub's
-    # runner images, so the Homebrew SQLite step below is unaffected. Linux resolves through
-    # CI_RUNNER_LINUX; the macOS arm stays a Blacksmith literal because Ubicloud has no macOS runner.
-    runs-on: ${{ matrix.platform == 'macos' && 'blacksmith-6vcpu-macos-15' || (vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404') }}
+    # ADR-0395 decision 3 moved this leg from the self-hosted Mac mini to GitHub `macos-15`.
+    # It moved to Blacksmith on 2026-08-01 after GitHub billing failures prevented all steps
+    # from starting. Estate R258 returned it to GitHub `macos-15` on 2026-09-10 because
+    # Ubicloud offered no macOS runner. R33/R257 retained CI_RUNNER_LINUX for Linux and
+    # replaced its vendor fallback with `ubuntu-latest`. The Homebrew SQLite and native
+    # extension steps stayed unchanged; only a green run on the new image establishes
+    # compatibility. A red macOS result stops the conversion without tuning it green.
+    runs-on: ${{ matrix.platform == 'macos' && 'macos-15' || (vars.CI_RUNNER_LINUX || 'ubuntu-latest') }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -251,7 +251,7 @@ jobs:
   site-e2e:
     needs: changes
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.site == 'true') }}
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -279,7 +279,7 @@ jobs:
     # CAISSON-96 draft guard — "every push and pull request" above means every NON-DRAFT one; the
     # ready_for_review run assembles the pack before a merge is possible.
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

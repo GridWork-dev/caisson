@@ -40,7 +40,7 @@ jobs:
   mirror-sync:
     # Blacksmith per ADR-0365 (fleet-only sweep; the cross-repo push token accepted on VM-per-job runners) → a write cred to
     # an external repo stays off the fleet, same posture as deploy-railway.yml's RAILWAY_TOKEN.
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     # Raised from 20 when the pre-push verification gate landed: the job now installs, builds, tests,
     # lints and format-checks the exported artifact on top of exporting it (~10 min locally).
     timeout-minutes: 30
