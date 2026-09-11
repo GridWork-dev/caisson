@@ -1,5 +1,7 @@
 # S8 diagnostic preparation verification — 2026-09-10
 
+R272 disposition: proceed on the orchestrator's own analysis without retrying the refused peer dispatches. Neither peer ran; no peer-review or security-audit pass exists. The task 1 receipt names the claims supported only by that single-author analysis and local tests. Production keying remains inconclusive, and R272 prohibits PR, deployment, publish, tag and live key measurement without a further ruling. No code/test change or new execution result is asserted here.
+
 Scope: temporary observation in shared `TokenBucketLimiter.check`, license `/issue`, and Ask AI's IP passed to Turnstile. Header precedence, limiter budgets and response/authentication paths are unchanged. This verifies local preparation, not the live-key goal.
 
 ## Predicted and measured gates

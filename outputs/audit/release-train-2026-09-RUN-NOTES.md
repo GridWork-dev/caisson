@@ -4,6 +4,14 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R272 — own-analysis task 1 outcome
+
+The operator accepted diagnostic `38631ed4`, its local checks, and refusal receipt `a6639f78`. R272 directs proceeding without the peer dispatches: no admission retry, ceiling override or quota wait. It separately prohibits PR, deployment, publish, tag and live bucket-key measurement without a further ruling.
+
+The authorized source/local assessment is complete; the production-keying outcome is **INCONCLUSIVE**. No defect is demonstrated and correct live per-client isolation is not established. The current receipt states explicitly that both peer dispatches were refused and never ran: one set of eyes, not two, with no implicit review pass. It names the own-judgement claims: actual-key observation fidelity; behavior preservation beyond tested cases; marker/expiry/logging limits; real-edge header trust and distinct clients; and the sufficiency of eventual evidence and diagnostic removal. No new test or live result is claimed by this assessment.
+
+No product source changed under R272. The diagnostic remains committed and must be removed before release. Later release/fold/rescan work remains open. The previous quota hold below is historical; R272 permits this bounded assessment but grants none of the expressly withheld external actions.
+
 ### Current hold: review admission refused
 
 The formatter unblock completed normally. Receipt commit `24229e8c` passed hooks. Diagnostic commit `38631ed48a035b717ee163e8564e057478f5e2d0` then passed hooks after 67 tests / 194 assertions, changed-file lint, whole-tree format and 46 successful build/typecheck tasks. Corrected Changesets status passed with an explicit empty no-release changeset. Full local evidence: `s8-diagnostic-verification.md`.
