@@ -6,7 +6,9 @@ tier: STANDARD
 
 # S8 task 1: direct application observation
 
-Authority is the S8 brief and the operator's successive corrections, most recently the SOT disposition and instruction to resume direct bucket-key measurement. This records that authorized task; it does not lock a new product behavior or presume a defect.
+R277 locks the frozen observation patch `b96599aaf464f43b1fa177410a579d0569c3496661f5cf3b9c814130d97d0766`. Prepare the fresh diagnostic-only PR off `origin/main`, excluding lane receipt history, and hold at green. Peer dispatches are conditional on admission; R272's explicit single-author evidence limitation remains when they cannot run. No merge or deployment is authorized. This SPEC remains on the lane branch as requested separation from the seven-file diagnostic PR.
+
+Authority is the S8 brief and the operator's successive corrections, most recently R277's diagnostic preparation approval. This records the observation task; live measurement remains held and no defect is presumed.
 
 ## Goal
 

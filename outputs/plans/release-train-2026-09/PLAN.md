@@ -1,5 +1,7 @@
 # S8 task 1 diagnostic plan
 
+R277 execution amendment: re-apply the frozen patch over `e2116849` on fresh `feature/s8-direct-key-observation`, carrying the three existing tests and empty Changesets entry only. Keep SPEC/PLAN, prediction and receipts on the lane branch; do not push the lane. PR #476 head `aa71ff4e911250a5e9804e5b2c541a15d90a3c4c` now has that seven-file scope. Peer dispatches run only if admission allows; fresh 93% gauge versus the recorded deep-route formula leaves them unavailable, so no new attempt occurred. No peer verdict is implied. Run CI and hold at green without merge/deployment. Client B ingress and exact key prediction are recorded before application probes; no application probe is authorized by this preparation ruling.
+
 Implements the operator-authorized direct-measurement task described in the matching SPEC. Later release tasks remain sequenced after task 1.
 
 1. Preserve SOT corrections and outstanding receipts: complete at `3e549193`.

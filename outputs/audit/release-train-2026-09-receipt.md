@@ -1,6 +1,33 @@
-# S8 release train receipt — R272 task 1 assessment, 2026-09-10
+# S8 release train receipt — R277 diagnostic PR, 2026-09-10
 
-Governing brief: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`, with the operator's subsequent corrections and R272. Historical stops and their dispositions remain in [the run notes](release-train-2026-09-RUN-NOTES.md).
+Governing brief: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`, with the operator's subsequent corrections, R272 and R277. Historical stops and their dispositions remain in [the run notes](release-train-2026-09-RUN-NOTES.md).
+
+## R277 preparation and reconciliation
+
+R277 locks the temporary observation approach and authorizes preparation of a diagnostic-only PR, holding at green with no merge or deployment. PR **[476](https://github.com/caisson-sh/caisson/pull/476)** is **OPEN, CI GREEN, HELD** at head **`aa71ff4e911250a5e9804e5b2c541a15d90a3c4c`**, base `e2116849082f57c1d5fdaf6b309086813f48e4f4`. Final CI readback at `2026-09-11T02:10:18Z` confirmed all six required checks succeeded and no check remained pending or failed.
+
+The PR **re-applies the frozen patch over `e2116849`; it does not carry `38631ed4` as-is**. Frozen checksum was re-read as `b96599aaf464f43b1fa177410a579d0569c3496661f5cf3b9c814130d97d0766` (3,136 bytes). The three tests and empty no-release changeset were copied from `38631ed4`. After repository formatting, the shared limiter, all three tests and empty changeset match the earlier diagnostic bytes. License and Ask AI differ only in multiline layout of the same `JSON.stringify({ probeId, key/ip })` expressions. No header-selection or limiter-behavior change was added.
+
+Reason for reapplication: the fresh branch `feature/s8-direct-key-observation`, in `/home/gw/lab/worktrees/caisson/s8-direct-key-observation-2026-09`, must exclude the eight release-train commits. GitHub readback confirms only seven files: three implementation files, three tests and the empty Changesets entry. The diagnostic SPEC/PLAN and reconciliation/history stay on the lane branch. `chore/release-train-2026-09` was not pushed.
+
+Fresh-branch validation passed: frozen install; repository formatting and format check; changed-file lint; the same 67 tests / 194 assertions; Changesets status with no patch/minor/major bump; normal commit hooks. The required `check`, `standards-gate`, `registry-index`, `oscal-conformance`, `deterministic` and `support-bot` CI checks were predicted to pass before PR creation. All were queued at the first readback.
+
+| Required check    | Final verdict | Actions run |
+| ----------------- | ------------- | ----------- |
+| check             | SUCCESS       | 34552930239 |
+| standards-gate    | SUCCESS       | 34552930239 |
+| registry-index    | SUCCESS       | 34552930239 |
+| oscal-conformance | SUCCESS       | 34552930239 |
+| deterministic     | SUCCESS       | 34552930178 |
+| support-bot       | SUCCESS       | 34552930193 |
+
+Ancillary SUCCESS: changes, knip, semgrep-pro, evidence-pack, zizmor, eval, anti-slop, site-e2e, Socket Security Project Report and Pull Request Alerts. SKIPPED: intel-eval, token-drift, native-ext and [code]smith. Those skips are recorded as skips, not passes. The Changesets command used was `bunx @changesets/cli status --since=origin/main` (installed CLI 2.31.1). No CI retry or gate bypass occurred. The existing SOT dispositions remain separate; this CI verdict is not an aggregate release-readiness verdict.
+
+Peer review remains **not run, not a pass**. The earlier admission refusals remain measured at 98% projected versus 95%, recorded in `a6639f78`. A fresh audited quota read returned 93%; the recorded deep-route calculation (180,000 tokens / 2,000,000 basis) would project 102%, so R277's admission-conditional dispatches were not attempted. No new refusal, retry, override, quota wait or alternate-provider dispatch is claimed. The work still carries one set of eyes and the five limitations below.
+
+**Client B recording:** ingress `45.17.0.122`, measured by IPv4 Cloudflare trace at `2026-09-11T01:56:49.956764+00:00`; exact predicted license key **`issue|45.17.0.122`**, Ask AI IP **`45.17.0.122`**, including forged-header arms. This was written to the prediction artifact before any application probe. B is a distinct IPv4 connection from the same physical host as A; no second-device claim is made. No license/Ask AI probe was sent.
+
+R277 supersedes R272's restriction on PR preparation only. No merge, deployment, package publication, tag push or live application-key observation is authorized or performed. The production-keying assessment below remains inconclusive.
 
 ## Task 1 outcome
 
@@ -35,7 +62,7 @@ These are the specific claims the absent reviewers would have needed to challeng
 - Direct application-key/IP measurement for independently identified clients A and B, including forged-header arms. Until authorized and measured, production collapse versus correct isolation remains unresolved.
 - Any resulting keying fix and discriminating mutation test, only if a defect is demonstrated. No bug-fix mutation arm has run.
 - Removal of temporary instrumentation before release; the committed diagnostic currently remains on this branch.
-- PR/CI, deployment and release actions. R272 explicitly withholds PR, deployment, publish, tag and live bucket-key measurement pending a further ruling. No such action was taken in this assessment.
+- Diagnostic PR preparation is authorized by R277 and recorded above. Merge, deployment, package publication, tag and live bucket-key measurement still require further authority; none was performed.
 - R212 fold decisions, release gate/readiness/tarball derivation, R2 parity, mirror sync, Worker redeploy from tag and scheduled-rescan implementation/cadence proof. These later tasks have not been completed; no consumers moved off the pre-fix published line through this lane.
 
 Branch deletion remains prohibited; all three named branches are preserved. The [SOT disposition](s8-sot-disposition.md) records branch hygiene as EXPECTED-DRIFT, relocated run notes, the corrected Changesets command and 16 stale documents with source dates unchanged. No aggregate release-readiness, peer-review or production-keying pass is claimed.

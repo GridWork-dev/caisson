@@ -4,6 +4,16 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R277 — fresh diagnostic PR preparation
+
+Operator locked the frozen observation patch and permitted a fresh diagnostic-only PR. Created `feature/s8-direct-key-observation` off the live-advertised/local `origin/main` at `e2116849`, in the sibling S8 diagnostic worktree. Re-applied the checksum-verified frozen patch and copied only three tests plus the empty changeset from `38631ed4`; lane SPEC/PLAN/receipts remain here. The seven-file fresh branch passed 67 tests / 194 assertions, lint, formatting, Changesets status and normal hooks. GitHub PR #476 read back OPEN, non-draft, head `aa71ff4e911250a5e9804e5b2c541a15d90a3c4c`, expected base and exact seven-file scope. Required CI was queued, not yet green. Lane branch was not pushed.
+
+Current quota preflight is 93%; the existing 180,000-token deep-route calculation would project 102% above the 95% ceiling. Conditional peer dispatches were therefore not attempted; previous refusals remain the evidence, and no peer-review pass exists. The single-author limitations remain explicit.
+
+Client B trace observed `45.17.0.122` at `2026-09-11T01:56:49.956764+00:00`; the exact expected key `issue|45.17.0.122` and Ask AI IP were written to the prediction artifact before any application request. This is an IPv4 connection from the same host as A, not a separate device. No application probe, merge, deployment, publication, tag or branch deletion occurred.
+
+Final readback at `2026-09-11T02:10:18Z`: PR #476 remains OPEN at the same exact head; all six required checks SUCCESS. Ancillary checks are SUCCESS or explicitly SKIPPED, none pending or failed. Required run IDs and every check disposition are in the receipt. Hold at this green PR under R277; no merge/deployment authority follows. Peer reviews never ran, and task 1 production keying remains inconclusive. Receipt-only persistence is the final lane action; the lane is not pushed.
+
 ### R272 — own-analysis task 1 outcome
 
 The operator accepted diagnostic `38631ed4`, its local checks, and refusal receipt `a6639f78`. R272 directs proceeding without the peer dispatches: no admission retry, ceiling override or quota wait. It separately prohibits PR, deployment, publish, tag and live bucket-key measurement without a further ruling.

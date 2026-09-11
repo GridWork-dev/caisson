@@ -36,4 +36,12 @@ An unexpected key, response, failed gate or authority denial triggers the existi
 
 ## Execution status
 
-PREDICTED, NOT MEASURED. The reviewed service responses and request-span wrapper do not expose the private key. A proposed temporary diagnostic patch and operator action packet are being prepared; no live instrumentation, restart or deployment is authorized by this prediction record.
+### R277 client B ingress and exact prediction — before application probes
+
+At `2026-09-11T01:56:49.956764+00:00` (September 10 in the operator's timezone), a forced-IPv4 GET of `https://caisson.sh/cdn-cgi/trace` returned HTTP 200 and actual ingress **45.17.0.122**. Trace User-Agent: `s8-ingress-b-20260910-ipv4`. Client B is a separate IPv4 connection from the same physical host as client A; it supplies a distinct network identity, not an independent device or network operator.
+
+Recorded now, before any client B application request: the exact predicted license key is **`issue|45.17.0.122`**, and the exact predicted Ask AI Turnstile IP is **`45.17.0.122`**. Both normal and forged-header arms are predicted to select those same values, with unsigned license HTTP 401 and missing-challenge Ask AI HTTP 403. The fixed B markers remain `ececae63-b992-4c4f-96fe-ee080b7de94d` and `d22df131-3dd4-4fd8-ac7b-c9397bb8f1da`.
+
+No license or Ask AI probe was sent. The trace is an ingress observation only. Recheck the recorded ingress before any later authorized application probe; an unexpected address change is a stop. R277 authorizes PR preparation, not merge or deployment. Neither application's direct value is measured by this record.
+
+PREDICTED, NOT MEASURED. The inspected service responses and request-span wrapper do not expose the private key. R277 authorized preparing diagnostic PR #476 at `aa71ff4e911250a5e9804e5b2c541a15d90a3c4c`; no live instrumentation, application probe, restart or deployment is authorized by this prediction record. No peer review ran.
