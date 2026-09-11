@@ -52,7 +52,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     # Blacksmith per ADR-0365 (fleet-only sweep; R2 write creds accepted on VM-per-job runners). Write/publish privilege belongs
     # on a clean hosted runner, not third-party compute (ADR-0326). `aws` CLI is preinstalled.
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     timeout-minutes: 15
     environment: release # ADR-0327 rider 2 (definition-first; free-plan protection rules can't enforce yet)
     env:
