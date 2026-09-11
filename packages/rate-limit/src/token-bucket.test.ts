@@ -24,6 +24,33 @@ const CONFIG: TokenBucketLimiterConfig<Bucket> = {
 };
 
 describe("TokenBucketLimiter", () => {
+  test("S8 observation reports the charged key and cannot change verdicts", () => {
+    const baseline = new TokenBucketLimiter(CONFIG, () => 0);
+    const observed = new TokenBucketLimiter(CONFIG, () => 0);
+    const keys: string[] = [];
+    for (const ip of ["203.0.113.7", "203.0.113.7", "203.0.113.8", "unknown"]) {
+      expect(observed.check("b", ip, (key) => keys.push(key))).toEqual(
+        baseline.check("b", ip),
+      );
+    }
+    expect(keys).toEqual([
+      "b|203.0.113.7",
+      "b|203.0.113.7",
+      "b|203.0.113.8",
+      "b|unknown",
+    ]);
+    const brokenSink = () => {
+      throw new Error("diagnostic sink unavailable");
+    };
+    expect(observed.check("a", "203.0.113.7", brokenSink)).toEqual(
+      baseline.check("a", "203.0.113.7"),
+    );
+    expect(observed.check("b", "203.0.113.7", brokenSink)).toEqual(
+      baseline.check("b", "203.0.113.7"),
+    );
+    expect(observed.checkGlobal("b")).toEqual(baseline.checkGlobal("b"));
+  });
+
   test("allows up to capacity then denies, with a positive retryAfterSec", () => {
     const limiter = new TokenBucketLimiter(CONFIG, () => 0);
     const ip = "203.0.113.7";
