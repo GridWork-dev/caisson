@@ -4,6 +4,14 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R288/R290 — merge verified; deployment and removal packets prepared
+
+Audited forge readback confirms PR #476 is MERGED into `main` at `2026-09-11T02:21:38Z`, squash **`7e54ddc5b05a4ee922468790efec2654666840da`**. The commit API confirms one parent, `e2116849082f57c1d5fdaf6b309086813f48e4f4`, and exactly the seven diagnostic files. The old PR head `aa71ff4e911250a5e9804e5b2c541a15d90a3c4c` is not a deployment or revert target.
+
+Prepared `/home/gw/lab/briefs/estate-2026-09/handoff/OPERATOR-ACT-S8-DIAG-DEPLOY.md` and `/home/gw/lab/briefs/estate-2026-09/handoff/OPERATOR-ACT-S8-DIAG-REMOVE.md`, both bound to that full squash SHA. Deployment scope is license then site, probing each within its own ten-minute instance window, with the four exact markers, A ingress `2600:1702:7e60:3c0::31` and B ingress `45.17.0.122`, corresponding expected keys/IPs, verification and stop conditions. The deployment packet discloses license's existing migration pre-deploy command and the main-push site's possible automatic rollout; neither runtime state was inferred or measured in this packet-preparation turn.
+
+The removal packet names `git revert --no-commit 7e54ddc5b05a4ee922468790efec2654666840da` in a future fresh removal worktree, its seven-file scope and the release precondition that the observer is absent from the actual cut source and built artifact. A future removal merge/deployment SHA must be recorded when it exists. Review dispatches still never ran; preparation adds no review pass. No deployment, application probe, revert, removal branch, PR, release, tag or branch deletion was dispatched. R288/R290 authorize these packets only; stop here and idle.
+
 ### R277 — fresh diagnostic PR preparation
 
 Operator locked the frozen observation patch and permitted a fresh diagnostic-only PR. Created `feature/s8-direct-key-observation` off the live-advertised/local `origin/main` at `e2116849`, in the sibling S8 diagnostic worktree. Re-applied the checksum-verified frozen patch and copied only three tests plus the empty changeset from `38631ed4`; lane SPEC/PLAN/receipts remain here. The seven-file fresh branch passed 67 tests / 194 assertions, lint, formatting, Changesets status and normal hooks. GitHub PR #476 read back OPEN, non-draft, head `aa71ff4e911250a5e9804e5b2c541a15d90a3c4c`, expected base and exact seven-file scope. Required CI was queued, not yet green. Lane branch was not pushed.
