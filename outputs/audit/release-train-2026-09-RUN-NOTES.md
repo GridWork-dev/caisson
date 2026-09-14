@@ -4,6 +4,14 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R314 — remaining license arms matched; eight observations complete
+
+R314 (EST-ASK-273) supplied second license deployment `c8e48687-3966-4b62-a4f7-6eda00628ab4`, SUCCESS, created `2026-09-14T14:48:25.714Z`, same source `a386502af2f037d59078d5382ae617fc027f1a1a`, cockpit-authorized helper `--force`. Health at 14:50:53Z returned 200 and exact revision. The three remaining arms ran in the ruled order B-normal 14:51:01Z, A-forged 14:51:10Z, B-forged 14:51:17Z, all 401/unauthorized at the exact revision. Only X-Real-IP/XFF were supplied on forged arms. One bounded log read returned each exact marker once, with B key `issue|45.17.0.122` for both B arms and A key `issue|2600:1702:7e60:3c0::31` for A-forged. No further unexpected result or unruled retry occurred.
+
+The companion receipt now consolidates eight application-reaching observations across license L1 `4841e05e-cd49-4ed9-94b2-1ab19f2172b1`, site S1 `ea5b5b31-2e5d-4cc6-9de1-d7e67c0caef0`, and license L2 above, all bound to a386502a. Verdict: **NO DEFECT in the measured client-IP keying scope**; the original three-header Cloudflare refusal remains a separate ninth probe attempt. Instance IDs are still unexposed in CLI logs; source/marker/time correlation is measured and deployment IDs are cockpit-supplied. This is no claim of a same-instance comparison across license deployments or independent peer review. Review dispatches never ran.
+
+Preserve the appended forced license receipt row at 14:48:24.633Z (Liam (GridWork)); first-license and site rows are already committed in `1aff2b9e` and `5f0b4ec9`. The final receipt supersedes historical partial verdicts, closes task 1's observation as a scoped no-defect outcome, and holds removal/release/fold/rescan work for their rulings. Diagnostic removal remains mandatory before a cut. No deployment by this lane, push, merge, tag, removal PR or release cut. Report S8_PROBES_DONE plus verdict and idle.
+
 ### R313 site-live handoff — all four corrected site arms matched
 
 S8_SITE_LIVE supplied deployment `ea5b5b31-2e5d-4cc6-9de1-d7e67c0caef0`, SUCCESS, created `2026-09-14T14:41:44.663Z`, source `a386502af2f037d59078d5382ae617fc027f1a1a`. Site health returned 200/exact revision at 14:45:08Z. Four arms ran in table order at 14:45:16Z, 14:45:24Z, 14:45:33Z and 14:45:42Z, all application 403/challenge_failed at that revision. Forged arms sent only X-Real-IP and XFF. One bounded log read returned each marker once: A normal/forged IP `2600:1702:7e60:3c0::31`; B normal/forged `45.17.0.122`. All match the prospective predictions. Last log row is less than four minutes after deployment creation. No retry or window extension.

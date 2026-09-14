@@ -1,8 +1,53 @@
-# S8 release train receipt — R313 site arms measured, license partial, 2026-09-14
+# S8 release train receipt — R314 probes complete, 2026-09-14
 
-Governing brief: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`, with the operator's subsequent corrections through R313 and S8_SITE_LIVE. Historical stops and their dispositions remain in [the run notes](release-train-2026-09-RUN-NOTES.md). This is the companion receipt to [the recorded prediction](s8-direct-key-prediction.md); older checkpoints below remain historical.
+Governing brief: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`, with the operator's subsequent corrections through R314 (EST-ASK-273). Historical stops and their dispositions remain in [the run notes](release-train-2026-09-RUN-NOTES.md). This is the companion receipt to [the recorded prediction](s8-direct-key-prediction.md). The R314 verdict below supersedes earlier partial/inconclusive checkpoints, which remain historical evidence.
 
-## R313 site result: four response and direct-IP predictions matched
+## R314 final task 1 observation verdict
+
+**NO DEFECT in the measured client-IP keying scope.** At source **`a386502af2f037d59078d5382ae617fc027f1a1a`**, the eight application-reaching arms matched the recorded response and direct application-value predictions. License charged distinct A/B keys and retained each client's key when supplied forged X-Real-IP and XFF; Ask AI selected distinct A/B IPs and retained them under the same two-header test. No header-precedence fix or bug-fix changeset is warranted by these results. This closes task 1's measurement as a scoped no-defect outcome, not a general security certification or release-readiness pass.
+
+The nine probe POST attempts comprise **eight accepted observation arms plus one separately recorded edge-refused three-header attempt**. R313 identified that original 403/code 1000 as Cloudflare rejecting client-supplied CF-Connecting-IP before the app. Its failure was retained, not counted as a successful forged-arm observation. The corrected forged arms use only X-Real-IP `203.0.113.91` and XFF `198.51.100.92, 198.51.100.93`. A is the recorded IPv6 ingress `2600:1702:7e60:3c0::31`; B is IPv4 `45.17.0.122` from the same physical host. The conclusion is limited to these clients, routes, source and supplied headers.
+
+All three deployments were performed by the cockpit and supplied as SUCCESS handoffs; this lane performed no deployment:
+
+| Label | Service         | Full Railway deployment ID             | Created at UTC           | Helper receipt timestamp UTC |
+| ----- | --------------- | -------------------------------------- | ------------------------ | ---------------------------- |
+| L1    | caisson-license | `4841e05e-cd49-4ed9-94b2-1ab19f2172b1` | 2026-09-14T14:26:13.370Z | 2026-09-14T14:26:12.234Z     |
+| S1    | caisson-site    | `ea5b5b31-2e5d-4cc6-9de1-d7e67c0caef0` | 2026-09-14T14:41:44.663Z | 2026-09-14T14:41:43.532Z     |
+| L2    | caisson-license | `c8e48687-3966-4b62-a4f7-6eda00628ab4` | 2026-09-14T14:48:25.714Z | 2026-09-14T14:48:24.633Z     |
+
+Every deployment and every measured application response is bound to the same full source SHA above. L2 was the cockpit's R314-authorized same-SHA helper invocation with `--force`; its appended receipt records `forced: true`. This is not a git force operation or an unruled retry by this lane. Helper receipt timestamps precede deployment creation and must not be relabeled app-start or SUCCESS times. The two license receipt rows and the site row are preserved on the lane branch, authored by `Liam (GridWork)`.
+
+### Eight application observations
+
+Each cell's observed value exactly matches its pre-recorded prediction. License responses are HTTP 401/`unauthorized`; site responses are application HTTP 403/`challenge_failed`. Each response carries `x-caisson-revision: a386502af2f037d59078d5382ae617fc027f1a1a`. Table order groups the comparison arms; R314's actual send order on L2 was B-normal, A-forged, B-forged.
+
+| Service / arm    | Deployment | Exact User-Agent marker                | Response Date UTC   | Direct-log timestamp UTC       | Predicted = observed value      |
+| ---------------- | ---------- | -------------------------------------- | ------------------- | ------------------------------ | ------------------------------- |
+| License A normal | L1         | `92c71b83-737c-493b-b87d-e3c470e0075a` | 2026-09-14 14:29:29 | 2026-09-14T14:29:37.597843253Z | `issue\|2600:1702:7e60:3c0::31` |
+| License A forged | L2         | `4747a030-572b-4e80-b82f-693c074525d3` | 2026-09-14 14:51:10 | 2026-09-14T14:51:10.545472008Z | `issue\|2600:1702:7e60:3c0::31` |
+| License B normal | L2         | `ececae63-b992-4c4f-96fe-ee080b7de94d` | 2026-09-14 14:51:01 | 2026-09-14T14:51:04.873051777Z | `issue\|45.17.0.122`            |
+| License B forged | L2         | `d22df131-3dd4-4fd8-ac7b-c9397bb8f1da` | 2026-09-14 14:51:17 | 2026-09-14T14:51:17.877911804Z | `issue\|45.17.0.122`            |
+| Site A normal    | S1         | `92c71b83-737c-493b-b87d-e3c470e0075a` | 2026-09-14 14:45:16 | 2026-09-14T14:45:16.540578783Z | `2600:1702:7e60:3c0::31`        |
+| Site A forged    | S1         | `4747a030-572b-4e80-b82f-693c074525d3` | 2026-09-14 14:45:24 | 2026-09-14T14:45:24.629053885Z | `2600:1702:7e60:3c0::31`        |
+| Site B normal    | S1         | `ececae63-b992-4c4f-96fe-ee080b7de94d` | 2026-09-14 14:45:33 | 2026-09-14T14:45:33.288666839Z | `45.17.0.122`                   |
+| Site B forged    | S1         | `d22df131-3dd4-4fd8-ac7b-c9397bb8f1da` | 2026-09-14 14:45:42 | 2026-09-14T14:45:42.074566937Z | `45.17.0.122`                   |
+
+L2 health at response Date 14:50:53Z was HTTP 200, exact revision, `ok: true`, index digest `8835d704a8c7`, 52 entries. The three L2 commands ran in the ruled order and all exited 0. Their Railway request IDs were B-normal `jxoMGwYkS-2WzZ1B9I3ezw`, A-forged `s5eDAP68Sh-jnggD9fVATg`, B-forged `0ZxCVc66Qw-omOJd9I3ezw`. Application request IDs were respectively `bac42d97-27b0-4bf3-8388-5b14872fd346`, `d8523828-e779-491e-a82a-e5abe1031257`, `5c3fa2b9-33fd-4230-95a8-645814587809`; CF rays `a3b035172a4e3555-ATL`, `a3b0354d08c1b08e-ATL`, `a3b0357c3ee4cf6c-ATL`. The single bounded L2 license log read exited 0 and returned each of these three exact marker/key pairs once. Earlier sections below retain L1/S1 response IDs and health evidence.
+
+### Correlation and verification limits
+
+Source and request correlation is measured through exact response revision, markers, returned direct values and timestamps. Full deployment IDs come from the cockpit handoffs. **Instance IDs remain unavailable in the bounded CLI log rows**, which contain only level/message/timestamp; there is no measured instance-ID join. A-normal and A-forged license observations span L1/L2 at identical source; this is not a claim that both were sent to one process. A-forged and both B arms are associated with L2, and all site arms with S1, under the stated evidence limits.
+
+All observation rows are within four minutes of their deployment creation timestamps (L2 last row 2m52.164s after creation), a conservative bound preceding the runtime app/module initialization. Source guards additionally emit only while their ten-minute deadline is live. No window extension or client-side marker refill was used; the second license deployment itself was explicitly ruled by R314. No concurrency, restart-resilience, multi-replica, broader-network or log-retention claim is added.
+
+Peer code/security dispatches were refused admission and never ran: **one set of eyes, not two**, no peer-review pass. The author's sole-judgement claims remain the diagnostic callback's fidelity to the charged key, behavior preservation beyond covered tests, marker/expiry/logging limits, and the sufficiency of request/source correlation without instance IDs. The actual edge values now have the direct evidence above; this does not retroactively create independent scrutiny of the instrumentation.
+
+### Still held after probes
+
+Temporary instrumentation remains in the deployed/main source and must be removed before any release cut, with the removal receipt bound to the actual candidate and built artifacts. `OPERATOR-ACT-S8-DIAG-REMOVE.md` still targets diagnostic introduction `7e54ddc5b05a4ee922468790efec2654666840da`; a removal PR, merge and cleanup deployment require their own rulings. Later release/fold/rescan tasks are not completed or authorized by R314. No package consumer has moved off its pre-fix published line through this lane. No push, merge, tag, removal PR or release cut follows this receipt. Report S8_PROBES_DONE and idle.
+
+## R313 historical site checkpoint: four response and direct-IP predictions matched
 
 S8_SITE_LIVE supplied site deployment **`ea5b5b31-2e5d-4cc6-9de1-d7e67c0caef0`**, SUCCESS, created `2026-09-14T14:41:44.663Z`, source **`a386502af2f037d59078d5382ae617fc027f1a1a`**, helper completion about 14:44:10Z, cockpit send 14:44:38Z. The helper's appended site receipt is at `2026-09-14T14:41:43.532Z`, deployedBy `Liam (GridWork)`; that receipt timestamp is not process-start or SUCCESS time. Health at response Date 14:45:08Z returned HTTP 200, `ok: true`, and the exact expected revision.
 
@@ -81,7 +126,7 @@ Peer review remains **not run, not a pass**. The earlier admission refusals rema
 
 R277 supersedes R272's restriction on PR preparation only. No merge, deployment, package publication, tag push or live application-key observation is authorized or performed. The production-keying assessment below remains inconclusive.
 
-## Task 1 outcome
+## R272 historical task 1 outcome
 
 **INCONCLUSIVE for production keying.** The authorized source/local assessment is complete. No client-IP keying defect has been demonstrated, and correct live per-client isolation has not been established. This is neither a FIXED nor a NO-DEFECT verdict. No header-precedence fix or bug-fix changeset was made.
 
@@ -109,7 +154,7 @@ These are the specific claims the absent reviewers would have needed to challeng
 4. **The real edge will preserve client identity and defeat forged IP headers.** This is my prediction, not a measured guarantee. Synthetic Requests only prove header precedence inside the application. Equal Cloudflare/Railway proxy IP observations do not prove what the app receives, that a second client gets a distinct bucket, or that forged headers are overwritten. These are the central unresolved task-1 claims.
 5. **Future evidence would justify a no-defect conclusion and safe removal.** My proposed A/B plus forged-header protocol needs exact deployment/instance, marker, timestamp, ingress and actual application-value correlation. Duplicate, missing or consumed markers cannot count as success. A passing local suite or empty changeset cannot substitute for that evidence or prove the diagnostic is absent from a future release. Removal and verification against the actual release source remain necessary.
 
-## What remains open
+## R272 historical open items
 
 - Direct application-key/IP measurement for independently identified clients A and B, including forged-header arms. Until authorized and measured, production collapse versus correct isolation remains unresolved.
 - Any resulting keying fix and discriminating mutation test, only if a defect is demonstrated. No bug-fix mutation arm has run.
