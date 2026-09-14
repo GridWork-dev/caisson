@@ -4,6 +4,14 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R312 — packet corrected; cockpit deployments precede fresh probe windows
+
+R312 (EST-ASK-271, 2026-09-14) resumes from the R307 tooling stop. The outstanding R307 note was committed first as `93ee79f1`. This ruling permits one redo with a different file tool for an own-tool patch/JSON/message-file failure, stopping if the same edit fails twice; measured-result, gate and floor-denial stop rules are unchanged.
+
+Corrected `OPERATOR-ACT-S8-DIAG-DEPLOY.md`: both services deploy and must serve **`a386502af2f037d59078d5382ae617fc027f1a1a`**. Both this SHA and diagnostic introduction `7e54ddc5b05a4ee922468790efec2654666840da` must be ancestors of origin/main. The removal packet and its exact `7e54ddc5` revert target remain unchanged. Admin is already live and is not redeployed. R312 supersedes R307's site-already-live/no-redeploy instruction: the cockpit now redeploys both license and site, one at a time; this lane performs no deployment.
+
+Cockpit-supplied 2026-09-14T14:18Z baseline: main unchanged since #478; site serves a386502a by revision header; license health 200 without revision header; main's tracked receipt rows end at 886e1e7c for both services. These remain supplied facts until measured. After the local packet-correction commit, run fetch, both ancestry checks, license/site deployment lists, A IPv6/B IPv4 ingress in order. Predict successful checks/readbacks, site SUCCESS at a386502a, license SUCCESS on its pre-diagnostic deployment, and ingress A `2600:1702:7e60:3c0::31`, B `45.17.0.122`. On pass report S8_PREFLIGHT_OK and idle. License/site arms await their respective S8_LICENSE_LIVE/S8_SITE_LIVE handoffs, then health/revision, four ordered requests and one bounded log read per service. Windows remain ten minutes from the relevant app creation/module load, not from the handoff. No release, removal PR, push, merge or tag.
+
 ### R307 — packet-edit tool failure; execution stopped before preflight
 
 Read R307 (EST-ASK-264) from `/tmp/claude-1000/-home-gw-lab/7a239725-df91-4d47-8175-9a0b72e21ad9/scratchpad/rt-resume-r307.txt`. It supplies the 2026-09-12T05:24:20Z readback: #478 merged as `a386502af2f037d59078d5382ae617fc027f1a1a`; admin/demos/site SUCCESS in main-push run 34675184008, site step ending 05:21:50Z, license skipped; site health 200 at that revision and license health 200 with no revision header. These facts remain operator-supplied, not independently verified in this attempt.
