@@ -4,6 +4,14 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R315 — exact removal staged; exploratory hook-path read stopped preparation
+
+R315 (EST-ASK-274) accepts task 1's closure at `522ee919` and authorizes the removal PR before later release work. Fetch origin main and the `7e54ddc5` ancestry check passed. Created `/home/gw/lab/worktrees/caisson/s8-remove-direct-key-observation-2026-09`, branch `chore/s8-remove-direct-key-observation`, from origin/main `a386502af2f037d59078d5382ae617fc027f1a1a`. Exact `git revert --no-commit 7e54ddc5b05a4ee922468790efec2654666840da` exited 0. Staged diff is exactly the seven packet paths, 5 insertions / 229 deletions; staged whitespace check exited 0. No conflict or product gate failure occurred.
+
+The next exploratory file-tool invocation read package.json successfully, then attempted the assumed path `.husky/pre-commit` without first discovering the repository's hook location. It returned `ENOENT: no such file or directory, open '/home/gw/lab/worktrees/caisson/s8-remove-direct-key-observation-2026-09/.husky/pre-commit'` with isError true. The later `.husky/pre-push` read in that invocation was not reached. This is this lane's mistaken lookup, not evidence of a missing required hook or repository defect.
+
+Stopped on that unexpected result. R312/R315's retry-once exception explicitly names own-tool patch, JSON and message-file failures; this file-read error is outside those named exceptions. No hook-location workaround, dependency install, suite, lint/format gate on the removal candidate, review admission/dispatch, removal commit, push or PR followed. The seven-file inverse remains staged in the fresh removal worktree. Only this hold record is persisted on the lane, without pushing it. Packet: `OPERATOR-ACT-S8-R315-HOOK-LOOKUP-STOP.md`. A further ruling must release this hold before removal preparation resumes; do not claim S8_REMOVAL_PR. No merge, deploy, release, tag or branch deletion.
+
 ### R314 — remaining license arms matched; eight observations complete
 
 R314 (EST-ASK-273) supplied second license deployment `c8e48687-3966-4b62-a4f7-6eda00628ab4`, SUCCESS, created `2026-09-14T14:48:25.714Z`, same source `a386502af2f037d59078d5382ae617fc027f1a1a`, cockpit-authorized helper `--force`. Health at 14:50:53Z returned 200 and exact revision. The three remaining arms ran in the ruled order B-normal 14:51:01Z, A-forged 14:51:10Z, B-forged 14:51:17Z, all 401/unauthorized at the exact revision. Only X-Real-IP/XFF were supplied on forged arms. One bounded log read returned each exact marker once, with B key `issue|45.17.0.122` for both B arms and A key `issue|2600:1702:7e60:3c0::31` for A-forged. No further unexpected result or unruled retry occurred.
