@@ -28,7 +28,7 @@ concurrency:
 
 jobs:
   dts-drift:
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     # Compiling every packages/* tsc package TWICE (base pin + head pin) for declaration-only
     # emit; generous headroom over the tsgo-agreement lane's own 45m ceiling since this job also
     # does a second full `bun install` for the isolated base-compiler dir.

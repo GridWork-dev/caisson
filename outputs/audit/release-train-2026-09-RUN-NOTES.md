@@ -4,6 +4,22 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R324/R325 — resume and reconcile diagnostic removal
+
+R324 authorizes diagnosis/fix of pre-existing publish-image failures in a separate `publish-gates-2026-09` worktree and instructs completing this existing merge. R325 leaves license cleanup with the cockpit; await S8_LICENSE_CLEAN, no deployment here. The prior merge-check stop is disposed by that ruling, not converted to a pass.
+
+Completed the five-item source/artifact/removal/gate/difference record in [s8-removal-verification.md](s8-removal-verification.md): no marker/deadline/logger or observer callback in source/emitted limiter JS/declarations; all affected source/tests and changesets exactly match removal main; three implementation files equal e2116849; 64 tests / 168 assertions and changed-file lint pass, six required removal-SHA CI checks pass. Known image-publish failures are assigned to the separate repair; full eventual lane CI remains outstanding. Merge commit will preserve all 22 existing local commits, later main changes and audit documents.
+
+### R315 removal merge verified — image-publish checks stop continuation
+
+Forge verified #479 merged as **`0b2046e722750a732ad23aa6f9d9ff230fbd2d5d`**, 2026-09-14T17:50:51Z. Fetched that main and merged it into the lane with `--no-commit --no-ff`, without conflicts. Removed only the seven original diagnostic paths from the lane against verified main; preserved all 22 existing lane commits and audit history (the earlier 18-doc count is historical). Source/tests and all changesets match main; the three implementation paths on main equal e2116849. Three suites passed **64 tests, 0 failures, 168 assertions**; limiter build passed.
+
+The actual removal-SHA check readback has all six required checks successful, but **publish (caisson-site), publish (caisson-migrate), publish (caisson-license), publish (caisson-admin) completed with failure**. Docs/demos publish, semgrep-pro and deploy were still in progress. These additional failures were not predicted; stopped under the standing rule. No cause or Railway failure is inferred from image-publish checks. No retry or dispatch.
+
+The lane is deliberately left in its existing uncommitted merge at HEAD 35f565d6; these receipt edits are uncommitted too, because a commit during the merge would include the incomplete reconciliation. Emitted JS/declaration inspection and the complete five-item absence proof remain unfinished. No scanner edit, lane push, release PR, cut, tag or consumer rollout. Packet: `/home/gw/lab/briefs/estate-2026-09/handoff/OPERATOR-ACT-S8-R315-MERGE-CHECK-STOP.md`; prospective record: `S8-R315-POST-MERGE-PREDICTION.md` in that directory.
+
+Runtime cleanup remains open: the operator reports main-push redeploys admin/demos/site/docs/support-bot, but deploy was still in progress at readback; license remains at diagnostic deployment `c8e48687-3966-4b62-a4f7-6eda00628ab4`, pending a separately ruled helper deploy. No runtime cleanup or independent review pass is claimed.
+
 ### R315 removal PR opened — staged changeset disposition completed
 
 The operator clarified that an own sequencing slip is an own-tool exception: fix the order and rerun once without another hold packet. Staged the already-authorized `.changeset/s8-remove-direct-key-observation.md`, then `bunx @changesets/cli status --since=origin/main` exited 0 with no patch/minor/major releases. Fresh staged whitespace and whole-tree formatting checks passed (3,475 files). The unchanged reverted TypeScript retains the earlier 64 passing tests / 168 assertions and successful six-file lint evidence.

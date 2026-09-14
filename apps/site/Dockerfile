@@ -13,7 +13,19 @@
 # workspace dependency first, turbo.json's `dependsOn: ["^build"]`) succeeds, and the resulting
 # `.next/standalone/apps/site/server.js` serves 200s on `/`, `/pricing`, `/healthz` under plain
 # `bun apps/site/server.js` — the exact CMD below.
-FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS build
+#
+# The BUILD stage runs on Bun 1.4.2, deliberately ahead of the 1.3.14 that the runtime stage, the
+# fleet's other Dockerfiles and the `packageManager` pin still use — the same split, for the same
+# measured reason, as apps/demos/Dockerfile. Bun 1.3.14 segfaults at the end of every `next build`
+# on Next >= 16.3 (Turbopack): next-swc's process-global threads release a napi threadsafe
+# function after the page-data worker that created it was torn down (oven-sh/bun#37031, #36866 —
+# `panic: Segmentation fault at address 0x13CB0` in napi_release_threadsafe_function, exit 137,
+# after "Finalizing page optimization"). Fixed by oven-sh/bun#34067, first shipped in 1.4.0; there
+# is no 1.3.x backport. Measured 2026-09-11: this Dockerfile at 1.3.14 crashes after generating all
+# 243 pages, and changing ONLY this FROM line builds green with the same frozen bun.lock. The
+# runtime stage stays on 1.3.14 so the serving runtime is unchanged; moving the whole fleet to
+# 1.4.x is a separate decision.
+FROM oven/bun:1.4.2-slim@sha256:cb3bbbb08e13a4a2ff400f24c7a2a1d5efa83f6ef8544d52d95a519631e2fc61 AS build
 WORKDIR /app
 COPY . .
 RUN bun install --frozen-lockfile

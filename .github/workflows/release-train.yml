@@ -37,7 +37,7 @@ concurrency:
 
 jobs:
   readiness:
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     timeout-minutes: 20
     permissions:
       contents: read
@@ -69,7 +69,7 @@ jobs:
     # the train ships dormant; W3 arming is an operator act). Skipped-when-unarmed keeps the
     # workflow green.
     if: vars.RELEASE_TRAIN_ARMED == 'true'
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'blacksmith-4vcpu-ubuntu-2404' }}
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     timeout-minutes: 90
     environment: release # ADR-0327 rider 2 (definition-first; free-plan protection rules can't enforce yet)
     permissions:
