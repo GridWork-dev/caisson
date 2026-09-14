@@ -14,7 +14,6 @@ import {
   describe,
   expect,
   setDefaultTimeout,
-  spyOn,
   test,
 } from "bun:test";
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
@@ -188,60 +187,6 @@ beforeAll(async () => {
 });
 afterAll(async () => {
   await tp.close();
-});
-
-test("S8 diagnostic is one-shot, scoped, expiring and preserves unauthorized responses", async () => {
-  const marker = "92c71b83-737c-493b-b87d-e3c470e0075a";
-  const lines: string[] = [];
-  const sink = spyOn(process.stderr, "write").mockImplementation((chunk) => {
-    lines.push(String(chunk));
-    return true;
-  });
-  const request = (probeId: string, path = "/issue", method = "POST") =>
-    new Request(`https://license.caisson.sh${path}`, {
-      method,
-      headers: {
-        "user-agent": probeId,
-        "x-real-ip": "203.0.113.7",
-        "x-forwarded-for": "198.51.100.92, 198.51.100.93",
-        "cf-connecting-ip": "203.0.113.94",
-        "content-type": "application/json",
-      },
-      ...(method === "POST"
-        ? { body: JSON.stringify({ omittedFromLogs: "body-content" }) }
-        : {}),
-    });
-  try {
-    expect((await app(request("ordinary-traffic"))).status).toBe(401);
-    expect((await app(request(marker, "/health", "GET"))).status).toBe(200);
-    expect(lines).toEqual([]);
-    expect((await app(request(marker))).status).toBe(401);
-    expect((await app(request(marker))).status).toBe(401);
-    expect(lines).toEqual([
-      `[s8-direct-key] ${JSON.stringify({ probeId: marker, key: "issue|203.0.113.7" })}\n`,
-    ]);
-    sink.mockImplementation(() => {
-      throw new Error("diagnostic sink unavailable");
-    });
-    expect(
-      (await app(request("4747a030-572b-4e80-b82f-693c074525d3"))).status,
-    ).toBe(401);
-    sink.mockImplementation((chunk) => {
-      lines.push(String(chunk));
-      return true;
-    });
-    const future = spyOn(Date, "now").mockReturnValue(Date.now() + 660_000);
-    try {
-      expect(
-        (await app(request("ececae63-b992-4c4f-96fe-ee080b7de94d"))).status,
-      ).toBe(401);
-      expect(lines).toHaveLength(1);
-    } finally {
-      future.mockRestore();
-    }
-  } finally {
-    sink.mockRestore();
-  }
 });
 
 const post = (body: string, auth?: string): Request =>
