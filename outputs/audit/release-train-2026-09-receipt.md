@@ -1,6 +1,35 @@
-# S8 release train receipt — R277 diagnostic PR, 2026-09-10
+# S8 release train receipt — R312 license probe stop, 2026-09-14
 
-Governing brief: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`, with the operator's subsequent corrections, R272 and R277. Historical stops and their dispositions remain in [the run notes](release-train-2026-09-RUN-NOTES.md).
+Governing brief: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`, with the operator's subsequent corrections through R312 and S8_LICENSE_LIVE. Historical stops and their dispositions remain in [the run notes](release-train-2026-09-RUN-NOTES.md). This is the companion receipt to [the recorded prediction](s8-direct-key-prediction.md); older checkpoints below remain historical.
+
+## R312 measured stop: A-forged returned 403 instead of 401
+
+**STOPPED; two license requests sent, two license arms and all four site arms unrun. No complete eight-request verdict.** S8_LICENSE_LIVE supplied license deployment `4841e05e-cd49-4ed9-94b2-1ab19f2172b1`, SUCCESS, created `2026-09-14T14:26:13.370Z`, ref **`a386502af2f037d59078d5382ae617fc027f1a1a`**. The cockpit sent at 14:28:51Z and directed this lane to obtain the unavailable instance ID from log rows. The helper appended the same SHA to `docs/deploy/receipts/caisson-license.json` at `2026-09-14T14:26:12.234Z`, deployedBy `Liam (GridWork)`. That timestamp precedes deployment creation and is not an app-start/SUCCESS timestamp.
+
+License health at response Date `2026-09-14T14:29:21Z`: HTTP 200, exact `x-caisson-revision` above, `ok: true`, index digest `8835d704a8c7`, 52 entries. Before requests, the prediction was restated: all unsigned arms HTTP 401; A key `issue|2600:1702:7e60:3c0::31`, B key `issue|45.17.0.122`, unchanged by forged IP headers. The September 14 preflight had freshly confirmed both ingress addresses before any application probe.
+
+| Arm                    | Marker                                 | Response Date UTC   | Predicted response | Measured response / evidence                                                                                                                                                     |
+| ---------------------- | -------------------------------------- | ------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| License A normal, IPv6 | `92c71b83-737c-493b-b87d-e3c470e0075a` | 2026-09-14 14:29:29 | 401                | 401, `unauthorized`; exact serving revision; Railway request `fOrScSP2RJKFd21Wjq4OvQ`, application request `24f5ecf8-9cd0-4b1f-8a7f-c9c41e8ed22d`, CF ray `a3b0158d18aa7515-ATL` |
+| License A forged, IPv6 | `4747a030-572b-4e80-b82f-693c074525d3` | 2026-09-14 14:29:38 | 401                | **403**, text `error code: 1000`, server Cloudflare, CF ray `a3b015c098a40779-ATL`; no revision, Railway request ID or application request ID in this response                   |
+| License B normal, IPv4 | `ececae63-b992-4c4f-96fe-ee080b7de94d` | —                   | 401                | NOT SENT after stop                                                                                                                                                              |
+| License B forged, IPv4 | `d22df131-3dd4-4fd8-ac7b-c9397bb8f1da` | —                   | 401                | NOT SENT after stop                                                                                                                                                              |
+| Site A normal          | `92c71b83-737c-493b-b87d-e3c470e0075a` | —                   | 403                | NOT SENT; no new site handoff                                                                                                                                                    |
+| Site A forged          | `4747a030-572b-4e80-b82f-693c074525d3` | —                   | 403                | NOT SENT                                                                                                                                                                         |
+| Site B normal          | `ececae63-b992-4c4f-96fe-ee080b7de94d` | —                   | 403                | NOT SENT                                                                                                                                                                         |
+| Site B forged          | `d22df131-3dd4-4fd8-ac7b-c9397bb8f1da` | —                   | 403                | NOT SENT                                                                                                                                                                         |
+
+Both sent requests were unsigned POST `/issue` with body `{}` and Content-Type application/json. The forged arm supplied exactly X-Real-IP `203.0.113.91`, XFF `198.51.100.92, 198.51.100.93`, and CF-Connecting-IP `203.0.113.94`. The first unexpected measured response stopped the request sequence immediately; no retries or modified-header variants followed.
+
+One bounded post-stop evidence read, `railway logs --service caisson-license --json --since 10m --lines 100`, exited 0. It returned this diagnostic line at `2026-09-14T14:29:37.597843253Z`:
+
+```text
+[s8-direct-key] {"probeId":"92c71b83-737c-493b-b87d-e3c470e0075a","key":"issue|2600:1702:7e60:3c0::31"}
+```
+
+No A-forged marker appears in that bounded result. The returned diagnostic row contains only level, message and timestamp, with **no instance ID or deployment ID**. The record associates the direct value with A-normal by its exact marker, time and response revision; deployment ID comes from the cockpit handoff. Instance-level correlation remains unresolved and must not be invented. The requests completed 3m16s and 3m25s after deployment creation, within a conservative ten-minute bound from that earlier timestamp; no window extension was used. The log timestamp is retained as returned and is not substituted for response time.
+
+The normal A arm directly observed its predicted charged key. The forged response refutes the predicted 401 for that arm; it does not demonstrate limiter collapse, successful header spoofing, B isolation, or correct keying across all arms. No underlying reason for Cloudflare code 1000 was investigated in this stopped run. Task 1 remains **INCONCLUSIVE**. Peer review still never ran. The cockpit's license receipt row and this partial observation are preserved locally; no site deployment, additional application request, removal PR, release, push, merge or tag is performed by this lane. Handoff: `OPERATOR-ACT-S8-R312-LICENSE-FORGED-STOP.md`.
 
 ## R277 preparation and reconciliation
 

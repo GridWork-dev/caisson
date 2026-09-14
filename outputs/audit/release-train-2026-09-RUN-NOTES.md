@@ -4,6 +4,12 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R312 license-live handoff — stop at A-forged response
+
+Cockpit supplied license deployment `4841e05e-cd49-4ed9-94b2-1ab19f2172b1`, SUCCESS, created `2026-09-14T14:26:13.370Z`, at ref `a386502af2f037d59078d5382ae617fc027f1a1a`; instance ID to be taken from logs. Health at 14:29:21Z returned 200 and exact revision. A-normal at 14:29:29Z returned predicted 401; the direct diagnostic log records `issue|2600:1702:7e60:3c0::31` for marker `92c71b83-737c-493b-b87d-e3c470e0075a`. A-forged at 14:29:38Z returned **403, error code: 1000**, instead of predicted 401; CF ray `a3b015c098a40779-ATL`, no application revision/request IDs. The request sequence stopped immediately before both B arms. No site arms ran.
+
+One bounded license log read after the stop preserved evidence of the already-sent A-normal request; it contains no A-forged marker and exposes no instance/deployment IDs. Deployment identity is handoff-supplied and corroborated by the response revision, but instance correlation is unresolved. Full partial record is in `release-train-2026-09-receipt.md`, companion to the prediction; `OPERATOR-ACT-S8-R312-LICENSE-FORGED-STOP.md` requests disposition. Preserve the cockpit helper's appended license receipt row (`a386502a`, deployedAt 14:26:12.234Z, Liam (GridWork)) in the same local stop record. No retry, header variant, re-arming, window extension, deployment, push, merge, release, tag or removal PR follows. Do not claim S8_PROBES_DONE or a complete license pass; task 1 remains inconclusive.
+
 ### R312 — packet corrected; cockpit deployments precede fresh probe windows
 
 Preflight completed in the ruled order on 2026-09-14. Correction commit `3c1cc163` followed stop-note commit `93ee79f1`, both local. Fetch origin main and both `merge-base --is-ancestor` commands exited 0. License deployment list: `ea0bb9c8-aa36-425e-804a-cf08d9dd4928`, SUCCESS, created `2026-08-28T22:43:59.244Z`, image `sha256:4218ad077fc7d5b50d247e0825bf81d61d9933c84b53171ddb32f57f24c5075b`. Site deployment list: `8ba661b7-e208-4c68-b8e5-029a34e5795b`, SUCCESS, created `2026-09-12T05:19:58.913Z`, image `sha256:5a320b44cfef759a4f88133354251e91351c7bff6e7fff1128a591b68f1ae191`. These list responses do not expose a serving revision or instance ID; no such value was inferred from them. The site's a386502a revision remains the supplied cockpit readback until post-redeployment health verification.
