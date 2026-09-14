@@ -1,5 +1,11 @@
 # S8 direct application-key prediction — recorded before measurement
 
+## R313 prospective correction — before site arms
+
+R313 (EST-ASK-272, 2026-09-14) removes client-supplied CF-Connecting-IP from every future forged arm. Send only X-Real-IP `203.0.113.91` and X-Forwarded-For `198.51.100.92, 198.51.100.93`; normal arms add neither. For the coming site deployment at `a386502af2f037d59078d5382ae617fc027f1a1a`, predict all four responses are application HTTP 403 with `challenge_failed`, and direct Ask AI IP A `2600:1702:7e60:3c0::31` / B `45.17.0.122`, unchanged between each client's normal and two-header forged arm. Execute only after S8_SITE_LIVE and successful exact-revision health verification, in A-normal, A-forged, B-normal, B-forged order. Preserve the existing marker UUIDs. License remains held after its closed window; no remaining license request is authorized by this preparation.
+
+The original three-header prediction below is historical and superseded for future forged requests. Its license A-forged response was the separately recorded edge refusal; A-normal's direct key is now measured in the companion receipt. Do not rewrite that historical request as a two-header probe.
+
 Date: 2026-09-10. Authority: the operator's ruling to observe the application key directly, accepting a demonstrated correct per-client key as a no-defect outcome. The unchanged R203 boundary reserves deployment dispatches to the operator.
 
 The previous receipt updates are committed in `8950afe3`. No direct application-key measurement has run.

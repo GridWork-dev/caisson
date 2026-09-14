@@ -4,6 +4,12 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R313 — edge refusal disposition; site requests prepared
+
+R313 (EST-ASK-272) identifies the prior 403/code 1000 as Cloudflare's refusal of client-supplied CF-Connecting-IP, before the application; A-forged's marker is unconsumed per the operator. Recorded as a separate edge finding in the companion receipt. Future forged arms send only X-Real-IP `203.0.113.91` and XFF `198.51.100.92, 198.51.100.93`; historical evidence retains the originally sent three headers. License window closed at 14:36:13Z and all remaining license arms are held pending a further second-deployment ruling. No license act is taken now.
+
+Prepared the four site commands under `S8-R313-SITE-REQUESTS.md`, body `S8-R313-SITE-BODY.json`, in the estate handoff directory. Updated the deployment packet and recorded prospective predictions before the requests. Await S8_SITE_LIVE for `a386502af2f037d59078d5382ae617fc027f1a1a`; then health 200/exact revision, A-normal, A-forged, B-normal, B-forged, one bounded site log read and correlation. Predict application 403/challenge_failed for all, exact IP A `2600:1702:7e60:3c0::31` and B `45.17.0.122` unchanged by the two forged headers. No site request, deployment, retry, marker consumption, push or release has run during preparation.
+
 ### R312 license-live handoff — stop at A-forged response
 
 Cockpit supplied license deployment `4841e05e-cd49-4ed9-94b2-1ab19f2172b1`, SUCCESS, created `2026-09-14T14:26:13.370Z`, at ref `a386502af2f037d59078d5382ae617fc027f1a1a`; instance ID to be taken from logs. Health at 14:29:21Z returned 200 and exact revision. A-normal at 14:29:29Z returned predicted 401; the direct diagnostic log records `issue|2600:1702:7e60:3c0::31` for marker `92c71b83-737c-493b-b87d-e3c470e0075a`. A-forged at 14:29:38Z returned **403, error code: 1000**, instead of predicted 401; CF ray `a3b015c098a40779-ATL`, no application revision/request IDs. The request sequence stopped immediately before both B arms. No site arms ran.
