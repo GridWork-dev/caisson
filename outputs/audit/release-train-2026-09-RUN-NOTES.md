@@ -4,6 +4,16 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R307 — packet-edit tool failure; execution stopped before preflight
+
+Read R307 (EST-ASK-264) from `/tmp/claude-1000/-home-gw-lab/7a239725-df91-4d47-8175-9a0b72e21ad9/scratchpad/rt-resume-r307.txt`. It supplies the 2026-09-12T05:24:20Z readback: #478 merged as `a386502af2f037d59078d5382ae617fc027f1a1a`; admin/demos/site SUCCESS in main-push run 34675184008, site step ending 05:21:50Z, license skipped; site health 200 at that revision and license health 200 with no revision header. These facts remain operator-supplied, not independently verified in this attempt.
+
+R307 requires the deployment packet and these notes to bind the serving revision to `a386502af2f037d59078d5382ae617fc027f1a1a`, preserving `7e54ddc5b05a4ee922468790efec2654666840da` as diagnostic ancestor and exact removal target. Admin is already live; site must not be redeployed. It authorizes ordered preflight and then site arms, with license probes held for cockpit S8_LICENSE_LIVE. The conservative site window is 05:21:50Z–05:31:50Z.
+
+Before any mutation, the packet-edit orchestration failed: the file tool returned a displayed object containing an in-memory patch; the outer functions call attempted `JSON.parse` on that display and raised `SyntaxError: Expected property name or '}' in JSON at position 4 (line 2 column 3)`. The dependent `apply_patch` calls were never reached. Neither operator packet was changed. This is a tool-protocol error in this lane, not a product finding or probe refutation.
+
+The first unexpected result triggers the standing stop rule. No retry, correction execution, fetch, ancestry check, Railway readback, ingress recheck, application probe, marker consumption, deployment, push or removal followed. Only this stop record and `OPERATOR-ACT-S8-R307-TOOL-STOP.md` are being persisted. Do not emit S8_SITE_ARMS_DONE or ask the cockpit to deploy license: the site arms did not run. A further ruling must dispose of this stop and the remaining/expired site window before resumption; do not silently restart or extend the window.
+
 ### R298 — operator-reported deployment hold and future packet corrections
 
 For the record only: the following deployment state is supplied by the operator, not independently re-probed in this turn. R292 authorized deployment, but its preflight stopped: the main-push `deploy-railway` run at `7e54ddc5` had already deployed `caisson-admin` (Railway `631bed9f`) automatically, then failed building demos at Next's "Running TypeScript" step. Site was skipped and license was untouched. After the operator merged #477 (`127db655`), the fleet workflow redeployed admin at `127db655` (`b4cccb72`); demos failed again (`0b6161c2`). The operator reports that this demos failure predates the diagnostic and has occurred on every main push since `2026-09-10T02:53Z`.
