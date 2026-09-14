@@ -1,6 +1,27 @@
-# S8 release train receipt — R312 license probe stop, 2026-09-14
+# S8 release train receipt — R313 site arms measured, license partial, 2026-09-14
 
-Governing brief: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`, with the operator's subsequent corrections through R312 and S8_LICENSE_LIVE. Historical stops and their dispositions remain in [the run notes](release-train-2026-09-RUN-NOTES.md). This is the companion receipt to [the recorded prediction](s8-direct-key-prediction.md); older checkpoints below remain historical.
+Governing brief: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`, with the operator's subsequent corrections through R313 and S8_SITE_LIVE. Historical stops and their dispositions remain in [the run notes](release-train-2026-09-RUN-NOTES.md). This is the companion receipt to [the recorded prediction](s8-direct-key-prediction.md); older checkpoints below remain historical.
+
+## R313 site result: four response and direct-IP predictions matched
+
+S8_SITE_LIVE supplied site deployment **`ea5b5b31-2e5d-4cc6-9de1-d7e67c0caef0`**, SUCCESS, created `2026-09-14T14:41:44.663Z`, source **`a386502af2f037d59078d5382ae617fc027f1a1a`**, helper completion about 14:44:10Z, cockpit send 14:44:38Z. The helper's appended site receipt is at `2026-09-14T14:41:43.532Z`, deployedBy `Liam (GridWork)`; that receipt timestamp is not process-start or SUCCESS time. Health at response Date 14:45:08Z returned HTTP 200, `ok: true`, and the exact expected revision.
+
+All four requests were unsigned POST `/api/ask`, JSON `{"question":"S8 diagnostic observation"}`, without cookies or a challenge token. A used IPv6, B IPv4. The forged arms sent only X-Real-IP `203.0.113.91` and XFF `198.51.100.92, 198.51.100.93`, with no CF-Connecting-IP as ruled by R313. Every response returned the predicted application HTTP **403**, JSON `{"error":"challenge_failed"}`, and the exact source revision above. All commands exited 0; no retry or additional arm was sent.
+
+| Arm / exact User-Agent marker                     | Response Date UTC   | Direct diagnostic timestamp UTC | Predicted and observed Ask AI IP | Railway request ID       |
+| ------------------------------------------------- | ------------------- | ------------------------------- | -------------------------------- | ------------------------ |
+| A normal — `92c71b83-737c-493b-b87d-e3c470e0075a` | 2026-09-14 14:45:16 | 2026-09-14T14:45:16.540578783Z  | `2600:1702:7e60:3c0::31`         | `YoQOB1UVQg2jxV6PYqVb7A` |
+| A forged — `4747a030-572b-4e80-b82f-693c074525d3` | 2026-09-14 14:45:24 | 2026-09-14T14:45:24.629053885Z  | `2600:1702:7e60:3c0::31`         | `IC4gwYW1TzGQGZdELPU1MQ` |
+| B normal — `ececae63-b992-4c4f-96fe-ee080b7de94d` | 2026-09-14 14:45:33 | 2026-09-14T14:45:33.288666839Z  | `45.17.0.122`                    | `r-_9oFQYRaeBNF-OLPU1MQ` |
+| B forged — `d22df131-3dd4-4fd8-ac7b-c9397bb8f1da` | 2026-09-14 14:45:42 | 2026-09-14T14:45:42.074566937Z  | `45.17.0.122`                    | `pfGlghRdQlajvTA42h0iww` |
+
+In that same order, application request IDs were `8ef3c35e-13c3-4fc4-8a97-b2fbee256ef7`, `31bdc4b6-adb6-4126-997c-acfce0166a28`, `32602158-b476-43bb-883c-ec139076deee`, `b200cab3-ad23-4cca-9380-27f4a9ec4b01`; CF rays were `a3b02ca54fa25dd0-ATL`, `a3b02cdbe8f8bfa5-ATL`, `a3b02d124c56c84c-ATL`, `a3b02d48bb195394-ATL`.
+
+The single bounded read `railway logs --service caisson-site --json --since 10m --lines 100` exited 0 and returned exactly one `[s8-direct-ip]` row for each marker, carrying the IP and timestamp in the table. This is the actual IP selected by the application and passed to Turnstile, not a reconstructed value or proxy source-IP log. Each A value matches its recorded IPv6 ingress; each B value matches its recorded IPv4 ingress. Normal and forged match within each client; A and B differ. B is still a distinct IP-family connection from the same physical host, not a second-device claim.
+
+The last direct row occurred 3m57.412s after deployment creation, inside a conservative ten-minute bound from that earlier timestamp. Source expiry is still ten minutes after module load; no deadline change, restart or marker re-arming was performed by this lane. **Instance-level correlation remains unavailable:** the CLI rows expose only level, message and timestamp, with no instance/deployment IDs. Deployment ID is supplied by the cockpit; the four response revisions, markers and timestamps supply the measured source/request correlation. Do not describe this as a measured instance-ID join.
+
+**Site-only outcome:** all four corrected-arm response/IP predictions matched; observed per-client Ask AI IP resolution resisted the two supplied forged headers in this run. This is not a license bucket-isolation verdict or a full task-1 no-defect verdict. License still has only A-normal's direct observation; its remaining arms await a further ruling, and the original three-header edge refusal remains a separate finding below. Peer reviewers never ran. Preserve the site helper receipt and these records on the local lane, report S8_SITE_ARMS_DONE, and idle. No further license request, deployment, removal PR, release, push, merge or tag is performed.
 
 ## R312 measured stop: A-forged returned 403 instead of 401
 

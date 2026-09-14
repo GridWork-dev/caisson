@@ -4,6 +4,12 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R313 site-live handoff — all four corrected site arms matched
+
+S8_SITE_LIVE supplied deployment `ea5b5b31-2e5d-4cc6-9de1-d7e67c0caef0`, SUCCESS, created `2026-09-14T14:41:44.663Z`, source `a386502af2f037d59078d5382ae617fc027f1a1a`. Site health returned 200/exact revision at 14:45:08Z. Four arms ran in table order at 14:45:16Z, 14:45:24Z, 14:45:33Z and 14:45:42Z, all application 403/challenge_failed at that revision. Forged arms sent only X-Real-IP and XFF. One bounded log read returned each marker once: A normal/forged IP `2600:1702:7e60:3c0::31`; B normal/forged `45.17.0.122`. All match the prospective predictions. Last log row is less than four minutes after deployment creation. No retry or window extension.
+
+Full timestamps, response IDs and direct values are in the companion receipt. CLI logs still expose no instance/deployment IDs: deployment ID is handoff-supplied and source/request correlation is measured through response revisions, markers and times; instance-level joining remains unavailable. Preserve the helper's appended `docs/deploy/receipts/caisson-site.json` row (14:41:43.532Z, Liam (GridWork)). Site arms are complete within this stated evidence limit; remaining license arms remain held and task 1 is not closed. Report S8_SITE_ARMS_DONE plus the scoped outcome, then idle. No further license act, deployment, removal PR, release, push, merge or tag.
+
 ### R313 — edge refusal disposition; site requests prepared
 
 R313 (EST-ASK-272) identifies the prior 403/code 1000 as Cloudflare's refusal of client-supplied CF-Connecting-IP, before the application; A-forged's marker is unconsumed per the operator. Recorded as a separate edge finding in the companion receipt. Future forged arms send only X-Real-IP `203.0.113.91` and XFF `198.51.100.92, 198.51.100.93`; historical evidence retains the originally sent three headers. License window closed at 14:36:13Z and all remaining license arms are held pending a further second-deployment ruling. No license act is taken now.
