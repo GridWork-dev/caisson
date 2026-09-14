@@ -19,6 +19,9 @@ name: security-scan
 # egress sink to semgrep.dev — see identity/security-surfaces.md). It stays dormant until the
 # token is provisioned.
 on:
+  schedule:
+    # Daily 06:37 UTC on main; no image publication or registry credentials (R332).
+    - cron: "37 6 * * *"
   push:
     branches: [main]
   pull_request:
@@ -26,7 +29,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
 
 concurrency:
-  group: "security-scan-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  group: "security-scan-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}"
   cancel-in-progress: true
 
 permissions:
@@ -48,10 +51,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0 # trufflehog git-history scan needs full history
+          persist-credentials: false
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
           version: "0.12.2" # pinned (same pin as support-bot.yml; no drift)
+      - name: base rescan contract tests (offline)
+        run: python3 -B -m unittest discover -s tools/security -p test_rescan_base_images.py -v
       - name: install scanners (pinned versions, sha256-verified release artifacts)
+        id: scanners
         run: |
           # CAISSON-95: every scanner is version-pinned and digest-verified against
           # tools/security/versions.env — the old `curl | sh` installers fetched their script from
@@ -100,6 +107,11 @@ jobs:
           # trigger (Renovate's first pin-wave merged) fired 2026-07-13; check-docker-digests.sh
           # proven green on main 2026-07-17 before the flip.
           bash tools/security/scan.sh --layer ci --strict-digests
+      - name: scan exact Dockerfile base digests (anonymous, linux/amd64)
+        if: ${{ !cancelled() && steps.scanners.outcome == 'success' }}
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          python3 tools/security/rescan_base_images.py --output "$RUNNER_TEMP/security-out"
       - name: upload SARIF artifacts
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
