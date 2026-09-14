@@ -793,7 +793,7 @@ function verifyForPublish(opts: VerifyForPublishOpts): PublishStepResult {
   //    mismatch means the tagged tree is NOT the source the version PR hashed — stop before any
   //    external write. The R2 upload step then skips objects that already exist, so re-verified
   //    old versions are never re-uploaded (rerun-safe, never-overwrite — ADR-0325 point 5).
-  // ponytail: rows are verified against a re-pack under the PINNED bun (1.3.14 everywhere). If a
+  // ponytail: rows are verified against a re-pack under the PINNED bun (1.4.2 everywhere). If a
   // future bun bump changes the pack byte format, old unchanged versions will fail loudly here;
   // the upgrade path is a one-off operator re-record of affected rows, not a silent skip.
   const mismatches: string[] = [];

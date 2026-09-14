@@ -1229,7 +1229,7 @@ function main(): void {
       oxfmt: "0.63.0",
       oxlint: "1.78.0",
     },
-    packageManager: "bun@1.3.14",
+    packageManager: "bun@1.4.2",
   };
   writeFileSync(
     join(outDir, "package.json"),
