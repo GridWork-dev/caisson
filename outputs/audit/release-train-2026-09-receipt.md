@@ -1,5 +1,13 @@
 # S8 release train receipt — R332 rescan PR 482 held on base CVEs
 
+## S8_PUBLISH_RED and R333 — authorized repair in progress
+
+S8_PUBLISH_RED received for run 34888116937 at 6604844a3f17633e5221075af6d01966620eaaed. Forge confirms all six gates succeeded; site/admin/demos publish succeeded, license/docs/migrate failed at vulnerability scan, collect skipped. Full job logs independently confirm the same Trivy FATAL Docker export ENOSPC on all three failed jobs. This is transport/resource failure with exit-code policy 0, distinct from PR 482's base CVEs. Runner label ubicloud-standard-2, documented 75 GB disk; observed free-space warnings: license 0 MB, docs 2 MB, migrate 0 MB. Image sizes and fresh runner capacity remain to be measured in the branch proof.
+
+The operator assigns the scan-runner repair here and authorizes R333 runtime OS upgrades while retaining digest pins. Separate PRs keep their proof scopes distinct. Publish workflow is shared-template-owned (ADR-0419); use the existing repo-owned prepare-build hook for runner preparation rather than modifying that template. Task 3 now explicitly requires a main run passing all six scan steps. Peer dispatch refusal/no-retry remains in force. A schedule-policy clarification is pending; no ignore-unfixed-only workaround is taken.
+
+Cockpit reports deploy-railway run 34888117007 succeeded for admin/demos/site/docs/support-bot; license at 6604844a is its R330 act. One helper row was appended with that SHA, deployedAt 2026-09-14T20:49:01.369Z, deployedBy Liam (GridWork). This is helper receipt time, not a serving-revision or deployment-status measurement by this lane. No license action here.
+
 Governing brief: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`, with the operator's subsequent rulings through R324/R325 and the S8_LICENSE_CLEAN handoff. Historical stops and their dispositions remain in [the run notes](release-train-2026-09-RUN-NOTES.md). This is the companion receipt to [the recorded prediction](s8-direct-key-prediction.md). The R314 verdict below supersedes earlier partial/inconclusive checkpoints, which remain historical evidence.
 
 ## R332 failed-gate stop
