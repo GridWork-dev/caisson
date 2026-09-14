@@ -4,6 +4,18 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R324 — pipeline repair PR 480 green, held for cockpit
+
+**S8_PUBLISH_PR [480](https://github.com/caisson-sh/caisson/pull/480)**, OPEN and ready, head **`18b00f54e15875f96448a320ccfde38eb1a49c8a`**, base removal `0b2046e722750a732ad23aa6f9d9ff230fbd2d5d`, forge merge state CLEAN. All six required checks plus publisher-equivalent gates and every other active check are SUCCESS; draft/path skips remain explicitly SKIPPED. Six-file pipeline scope only, no lane receipt history pushed.
+
+The unchanged-script baseline `bf3af057e2d22e90b59f8dd4aead8aeca542adb1`, run 34879216994 / job 104093991797, produced actual gates **cancelled** (18:11:18–18:14:34Z). Thirty-seven memory samples: 8,131,576 KiB total, available minimum 51,404 KiB, full pressure avg10 reached 50.86 before exit 137. Fixed head run 34879963930 / job 104096517729 produced actual gates **success** (18:19:22–18:25:43Z). Seventy-six samples: 8,131,584 KiB total, available minimum 674,556 KiB, maximum full pressure avg10 21.22. Same ubicloud-standard-2 runner class, cold checkout and gate command; no publisher credentials or external publication.
+
+Fix exports TURBO_CONCURRENCY=50%, matching required CI, preserving all ten gate commands. Successful cold run: 120/120 Turbo tasks, 67 test summaries totalling 7,268 reported tests (includes separately executed registry/deploy suites, not unique tests). Local command-contract mutation failed without export and passed with it; all five original/new gate tests passed, eight assertions, lint/shell/format green. The evidence supports intra-job memory pressure, not six suites sharing one VM; exact kernel shutdown mechanism remains unexposed.
+
+Sep 10 first red differs: six gates succeeded; admin/demos/site failed later in Docker builds, with admin/demos Bun segmentation faults at Next Running TypeScript. Main contains demos/site build-stage repair #478; admin build stage remains Bun 1.3.14. This PR proves the gates fix; first complete green publish-image run on main remains the release precondition. No merge, publish, tag or consumer rollout here. Peer dispatches were refused admission and never ran; one set of eyes, no implicit review pass. Attribution to pressure, CPU-relative cap suitability, gate/environment preservation, and the separate Docker residual are the claims resting on my judgment alone.
+
+R325 license cleanup still awaits S8_LICENSE_CLEAN from cockpit; no action here. Rescan scope question is pending: current security-scan only examines source/lockfiles, not images. Read-only census found eight production Dockerfiles and three unique digest pins; no schedule edit made and no scheduled publish added. Operator packet: `/home/gw/lab/briefs/estate-2026-09/handoff/OPERATOR-ACT-S8-R324-PUBLISH-GATES.md`.
+
 ### R324 reconciliation readback and pipeline baseline
 
 Reconciliation committed normally as **`bb99e27ee809f9b764cac6ef1632a4de9de8e196`**, parents `35f565d6bcc12f50f55b03e9ad37e19d681bd5b4` and removal `0b2046e722750a732ad23aa6f9d9ff230fbd2d5d`; ancestry check exited 0, worktree clean. This is the candidate binding for [the removal verification](s8-removal-verification.md).

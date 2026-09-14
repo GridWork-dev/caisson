@@ -37,3 +37,11 @@ Every source listed in the last column has last-commit date **2026-09-09**. “S
 No dates were bumped. Task 1 resumes under the existing prediction and stop rule; application key observation remains outstanding.
 
 Readback confirms all three named branches remain present. `git diff --check` passed before staging.
+
+## R324 fresh readback — 2026-09-14
+
+`bun run sot` exits 1 with the same two disposition classes: frontmatter freshness and branch hygiene. ADR parity, archive integrity, tracker-vs-reality, changeset preflight, package-count parity and docs surface are GREEN. No aggregate-green claim. The same 16 documents lag; no updated dates were bumped. Source-date changes since the earlier table: `docs/state/package-catalog.md` now lags `packages/`, `apps/`, and `services/` dated **2026-09-14** (package catalog updated 2026-09-02); `docs/architecture.md` lags `.github/workflows/ci.yml` dated **2026-09-10** (doc updated 2026-09-05); `docs/ops/release-tag-signing.md` lags `.github/workflows/release-train.yml` dated **2026-09-10** (doc updated 2026-08-19). All other listed source dates remain 2026-09-09.
+
+Branch hygiene remains EXPECTED-DRIFT under branch preservation and the authorized active worktrees. The readback lists eight other local branches: chore/bun-1.4-fleet-2026-09, chore/s8-remove-direct-key-observation, ci/ubicloud-2026-09, docs/sweep-2026-09-01, feature/s8-direct-key-observation, fix/publish-gates-2026-09, fix/session-hint-httponly, probe/fumadocs-16.15. None is deleted. Four other linked worktrees remain.
+
+Explicit corrected CLI `bunx @changesets/cli status --since=origin/main` also exits zero with no patch/minor/major packages on the reconciled lane. This comparison is not a count of the pending release backlog.
