@@ -1,11 +1,13 @@
 ---
-updated: 2026-09-05
+updated: 2026-09-14
 status: live
 grounds:
   - knowledge/decisions/
 ---
 
 # ADR index
+
+Current ADR ceiling: **0422** — S16 unifies the Bun fleet and adds Docker build smoke coverage.
 
 Canonical catalog of every Architecture Decision Record in `knowledge/decisions/`. This
 file is a **synthesized view** (number -> title -> domain -> status -> supersession). It does
@@ -1116,6 +1118,7 @@ ADR-0088 numbering split held — no collision).
 | [0419](../knowledge/decisions/ADR-0419-pin-the-image-publish-scan-posture-with-a-local-guard.md) | A test in `tooling/audit-harness` (landing in PR #470) pins the image-publish scan's non-blocking posture: the template's unset-variable fallback to zero, the absence of a local override, and the playbook section that records the choice. `publish-image.yml` is a byte-identical template copy and is never edited — the guard exists precisely because the default lives in someone else's file. |
 | [0420](../knowledge/decisions/ADR-0420-schedule-the-subprocess-environment-default-flip.md) | `@caisson/agent-kernel` and `@caisson/tool-exec` gain an opt-in per-command child environment; the inherit-everything default stays for one more release cycle and the flip to narrow is scheduled as a **major** with migration notes. The current default is pinned by a test asserting a child DOES see a parent canary, so the flip cannot land silently. |
 | [0421](../knowledge/decisions/ADR-0421-caisson-internal-use-grant.md) | Internal GridWork use of any `@caisson/*` package is granted, commercial included (operator ruling Round 2 #13): it does not pass through the Paddle catalog, changes no `license` field or catalog membership, and does not extend to anything shipped to a third party. Names its five subjects so the grant is greppable — `ai-evals`, `alerting`, `audit-worm`, `observability`, `rate-limit`. The **distribution** half is answered separately and is **blocked**: GitHub Packages is out estate-wide and SPEC D3's vendor-by-copy is proven only on single-file configs, while `audit-worm` is 66 files with three workspace-internal deps. Scopes the gridwork-core authority-ledger dogfood without authorizing it — no `@caisson/*` import lands there until distribution is answered |
+| [0422](../knowledge/decisions/ADR-0422-unify-bun-fleet-and-smoke-next-build-images.md) | Unifies all Bun pins on 1.4.2 with image index digests, retiring PR #478's temporary build/runtime split after the September 10–12 Next build outage. Adds path-gated demos/site Docker build smoke with CI mutation evidence and records the Next typegen regeneration; a Bun regression in the Next build path reopens the decision. |
 
 ---
 

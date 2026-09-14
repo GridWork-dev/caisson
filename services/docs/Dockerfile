@@ -9,7 +9,7 @@
 # Railway set the service Root Directory = repo root (`/`) and Dockerfile Path = services/docs/Dockerfile.
 #
 # NOT YET BUILD-VALIDATED in this session (no docker build run) — first `railway up` is the validation.
-FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS base
+FROM oven/bun:1.4.2-slim@sha256:cb3bbbb08e13a4a2ff400f24c7a2a1d5efa83f6ef8544d52d95a519631e2fc61 AS base
 WORKDIR /app
 ENV NODE_ENV=production \
     PORT=8788

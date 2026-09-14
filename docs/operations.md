@@ -16,7 +16,7 @@ bun install                 # frozen lockfile in CI: bun install --frozen-lockfi
 bun run check               # the one command: build + lint + test + standards gate
 ```
 
-`bun@1.3.14` is the pinned `packageManager`. Never npm, never yarn.
+`bun@1.4.2` is the pinned `packageManager`. Never npm, never yarn.
 
 **Root scripts** (`package.json`):
 
@@ -216,7 +216,7 @@ second operator or a CI-driven apply. Detail:
 green, see `docs/deploy/STATE.md`),
 `deploy-railway.yml`, `lighthouse.yml`, `mirror-sync.yml`, `aeo-probe.yml`, `support-bot.yml`.
 All Bun + Turbo (except the Python-only `support-bot.yml`), `--frozen-lockfile`, bun pinned to
-`1.3.14` (the `packageManager` line — no `latest` floats).
+`1.4.2` (the `packageManager` line — no `latest` floats).
 
 **Review gate: Greptile RETIRED 2026-07-06.** The `greptile-gate` path-scoped required check
 mentioned in older revisions of this doc no longer exists — `.github/workflows/greptile-gate.yml`
