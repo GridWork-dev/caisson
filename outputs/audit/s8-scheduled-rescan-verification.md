@@ -34,3 +34,13 @@ No package versions or published APIs change. Scanner versions and publisher wor
 Eight first-party Dockerfiles now have nine apt update/upgrade/cleanup RUN instructions covering each runtime lineage, including admin migrate and license shared base inheritance. Bun/Python FROM digests are unchanged. Two new offline tests prove target coverage, pin preservation and upgrade-before-nonroot ordering. Deleting admin's migration upgrade caused the predicted target-coverage failure; original bytes restored. These source checks do not establish that apt repositories supply every fix or that a built image is clean.
 
 OS-layer builds and live post-upgrade scans remain pending. Schedule-policy clarification was requested because raw pinned-base scans retain the fixable findings even after runtime images are patched. No ignore-unfixed-only change is made. This R333 amendment is not yet pushed, so PR 482 still carries the earlier red head until its full repair/proof is ready.
+
+## R335 policy implementation — local proof, live scan pending
+
+R335 replaces raw-base enforcement with an actual built-runtime gate. R336 requires joint cockpit merge of PRs 482 and 483 after both are green. The original raw-base failure remains historical evidence, not the current policy.
+
+Local proof: 12 image policy/census/workflow tests and 2 runtime OS-layer tests passed. The same CRITICAL fixed-version fixture fails runtime scans and reports without failure in raw-base scans, for both OS and application classes. Deliberately suppressing runtime enforcement caused the policy test to fail (0 != 1); deliberately enforcing raw-base findings caused its base arm to fail (1 != 0). Both restored tests pass. Ruff and parsed YAML policy/trigger assertions passed. Dynamic census returns ten targets: eight final images plus admin/license migrate targets.
+
+Actual CI/runtime findings and unfixed counts remain pending. No clean-runtime or all-CVE-clear claim. Reports now use full Trivy JSON plus policy summaries so FixedVersion, installed version, severity, target and class are explicit; raw base SARIF is superseded by those reports. Existing source SARIF remains. Trivy CLI arguments follow its [image reference](https://trivy.dev/docs/dev/references/configuration/cli/trivy_image/).
+
+PR 483's proven fixed SDK cleanup is repeated only in the independent runtime CI job because neither PR may merge first. Every build is uncached, no credentials or publication. Main private-registry publisher remains a separate proof after the joint merge. Peer dispatches were refused and never ran; the SPEC lists the claims resting on one set of eyes.
