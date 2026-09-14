@@ -1,6 +1,9 @@
-# S8 publish-image gate repair — R324
+---
+tags: [infra, security, external-system]
+tier: STANDARD
+---
 
-Tags: infra, security, external-system. Tier: STANDARD.
+# S8 publish-image gate repair — R324
 
 Goal: restore the full image-publication gate on the cockpit-selected runner without removing checks or publishing during the experiment. R324 authorizes this separate pipeline PR off origin/main 0b2046e7, a branch red/green mutation measured from the gates step conclusion, then hold for cockpit merge. Release train stays blocked until the first green publish-image run on main.
 

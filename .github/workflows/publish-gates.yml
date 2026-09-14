@@ -5,7 +5,7 @@ on:
       - .github/workflows/publish-gates.yml
       - .github/workflows/publish-image.yml
       - deploy/gates.sh
-      - deploy/gates.test.ts
+      - deploy/gates*.test.ts
 
 permissions:
   contents: read
