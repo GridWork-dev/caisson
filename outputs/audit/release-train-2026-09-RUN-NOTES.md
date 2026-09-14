@@ -4,6 +4,12 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R315 empty-changeset authorization — repeat status failure before staging
+
+The operator authorized `.changeset/s8-remove-direct-key-observation.md` with empty frontmatter and a one-line body naming reverted SHA `7e54ddc5b05a4ee922468790efec2654666840da`. Created that exact file in the removal worktree; the seven-file inverse remains staged, while the new changeset is untracked. The authorized scope is now those seven reverted paths plus this eighth bookkeeping file, with no package bumps.
+
+The lane then ran `bunx @changesets/cli status --since=origin/main` **before staging the new file**, a sequencing mistake. It again exited 1 with "Some packages have been changed but no changesets were found" and the empty-changeset instruction. Predicted pass/no releases was not observed. The file has not been staged, and no retry, removal commit, push or PR followed this measured gate failure. The remaining corrective step is to stage the already-authorized file before a ruled status rerun; no new content or scope decision is proposed. Packet: `OPERATOR-ACT-S8-R315-UNSTAGED-CHANGESET-STOP.md`. The existing 64-test/lint/format results remain unchanged; task 1's accepted no-defect outcome is unaffected.
+
 ### R315 clarification — removal checks pass until Changesets status
 
 The operator clarified that an ENOENT on an assumed exploratory path is an own-tool error, not a subject of the measured-result stop rule. Resumed the existing staged inverse; skipped the unnecessary hook read. Staged scope remained seven files, 5 insertions / 229 deletions, whitespace clean. Frozen dependency install passed (Bun 1.3.14; 3,303 packages). The three removal suites passed **64 tests, 0 failures, 168 assertions**; six-file oxlint passed; whole-tree format check passed (3,474 files). No mutation beyond the authorized revert or lockfile change was introduced.
