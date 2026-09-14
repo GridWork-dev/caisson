@@ -4,6 +4,14 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R315 clarification — removal checks pass until Changesets status
+
+The operator clarified that an ENOENT on an assumed exploratory path is an own-tool error, not a subject of the measured-result stop rule. Resumed the existing staged inverse; skipped the unnecessary hook read. Staged scope remained seven files, 5 insertions / 229 deletions, whitespace clean. Frozen dependency install passed (Bun 1.3.14; 3,303 packages). The three removal suites passed **64 tests, 0 failures, 168 assertions**; six-file oxlint passed; whole-tree format check passed (3,474 files). No mutation beyond the authorized revert or lockfile change was introduced.
+
+`bunx @changesets/cli status --since=origin/main` then exited **1**: "Some packages have been changed but no changesets were found. Run `changeset add` to resolve this error." It also says: "If this change doesn't need a release, run `changeset add --empty`." The predicted no-bump success was not observed. The exact revert deletes `.changeset/s8-direct-key-observation.md`, and introduces no new changeset. This is a measured repository gate failure, so the clarified stop rule applies. No empty changeset was added, no status retry occurred, and no removal commit, push or PR was created.
+
+The seven-file inverse remains staged in `/home/gw/lab/worktrees/caisson/s8-remove-direct-key-observation-2026-09` on `chore/s8-remove-direct-key-observation`, base a386502a. Proposed disposition is a new empty removal-specific changeset, keeping the old diagnostic entry deleted and scheduling no package bump; that would expand the seven-file scope and is held for the operator's ruling. Packet: `OPERATOR-ACT-S8-R315-CHANGESET-STOP.md`. Preserve the green checks and this failed gate; do not claim S8_REMOVAL_PR or release readiness. No merge, deploy, release, tag or branch deletion.
+
 ### R315 — exact removal staged; exploratory hook-path read stopped preparation
 
 R315 (EST-ASK-274) accepts task 1's closure at `522ee919` and authorizes the removal PR before later release work. Fetch origin main and the `7e54ddc5` ancestry check passed. Created `/home/gw/lab/worktrees/caisson/s8-remove-direct-key-observation-2026-09`, branch `chore/s8-remove-direct-key-observation`, from origin/main `a386502af2f037d59078d5382ae617fc027f1a1a`. Exact `git revert --no-commit 7e54ddc5b05a4ee922468790efec2654666840da` exited 0. Staged diff is exactly the seven packet paths, 5 insertions / 229 deletions; staged whitespace check exited 0. No conflict or product gate failure occurred.
