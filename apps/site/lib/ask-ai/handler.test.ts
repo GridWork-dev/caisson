@@ -2,7 +2,7 @@
 // boundary (400), the Turnstile fail-closed gate (403), dual-lane model selection (F2), the grounded
 // happy path (token + citations + reservation settled to the real cost), the sentinel + leak + retrieval
 // escalations, and the per-lane HARD spend-cap trip on BOTH lanes (F2 rider, hardened). No network, no DB.
-import { expect, spyOn, test } from "bun:test";
+import { expect, test } from "bun:test";
 import { type AskDeps, handleAsk } from "./handler.ts";
 import type { AiGeneration } from "./ai-capture.ts";
 import type { StreamEvent } from "./openrouter.ts";
@@ -75,78 +75,6 @@ async function events(res: Response): Promise<SSEEvent[]> {
 }
 const reasons = (evs: SSEEvent[]): unknown[] =>
   evs.filter((e) => e.event === "escalation").map((e) => e.data.reason);
-
-test("S8 observes the actual Turnstile IP once, expires, and preserves the challenge gate", async () => {
-  const marker = "92c71b83-737c-493b-b87d-e3c470e0075a";
-  const lines: string[] = [];
-  const ips: string[] = [];
-  const sink = spyOn(process.stderr, "write").mockImplementation((chunk) => {
-    lines.push(String(chunk));
-    return true;
-  });
-  const blocked = deps({
-    verifyTurnstile: async (_token, ip) => {
-      ips.push(ip);
-      return false;
-    },
-    isAuthed: async () => {
-      throw new Error("must stop before session work");
-    },
-  });
-  const request = (probeId: string) =>
-    ask(
-      { question: "omit this question from logs" },
-      {
-        "user-agent": probeId,
-        "x-real-ip": "203.0.113.7",
-        "x-forwarded-for": "198.51.100.92, 198.51.100.93",
-        "cf-connecting-ip": "203.0.113.94",
-      },
-    );
-  try {
-    expect((await handleAsk(request("ordinary-traffic"), blocked)).status).toBe(
-      403,
-    );
-    expect(lines).toEqual([]);
-    expect((await handleAsk(request(marker), blocked)).status).toBe(403);
-    expect((await handleAsk(request(marker), blocked)).status).toBe(403);
-    expect(ips).toEqual(["203.0.113.7", "203.0.113.7", "203.0.113.7"]);
-    expect(lines).toEqual([
-      `[s8-direct-ip] ${JSON.stringify({ probeId: marker, ip: ips[1] })}\n`,
-    ]);
-    sink.mockImplementation(() => {
-      throw new Error("diagnostic sink unavailable");
-    });
-    expect(
-      (
-        await handleAsk(
-          request("4747a030-572b-4e80-b82f-693c074525d3"),
-          blocked,
-        )
-      ).status,
-    ).toBe(403);
-    sink.mockImplementation((chunk) => {
-      lines.push(String(chunk));
-      return true;
-    });
-    const future = spyOn(Date, "now").mockReturnValue(Date.now() + 660_000);
-    try {
-      expect(
-        (
-          await handleAsk(
-            request("ececae63-b992-4c4f-96fe-ee080b7de94d"),
-            blocked,
-          )
-        ).status,
-      ).toBe(403);
-      expect(lines).toHaveLength(1);
-    } finally {
-      future.mockRestore();
-    }
-  } finally {
-    sink.mockRestore();
-  }
-});
 
 // --- boundary (400) ---------------------------------------------------------------------------------
 
