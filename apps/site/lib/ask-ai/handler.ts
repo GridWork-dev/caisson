@@ -135,14 +135,6 @@ function clientIp(req: Request): string {
 // guarded, then streamed out as slices. An 800-token completion buffers within the model's own
 // generation time; upgrade path = a sentinel/leak-safe hold-back window if first-token latency matters.
 const SLICE = 180;
-// TEMPORARY S8: observe only four named requests for ten minutes after module load.
-const s8ProbeDeadline = Date.now() + 600_000;
-const s8ProbeMarkers = new Set([
-  "92c71b83-737c-493b-b87d-e3c470e0075a",
-  "4747a030-572b-4e80-b82f-693c074525d3",
-  "ececae63-b992-4c4f-96fe-ee080b7de94d",
-  "d22df131-3dd4-4fd8-ac7b-c9397bb8f1da",
-]);
 function* sliceAnswer(answer: string): Generator<string> {
   for (let i = 0; i < answer.length; i += SLICE) {
     yield answer.slice(i, i + SLICE);
@@ -170,19 +162,6 @@ export async function handleAsk(
 
   // 2. Turnstile gate (F5, fail closed) — before any paid work.
   const ip = clientIp(req);
-  const probeId = req.headers.get("user-agent") ?? "";
-  if (Date.now() < s8ProbeDeadline && s8ProbeMarkers.delete(probeId)) {
-    try {
-      process.stderr.write(
-        `[s8-direct-ip] ${JSON.stringify({
-          probeId,
-          ip,
-        })}\n`,
-      );
-    } catch {
-      // Diagnostic output must not change challenge verification.
-    }
-  }
   const passed = await deps.verifyTurnstile(parsed.data.turnstileToken, ip);
   if (!passed) return jsonError("challenge_failed", 403);
 
