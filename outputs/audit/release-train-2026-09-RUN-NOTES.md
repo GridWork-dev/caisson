@@ -4,6 +4,12 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R324 reconciliation readback and pipeline baseline
+
+Reconciliation committed normally as **`bb99e27ee809f9b764cac6ef1632a4de9de8e196`**, parents `35f565d6bcc12f50f55b03e9ad37e19d681bd5b4` and removal `0b2046e722750a732ad23aa6f9d9ff230fbd2d5d`; ancestry check exited 0, worktree clean. This is the candidate binding for [the removal verification](s8-removal-verification.md).
+
+Fresh `fix/publish-gates-2026-09` worktree off removal main now has draft PR [480](https://github.com/caisson-sh/caisson/pull/480), baseline `bf3af057e2d22e90b59f8dd4aead8aeca542adb1`. Three paths only: PR-only workflow, SPEC and PLAN. Source gate unchanged. Prediction: original gates step fails/cancels; bounded concurrency will be tested only after that result. Run `34879216994` is the branch reproduction, with memory counters and no publish/auth/deploy steps.
+
 ### R324/R325 — resume and reconcile diagnostic removal
 
 R324 authorizes diagnosis/fix of pre-existing publish-image failures in a separate `publish-gates-2026-09` worktree and instructs completing this existing merge. R325 leaves license cleanup with the cockpit; await S8_LICENSE_CLEAN, no deployment here. The prior merge-check stop is disposed by that ruling, not converted to a pass.

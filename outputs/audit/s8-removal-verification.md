@@ -1,6 +1,6 @@
 # S8 diagnostic removal verification — R324
 
-Removal merge: `0b2046e722750a732ad23aa6f9d9ff230fbd2d5d` (#479, forge-verified 2026-09-14T17:50:51Z). Candidate is the lane merge reconciliation incorporating that commit; its final SHA is recorded in RUN-NOTES after commit.
+Removal merge: `0b2046e722750a732ad23aa6f9d9ff230fbd2d5d` (#479, forge-verified 2026-09-14T17:50:51Z). Verified candidate: `bb99e27ee809f9b764cac6ef1632a4de9de8e196`, with removal `0b2046e722750a732ad23aa6f9d9ff230fbd2d5d` as its second parent; ancestry check exited zero. Subsequent receipt-only commits do not change these measured source files.
 
 1. **Source:** all four fixed UUID markers, `[s8-direct-key]`, `[s8-direct-ip]`, `s8ProbeDeadline`, `s8ProbeMarkers` and `observeKey` absent from the three named implementation paths.
 2. **Emitted artifacts:** successful `packages/rate-limit` build; inspected `dist/token-bucket.js` and `dist/token-bucket.d.ts`. JS `check(bucket, ip)` directly charges `${bucket}|${ip}` with the original per-IP configuration; declarations expose only `check(bucket: B, ip: string): RateDecision`. No observer. Existing X-Real-IP/unknown and global ceiling contract retained. The marker scan is empty in both artifacts.
