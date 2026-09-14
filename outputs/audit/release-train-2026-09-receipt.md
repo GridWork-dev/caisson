@@ -1,8 +1,22 @@
-# S8 release train receipt — R324 pipeline PR 480 green, held
+# S8 release train receipt — R325 license clean; publish signal pending
 
-Governing brief: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`, with the operator's subsequent corrections through R314 (EST-ASK-273). Historical stops and their dispositions remain in [the run notes](release-train-2026-09-RUN-NOTES.md). This is the companion receipt to [the recorded prediction](s8-direct-key-prediction.md). The R314 verdict below supersedes earlier partial/inconclusive checkpoints, which remain historical evidence.
+Governing brief: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`, with the operator's subsequent rulings through R324/R325 and the S8_LICENSE_CLEAN handoff. Historical stops and their dispositions remain in [the run notes](release-train-2026-09-RUN-NOTES.md). This is the companion receipt to [the recorded prediction](s8-direct-key-prediction.md). The R314 verdict below supersedes earlier partial/inconclusive checkpoints, which remain historical evidence.
 
-## R324 pipeline repair outcome
+## R325 license cleanup and publishing precondition
+
+S8_LICENSE_CLEAN received from the cockpit on 2026-09-14: Railway deployment **5994b95f-699a-4726-9e1e-d0d06cfd3e4b**, status **SUCCESS**, created at **2026-09-14T19:39:04.980Z**, source **0b2046e722750a732ad23aa6f9d9ff230fbd2d5d** (diagnostic removal). The cockpit read license.caisson.sh/health at **19:41:29Z**: HTTP **200**, x-caisson-revision **0b2046e7…**. This closes the license runtime cleanup on operator-supplied evidence; this lane did not deploy or independently probe license.
+
+The helper appended one row to docs/deploy/receipts/caisson-license.json: the same full source SHA, deployedAt **2026-09-14T19:39:03.033Z**, deployedBy **Liam (GridWork)**. That timestamp is the helper receipt time, distinct from Railway creation and the later health read. Existing receipt rows remain intact; this row is committed with these audit updates.
+
+Fresh audited forge readback confirms [PR #480](https://github.com/caisson-sh/caisson/pull/480) MERGED at **2026-09-14T19:14:58Z** as **a0b548456a58d4562f6999b1aa95fe3ccd402f33**. Its [main-push publish-image run 34885734523](https://github.com/caisson-sh/caisson/actions/runs/34885734523) completed SUCCESS, with select SUCCESS but publish and collect **SKIPPED** by the path gate. The cockpit reports completion at 19:16:51Z. Branch red/green evidence remains valid; this main run does not prove an executed publish.
+
+Forge also confirms [PR #481](https://github.com/caisson-sh/caisson/pull/481) MERGED at **2026-09-14T19:38:18Z** as **6604844a3f17633e5221075af6d01966620eaaed**. The cockpit identifies its fleet Bun 1.4.2 Dockerfile change as the first ensuing run with publish jobs executing and is watching it. **Task 3 waits for S8_PUBLISH_GREEN or S8_PUBLISH_RED with its run ID.** No success is inferred and this lane has not polled or dispatched that run.
+
+Task 2 remains active, with the scanner target decision pending: schedule source plus digest-pinned base-image scans, or prepare rescanning of published private images. The earlier three-pin Dockerfile census predates #481 and must be refreshed before implementation. No scanner scope has been silently locked. Task 1 remains NO DEFECT in the measured scope, with source/artifact removal proven and license runtime cleanup now recorded. Peer code/security dispatches were refused admission and never ran; the existing single-author judgment limitations remain unchanged. No lane push, merge, deployment, publish, tag or branch deletion is authorized by this handoff.
+
+Verification for this receipt: whole-tree formatting passed (3,483 files), whitespace check passed, and porcelain listed exactly the helper JSON and these two audit documents. SOT returned only the two previously dispositioned classes: branch-hygiene EXPECTED-DRIFT because the operator requires preservation, and the same 16 frontmatter-lag documents/source dates recorded in s8-sot-disposition.md. No dates were bumped and no aggregate SOT-green claim is made.
+
+## R324 pipeline repair outcome (historical)
 
 **S8_PUBLISH_PR [480](https://github.com/caisson-sh/caisson/pull/480)**, OPEN and ready, head **`18b00f54e15875f96448a320ccfde38eb1a49c8a`**, base removal `0b2046e722750a732ad23aa6f9d9ff230fbd2d5d`, forge merge state CLEAN. All six required checks plus publisher-equivalent gates and every other active check are SUCCESS; draft/path skips remain explicitly SKIPPED. Six-file pipeline scope only, no lane receipt history pushed.
 
