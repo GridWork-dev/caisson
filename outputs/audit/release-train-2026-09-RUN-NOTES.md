@@ -1,6 +1,35 @@
 # S8 release train run notes — 2026-09-10
 
-## S8_PUBLISH_RED and R333 — authorized repair in progress
+## S8_SCAN_FIX_PR — green, Manual merge hold
+
+[PR #483](https://github.com/caisson-sh/caisson/pull/483) is OPEN and green at **011afe3e5565c5dd9ed2388b3dabe7bf2419d4d8**, base **6604844a3f17633e5221075af6d01966620eaaed**. [Proof run 34896392494](https://github.com/caisson-sh/caisson/actions/runs/34896392494) completed SUCCESS: all six jobs passed full gates, preparation, image build and vulnerability scan. All six required checks (check, standards-gate, registry-index, oscal-conformance, deterministic, support-bot) and every other active check passed; conditional skipped checks are not counted as passes. No merge, deployment, publication or branch deletion by this lane.
+
+The baseline full logs independently confirm Docker-export ENOSPC for license/docs/migrate, distinct from PR 482's CVE verdict. All six proof runners reported ubicloud-standard-2 and a **76,887,154,688-byte** root filesystem. Preparation reclaimed **21,646,319,616–21,646,331,904 bytes** per job, exceeding the recorded at-least-10-GiB prediction. Image-size prediction also held: the previously failing three are about 2.08 GB each, versus 0.23–0.41 GB for the three Next standalone images. These are Docker Size measurements from branch rebuilds using unchanged baseline Dockerfiles, not recovered historical registry sizes.
+
+| Service | Image bytes | Freed before build, bytes | Free after scan, bytes | Scan    |
+| ------- | ----------: | ------------------------: | ---------------------: | ------- |
+| admin   |   295282657 |               21646323712 |            25780109312 | SUCCESS |
+| demos   |   228274424 |               21646323712 |            26470543360 | SUCCESS |
+| docs    |  2079241994 |               21646331904 |            23932719104 | SUCCESS |
+| license |  2076994749 |               21646319616 |            23938031616 | SUCCESS |
+| migrate |  2076994749 |               21646323712 |            23937896448 | SUCCESS |
+| site    |   414970842 |               21646327808 |            24905379840 | SUCCESS |
+
+Readback: complete cached GitHub job-log ZIP plus six downloaded scan-proof artifacts, summarized in /home/gw/lab/briefs/estate-2026-09/handoff/S8-R333-SCAN-PROOF-SUMMARY.json. Preparation's remote image-source setting is visible in subsequent job environments; the branch scan deliberately overrides it to Docker, retaining the previously failing export. The proof covers scan headroom and execution, not production registry authentication, signing or publication. A main publish-image run still must pass all six scan steps before task 3 resumes.
+
+Trivy reports remain nonempty: 176 SARIF rows per Next image and 194 per full-workspace image, with the publisher's exit-code 0 policy. Successful scan execution is not a CVE-clean verdict. R333 OS patch/re-scan evidence remains separate.
+
+Peer code/security dispatches were refused admission and never ran. One set of eyes; no independent review pass. The first reviewer targets remain cleanup target safety, proof representativeness versus private-registry publication, and production remote-source propagation. Measured headroom supports this runner image and build set; future runner/image growth is not proven.
+
+R333 runtime patch is committed locally as **8eebf0395e2c354d509839f6fef6a93c00cf3833**, unpushed: eight Dockerfiles/nine runtime or migration upgrade layers, base pins retained, eight Python tests passing with an observed failing deletion mutation. Post-upgrade live CVE proof has not run. The explicit schedule-policy question remains unanswered; no implicit lock or ignore-unfixed-only workaround. PR 482's remote head remains its original failed scan.
+
+SOT disposition remains branch-hygiene EXPECTED-DRIFT (operator preserves branches) and the same sixteen frontmatter-lag documents/source dates recorded in s8-sot-disposition.md; no bulk date bump. Other SOT checks passed. Task 1 remains scoped NO DEFECT with diagnostic removal recorded; release/consumer publication remains incomplete.
+
+## S8_PUBLISH_RED and R333 — historical preparation checkpoint
+
+S8_SCAN_FIX_PR [483](https://github.com/caisson-sh/caisson/pull/483) is OPEN at **011afe3e5565c5dd9ed2388b3dabe7bf2419d4d8**, base **6604844a3f17633e5221075af6d01966620eaaed**, seven files. Existing publish-gates worktree now uses fresh fix/publish-scan-disk-2026-09; old branch remains preserved. The shared publisher is byte-identical. Local eight-test/twelve-assertion suite, deliberate remote-source mutation, changed-file lint, shell syntax, YAML and formatting passed. Six-image proof run **34896392494** is running, with actual image/disk/scan readbacks still pending. The branch proof uses Docker export as a deliberate greater-disk-demand arm; production selects remote. No private-registry/auth/signing proof is inferred from it.
+
+R333 OS edits are locally committed on ci/scheduled-rescan-2026-09 as **8eebf0395e2c354d509839f6fef6a93c00cf3833**, not pushed. Eight Dockerfiles, nine upgrade layers cover runtime/migration lineages without moving base digests. Eight Python tests pass; deletion of admin's migrate upgrade caused the predicted failure then restored pass. Live post-upgrade CVE proof is not yet run. The pending operator clarification concerns scheduled patched-base scan enforcement versus raw-base reporting: raw pinned bases retain fixed CVEs even after runtime patching. No default/elapsed-time decision was taken and no ignore-unfixed-only change was made.
 
 S8_PUBLISH_RED received for run 34888116937 at 6604844a3f17633e5221075af6d01966620eaaed. Forge confirms all six gates succeeded; site/admin/demos publish succeeded, license/docs/migrate failed at vulnerability scan, collect skipped. Full job logs independently confirm the same Trivy FATAL Docker export ENOSPC on all three failed jobs. This is transport/resource failure with exit-code policy 0, distinct from PR 482's base CVEs. Runner label ubicloud-standard-2, documented 75 GB disk; observed free-space warnings: license 0 MB, docs 2 MB, migrate 0 MB. Image sizes and fresh runner capacity remain to be measured in the branch proof.
 
