@@ -1,5 +1,21 @@
 # S8 release train run notes — 2026-09-10
 
+## R335/R336 — policy pushed; STOP at changeset-presence gate
+
+R335 (EST-ASK-293) locks built-runtime enforcement and informational raw-base reports. R336 (EST-ASK-294) holds PRs 482 and 483 for one cockpit merge wave only when both are green. Both PR descriptions and the scan-fix handoff now carry that joint hold. Neither may merge alone.
+
+PR **482** is OPEN at **07ad8a3609df442122c3e6a5f1756cfd18337eb7**. Authorized OS commit **8eebf0395e2c354d509839f6fef6a93c00cf3833** was pushed unchanged, followed by the R335 policy commit. The daily security workflow builds ten uncached linux/amd64 runtime/migration targets, scans actual local images, gates fixable HIGH/CRITICAL OS and application rows, and retains all findings/unfixed rows in JSON. Raw base scans report findings and visible operational errors without failing their job. Existing source scanning remains. No registry credentials, publication, service start or migration execution.
+
+Local verification: twelve image policy/census/workflow tests and two runtime OS-layer tests passed. Deliberate runtime bypass and raw-base enforcement mutations each failed the same fixable-row fixture in the expected arm; restored tests passed. Ruff and parsed YAML checks passed. First format attempt could not find oxfmt in this dependency-free worktree (exit 127); the one permitted own-tool retry used the lane's matching **oxfmt 0.65.0**, succeeded, and status showed only owned files before staging. This was a missing-tool correction, not a failed gate bypass.
+
+**First failed gate: standards-gate**, CI run **34898943696**, job **104159922456**, completed **2026-09-14T21:28:46Z**. Its failing step was **changeset presence**, at **21:28:41Z**, exit **1**. Exact message: “Some packages have been changed but no changesets were found.” The CLI also suggests an empty changeset if the change needs no release. No such disposition was selected or implemented after the stop. This is not the earlier wrong-package CLI resolution: CI installed @changesets/cli 2.31.1 and reached its presence check.
+
+Preceding steps succeeded: standards gate reported 72 packages, zero errors/warnings; repository lint had zero errors (two existing UI warnings); lint canary and dependency graph boundaries passed. CI merge-ref checkout was **f7b056787154fcd8a484e4ab0eb063692f0ecf74**, distinct from PR head.
+
+At stop, required roster: standards-gate FAILURE; support-bot, registry-index and oscal-conformance SUCCESS; check and deterministic IN_PROGRESS. Runtime selection succeeded and instantiated ten targets; four runtime builds were IN_PROGRESS and six QUEUED in security run **34898943864**. Post-upgrade vulnerability clearance and current unfixed residuals remain unmeasured by this lane. Existing runs were neither retried nor cancelled. PR **483** remains at **011afe3e5565c5dd9ed2388b3dabe7bf2419d4d8**, with its earlier six-image green proof; R336 prevents standalone merge.
+
+Peer code/security dispatches were refused admission and never ran; no retry or independent review pass. Own-judgment claims: runtime target completeness, credential isolation, fixability classification, raw-error visibility and rebuilt-versus-deployed evidence limits. Task 1 remains scoped NO DEFECT. Task 2 is stopped at this gate; task 3 waits for cockpit S8_PUBLISH_GREEN after the joint wave's main six-scan proof. No code repair, changeset, merge, deployment, publish, tag or branch deletion followed the failure.
+
 ## S8_SCAN_FIX_PR — green, Manual merge hold
 
 [PR #483](https://github.com/caisson-sh/caisson/pull/483) is OPEN and green at **011afe3e5565c5dd9ed2388b3dabe7bf2419d4d8**, base **6604844a3f17633e5221075af6d01966620eaaed**. [Proof run 34896392494](https://github.com/caisson-sh/caisson/actions/runs/34896392494) completed SUCCESS: all six jobs passed full gates, preparation, image build and vulnerability scan. All six required checks (check, standards-gate, registry-index, oscal-conformance, deterministic, support-bot) and every other active check passed; conditional skipped checks are not counted as passes. No merge, deployment, publication or branch deletion by this lane.
