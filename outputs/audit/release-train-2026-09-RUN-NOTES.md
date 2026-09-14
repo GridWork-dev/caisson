@@ -4,6 +4,14 @@ Current location: `outputs/audit/release-train-2026-09-RUN-NOTES.md`, relocated 
 
 ## Compact continuation checkpoint — operator SOT ruling
 
+### R315 removal PR opened — staged changeset disposition completed
+
+The operator clarified that an own sequencing slip is an own-tool exception: fix the order and rerun once without another hold packet. Staged the already-authorized `.changeset/s8-remove-direct-key-observation.md`, then `bunx @changesets/cli status --since=origin/main` exited 0 with no patch/minor/major releases. Fresh staged whitespace and whole-tree formatting checks passed (3,475 files). The unchanged reverted TypeScript retains the earlier 64 passing tests / 168 assertions and successful six-file lint evidence.
+
+Removal committed normally as **`f92f2142cc5f47d3983ae55042fe0833101f9f34`**, pushed only `chore/s8-remove-direct-key-observation`, and opened **PR [479](https://github.com/caisson-sh/caisson/pull/479)**. Audited forge readback: OPEN, base `a386502af2f037d59078d5382ae617fc027f1a1a`, exact head above, exactly eight paths (seven-file inverse plus the new empty removal changeset), no merge or auto-merge. Required checks were queued at initial readback; no CI green claim. The PR body contains probe/removal evidence and states that independent code/security reviewers did not run. The lane branch remains local; no push of lane history.
+
+R315 directs reporting S8_REMOVAL_PR and idling after opening. The cockpit merges on green. Await S8_REMOVAL_MERGED before the five source/emitted-artifact/removal/candidate checks and subsequent release work. No post-merge absence proof, removal deployment, release cut, tag, merge or consumer rollout is claimed or performed by this lane.
+
 ### R315 empty-changeset authorization — repeat status failure before staging
 
 The operator authorized `.changeset/s8-remove-direct-key-observation.md` with empty frontmatter and a one-line body naming reverted SHA `7e54ddc5b05a4ee922468790efec2654666840da`. Created that exact file in the removal worktree; the seven-file inverse remains staged, while the new changeset is untracked. The authorized scope is now those seven reverted paths plus this eighth bookkeeping file, with no package bumps.
