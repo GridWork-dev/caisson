@@ -1,8 +1,30 @@
-# S8 release train receipt — R325 license clean; publish signal pending
+# S8 release train receipt — R332 rescan PR 482 held on base CVEs
 
 Governing brief: `/home/gw/lab/briefs/estate-2026-09/S8-caisson-release.md`, with the operator's subsequent rulings through R324/R325 and the S8_LICENSE_CLEAN handoff. Historical stops and their dispositions remain in [the run notes](release-train-2026-09-RUN-NOTES.md). This is the companion receipt to [the recorded prediction](s8-direct-key-prediction.md). The R314 verdict below supersedes earlier partial/inconclusive checkpoints, which remain historical evidence.
 
-## R325 license cleanup and publishing precondition
+## R332 failed-gate stop
+
+**STOP — first failed CI gate, no retry.** [PR #482](https://github.com/caisson-sh/caisson/pull/482) remains OPEN at **1f7cf0347b51ffd430ff53f1529445f03a0b060f**, base **6604844a3f17633e5221075af6d01966620eaaed**. In [run 34890012728](https://github.com/caisson-sh/caisson/actions/runs/34890012728), deterministic job **104130029716** passed offline tests, pinned scanner installation and the existing source scan, then failed the new anonymous base-image step at **2026-09-14T19:59:07Z**, exit **1**. Artifact upload succeeded. CI checked out the normal PR merge ref **82b294cd1473acf2693eb84e5de1a149fe3e9766**, recorded in its census; it is distinct from the PR head.
+
+The real scan downloaded its vulnerability DB and examined **oven/bun:1.4.2-slim@sha256:cb3bbbb08e13a4a2ff400f24c7a2a1d5efa83f6ef8544d52d95a519631e2fc61**, linux/amd64, Debian 13.6, 80 OS packages. SARIF reports **55 package/CVE result rows: 3 CRITICAL, 52 HIGH, 20 unique CVEs across 19 packages**. These are scanner findings, not independently triaged exploitability claims. Twelve rows list a fixed version. Critical rows: **CVE-2026-13221, CVE-2026-42496, CVE-2026-8376**, all perl-base **5.40.1-6**, scanner-listed fix **5.40.1-6+deb13u1**. Python was not scanned because the driver stopped on the first failing image. No two-image clean result exists.
+
+Evidence: [artifact 10366491930](https://github.com/caisson-sh/caisson/actions/runs/34890012728/artifacts/10366491930), seven files; downloaded under /home/gw/lab/briefs/estate-2026-09/handoff/S8-R332-SCAN-FAILURE/. base-1.sarif SHA-256 **c7161cc313233470db27554e0d6a6b79bf160714ff6f3ed983b034a74fb94fc6**. Summary with all 55 rows: S8-R332-SCAN-FAILURE-SUMMARY.json in the handoff directory. The first log command could not serve logs while semgrep-pro was still running; one corrected read used the completed-job log API, not a CI retry. Source scan and the other five required checks were SUCCESS; deterministic was FAILURE, semgrep-pro was still in progress at stop. No aggregate green claim.
+
+The predicted real scan pass was refuted. Task 2 remains incomplete at a red PR; no code repair, digest change, scanner relaxation, CI rerun, merge, deployment, publication or branch deletion followed. Task 3 still waits for the cockpit's S8_PUBLISH_GREEN and remains held. Resume requires a ruling on these base-image findings; all scope limits and the peer-review refusal remain as recorded below.
+
+## R332 scheduled rescan preparation
+
+R332 (EST-ASK-290) locks main source plus exact Dockerfile-declared base digests. Census at **6604844a3f17633e5221075af6d01966620eaaed**: eight Dockerfiles, fourteen FROM lines, eleven external references, two unique images (Bun 1.4.2 and Python 3.14). Full census and path/line map are in S8-R332-RESCAN-CENSUS.json under the estate handoff directory.
+
+Implemented on the lane as **011f77dc52926c3e6a4dba56eb794a50529ed1f2**. Task 3 remains blocked on S8_PUBLISH_GREEN, so R332's separate-PR path applies: fresh ci/scheduled-rescan-2026-09 off 6604844a carries only that six-file rescan change, cherry-picked as **1f7cf0347b51ffd430ff53f1529445f03a0b060f**. **S8_RESCAN_PR [482](https://github.com/caisson-sh/caisson/pull/482)** is forge-verified OPEN, non-draft, exact head/base and six paths confirmed. Lane branch remains local. Initial CI was queued/in progress; no green claim yet.
+
+Daily cron is 37 6 * * * (06:37 UTC), added only to security-scan. Existing source scan is preserved; base scans derive the exact current pins, run anonymously against linux/amd64 with fresh Trivy config/cache, preserve failures and upload census/SARIF. **Published private images are not rescanned by this schedule**; app build layers, downstream images and other platforms are also outside scope. No registry credentials, publisher change or deployment.
+
+Six offline tests, Ruff, YAML structure, formatting and whitespace passed. Both deliberate mutations failed as predicted, then restored tests passed. Independent croniter 6.0.0 enumerated 800 daily ticks through 2028-11-22 including leap day. First eligible trigger is the first 06:37 UTC after merge; September 15 only if merged beforehand, with GitHub delay/drop semantics. A scheduled execution has not yet occurred. See [verification](s8-scheduled-rescan-verification.md).
+
+Peer code/security dispatches were refused admission and never ran; no retry or independent review pass. Own-judgment claims: FROM completeness/unsupported syntax, anonymous Trivy boundary, job reachability/failure handling and scope/platform limits. SOT returned only established dispositions: branch-hygiene EXPECTED-DRIFT because branches must stay, and the same sixteen lagging documents/source dates in s8-sot-disposition.md. No date bumps. Task 1 remains scoped NO DEFECT with diagnostic cleanup recorded. Task 3 and consumer package updates remain held.
+
+## R325 license cleanup and publishing precondition (historical)
 
 S8_LICENSE_CLEAN received from the cockpit on 2026-09-14: Railway deployment **5994b95f-699a-4726-9e1e-d0d06cfd3e4b**, status **SUCCESS**, created at **2026-09-14T19:39:04.980Z**, source **0b2046e722750a732ad23aa6f9d9ff230fbd2d5d** (diagnostic removal). The cockpit read license.caisson.sh/health at **19:41:29Z**: HTTP **200**, x-caisson-revision **0b2046e7…**. This closes the license runtime cleanup on operator-supplied evidence; this lane did not deploy or independently probe license.
 
