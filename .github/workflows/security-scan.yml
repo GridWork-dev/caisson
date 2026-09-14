@@ -57,6 +57,8 @@ jobs:
           version: "0.12.2" # pinned (same pin as support-bot.yml; no drift)
       - name: base rescan contract tests (offline)
         run: python3 -B -m unittest discover -s tools/security -p test_rescan_base_images.py -v
+      - name: runtime OS upgrade contract tests (offline)
+        run: python3 -B -m unittest discover -s tools/security -p test_runtime_os_patch.py -v
       - name: install scanners (pinned versions, sha256-verified release artifacts)
         id: scanners
         run: |

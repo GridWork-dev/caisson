@@ -28,3 +28,9 @@ Trivy flags follow its [image CLI reference](https://trivy.dev/docs/v0.57/refere
 Peer code/security review dispatches were refused admission and never ran; standing no-retry applies. This work has one set of eyes, not an independent review pass. Reviewers' first targets would be FROM extraction completeness and unsupported grammar, credential isolation including Trivy's remote-client behavior, schedule/job reachability and failure propagation, and whether the documented platform/private-image exclusions adequately describe coverage.
 
 No package versions or published APIs change. Scanner versions and publisher workflow remain unchanged. Task 3 awaits S8_PUBLISH_GREEN from the cockpit; prepare a separate rescan PR if still blocked. Actual required CI, real base scan results and eventual first scheduled run remain open; no consumer has moved off the pre-fix package line from this task.
+
+## R333 runtime patch prepared; live verification pending
+
+Eight first-party Dockerfiles now have nine apt update/upgrade/cleanup RUN instructions covering each runtime lineage, including admin migrate and license shared base inheritance. Bun/Python FROM digests are unchanged. Two new offline tests prove target coverage, pin preservation and upgrade-before-nonroot ordering. Deleting admin's migration upgrade caused the predicted target-coverage failure; original bytes restored. These source checks do not establish that apt repositories supply every fix or that a built image is clean.
+
+OS-layer builds and live post-upgrade scans remain pending. Schedule-policy clarification was requested because raw pinned-base scans retain the fixable findings even after runtime images are patched. No ignore-unfixed-only change is made. This R333 amendment is not yet pushed, so PR 482 still carries the earlier red head until its full repair/proof is ready.

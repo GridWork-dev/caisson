@@ -15,3 +15,7 @@ R332 (EST-ASK-290) locks daily scans of main source and the exact digest-pinned 
 - Pinned Trivy scans public base images remotely at linux/amd64 with refreshed vulnerability intelligence, HIGH/CRITICAL enforcement and no ignore-unfixed relaxation. No registry login or credentials. Retain per-image SARIF and source-to-image census artifacts.
 - Scope excludes app layers and dependencies added during builds, private published images, other image platforms and downstream consumer images.
 - Test extraction, alias handling, malformed pins, anonymous scanner arguments, error propagation and cron selection. Peer dispatches remain refused/not run under standing no-retry ruling; no independent review pass.
+
+## R333 runtime OS patch amendment
+
+R333 (EST-ASK-291) authorizes apt update/upgrade of the pinned base in every runtime stage, retaining the Bun cb3bbbb0 digest and existing Python digest. Patch all eight first-party Dockerfiles, including admin's migrate target and license's shared runtime/migrate base. One upgrade layer per runtime lineage; build-only Next stages remain unchanged. Re-scan to prove the three CRITICAL perl-base rows and all other fixable OS rows clear, recording unfixed rows. No ignore-unfixed-only fix, no waiting for upstream, no deployment. The exact scheduled scan policy is pending the explicit operator clarification; do not silently lock it.
