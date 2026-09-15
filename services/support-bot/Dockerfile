@@ -3,6 +3,8 @@
 # Dockerfile). All COPY paths are therefore repo-root-relative. The bot's gateway connection is
 # outbound; the only inbound surface is /health for the runner's liveness probe (binds $PORT).
 FROM python:3.14-slim@sha256:a7fb1e634c4a578f9e0bd6327f11a3cde11b7a9395f48e24360c0988bcc5c2bc AS base
+# R333: patch fixable OS CVEs while retaining the audited base digest.
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
 # uv for fast, locked installs. Pinned to the same version setup-uv uses in security-scan.yml and
 # support-bot.yml so the lock format can't drift between the gate and the image.
