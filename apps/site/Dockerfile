@@ -53,6 +53,8 @@ ENV NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=$NEXT_PUBLIC_PADDLE_CLIENT_TOKEN \
 RUN bunx turbo run build --filter=@caisson/site --concurrency=50%
 
 FROM oven/bun:1.4.2-slim@sha256:cb3bbbb08e13a4a2ff400f24c7a2a1d5efa83f6ef8544d52d95a519631e2fc61 AS runtime
+# R333: patch fixable OS CVEs while retaining the audited base digest.
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 # HOSTNAME=0.0.0.0 is load-bearing: Next's standalone server.js binds to process.env.HOSTNAME, and
 # Docker auto-sets HOSTNAME to the container id — so without this the server binds only to the

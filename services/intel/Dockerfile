@@ -11,6 +11,8 @@
 # NOT YET BUILD-VALIDATED against a live INTEL_DATABASE_URL in this session — the migration path
 # and every watcher's live fetch are exercised by fixture tests + self-skipping `live/` tests only.
 FROM oven/bun:1.4.2-slim@sha256:cb3bbbb08e13a4a2ff400f24c7a2a1d5efa83f6ef8544d52d95a519631e2fc61 AS base
+# R333: patch fixable OS CVEs while retaining the audited base digest.
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV NODE_ENV=production \
     INTEL_HEALTHZ_PORT=8791
