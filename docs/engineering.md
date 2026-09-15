@@ -40,7 +40,7 @@ guarantee.
 | Invariant                | Rule                                                                  | Enforced by                                         | Source                    |
 | ------------------------ | --------------------------------------------------------------------- | --------------------------------------------------- | ------------------------- |
 | TypeScript strict        | `strict: true`, no loosening                                          | `tooling/tsconfig/base.json` (every pkg extends it) | ADR-0002                  |
-| Bun only                 | Bun runtime + PM; never npm/yarn                                      | `packageManager: bun@1.3.14`, lockfile              | ADR-0001                  |
+| Bun only                 | Bun runtime + PM; never npm/yarn                                      | `packageManager: bun@1.4.2`, lockfile               | ADR-0001                  |
 | Zod at boundaries        | `z.object().strict()` on every external input                         | review + boundary tests                             | ADR-0002 / ADR-0019       |
 | Integer money/credits    | credits + money are integer units, never floats                       | review (no float math on `_units`)                  | ADR-0007                  |
 | Append-only versions     | locked artifacts immutable; amend by superseding                      | ADR convention (`knowledge/decisions/`)             | ADR-0006                  |

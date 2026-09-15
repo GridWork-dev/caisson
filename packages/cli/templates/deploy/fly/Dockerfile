@@ -8,7 +8,7 @@
 # If you generated with `--framework next` (or another framework), `bun run start` and the `start`
 # script are already wired — deploy as-is. If you generated the bare library base, point CMD at your
 # actual entrypoint (and add a `start` script to package.json) before deploying.
-FROM oven/bun:1.3.14-slim
+FROM oven/bun:1.4.2-slim@sha256:cb3bbbb08e13a4a2ff400f24c7a2a1d5efa83f6ef8544d52d95a519631e2fc61
 WORKDIR /app
 ENV NODE_ENV=production
 

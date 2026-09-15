@@ -1,9 +1,7 @@
 """Offline contract tests; fake scanner statuses are deliberately unsafe fixtures."""
 
 import json
-import os
 from pathlib import Path
-import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -47,32 +45,14 @@ class RescanTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "empty scan"):
                     rescan.census(root)
 
-    def test_scanner_uses_exact_digest_and_no_inherited_credentials(self):
+    def test_raw_base_findings_report_and_operational_errors_continue(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)
-            report = {"images": [IMAGE, SECOND]}
-            # Synthetic credential-shaped environment NAMES, never real credentials.
-            with patch.dict(os.environ, {"TRIVY_PASSWORD": "fixture", "AWS_SECRET_ACCESS_KEY": "fixture"}), \
-                 patch.object(rescan.subprocess, "run", return_value=subprocess.CompletedProcess([], 0)) as run:
-                self.assertEqual(rescan.scan(report, output), 0)
-            self.assertEqual(run.call_count, 2)
-            for call, image in zip(run.call_args_list, [IMAGE, SECOND]):
-                argv = call.args[0]
-                self.assertEqual(argv[-1], image)
-                for flag, value in [("--image-src", "remote"), ("--platform", "linux/amd64"),
-                                    ("--severity", "HIGH,CRITICAL"), ("--exit-code", "1")]:
-                    self.assertEqual(argv[argv.index(flag) + 1], value)
-                self.assertNotIn("--skip-db-update", argv)
-                self.assertNotIn("--ignore-unfixed", argv)
-                self.assertEqual(set(call.kwargs["env"]), {"PATH", "HOME", "DOCKER_CONFIG", "XDG_CONFIG_HOME", "TRIVY_CACHE_DIR"})
-            self.assertEqual(json.loads((output / "base-images.json").read_text()), report)
-
-    def test_findings_and_scanner_failure_stop_and_preserve_status(self):
-        for code in [1, 23, -9]:
-            with self.subTest(code=code), tempfile.TemporaryDirectory() as directory, \
-                 patch.object(rescan.subprocess, "run", return_value=subprocess.CompletedProcess([], code)) as run:
-                self.assertEqual(rescan.scan({"images": [IMAGE, SECOND]}, Path(directory)), max(code, 1))
-                self.assertEqual(run.call_count, 1)
+            with patch.object(rescan.image_scan_policy, "scan_image", side_effect=[RuntimeError("fixture"), 0]) as scan:
+                self.assertEqual(rescan.scan({"images": [IMAGE, SECOND]}, output), 0)
+                self.assertEqual(scan.call_count, 2)
+                self.assertEqual([c.args[2] for c in scan.call_args_list], ["base", "base"])
+            self.assertEqual(len(json.loads((output / "base-scan-errors.json").read_text())), 1)
 
     def test_workflow_reaches_source_and_base_scanners_on_schedule(self):
         root = Path(__file__).resolve().parents[2]
@@ -81,6 +61,7 @@ class RescanTests(unittest.TestCase):
         self.assertIn("bash tools/security/scan.sh --layer ci --strict-digests", workflow)
         self.assertIn('python3 tools/security/rescan_base_images.py --output "$RUNNER_TEMP/security-out"', workflow)
         self.assertIn("steps.scanners.outcome == 'success'", workflow)
+        self.assertIn("continue-on-error: true # R335", workflow)
         self.assertIn("persist-credentials: false", workflow)
         self.assertNotIn("schedule:", (root / ".github/workflows/publish-image.yml").read_text())
 

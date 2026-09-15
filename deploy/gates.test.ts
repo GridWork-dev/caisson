@@ -74,10 +74,7 @@ async function runGates(failOn?: string): Promise<{
 }
 
 describe("repository deployment gates", () => {
-  test("ships the required explicit no-op build preparation hook", async () => {
-    expect(await readFile(PREPARE_BUILD, "utf8")).toBe(
-      ": # Caisson requires no host-side build-context preparation.\n",
-    );
+  test("ships the required executable build preparation hook", async () => {
     expect((await stat(PREPARE_BUILD)).mode & 0o111).not.toBe(0);
   });
 

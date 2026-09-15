@@ -3,11 +3,10 @@
 
 import argparse
 import json
-import os
 from pathlib import Path
 import re
 import subprocess
-import tempfile
+import image_scan_policy
 
 
 PIN = re.compile(r"[a-zA-Z0-9][a-zA-Z0-9._/:+-]*@sha256:[0-9a-f]{64}")
@@ -72,26 +71,15 @@ def census(root: Path, ref: str | None = None) -> dict:
 def scan(report: dict, output: Path) -> int:
     output.mkdir(parents=True, exist_ok=True)
     (output / "base-images.json").write_text(json.dumps(report, indent=2) + "\n")
-    # Only PATH is inherited. Empty HOME/config/cache prevents use of registry login
-    # state, cloud credentials, Trivy env overrides or a stale database cache.
-    with tempfile.TemporaryDirectory(prefix="caisson-base-rescan-") as temporary:
-        clean = Path(temporary)
-        (clean / "config.yaml").write_text("{}\n")
-        (clean / "ignore").write_text("")
-        env = {"PATH": os.environ.get("PATH", os.defpath), "HOME": temporary,
-               "DOCKER_CONFIG": str(clean / "docker"), "XDG_CONFIG_HOME": temporary,
-               "TRIVY_CACHE_DIR": str(clean / "cache")}
-        for index, image in enumerate(report["images"]):
-            print(f"Scanning base {index + 1}/{len(report['images'])}: {image}", flush=True)
-            result = subprocess.run([
-                "trivy", "image", "--image-src", "remote", "--platform", "linux/amd64",
-                "--config", str(clean / "config.yaml"), "--ignorefile", str(clean / "ignore"),
-                "--scanners", "vuln", "--severity", "HIGH,CRITICAL", "--exit-code", "1",
-                "--timeout", "5m", "--format", "sarif", "--output",
-                str(output / f"base-{index + 1}.sarif"), image,
-            ], env=env, check=False, timeout=360)
-            if result.returncode != 0:
-                return result.returncode if result.returncode > 0 else 1
+    errors = []
+    for index, image in enumerate(report["images"]):
+        try:
+            image_scan_policy.scan_image(image, output / f"base-{index + 1}.json", "base")
+        except (RuntimeError, ValueError, OSError, subprocess.SubprocessError) as error:
+            # R335: informational means operational failures are visible, not a gate.
+            errors.append({"image": image, "error": str(error)})
+            print(f"::warning::raw base scan failed for image {index + 1}", flush=True)
+    (output / "base-scan-errors.json").write_text(json.dumps(errors, indent=2) + "\n")
     return 0
 
 

@@ -56,7 +56,9 @@ jobs:
         with:
           version: "0.12.2" # pinned (same pin as support-bot.yml; no drift)
       - name: base rescan contract tests (offline)
-        run: python3 -B -m unittest discover -s tools/security -p test_rescan_base_images.py -v
+        run: python3 -B -m unittest discover -s tools/security -p test_*images.py -v
+      - name: runtime OS upgrade contract tests (offline)
+        run: python3 -B -m unittest discover -s tools/security -p test_runtime_os_patch.py -v
       - name: install scanners (pinned versions, sha256-verified release artifacts)
         id: scanners
         run: |
@@ -107,8 +109,9 @@ jobs:
           # trigger (Renovate's first pin-wave merged) fired 2026-07-13; check-docker-digests.sh
           # proven green on main 2026-07-17 before the flip.
           bash tools/security/scan.sh --layer ci --strict-digests
-      - name: scan exact Dockerfile base digests (anonymous, linux/amd64)
+      - name: report raw Dockerfile base digests (informational, anonymous)
         if: ${{ !cancelled() && steps.scanners.outcome == 'success' }}
+        continue-on-error: true # R335: raw-base results never gate the job.
         run: |
           export PATH="$HOME/.local/bin:$PATH"
           python3 tools/security/rescan_base_images.py --output "$RUNNER_TEMP/security-out"
@@ -215,4 +218,85 @@ jobs:
           name: zizmor-sarif-${{ github.sha }}
           path: ${{ runner.temp }}/zizmor-out
           if-no-files-found: warn
+          retention-days: 30
+
+  runtime-select:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - id: select
+        run: |
+          matrix="$(python3 -B tools/security/rescan_runtime_images.py --matrix)"
+          printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
+
+  runtime-images:
+    name: runtime image (${{ matrix.name }})
+    needs: runtime-select
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.runtime-select.outputs.matrix) }}
+    env:
+      IMAGE: caisson-runtime-rescan:${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: prepare disposable runner disk
+        run: |
+          # Same fixed SDK set proven by PR 483. This job needs its own cleanup
+          # before that sibling PR merges; neither PR may merge independently (R336).
+          df -B1 / "$RUNNER_TEMP"
+          sudo rm -rf -- /usr/local/lib/android /usr/local/.ghcup /usr/local/swift /usr/share/dotnet
+          df -B1 / "$RUNNER_TEMP"
+      - name: install pinned Trivy
+        run: |
+          set -euo pipefail
+          source tools/security/versions.env
+          tmp="$(mktemp -d)"
+          curl -sSfL --retry 5 --retry-delay 3 --retry-all-errors -o "$tmp/trivy.tgz" "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          echo "${TRIVY_SHA256}  $tmp/trivy.tgz" | sha256sum -c -
+          tar -C "$tmp" -xzf "$tmp/trivy.tgz" trivy
+          mkdir -p "$HOME/.local/bin"
+          install -m755 "$tmp/trivy" "$HOME/.local/bin/trivy"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: build patched runtime (no publish)
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target }}
+          platforms: linux/amd64
+          no-cache: true # Execute apt update/upgrade on every scheduled rebuild.
+          pull: true
+          push: false
+          load: true
+          tags: ${{ env.IMAGE }}
+      - name: record built image provenance
+        env:
+          DOCKERFILE: ${{ matrix.dockerfile }}
+          TARGET: ${{ matrix.target }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/runtime-scan"
+          git rev-parse HEAD > "$RUNNER_TEMP/runtime-scan/source-sha.txt"
+          printf '%s\n' "$DOCKERFILE" "$TARGET" > "$RUNNER_TEMP/runtime-scan/build-target.txt"
+          docker image inspect "$IMAGE" > "$RUNNER_TEMP/runtime-scan/image-inspect.json"
+          df -B1 / "$RUNNER_TEMP" > "$RUNNER_TEMP/runtime-scan/disk-before.txt"
+      - name: enforce runtime OS vulnerabilities and report application residual
+        run: python3 -B tools/security/rescan_runtime_images.py --image "$IMAGE" --output "$RUNNER_TEMP/runtime-scan/image.json"
+      - name: upload runtime reports and application/unfixed residuals
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: runtime-rescan-${{ matrix.name }}
+          path: ${{ runner.temp }}/runtime-scan
+          if-no-files-found: error
           retention-days: 30

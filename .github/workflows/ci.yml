@@ -13,13 +13,14 @@ on:
 # golden-file — map to the steps below; a Neon branch DB is the opt-in escape hatch via
 # TEST_DATABASE_URL, never the default.
 #
-# THIS FILE = THE 4 REQUIRED STATUS CHECKS ONLY (branch protection matches the job NAME, not the
-# file): standards-gate · check · registry-index · oscal-conformance. They stay UNCONDITIONAL for
+# The 4 REQUIRED STATUS CHECKS here (branch protection matches the job NAME, not the
+# file) are standards-gate · check · registry-index · oscal-conformance. They stay UNCONDITIONAL for
 # every non-draft trigger — no `paths:`, and the ONLY permitted `if:` is the draft guard
 # (CAISSON-96): a path-skipped required job never reports and the PR blocks forever, but a DRAFT
 # PR cannot merge anyway, and marking it ready_for_review (in the types list above) fires the full
-# run before merge is possible. Every other job (eval · native-ext · token-drift ·
-# publish-and-index · the Railway deploy) has moved to its own workflow file
+# run before merge is possible. ADR-0422 adds the optional path-gated Docker build smoke below;
+# its path gate never conditions a required job. Other jobs (eval · native-ext · token-drift ·
+# publish-and-index · the Railway deploy) have moved to their own workflow files
 # (quality.yml / publish.yml / deploy-railway.yml) where path-filtering and main-only gating are
 # safe because those jobs are not required checks. ONE required check lives outside this file:
 # `support-bot` (support-bot.yml), promoted by ADR-0414 — and it obeys the same rule, having had
@@ -47,6 +48,55 @@ permissions:
   contents: read
 
 jobs:
+  docker-build-changes:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      build: ${{ steps.filter.outputs.build }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            build:
+              - 'apps/demos/Dockerfile'
+              - 'apps/site/Dockerfile'
+              - 'apps/demos/**'
+              - 'apps/site/**'
+              - 'package.json'
+              - 'bun.lock'
+              - '.github/workflows/ci.yml'
+
+  docker-build:
+    # ADR-0422: run the actual Bun container build path, which the ordinary Node-backed
+    # Next build in `check` does not exercise. Each app gets its own 8 GB Linux runner.
+    needs: docker-build-changes
+    if: needs.docker-build-changes.outputs.build == 'true'
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [demos, site]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Build Next image through the build stage
+        env:
+          APP: ${{ matrix.app }}
+        run: |
+          free -g
+          available_gb=$(awk '/MemAvailable:/ {print int($2 / 1024 / 1024)}' /proc/meminfo)
+          if [ "$available_gb" -lt 6 ]; then
+            echo "Docker build requires at least 6 GiB available memory; measured ${available_gb} GiB"
+            exit 1
+          fi
+          docker build --target build --progress=plain -f "apps/$APP/Dockerfile" .
+
   # The standards gate (ADR-0021/0022) — the only registry ingress. Three layers, all block merge.
   standards-gate:
     # CAISSON-96 draft guard — the one permitted `if:` on a required check (header comment).
