@@ -1,5 +1,19 @@
 # S8 release train run notes — 2026-09-10
 
+## R350 step 2 — S8_RELEASE_HELD on runtime mismatch
+
+The reconciled candidate is **a5d9cfea5136a2fd8a18ea73b574b5968ff765aa**; R350 supersedes the earlier local-merge authority hold. The first fresh three-suite command exited 0: **64 pass, 0 fail, 168 assertions**, but its banner reports **Bun 1.3.14 (0d9b296a)**. Current package.json pins **bun@1.4.2**. Read-only command resolution names **/home/gw/.bun/bin/bun**. This is an unexpected verification-runtime mismatch, not a failing test or evidence of a product defect. The successful result is limited to 1.3.14 and does not certify the pinned runtime. Execution stopped before the source/emitted-artifact absence checks, build, lint or Changesets status. No install, runtime replacement or test retry followed.
+
+Packet: /home/gw/lab/briefs/estate-2026-09/handoff/**OPERATOR-ACT-S8-RELEASE-PUBLISH.md**, runtime-hold addendum. Resume requires disposition of the runtime mismatch; use an operator-established 1.4.2 executable, verify its version before the remaining checks, and repeat the targeted suite on that runtime. R4 review remains open: peer dispatches were refused admission and never ran, one set of eyes, no admission retry and no review pass. No PR, push, forge merge, version consumption, tag, publication, deployment or branch deletion. Fresh SOT was not run after the stop; cockpit reconciliation SOT is historical evidence only.
+
+Receipt bookkeeping also encountered an absent guessed .husky/pre-commit path; no hook was changed or bypassed.
+
+## R350 reconciliation accepted — task 3 resumed
+
+Cockpit sentinel S8_RECONCILED binds **a5d9cfea5136a2fd8a18ea73b574b5968ff765aa** (2026-09-15T18:54:51Z). Fresh local readback confirms the two parents cf2bfafdf99f971cebef8d00205ace96b764cb8d and 7e11672c29d21b57a12cf1ad1d4758abbd12b66b, main ancestry, clean lane and 36 ahead/0 behind. R350 corrects the prior interpretation: no merge from this pane concerns forge acts; local reconciliation was never excluded. The preceding authority hold is superseded. Cockpit reports exactly six predicted conflicts resolved, 14 image tests and 2 OS tests passing, normal commit hooks and only accepted SOT drift.
+
+**Step 2 prediction, written before measurement:** all four frozen UUID markers and diagnostic identifiers will be absent from the three implementation files and rebuilt limiter JS/declarations; the source and declarations will expose the original two-argument check; the diagnostic changeset and diagnostic-only tests will be absent, the empty removal changeset retained, and the 35-file pending backlog unchanged. Predict the three implementation files match pre-diagnostic e2116849 and the six source/test files match bound main 7e11672c. Fresh targeted suites, limiter build and six-file lint are expected to exit 0; actual counts will be recorded. No live probes or deployments.
+
 ## S8_PUBLISH_GREEN received — held at local reconciliation authority boundary
 
 Cockpit sentinel **2026-09-15T18:46:55Z** attests main **7e11672c29d21b57a12cf1ad1d4758abbd12b66b**, publish-image **35007285773** completed SUCCESS for select, all six jobs (docs, migrate, license, demos, admin, site) and collect; deploy-railway **35007285578** also completed SUCCESS. This is cockpit-provided run evidence, not an independent lane watch. Fresh forge main and fetch match 7e11672c.

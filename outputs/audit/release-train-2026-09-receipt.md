@@ -1,4 +1,12 @@
-# S8 release train receipt — publish green; reconciliation held
+# S8 release train receipt — R350 reconciled; verification runtime held
+
+## R350 step 2 — S8_RELEASE_HELD on runtime mismatch
+
+The reconciled candidate is **a5d9cfea5136a2fd8a18ea73b574b5968ff765aa**; R350 supersedes the earlier local-merge authority hold. The first fresh three-suite command exited 0: **64 pass, 0 fail, 168 assertions**, but its banner reports **Bun 1.3.14 (0d9b296a)**. Current package.json pins **bun@1.4.2**. Read-only command resolution names **/home/gw/.bun/bin/bun**. This is an unexpected verification-runtime mismatch, not a failing test or evidence of a product defect. The successful result is limited to 1.3.14 and does not certify the pinned runtime. Execution stopped before the source/emitted-artifact absence checks, build, lint or Changesets status. No install, runtime replacement or test retry followed.
+
+Packet: /home/gw/lab/briefs/estate-2026-09/handoff/**OPERATOR-ACT-S8-RELEASE-PUBLISH.md**, runtime-hold addendum. Resume requires disposition of the runtime mismatch; use an operator-established 1.4.2 executable, verify its version before the remaining checks, and repeat the targeted suite on that runtime. R4 review remains open: peer dispatches were refused admission and never ran, one set of eyes, no admission retry and no review pass. No PR, push, forge merge, version consumption, tag, publication, deployment or branch deletion. Fresh SOT was not run after the stop; cockpit reconciliation SOT is historical evidence only.
+
+Receipt bookkeeping also encountered an absent guessed .husky/pre-commit path; no hook was changed or bypassed.
 
 ## S8_PUBLISH_GREEN received — held at local reconciliation authority boundary
 
