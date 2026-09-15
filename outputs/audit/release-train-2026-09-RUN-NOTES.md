@@ -1,5 +1,17 @@
 # S8 release train run notes — 2026-09-10
 
+## R336 cockpit wave verified — task-3 packet prepared; waiting for sentinel
+
+Forge readback confirms #483 MERGED as **08646a3941dfb4ca8eea71976b4303af8510e11c** at **2026-09-15T18:24:15Z**, followed by #482 MERGED as **7e11672c29d21b57a12cf1ad1d4758abbd12b66b** at **18:24:29Z**. origin/main fetched to 7e11672c. The initial local object lookup preceded fetch and found no object; fetch supplied it. No merge performed by this lane.
+
+Prepared /home/gw/lab/briefs/estate-2026-09/handoff/**OPERATOR-ACT-S8-RELEASE-PUBLISH.md** against exact baseline 7e11672c, with immutable source hashes in S8-WAVE-SOURCE/SOURCE.json and census in S8-WAVE-CENSUS.json. Re-derived: **35 pending changesets (22 with version entries, 13 empty); 56 package manifests minus 2 private and 2 module-delisted = 52 expected eligible current tarballs; 501 existing sidecar rows/keys; 51 commits since forge-latest v2026.08.18**. These are source counts, not successful pack/upload measurements. Final R2 denominator must be re-derived after version consumption; readiness has **8 blocking CI checks / 9 local, plus advisory signature verification**, with 6 required CI checks.
+
+Preparation verification: all 169 pinned snapshot file hashes match; packet/census SHA binding and 35/52/501 source counts agree. Repository format and whitespace checks pass. Fresh lane SOT has only the same sixteen-document freshness lag and EXPECTED-DRIFT branch preservation; all other checks green. Dates were not bumped and no aggregate SOT-green claim is made.
+
+The cockpit alone watches publish-image **35007285773** and deploy-railway **35007285578**. Neither run was queried, watched, retried, cancelled or dispatched by this lane. **S8_PUBLISH_GREEN has not arrived.** No branch push, tag or publication. The packet keeps R315 green-release-PR stop and subsequent per-PR merge/publication/propagation rulings distinct. Baseline 7e11672c still has changesets; it is not the final release tag SHA.
+
+Packet explicitly retains blockers/open inputs: lane scanner overlap must reconcile to merged R344, candidate SOT must meet the real readiness gate without date laundering, R4 audit is not satisfied by refused/not-run peers, live-hybrid evidence and final version/tag/hash outputs remain unmeasured. On sentinel, resume ordered task-3 preparation to S8_RELEASE_PR; no live publish is implied. The R344 application dependency repairs remain separate follow-ups.
+
 ## R344 stop — site E2E failure; joint wave not ready
 
 PR **482** head **102ddc6cddec57e12402ed633a9b2b681273281a** is pushed. Stopped at the first failed gate: [site-e2e job 104465956324, quality run 34994076821](https://github.com/caisson-sh/caisson/actions/runs/34994076821/job/104465956324). At 2026-09-15T16:22:20.8746354Z, browser-audit-p1.e2e.test.ts:178-179 hit a strict-mode locator violation: [data-card-id="rls"] matched two elements, including one under React S:0. Result: **7 pass, 1 fail, 58 expectations**. The symptom matches the prior R335b failure; R344 changes only scan policy/tests/workflow labels and documentation, with no site/test/lockfile change. No independent baseline reproduction or test repair is claimed.
