@@ -1,5 +1,15 @@
 # S8 release train run notes — 2026-09-10
 
+## S8_PUBLISH_GREEN received — held at local reconciliation authority boundary
+
+Cockpit sentinel **2026-09-15T18:46:55Z** attests main **7e11672c29d21b57a12cf1ad1d4758abbd12b66b**, publish-image **35007285773** completed SUCCESS for select, all six jobs (docs, migrate, license, demos, admin, site) and collect; deploy-railway **35007285578** also completed SUCCESS. This is cockpit-provided run evidence, not an independent lane watch. Fresh forge main and fetch match 7e11672c.
+
+The packet resumes with reconciliation. Before this receipt lane **8754070c46826e3e75893bc719cc2ad2d6a34570** was clean, 34 ahead/4 behind, common ancestor **0b2046e722750a732ad23aa6f9d9ff230fbd2d5d**. Read-only legacy git merge-tree preview (exit 0) identifies **six conflict paths / seven hunks**; exit 0 is not a conflict-free verdict. No merge, index update or resolution applied.
+
+**OPERATOR ACT NEEDED: local lane reconciliation.** Latest instruction says “no tag, no branch delete, no merge from your pane”; this lane interprets no-merge as covering the local reconciliation, and does not assume an unstated exception. This is an authority hold, not a floor rejection or failed release gate. Exact packet: /home/gw/lab/briefs/estate-2026-09/handoff/**OPERATOR-ACT-S8-RECONCILE-AFTER-GREEN.md**. Reviewable candidates: **S8-GREEN-RESOLUTION/** with six file hashes in MANIFEST.json; code/config equal merged R344 main bytes, phase documents append explicitly superseded lane history. Preview and path evidence: **S8-GREEN-MERGE-PREVIEW.txt**, **S8-GREEN-CONFLICTS.json**.
+
+Task status **S8_RELEASE_HELD**. 35 pending changesets, 52 eligible tarballs, 501 sidecar rows remain the bound main source inventory; no version consumption, pack/upload or release-readiness result claimed. No branch push, PR, merge, tag, publication, deploy, branch deletion, credential access or admission retry. Prior peers were refused and never ran; R4 remains unresolved. Resume at candidate reconciliation/absence proof after operator act or explicit local-merge ruling.
+
 ## R336 cockpit wave verified — task-3 packet prepared; waiting for sentinel
 
 Forge readback confirms #483 MERGED as **08646a3941dfb4ca8eea71976b4303af8510e11c** at **2026-09-15T18:24:15Z**, followed by #482 MERGED as **7e11672c29d21b57a12cf1ad1d4758abbd12b66b** at **18:24:29Z**. origin/main fetched to 7e11672c. The initial local object lookup preceded fetch and found no object; fetch supplied it. No merge performed by this lane.
