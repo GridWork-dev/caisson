@@ -31,9 +31,9 @@ def fake_scanner(report):
 
 
 class RuntimeImagesTests(unittest.TestCase):
-    def test_same_fixable_row_fails_runtime_but_only_reports_base(self):
-        for package_class in ["os-pkgs", "lang-pkgs"]:
-            report = fixture(package_class=package_class)
+    def test_fixable_os_row_fails_runtime_but_only_reports_base(self):
+        for severity in ["HIGH", "CRITICAL"]:
+            report = fixture(severity=severity)
             with tempfile.TemporaryDirectory() as directory, \
                  patch.object(policy.subprocess, "run", side_effect=fake_scanner(report)):
                 output = Path(directory)
@@ -44,6 +44,38 @@ class RuntimeImagesTests(unittest.TestCase):
                 self.assertEqual(runtime["findings"], base["findings"])
                 self.assertEqual(len(base["fixableHighCritical"]), 1)
                 self.assertEqual(base["exitCode"], 0)
+
+    def test_application_rows_only_report_in_json_and_job_summary(self):
+        for severity in ["HIGH", "CRITICAL"]:
+            for package_type in ["node-pkg", "python-pkg", "gobinary"]:
+                with self.subTest(severity=severity, package_type=package_type):
+                    report = fixture(severity=severity, package_class="lang-pkgs")
+                    report["Results"][1]["Type"] = package_type
+                    with tempfile.TemporaryDirectory() as directory, \
+                         patch.object(policy.subprocess, "run", side_effect=fake_scanner(report)):
+                        output = Path(directory)
+                        job_summary = output / "job.md"
+                        with patch.dict(os.environ, {"GITHUB_STEP_SUMMARY": str(job_summary)}):
+                            self.assertEqual(policy.scan_image("fixture", output / "runtime.json", "runtime"), 0)
+                        summary = json.loads((output / "runtime.summary.json").read_text())
+                        self.assertEqual(len(summary["applicationFindings"]), 1)
+                        self.assertEqual(summary["fixableOSHighCritical"], [])
+                        row = summary["applicationFindings"][0]
+                        self.assertEqual(row["type"], package_type)
+                        self.assertEqual(row["fixed"], "5.40.1-6+deb13u1")
+                        rendered = job_summary.read_text()
+                        for value in ["report only", row["id"], row["package"], row["installed"],
+                                      row["fixed"], severity, package_type]:
+                            self.assertIn(value, rendered)
+
+    def test_mixed_report_still_enforces_os_and_preserves_application_rows(self):
+        report = fixture(severity="HIGH")
+        report["Results"].extend(fixture(package_class="lang-pkgs")["Results"][1:])
+        summary = policy.evaluate(report, "runtime")
+        self.assertEqual(summary["exitCode"], 1)
+        self.assertEqual(len(summary["fixableOSHighCritical"]), 1)
+        self.assertEqual(len(summary["applicationFindings"]), 1)
+        self.assertEqual(len(summary["findings"]), 2)
 
     def test_unfixed_and_lower_severity_rows_remain_visible_without_failing(self):
         for report in [fixture(fixed=""), fixture(severity="MEDIUM")]:

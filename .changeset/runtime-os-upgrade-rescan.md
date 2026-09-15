@@ -7,4 +7,4 @@
 "@caisson/service-intel": patch
 ---
 
-Upgrade runtime OS layers on pinned bases and gate built-runtime rescans while reporting raw-base findings.
+Upgrade runtime OS layers on pinned bases and gate fixable HIGH/CRITICAL runtime OS findings while reporting application and raw-base residuals.
