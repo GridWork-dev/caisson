@@ -1,5 +1,35 @@
 # S8 release train run notes — 2026-09-10
 
+## R352 outcome — S8_RELEASE_HELD at cumulative review disposition
+
+Preparation verification: repository format check passes on **3,503 files**; whitespace check passes. Readback confirms all **60** version rows match CLI old/new versions and all **nine** checklist boxes remain unchecked. A readback assertion initially assumed single-space Markdown cells; corrected once to parse formatter padding, then passed. Only eight owned documentation files are changed. Predict normal commit succeeds with those eight files and immediate status is clean; no push follows.
+
+Runtime hold cleared: Bun **1.4.2** confirmed. Step 2 fresh five-item absence proof passes, with **64 tests / 168 assertions**, build and six-file lint. Step 3 installed @changesets/cli **2.31.1** full-backlog calculation passes: **35 changesets → 60 workspace bumps (57 patch, 3 minor; 20 explicit, 40 dependent)**. Exact versions: outputs/audit/s8-release-version-plan.md. No changesets consumed.
+
+Step 4 release SPEC/PLAN and honest R4/checklist material are prepared. Cumulative scope is 88 commits and 425 paths before this documentation commit. Peer review/security dispatches were refused admission and never ran; no retry, one set of eyes, no review pass. The full cumulative R4 requirement remains unresolved. Precise reviewer targets and claims relying on this lane alone are in s8-release-review-preparation.md. Nine preflight boxes remain unchecked.
+
+Fresh SOT exits 1 only for accepted branch preservation and the same sixteen freshness documents; every other check is GREEN. Current source dates are recorded in s8-sot-disposition.md, with no bulk update. This accepted lane disposition does not make final release readiness green.
+
+**S8_RELEASE_HELD** before PR creation pending a release-scoped review disposition; no new failed gate or admission refusal is claimed. Concrete packet: /home/gw/lab/briefs/estate-2026-09/handoff/**OPERATOR-ACT-S8-RELEASE-REVIEW-DISPOSITION.md**. No push, PR, forge merge, version dispatch, tag, package publish, deployment or branch deletion.
+
+## R352 steps 3–4 — full version plan and R4 preparation
+
+Installed **@changesets/cli 2.31.1**, unfiltered status and structured --output both exit 0 on Bun 1.4.2. **35 changesets resolve to 60 workspaces: 57 patch, 3 minor, 0 major; 20 explicit, 40 dependent.** Full old/new version table is outputs/audit/s8-release-version-plan.md; raw releasePlan is handoff/S8-R352-RELEASE-PLAN.json. Of 52 eligible registry packages, 44 have planned bumps and 8 remain unchanged; actual future sidecar additions and byte reproduction remain unmeasured. No version consumption.
+
+Release-specific SPEC/PLAN prepared under release-train-2026-09-publish, transcribing the authorized packet. Review scope identified as v2026.08.18..05081a20 (88 commits, 425 paths, +20,995/-3,643), plus this preparation. R4 material is outputs/audit/s8-release-review-preparation.md; nine unchecked preflight items remain in s8-release-checklist-preparation.md. Peer dispatches were refused admission and never ran; no retry or review pass. R4 has no release-scoped disposition and cannot be silently satisfied by these documents.
+
+**Preparation verification prediction:** owned-document formatting and whitespace checks exit 0; fresh SOT returns only the previously accepted freshness and preserved-branch drift, all other checks green. Record actual lagged documents/source dates. This is a preflight/hold receipt, not an aggregate release-readiness pass. No gate alteration or bulk date bump.
+
+## R352 step 2 complete; step 3 prediction
+
+Fresh readback: /home/gw/.bun/bin/bun reports **1.4.2**; HEAD is **05081a20091d3a7971609daab94008c8d352688e**. Targeted suites: **64 pass, 0 fail, 168 assertions**. Rate-limit build (tscn -p tsconfig.json) and lint across all six implementation/test paths exit 0. All four frozen UUIDs and five diagnostic identifiers are absent from the three implementation files, three test files and rebuilt JS/declarations. Source and emitted declarations retain two-argument check. Three implementation paths have zero diff against e2116849; all six source/test paths and the complete .changeset directory have zero diff against 7e11672c. The temporary diagnostic changeset is absent; empty removal changeset remains; **35 pending changesets** remain. Fresh hash/signature evidence: handoff/S8-R352-ABSENCE-EVIDENCE.json. This completes the candidate-local five-item absence proof; it is not a new live measurement or candidate CI claim.
+
+**Step 3 prediction before CLI execution:** installed @changesets/cli **2.31.1** at node_modules/@changesets/cli/bin.js will return a full release plan with exit 0, without consuming files or changing package versions. No --since filter. Input is 35 changesets (22 with entries, 13 empty); explicit minor bumps are kernel, agent-kernel and tool-exec, all other explicit entries are patch. The CLI will resolve dependent workspace effects; effective package count and versions are outputs to measure and record, not assumed equal to 22 changesets or 52 publishable tarballs. No major changeset is present.
+
+## R352/R353 runtime correction — task 3 resume prediction
+
+S8_RUNTIME_142, cockpit 2026-09-15T23:23:09Z, reports the cockpit installed official bun-v1.4.2 at /home/gw/.bun/bin/bun. No runtime installation by this lane. Before measurement: expect command resolution at that path, version 1.4.2, HEAD 05081a20091d3a7971609daab94008c8d352688e with only this new receipt edit. Predict the same targeted suite returns **64 pass, 0 fail, 168 assertions** on 1.4.2. Predict step-2 build and lint exit 0; original four marker UUIDs and diagnostic identifiers absent from three implementation files and freshly emitted limiter JS/declarations; original two-argument check preserved; diagnostic changeset/tests removed, empty removal changeset retained and 35 pending changesets unchanged. Expect implementation bytes equal e2116849 and six source/test files equal bound main 7e11672c. Record actual outcomes before proceeding to step 3.
+
 ## R350 step 2 — S8_RELEASE_HELD on runtime mismatch
 
 The reconciled candidate is **a5d9cfea5136a2fd8a18ea73b574b5968ff765aa**; R350 supersedes the earlier local-merge authority hold. The first fresh three-suite command exited 0: **64 pass, 0 fail, 168 assertions**, but its banner reports **Bun 1.3.14 (0d9b296a)**. Current package.json pins **bun@1.4.2**. Read-only command resolution names **/home/gw/.bun/bin/bun**. This is an unexpected verification-runtime mismatch, not a failing test or evidence of a product defect. The successful result is limited to 1.3.14 and does not certify the pinned runtime. Execution stopped before the source/emitted-artifact absence checks, build, lint or Changesets status. No install, runtime replacement or test retry followed.
@@ -485,3 +515,7 @@ A temporary diagnostic patch is proposed under the handoff directory as `S8-DIRE
 Local proposal checks: patch applicability exit 0; Bun 1.3.14 verification **3 pass, 0 fail, 19 expectations**, covering decision parity, a throwing observation sink, and TypeScript parsing. These do not substitute for integration tests, code/security review, CI or a live measurement.
 
 Decision packet: `/home/gw/lab/briefs/estate-2026-09/handoff/OPERATOR-ACT-S8-DIRECT-KEY-OBSERVATION.md`. The packet distinguishes approval of the diagnostic approach from the later per-PR merge and operator deployment acts. No diagnostic PR, merge, runtime instrumentation or deployment has occurred. Task 1 remains open; neither a defect nor no-defect verdict is claimed.
+
+## R352 step 3 structured readback prediction
+
+The unfiltered installed CLI status exited 0 with patch/minor releases and no majors. Its installed status implementation supports --output and serializes the same releasePlan without version consumption. Predict a second read-only status with --output yields the same package set and exact oldVersion/newVersion fields; this is structured evidence collection, not a retry of a failed gate.

@@ -1,4 +1,16 @@
-# S8 release train receipt — R350 reconciled; verification runtime held
+# S8 release train receipt — runtime cleared; cumulative review held
+
+## R352 outcome — S8_RELEASE_HELD at cumulative review disposition
+
+Preparation verification: repository format check passes on **3,503 files**; whitespace check passes. Readback confirms all **60** version rows match CLI old/new versions and all **nine** checklist boxes remain unchecked. A readback assertion initially assumed single-space Markdown cells; corrected once to parse formatter padding, then passed. Only eight owned documentation files are changed. Predict normal commit succeeds with those eight files and immediate status is clean; no push follows.
+
+Runtime hold cleared: Bun **1.4.2** confirmed. Step 2 fresh five-item absence proof passes, with **64 tests / 168 assertions**, build and six-file lint. Step 3 installed @changesets/cli **2.31.1** full-backlog calculation passes: **35 changesets → 60 workspace bumps (57 patch, 3 minor; 20 explicit, 40 dependent)**. Exact versions: outputs/audit/s8-release-version-plan.md. No changesets consumed.
+
+Step 4 release SPEC/PLAN and honest R4/checklist material are prepared. Cumulative scope is 88 commits and 425 paths before this documentation commit. Peer review/security dispatches were refused admission and never ran; no retry, one set of eyes, no review pass. The full cumulative R4 requirement remains unresolved. Precise reviewer targets and claims relying on this lane alone are in s8-release-review-preparation.md. Nine preflight boxes remain unchecked.
+
+Fresh SOT exits 1 only for accepted branch preservation and the same sixteen freshness documents; every other check is GREEN. Current source dates are recorded in s8-sot-disposition.md, with no bulk update. This accepted lane disposition does not make final release readiness green.
+
+**S8_RELEASE_HELD** before PR creation pending a release-scoped review disposition; no new failed gate or admission refusal is claimed. Concrete packet: /home/gw/lab/briefs/estate-2026-09/handoff/**OPERATOR-ACT-S8-RELEASE-REVIEW-DISPOSITION.md**. No push, PR, forge merge, version dispatch, tag, package publish, deployment or branch deletion.
 
 ## R350 step 2 — S8_RELEASE_HELD on runtime mismatch
 
