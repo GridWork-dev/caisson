@@ -1,5 +1,27 @@
 # S8 release train run notes — 2026-09-10
 
+## R344 stop — site E2E failure; joint wave not ready
+
+PR **482** head **102ddc6cddec57e12402ed633a9b2b681273281a** is pushed. Stopped at the first failed gate: [site-e2e job 104465956324, quality run 34994076821](https://github.com/caisson-sh/caisson/actions/runs/34994076821/job/104465956324). At 2026-09-15T16:22:20.8746354Z, browser-audit-p1.e2e.test.ts:178-179 hit a strict-mode locator violation: [data-card-id="rls"] matched two elements, including one under React S:0. Result: **7 pass, 1 fail, 58 expectations**. The symptom matches the prior R335b failure; R344 changes only scan policy/tests/workflow labels and documentation, with no site/test/lockfile change. No independent baseline reproduction or test repair is claimed.
+
+At the stop snapshot, all six required checks and both standalone Docker builds passed. Admin/site/demos runtime scans passed. Seven remaining runtime scans were pending; their later outcomes have not been read or claimed. PR **483** remains OPEN at **011afe3e5565c5dd9ed2388b3dabe7bf2419d4d8**, all active checks green including the six publish-image proofs. Conditional skips remain skips. **R336 joint wave is not ready.**
+
+Artifacts: S8-R344-HOLD-ROSTERS.json (exact two heads and complete stop-snapshot rosters); S8-R344-SITE-E2E-FAILED-STEP.log (full failed step saved from cached forge ZIP); S8-R344-SAVED-REPORT-EVALUATION.json (prior actual reports evaluated under R344, not fresh scans); OPERATOR-ACT-S8-R344-JOINT-WAVE.md (held packet, twelve known application rows/fixed versions and deferred dependency repairs), all under /home/gw/lab/briefs/estate-2026-09/handoff/.
+
+No CI retry/cancellation, test change, further runtime artifact measurement, dependency repair, merge, deployment, publication, tag or branch deletion followed the failure. Only bounded failure-log/sibling readback and durable hold artifacts. Peer dispatches remain refused and never ran; no review pass.
+
+## R344 amendment pushed — awaiting CI
+
+R344 explicitly narrows built-runtime enforcement to fixable HIGH/CRITICAL OS package rows. PR 482 head **102ddc6cddec57e12402ed633a9b2b681273281a** is pushed and forge-read back; PR body equality checked. Application findings remain in full JSON, applicationFindings residual and job summaries with installed/fixed versions. No dependency repair. The prior R335 enforcement failures remain historical evidence; they are now outside the operator-locked enforcement scope, not repaired vulnerabilities.
+
+Verification: 14 image policy/census/workflow tests plus 2 OS-layer tests pass; new application cases fail against old policy, OS pass-through mutation fails its contract, restored source passes. Established helper Ruff, YAML policy assertions, format and whitespace pass. Saved run 34983075951 reports re-evaluated: ten exits 0, zero fixable H/C OS rows, twelve unique HIGH application rows retained. This is saved-report policy evaluation, not a fresh scan. S8-R344-SAVED-REPORT-EVALUATION.json and OPERATOR-ACT-S8-R344-JOINT-WAVE.md under the estate handoff contain exact residuals and fixed versions.
+
+Own-tool corrections: two absent guessed file paths resolved by listing the actual directory; accidental support-bot-only Ruff --select S on the scanner helper flagged unchanged subprocess S603/S607, corrected once to the established helper lint invocation. No suppressions or subprocess changes.
+
+Fresh lane SOT: same sixteen frontmatter-lag documents/source dates recorded in s8-sot-disposition.md; branch-hygiene remains EXPECTED-DRIFT because operator-preserved branches/worktrees stay. All other checks GREEN. No bulk date bumps.
+
+PR 483 remains **011afe3e5565c5dd9ed2388b3dabe7bf2419d4d8**, OPEN, all active checks green. PR 482 CI is pending. Both held under R336; no merge/deploy/publish/tag/branch deletion. Task 3 awaits cockpit S8_PUBLISH_GREEN. Peer review/security dispatches were refused admission and never ran, one set of eyes; OS/application classification, report visibility, runtime census and interpretation of live scan evidence rest on this lane alone. Follow-ups outside this PR: remove TypeScript native compiler from runtime images; repair support-bot msgpack/setuptools.
+
 ## R335b final readback — owned fix green; seven pre-existing runtime blockers remain
 
 PR **482**: **877c5530e12c79809dfaa6f891593dcfd2a8173e**, OPEN. All six required checks, site-e2e, both additional Docker builds, and every other active check passed except the seven runtime checks listed in the causal table below. Security run **34983075951** completed FAILURE; all ten builds/scans executed. Six full-workspace images still have the same ten HIGH Go findings in native TypeScript, and support-bot the same two HIGH Python findings. Every blocking row is identical to the prior 07ad8a36 report. New code does not introduce those dependencies; R335's gate correctly exposes them. They remain blockers without a waiver or an unrequested dependency repair.
