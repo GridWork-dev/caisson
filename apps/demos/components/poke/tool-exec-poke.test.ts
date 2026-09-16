@@ -55,12 +55,15 @@ describe("the poke's gate IS the package's gate", () => {
   // process is ever spawned: propose() is phase 1, and execute() is never called.
   const real = createToolExec({ allowlist: SAMPLE_ALLOWLIST });
 
-  test("a valid call proposes exactly what createToolExec().propose() does", async () => {
+  test("a valid browser proposal matches validated fields but cannot mint approval authority", async () => {
     const args = SAMPLE_ALLOWED.argv.split(" ");
     const verdict = proposeSample(SAMPLE_ALLOWED.name, args);
     if (verdict.outcome !== "proposed") throw new Error("expected proposed");
-    expect(verdict.proposed).toEqual(
-      await real.propose(SAMPLE_ALLOWED.name, args),
+    const approved = await real.propose(SAMPLE_ALLOWED.name, args);
+    expect(approved).toMatchObject(verdict.proposed);
+    expect("approvalId" in verdict.proposed).toBe(false);
+    await expect(real.execute(verdict.proposed)).rejects.toThrow(
+      ValidationError,
     );
   });
 

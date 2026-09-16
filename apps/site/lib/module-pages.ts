@@ -1238,7 +1238,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Two-phase propose/execute for external approval",
-        body: "propose() runs the same allowlist lookup and Zod validation as run() but returns a serializable ProposedToolCall without spawning, park it in your own approval store. execute() re-checks the name is still allowlisted to the same command (defense against the allowlist changing between propose and execute) but never re-validates args.",
+        body: "propose() validates without spawning and returns a serializable ToolApproval backed by a private stored record. After your authenticated approval decision, execute() consumes the record once, checks the approved digest and current policy, and revalidates the original input. Child environment comes only from the current CommandSpec. Browser-only proposals cannot authorize execution.",
       },
       {
         title: "Bounded output, always a provenance record",
@@ -1277,7 +1277,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "How do I gate a call behind human or policy approval before it actually runs?",
         answer:
-          "Call propose() instead of run(). It does the identical allowlist lookup and Zod validation but returns a serializable ProposedToolCall without spawning anything, so you can park it in your own approval store. execute() re-checks the name is still allowlisted to the same command (defense against the allowlist changing in between) but never re-validates args, since propose already did.",
+          "propose() validates without spawning and returns a serializable ToolApproval backed by a private stored record. After your authenticated approval decision, execute() consumes the record once, checks the approved digest and current policy, and revalidates the original input. Child environment comes only from the current CommandSpec. Browser-only proposals cannot authorize execution.",
       },
       {
         question:

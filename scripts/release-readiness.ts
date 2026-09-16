@@ -11,9 +11,8 @@
  *      merged version-PR commit; a tag cut on a stray branch must never train).
  *   0b. Release tag signed (ADR-0382) — `git tag -v` verifies the tag against the allowed-signers
  *      file. ADVISORY for now: tags cut before the lock are unsigned and cannot become signed.
- *   1. CI green on the release SHA — the five required checks (check, standards-gate,
- *      registry-index, oscal-conformance, deterministic — the last per the ADR-0327 scan-gate
- *      flip) completed successfully.
+ *   1. CI green on the release SHA — all seven required checks, including the source security
+ *      layer, support-bot and the R359 runtime-images-gate aggregate, completed successfully.
  *   2. Changesets drained — no pending .changeset/*.md (the version PR consumed them —
  *      version-pr.yml, ADR-0325; never a feature-branch or tag-path act).
  *   3. CHANGELOGs written — every non-private workspace package's CHANGELOG.md leads with its
@@ -35,6 +34,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { z } from "zod";
 import { checkRegistryCoverage } from "../registry/scripts/coverage-invariants";
 
 const REPO = resolve(import.meta.dir, "..");
@@ -51,6 +51,8 @@ export const REQUIRED_CHECKS = [
   // the same commit — this list treats a check that never reported as `missing`, so a
   // path-scoped required check would red readiness on every release that did not touch the bot.
   "support-bot",
+  // R359 / CR-05: source scans cannot stand in for the enforcing runtime-image matrix.
+  "runtime-images-gate",
 ] as const;
 
 interface Args {
@@ -95,6 +97,14 @@ function run(cmd: string, args: readonly string[], cwd = REPO): string {
   })
     .toString()
     .trim();
+}
+
+/** Blob contents are parser input: preserve every byte, including leading whitespace. */
+function readGitBlob(repo: string, sha: string, path: string): string {
+  return execFileSync("git", ["show", `${sha}:${path}`], {
+    cwd: repo,
+    stdio: ["ignore", "pipe", "pipe"],
+  }).toString("utf8");
 }
 
 // --- 0. release SHA on main (ADR-0325) -----------------------------------------------------------
@@ -291,37 +301,167 @@ function checkRegistryCoverageGate(): void {
 }
 
 // --- 5. R4 audit artifact ------------------------------------------------------------------------
-function checkAuditArtifact(tag: string): void {
-  const path = join(REPO, "outputs/audit", `release-audit-${tag}.md`);
+const releaseRef = z.string().regex(/^v[0-9][A-Za-z0-9._-]{0,100}$/);
+const auditBindingSchema = z
+  .object({
+    base: releaseRef,
+    tag: releaseRef,
+    reviewed_sha: z.string().regex(/^[a-f0-9]{40}$/),
+  })
+  .strict();
+const releaseAuditSchema = auditBindingSchema
+  .extend({
+    schema_version: z.literal(2),
+    status: z.literal("clean"),
+    critical: z.literal(0),
+    reviewed_scope: z
+      .array(z.string().trim().min(1).max(512))
+      .min(1)
+      .max(10000),
+    reviewers: z
+      .array(
+        z
+          .object({
+            role: z.enum(["code_review", "security_audit"]),
+            identity: z.string().trim().min(1).max(200),
+            reviewed_at: z.iso.datetime({ offset: true }),
+          })
+          .strict(),
+      )
+      .length(2)
+      .refine(
+        (reviewers) =>
+          new Set(reviewers.map((reviewer) => reviewer.role)).size === 2,
+        "Both code review and security audit must be completed",
+      ),
+  })
+  .strict();
+
+export type AuditBinding = z.infer<typeof auditBindingSchema>;
+
+// R370: only these two tag-specific files may change after the reviewed commit.
+// No directory-wide docs exemption: a new policy, script or product byte needs review.
+export const ATTESTATION_ONLY_PATHS = [
+  "outputs/audit/release-audit-{tag}.md",
+  "docs/releases/{tag}-checklist.md",
+] as const;
+
+/** File-backed boundary: a filename alone is never an R4 attestation. */
+export function auditArtifactIsValid(
+  path: string,
+  expected: AuditBinding,
+): boolean {
+  try {
+    return auditSourceIsValid(readFileSync(path, "utf8"), expected);
+  } catch {
+    return false;
+  }
+}
+
+function auditSourceIsValid(source: string, expected: AuditBinding): boolean {
+  try {
+    const binding = auditBindingSchema.parse(expected);
+    const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(source);
+    if (!frontmatter || source.length > 1_000_000) return false;
+    const audit = releaseAuditSchema.parse(Bun.YAML.parse(frontmatter[1]!));
+    return (
+      audit.base === binding.base &&
+      audit.tag === binding.tag &&
+      audit.reviewed_sha === binding.reviewed_sha
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Read committed bytes, never a working-tree substitute for the tagged attestation. */
+export function auditSuccessorIsValid(
+  repo: string,
+  tag: string,
+  tagSha: string,
+): boolean {
+  try {
+    releaseRef.parse(tag);
+    z.string()
+      .regex(/^[a-f0-9]{40}$/)
+      .parse(tagSha);
+    const reviewedSha = run("git", ["rev-parse", `${tagSha}^`], repo);
+    // A merge has several parents and cannot use an ambiguous first-parent review.
+    const parents = run(
+      "git",
+      ["rev-list", "--parents", "-n", "1", tagSha],
+      repo,
+    ).split(" ");
+    if (parents.length !== 2 || parents[1] !== reviewedSha) return false;
+    const allowed = ATTESTATION_ONLY_PATHS.map((path) =>
+      path.replace("{tag}", tag),
+    );
+    // Preserve all filename bytes: trimming could turn a leading-space path into an allowed one.
+    const changed = execFileSync(
+      "git",
+      ["diff", "--name-only", "--no-renames", "-z", reviewedSha, tagSha],
+      { cwd: repo },
+    )
+      .toString()
+      .split("\0")
+      .filter(Boolean);
+    if (changed.length === 0 || changed.some((path) => !allowed.includes(path)))
+      return false;
+    const base = run(
+      "git",
+      ["describe", "--tags", "--abbrev=0", "--match", "v[0-9]*", reviewedSha],
+      repo,
+    );
+    const auditPath = allowed[0]!;
+    // A symlink is not an audit/checklist file. Both must exist as regular blobs.
+    for (const path of allowed) {
+      const entry = run("git", ["ls-tree", tagSha, "--", path], repo);
+      if (!entry.startsWith("100644 blob ")) return false;
+    }
+    return auditSourceIsValid(readGitBlob(repo, tagSha, auditPath), {
+      base,
+      tag,
+      reviewed_sha: reviewedSha,
+    });
+  } catch {
+    return false;
+  }
+}
+
+function checkAuditArtifact(tag: string, sha: string): void {
   record(
     "R4 release audit on file",
-    existsSync(path),
-    existsSync(path)
-      ? `outputs/audit/release-audit-${tag}.md`
-      : `MISSING outputs/audit/release-audit-${tag}.md — run the full SHIP-audit-lane review of the diff since the last release tag`,
+    auditSuccessorIsValid(REPO, tag, sha),
+    `requires clean code/security audit of ${sha}^ and only the two ${tag} attestation paths in its successor; CI still binds ${sha}`,
   );
 }
 
 // --- 6. per-release checklist --------------------------------------------------------------------
-function checkChecklist(tag: string): void {
-  const path = join(REPO, "docs/releases", `${tag}-checklist.md`);
-  if (!existsSync(path)) {
+export function checkChecklist(tag: string, sha: string, repo = REPO): boolean {
+  try {
+    releaseRef.parse(tag);
+    z.string()
+      .regex(/^[a-f0-9]{40}$/)
+      .parse(sha);
+    const path = `docs/releases/${tag}-checklist.md`;
+    const source = readGitBlob(repo, sha, path);
+    const unchecked = (source.match(/^\s*-\s\[\s\]/gm) ?? []).length;
+    record(
+      "per-release checklist",
+      unchecked === 0,
+      unchecked === 0
+        ? `all boxes checked at ${sha}`
+        : `${String(unchecked)} unchecked box(es) at ${sha}`,
+    );
+    return unchecked === 0;
+  } catch {
     record(
       "per-release checklist",
       false,
-      `MISSING docs/releases/${tag}-checklist.md — copy docs/releases/TEMPLATE-checklist.md`,
+      `MISSING or unreadable docs/releases/${tag}-checklist.md at ${sha}`,
     );
-    return;
+    return false;
   }
-  const unchecked = (readFileSync(path, "utf8").match(/^\s*-\s\[\s\]/gm) ?? [])
-    .length;
-  record(
-    "per-release checklist",
-    unchecked === 0,
-    unchecked === 0
-      ? "all boxes checked"
-      : `${String(unchecked)} unchecked box(es)`,
-  );
 }
 
 // --- 7. live-hybrid golden leg (--local) ---------------------------------------------------------
@@ -371,8 +511,8 @@ if (import.meta.main) {
   checkChangelogs();
   checkSot();
   checkRegistryCoverageGate();
-  checkAuditArtifact(tag);
-  checkChecklist(tag);
+  checkAuditArtifact(tag, sha);
+  checkChecklist(tag, sha);
   if (local) checkLiveHybrid();
 
   const failed = results.filter((r) => !r.ok);

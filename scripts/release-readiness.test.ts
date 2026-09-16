@@ -9,12 +9,244 @@
 // produce — a `needs: changes` + `if: needs.changes.outputs.x` gate (quality.yml already has that
 // `changes` job), a `paths:` at 6-space indent under a nested `on:`, and flow-style
 // `push: { paths: [...] }`. A text heuristic over YAML is the wrong tool when a parser is in hand.
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { execFileSync, spawnSync } from "node:child_process";
+import { dirname, join } from "node:path";
 
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 
-import { REQUIRED_CHECKS } from "./release-readiness.ts";
+import {
+  checkChecklist,
+  auditArtifactIsValid,
+  auditSuccessorIsValid,
+  ATTESTATION_ONLY_PATHS,
+  REQUIRED_CHECKS,
+} from "./release-readiness.ts";
+
+describe("R4 audit attestation", () => {
+  const dir = mkdtempSync(join(tmpdir(), "caisson-r4-"));
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+  function git(repo: string, ...args: string[]): string {
+    return execFileSync("git", args, {
+      cwd: repo,
+      env: {
+        ...process.env,
+        GIT_CONFIG_GLOBAL: "/dev/null",
+        GIT_CONFIG_NOSYSTEM: "1",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    })
+      .toString()
+      .trim();
+  }
+  function scratch(): string {
+    const repo = mkdtempSync(join(dir, "repo-"));
+    git(repo, "init", "--quiet");
+    git(repo, "config", "user.name", "R4 lifecycle fixture");
+    git(repo, "config", "user.email", "r4@example.invalid");
+    writeFileSync(join(repo, "product.ts"), "export const version = 1;\n");
+    commit(repo);
+    git(repo, "tag", "v2026.08.18");
+    writeFileSync(join(repo, "product.ts"), "export const version = 2;\n");
+    commit(repo);
+    return repo;
+  }
+  function commit(repo: string): string {
+    git(repo, "add", ".");
+    git(repo, "commit", "--quiet", "-m", "test: lifecycle fixture");
+    return git(repo, "rev-parse", "HEAD");
+  }
+  const fixtureRepo = scratch();
+  const binding = {
+    base: "v2026.08.18",
+    tag: "v2026.09.16",
+    reviewed_sha: git(fixtureRepo, "rev-parse", "HEAD"),
+  };
+  const clean = {
+    schema_version: 2,
+    ...binding,
+    status: "clean",
+    critical: 0,
+    reviewed_scope: ["scripts/release-readiness.ts"],
+    reviewers: [
+      {
+        role: "code_review",
+        identity: "gw-code-reviewer",
+        reviewed_at: "2026-09-16T02:37:11Z",
+      },
+      {
+        role: "security_audit",
+        identity: "gw-security-auditor",
+        reviewed_at: "2026-09-16T02:37:11Z",
+      },
+    ],
+  };
+  function fixture(text: string): string {
+    const path = join(dir, `${crypto.randomUUID()}.md`);
+    writeFileSync(path, text);
+    return path;
+  }
+  const document = (value: unknown) =>
+    `---\n${JSON.stringify(value)}\n---\n# Audit\n`;
+
+  function attestation(repo: string, reviewedSha: string): void {
+    mkdirSync(join(repo, "outputs/audit"), { recursive: true });
+    mkdirSync(join(repo, "docs/releases"), { recursive: true });
+    writeFileSync(
+      join(repo, `outputs/audit/release-audit-${binding.tag}.md`),
+      document({ ...clean, reviewed_sha: reviewedSha }),
+    );
+    writeFileSync(
+      join(repo, `docs/releases/${binding.tag}-checklist.md`),
+      "- [x] fixture\n",
+    );
+  }
+
+  test("R4 real Git lifecycle accepts review A then attestation-only B", () => {
+    const repo = scratch();
+    const a = git(repo, "rev-parse", "HEAD");
+    attestation(repo, a);
+    const b = commit(repo);
+    expect(a).not.toBe(b);
+    expect(auditSuccessorIsValid(repo, binding.tag, b)).toBe(true);
+    // Working-tree tampering cannot replace the committed attestation.
+    attestation(repo, git(repo, "rev-parse", "HEAD^"));
+    writeFileSync(
+      join(repo, `outputs/audit/release-audit-${binding.tag}.md`),
+      "invalid",
+    );
+    expect(auditSuccessorIsValid(repo, binding.tag, b)).toBe(true);
+  });
+  test("R373 rejects committed audit with leading newline before frontmatter", () => {
+    const repo = scratch();
+    attestation(repo, git(repo, "rev-parse", "HEAD"));
+    const path = join(repo, `outputs/audit/release-audit-${binding.tag}.md`);
+    writeFileSync(path, `\n${readFileSync(path, "utf8")}`);
+    const candidate = commit(repo);
+    // A clean working copy must not rescue malformed committed bytes either.
+    writeFileSync(path, readFileSync(path, "utf8").trimStart());
+    expect(auditSuccessorIsValid(repo, binding.tag, candidate)).toBe(false);
+  });
+
+  test("R373 accepts committed complete checklist despite incomplete dirty copy", () => {
+    const repo = scratch();
+    attestation(repo, git(repo, "rev-parse", "HEAD"));
+    const candidate = commit(repo);
+    writeFileSync(
+      join(repo, `docs/releases/${binding.tag}-checklist.md`),
+      "- [ ] dirty copy\n",
+    );
+    expect(checkChecklist(binding.tag, candidate, repo)).toBe(true);
+  });
+  test("R373 rejects checklist absent from candidate despite complete working copy", () => {
+    const repo = scratch();
+    const candidate = git(repo, "rev-parse", "HEAD");
+    attestation(repo, candidate);
+    expect(checkChecklist(binding.tag, candidate, repo)).toBe(false);
+  });
+
+  test("R373 rejects committed incomplete checklist despite completed dirty copy", () => {
+    const repo = scratch();
+    attestation(repo, git(repo, "rev-parse", "HEAD"));
+    const path = join(repo, `docs/releases/${binding.tag}-checklist.md`);
+    writeFileSync(path, "- [ ] live evidence pending\n");
+    const candidate = commit(repo);
+    writeFileSync(path, "- [x] live evidence complete\n");
+    expect(auditSuccessorIsValid(repo, binding.tag, candidate)).toBe(true);
+    expect(checkChecklist(binding.tag, candidate, repo)).toBe(false);
+  });
+
+  test.each([
+    "product.ts",
+    "outputs/audit/unreviewed.md",
+    "docs/releases/other-checklist.md",
+    " outputs/audit/other.md",
+  ])("R4 real Git lifecycle rejects unreviewed successor path %s", (path) => {
+    const repo = scratch();
+    const a = git(repo, "rev-parse", "HEAD");
+    attestation(repo, a);
+    mkdirSync(dirname(join(repo, path)), { recursive: true });
+    writeFileSync(join(repo, path), "unreviewed product or policy byte\n");
+    const b = commit(repo);
+    expect(auditSuccessorIsValid(repo, binding.tag, b)).toBe(false);
+  });
+  test("R4 real Git lifecycle rejects an audit naming C instead of parent A", () => {
+    const repo = scratch();
+    const a = git(repo, "rev-parse", "HEAD");
+    // C is a real distinct existing commit, not an invented forty-character fixture.
+    const c = git(repo, "rev-parse", `${a}^`);
+    attestation(repo, c);
+    const b = commit(repo);
+    expect(auditSuccessorIsValid(repo, binding.tag, b)).toBe(false);
+  });
+  test("R4 attestation allowlist names exactly the audit and checklist", () => {
+    expect(ATTESTATION_ONLY_PATHS).toEqual([
+      "outputs/audit/release-audit-{tag}.md",
+      "docs/releases/{tag}-checklist.md",
+    ]);
+  });
+
+  test("R4 rejects an existing empty audit instead of accepting its filename", () => {
+    expect(auditArtifactIsValid(fixture(""), binding)).toBe(false);
+  });
+  test("R4 accepts a clean audit bound to the exact base, tag and reviewed parent SHA", () => {
+    expect(auditArtifactIsValid(fixture(document(clean)), binding)).toBe(true);
+  });
+  test.each([
+    ["failed verdict", { status: "issues_found" }],
+    ["blocking finding", { critical: 1 }],
+    ["wrong SHA", { reviewed_sha: git(fixtureRepo, "rev-parse", "HEAD^") }],
+    ["wrong base", { base: "v2026.07.30" }],
+    ["wrong tag", { tag: "v2026.09.17" }],
+    ["empty scope", { reviewed_scope: [] }],
+    ["blank scope", { reviewed_scope: ["  "] }],
+    ["no reviewers", { reviewers: [] }],
+    [
+      "duplicate roles",
+      { reviewers: [clean.reviewers[0], clean.reviewers[0]] },
+    ],
+    [
+      "blank identity",
+      {
+        reviewers: [
+          { ...clean.reviewers[0], identity: " " },
+          clean.reviewers[1],
+        ],
+      },
+    ],
+    [
+      "invalid timestamp",
+      {
+        reviewers: [
+          { ...clean.reviewers[0], reviewed_at: "yesterday" },
+          clean.reviewers[1],
+        ],
+      },
+    ],
+    ["unknown metadata", { bypass: true }],
+  ] as const)("R4 rejects %s", (_label, patch) => {
+    expect(
+      auditArtifactIsValid(fixture(document({ ...clean, ...patch })), binding),
+    ).toBe(false);
+  });
+  test("R4 fails closed for absent, malformed and prose-only artifacts", () => {
+    expect(auditArtifactIsValid(join(dir, "absent.md"), binding)).toBe(false);
+    expect(auditArtifactIsValid(fixture("---\n[invalid\n---\n"), binding)).toBe(
+      false,
+    );
+    expect(
+      auditArtifactIsValid(fixture("Reviewed and approved"), binding),
+    ).toBe(false);
+  });
+});
 
 const WORKFLOWS_DIR = join(import.meta.dir, "..", ".github", "workflows");
 
@@ -26,6 +258,14 @@ interface Job {
   name?: string;
   if?: string;
   needs?: string | string[];
+  "continue-on-error"?: boolean;
+  steps?: {
+    name?: string;
+    run?: string;
+    env?: Record<string, string>;
+    if?: string;
+    "continue-on-error"?: boolean;
+  }[];
 }
 interface Trigger {
   paths?: string[];
@@ -83,7 +323,7 @@ describe("REQUIRED_CHECKS — the release-readiness gate's own input", () => {
 
   test("the set is non-empty, deduplicated, and at full strength", () => {
     // Guard the guard: a floor below the real size lets one silently drop out.
-    expect(REQUIRED_CHECKS.length).toBeGreaterThanOrEqual(6);
+    expect(REQUIRED_CHECKS.length).toBeGreaterThanOrEqual(7);
     expect(new Set(REQUIRED_CHECKS).size).toBe(REQUIRED_CHECKS.length);
     // And the parse itself must have found something, or every check below is vacuous.
     expect(byName.size).toBeGreaterThan(10);
@@ -112,6 +352,8 @@ describe("REQUIRED_CHECKS — the release-readiness gate's own input", () => {
     // path-filter job. quality.yml already has a `changes` job of exactly that shape, so this is a
     // pattern the repo can produce, not a hypothetical.
     const conditional = REQUIRED_CHECKS.flatMap((name) => {
+      // The fail-closed aggregate is tested structurally and behaviorally below.
+      if (name === "runtime-images-gate") return [];
       const hit = byName.get(name);
       if (!hit) return [];
       const reasons: string[] = [];
@@ -132,5 +374,52 @@ describe("REQUIRED_CHECKS — the release-readiness gate's own input", () => {
     // advisory silently restores "a red bot deploys anyway", which no structural check would catch.
     expect(REQUIRED_CHECKS).toContain("support-bot");
     expect(byName.get("support-bot")?.file).toBe("support-bot.yml");
+  });
+
+  test("runtime images aggregate is required by release readiness", () => {
+    expect(REQUIRED_CHECKS).toContain("runtime-images-gate");
+  });
+
+  test("runtime aggregate always consumes the selector and complete matrix", () => {
+    const hit = byName.get("runtime-images-gate");
+    expect(hit?.file).toBe("security-scan.yml");
+    expect(hit?.job.if).toBe("always()");
+    expect(hit?.job.needs).toEqual(["runtime-select", "runtime-images"]);
+    expect(hit?.job["continue-on-error"]).not.toBe(true);
+    expect(hit?.job.steps).toHaveLength(1);
+    const step = hit?.job.steps?.[0];
+    expect(step?.if).toBeUndefined();
+    expect(step?.["continue-on-error"]).not.toBe(true);
+    expect(step?.env).toEqual({
+      SELECT_RESULT: "${{ needs.runtime-select.result }}",
+      MATRIX_RESULT: "${{ needs.runtime-images.result }}",
+    });
+  });
+
+  function aggregate(select: string, matrix: string): number | null {
+    const script = byName.get("runtime-images-gate")?.job.steps?.[0]?.run;
+    if (!script) throw new Error("runtime aggregate script missing");
+    // Execute the actual workflow gate with synthetic outcomes; no scanners or credentials.
+    return spawnSync("bash", ["-c", script], {
+      env: {
+        PATH: process.env.PATH,
+        SELECT_RESULT: select,
+        MATRIX_RESULT: matrix,
+      },
+    }).status;
+  }
+
+  test("runtime aggregate rejects a failed matrix member", () => {
+    expect(aggregate("success", "failure")).toBe(1);
+  });
+
+  test("runtime aggregate is green only when both dependencies succeed", () => {
+    for (const select of ["success", "failure", "cancelled", "skipped", ""]) {
+      for (const matrix of ["success", "failure", "cancelled", "skipped", ""]) {
+        expect(aggregate(select, matrix)).toBe(
+          select === "success" && matrix === "success" ? 0 : 1,
+        );
+      }
+    }
   });
 });

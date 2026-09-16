@@ -124,6 +124,24 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+  # R359 / CR-05: one stable check consumes every matrix member's result, including
+  # cancellation/failure/skips. always() prevents a red dependency from skipping the gate.
+  runtime-images-gate:
+    name: runtime-images-gate
+    if: always()
+    needs: [runtime-select, runtime-images]
+    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    steps:
+      - name: require successful runtime selection and every image
+        env:
+          SELECT_RESULT: ${{ needs.runtime-select.result }}
+          MATRIX_RESULT: ${{ needs.runtime-images.result }}
+        run: |
+          set -euo pipefail
+          test "$SELECT_RESULT" = success
+          test "$MATRIX_RESULT" = success
+
   # Semgrep PRO (interfile / cross-function taint). Dormant until SEMGREP_APP_TOKEN is set. The job
   # ALWAYS runs — a job-level `if` CANNOT reference the `secrets` context (doing so is a parse-time
   # "Unrecognized named-value: secrets" that invalidates the ENTIRE workflow file, killing the

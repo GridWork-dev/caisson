@@ -23,15 +23,17 @@ export interface CommandSpec {
   readonly command: string;
   /** Validates the caller-supplied `args` INTO the exact argv array passed to `execFile`. */
   readonly argsSchema: ZodType<string[]>;
+  /** Bump when approval semantics change. Outstanding approvals for another version are rejected. */
+  readonly policyVersion?: string;
   /** Optional child environment. Absent → inherits the parent's full env (the default). */
   readonly env?: Readonly<Record<string, string>>;
 }
 
 /**
  * A validated, not-yet-executed call (ADR-0360 S3 two-phase gate): the allowlist lookup + Zod
- * validation have already run, so `execute` never re-validates `args` — the recorded `args` here
- * ARE the exact argv `execute` will spawn. Serializable (plain data) so a caller can park it in an
- * external approval store between `propose` and `execute` without re-deriving anything.
+ * validation have already run. This pure/browser proposal is NOT execution authority.
+ * createToolExec.propose issues a separate server-stored, digest-bound ToolApproval; execute
+ * consumes that record and re-validates original input under the current command policy.
  */
 export interface ProposedToolCall {
   readonly name: string;
