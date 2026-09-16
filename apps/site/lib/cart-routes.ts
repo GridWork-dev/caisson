@@ -49,22 +49,24 @@ export function cartCheckoutHandler(deps: CartRouteDependencies) {
     // Cookie-authenticated mutation: require same-origin JSON, never accept a posted account id.
     if (request.headers.get("origin") !== new URL(request.url).origin)
       return json({ error: "forbidden" }, 403);
-    const session = await deps.session(request);
-    if (session === null) return json({ error: "unauthenticated" }, 401);
-    if (
-      request.headers.get("content-type")?.split(";")[0]?.trim() !==
-      "application/json"
-    )
-      return json({ error: "invalid request" }, 400);
-    const parsed = bodySchema.safeParse(await request.json().catch(() => null));
-    if (!parsed.success) return json({ error: "invalid request" }, 400);
-    const catalog = new Map(
-      [...BUNDLE_CATALOG, ...MODULE_CATALOG].map((item) => [item.id, item]),
-    );
-    const ids = [...new Set(parsed.data.itemIds)];
-    if (ids.some((id) => !catalog.has(id)))
-      return json({ error: "unknown catalog item" }, 400);
     try {
+      const session = await deps.session(request);
+      if (session === null) return json({ error: "unauthenticated" }, 401);
+      if (
+        request.headers.get("content-type")?.split(";")[0]?.trim() !==
+        "application/json"
+      )
+        return json({ error: "invalid request" }, 400);
+      const parsed = bodySchema.safeParse(
+        await request.json().catch(() => null),
+      );
+      if (!parsed.success) return json({ error: "invalid request" }, 400);
+      const catalog = new Map(
+        [...BUNDLE_CATALOG, ...MODULE_CATALOG].map((item) => [item.id, item]),
+      );
+      const ids = [...new Set(parsed.data.itemIds)];
+      if (ids.some((id) => !catalog.has(id)))
+        return json({ error: "unknown catalog item" }, 400);
       const owned = await deps.owned(session.accountId);
       const remaining = ids.filter((id) => !owned.has(id));
       const removed = ids.filter((id) => owned.has(id));
@@ -79,7 +81,7 @@ export function cartCheckoutHandler(deps: CartRouteDependencies) {
       });
       return json({ transactionId, removed });
     } catch {
-      // Failed entitlement reads never become an empty ownership set. Never echo provider errors.
+      // Failed session/account/entitlement reads block checkout. Never echo provider errors.
       return json({ error: "checkout unavailable" }, 503);
     }
   };

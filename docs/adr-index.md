@@ -7,7 +7,7 @@ grounds:
 
 # ADR index
 
-Current ADR ceiling: **0425** — S8 binds release review to the attestation successor parent.
+Current ADR ceiling: **0426** — S8 commerce account resolution fails closed.
 
 Canonical catalog of every Architecture Decision Record in `knowledge/decisions/`. This
 file is a **synthesized view** (number -> title -> domain -> status -> supersession). It does
@@ -1122,6 +1122,7 @@ ADR-0088 numbering split held — no collision).
 | [0423](../knowledge/decisions/ADR-0423-bind-tool-approvals-to-private-records.md) | R359 locks private digest-bound, one-shot tool approval records, current-policy revalidation and spec-owned child environment; supersedes ADR-0360 S3 caller-owned execution proposals. |
 | [0424](../knowledge/decisions/ADR-0424-recheck-cart-entitlements-before-checkout.md) | R359 locks real-session ownership and server-created cart transactions after current entitlement filtering; supersedes ADR-0418 hint-absence short-circuit. |
 | [0425](../knowledge/decisions/ADR-0425-bind-release-audit-to-reviewed-parent.md) | R370 binds R4 to reviewed_sha and proves the final successor changes only the tag audit and checklist; supersedes CR-06 self-reference. |
+| [0426](../knowledge/decisions/ADR-0426-fail-closed-commerce-account-resolution.md) | R371 separates strict commerce account resolution from dashboard availability fallback; supersedes that resolver choice in ADR-0424. |
 
 ---
 

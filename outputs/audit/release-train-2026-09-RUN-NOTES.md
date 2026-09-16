@@ -1,5 +1,38 @@
 # S8 release train run notes — 2026-09-10
 
+## R371 CR-08 — fail-closed commerce resolver (2026-09-16)
+
+CR-07 committed `a81c537a`. CR-08 adds getCheckoutSession/resolveCheckoutAccount and
+binds the actual checkout route to that resolver. Membership failures propagate;
+stale/forged explicit account selections cannot silently select another tenant.
+The handler includes session/account resolution inside the 503 error boundary.
+Dashboard getSession remains unchanged. ADR-0426 supersedes only ADR-0424 resolver reuse.
+
+Production-binding fixture imports the real route and both real resolvers with isolated
+boundary doubles. A selected organization plus failing membership resolution reaches
+neither entitlements nor Paddle. It also tests verified personal/org success, absent
+session, provider errors, empty membership and preserved dashboard fallback. It runs
+outside the normal site test directories in a child runner invoked by a normal lib test,
+preventing process-wide mock leakage. No live provider/DB call occurs.
+
+**Bun 1.4.2 — isolated production binding: 8 pass / 0 fail / 23 assertions**, exit 0.
+**Bun 1.4.2 — restored cart/auth affected suite: 25 pass / 0 fail / 78 assertions**,
+exit 99, the previously reproduced and explicitly accepted auth-account teardown outcome.
+That suite includes the wrapper proving all eight isolated cases passed; its assertion
+total does not add the child assertions. Site typecheck and named lint pass.
+Logs: estate handoff S8-R371-CR08-{production-binding,restored,typecheck}.log.
+
+Three mutation arms on Bun 1.4.2 each exit 1: switch strict resolver back to dashboard
+fallback **0 pass / 1 fail / 1 assertion**; move session resolution outside failure
+boundary **0 pass / 1 fail**, thrown membership error before assertions; remove strict
+explicit-account match **0 pass / 1 fail / 1 assertion**. Byte-identical restoration:
+
+- auth.ts: `24db96cdb5ddc01ea10aa77af25eb4b2f4389d99acd76bde2457d589ec8128cd`
+- cart-routes.ts: `f3d232f0eacc18b06a0593ec4ac43a025d4677c06926be04f130589d0dcb7114`
+
+Machine evidence: S8-R371-CR08-mutation-{resolver,boundary,selection}.result.json in handoff.
+WR-01, full bounded gate and renewed code/security reviews remain. No PR or push.
+
 ## R370 CR-07 — reviewed-parent attestation lifecycle (2026-09-16)
 
 S8_REPAIRS_2 locks option A. ADR-0425 records schema v2 reviewed_sha = final

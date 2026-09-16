@@ -1,5 +1,13 @@
 # S8 release train receipt — R356 retry 3 review blockers
 
+## R371 CR-08 executed; WR-01 next
+
+CR-07 committed a81c537a. Commerce now fails closed on membership resolution errors,
+with dashboard fallback preserved (ADR-0426). Bun 1.4.2 production-binding fixture:
+8 pass / 0 fail / 23 assertions; restored affected suite 25 pass / 0 fail / 78 assertions
+with the accepted pre-existing exit 99. Three mutation arms restored byte-identically;
+site typecheck/lint pass. WR-01 and the full gate plus both reviews remain open.
+
 ## R370/R371 repair cycle authorized
 
 S8_REPAIRS_2 supersedes the hold below for three ordered repairs and re-review.

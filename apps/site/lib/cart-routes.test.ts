@@ -123,7 +123,7 @@ test("production checkout route binds session, scoped ownership and server trans
     new URL("../app/api/cart/checkout/route.ts", import.meta.url),
   ).text();
   for (const binding of [
-    "session: getSession",
+    "session: getCheckoutSession",
     "owned: getOwnedCartItemIdsForAccount",
     "createTransaction: createPaddleCartTransaction",
   ])
