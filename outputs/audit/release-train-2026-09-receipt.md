@@ -1,5 +1,45 @@
 # S8 release train receipt — R370/R371 security hold
 
+## R378 candidate preflight complete — green PR preparation (2026-09-16)
+
+Build-state correction committed `c9250e861117c6c05b06002835a76cfb9bde60e2`;
+single docs file, clean readback. Its commit body quotes the measurement command,
+which invokes SOT's exact current counting functions: local-store **12/10/1201**,
+tool-exec **5/3/509**. ADR ceiling is 0427 with three new changelog rows. No dates bumped.
+
+SOT rerun **once**, exit 1 as predicted: only frontmatter-freshness and branch-hygiene
+are **EXPECTED-DRIFT** under R378. All other checks GREEN, including ADR and package
+parity. All sixteen lagging documents and source dates are preserved in
+[s8-r378-sot.log](s8-r378-sot.log). This is an accepted PR preflight, not an aggregate
+release-readiness pass. All branches and the four other worktrees remain preserved.
+
+Fresh five-item removal proof: [s8-r378-absence.json](s8-r378-absence.json).
+Four frozen marker UUIDs/five diagnostic identifiers absent from six source/test files
+and both rebuilt limiter artifacts; hashes match prior removal baseline. Three source
+files equal e2116849; six source/test paths equal 7e11672c. Removal is an ancestor,
+temporary changeset absent, empty removal changeset retained. Only the two documented
+approval/egress repair changesets differ from bound main. Bun 1.4.2 **64/0/168**;
+build and six-file oxlint exit 0. Graph coverage is stale/tests excluded; this proof
+uses current bytes, exact marker census and Git/hash comparisons, not graph absence.
+
+Installed **@changesets/cli 2.31.1**, invoked with
+`bun node_modules/@changesets/cli/bin.js status` (no since filter): **37 pending
+changesets → 60 bumps, 57 patch / 3 minor / 0 major**, unchanged expected versions.
+No version consumption. Forge main reverified at 7e11672c; no existing open lane PR.
+
+R373 code/security reports both PASS WITH DISCLOSURES, zero new findings; scoped
+findings closed and inherited security register 9/9. Reviewed product bytes remain
+98a3501d; successors are docs/evidence only. The R373 single bounded full gate and
+mutation results are historical verification of those unchanged bytes; no unnecessary
+full rerun. Review/checklist preparation now names the seven required checks and
+the reviewed-parent contract. Nine final preflight boxes remain unchecked.
+
+One apply_patch invocation rejected a duplicate delete/add path before editing;
+the authorized own-tool retry used an update patch and succeeded. No gate or floor
+denial occurred. Proceed to normal preparation commit, lane push and one PR, then
+verify all required/additional active checks on its exact head. Hold at green only;
+no merge, tag, publish, deploy, live probe or branch deletion.
+
 ## Current hold — R373 candidate SOT (2026-09-16)
 
 **S8_RELEASE_HELD.** Repairs are committed: CR-07/WR-03 `0bd7433f`, WR-02

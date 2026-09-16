@@ -1,6 +1,7 @@
 # S8 release checklist preparation — final tag unbound
 
-Preparation only, bound to candidate 05081a20091d3a7971609daab94008c8d352688e. No final tag has been selected or cut. All nine preflight boxes remain open; this file is not a release attestation. Copy and bind the actual tag only after its inputs exist.
+R378 preparation for the green release PR. All nine preflight boxes remain unchecked.
+Bind a future copy to the actual tag only after its inputs exist. This is not a release attestation.
 `scripts/release-readiness.ts` (run by the release train's readiness job, R3) requires this
 file to exist for the tag with **zero unchecked boxes** — every `- [ ]` below is a pre-flight
 item that must be `- [x]` before the Release is published. The plain "post" bullets are
@@ -11,14 +12,14 @@ verification steps after the train runs; they are deliberately not checkboxes.
 - [ ] Version PR merged to main (dispatch `version-pr.yml` → review → merge; ADR-0325):
       `.changeset/` drained, versions bumped, CHANGELOGs written, `bun.lock` refreshed, AND
       `registry/{ledger.jsonl,index.json,tarballs.json}` updated in the SAME commit
-- [ ] The draft GitHub Release's tag targets the version-PR merge commit or its
-      attestation-only successor (docs/audit/checklist only — no package bytes; readiness
-      reads the R4 audit + this checklist from the TAGGED tree, and this checklist is only
-      completable after the merge, so a successor commit is the normal shape — operator lock
-      2026-07-12, first ride). publish.yml re-verifies ancestry and byte-reproduces every
-      tarball hash at the tag — a mismatch stops the train
+- [ ] The draft release tag targets the single-parent attestation successor of the reviewed
+      version candidate. Only outputs/audit/release-audit-<tag>.md and
+      docs/releases/<tag>-checklist.md may differ from its reviewed parent (ADR-0425).
+      The tagged tree contains the audit naming reviewed_sha = that parent; readiness
+      verifies both the parent binding and exact changed-path allowlist. No product or
+      other documentation bytes may enter this successor.
 - [ ] CI green on the release SHA (check · standards-gate · registry-index · oscal-conformance ·
-      deterministic · support-bot — the push-to-main run on the version-PR merge commit)
+      deterministic · support-bot · runtime-images-gate — the full run on the final tagged successor SHA)
 - [ ] `bun run sot` green
 - [ ] R4 fresh full audit of the cumulative diff since the last release tag, on file at
       `outputs/audit/release-audit-<tag>.md` (SHIP-audit lane: gw-code-reviewer +
@@ -31,6 +32,26 @@ verification steps after the train runs; they are deliberately not checkboxes.
 - [ ] No open P0/P1 against the buyer install path (registry tarballs resolve for
       `dist-tags.latest` of every published package)
 
+## R4 artifact schema (R370 / ADR-0425)
+
+The audit begins with strict YAML frontmatter containing only: schema_version: 2,
+status: clean, critical: 0, base (previous release tag), tag (this release), reviewed_sha
+(the exact 40-character SHA of the tag candidate parent), reviewed_scope (a non-empty
+array of paths), and reviewers. Reviewers contains exactly one code_review and one
+security_audit entry, each with role, non-empty identity, and reviewed_at ISO timestamp
+with timezone. Unknown fields, failed verdicts, incomplete identities and wrong bindings
+fail closed. The gate derives the reviewed parent and previous release itself.
+
+Review candidate A first. Commit its completed audit naming A and the completed checklist
+as successor B. Only these two tag-specific regular files may change. The gate reads the
+committed audit in B, proves B has exactly one parent A, and rejects every other changed
+path (including other audit or checklist files). Full CI still runs on B, not merely A.
+Never put B inside its own audit: that would change its SHA. The release workflow keeps
+passing the final tag SHA; readiness derives reviewed_sha with rev-parse <tag_sha>^.
+
+Do not copy a preparation or failed report into the tag-named path. No release tag or final
+attestation exists during preparation; this template is not a completed audit.
+
 ## Post-release verification (after the train completes)
 
 - (post) Registry spot-check: `bun add @caisson/kernel@latest` from a clean env with the
@@ -41,8 +62,10 @@ verification steps after the train runs; they are deliberately not checkboxes.
 - (post) Site redeploy live: /updates shows the entry
 - (post) Announcement posted (operator act — W3/window motion per ADR-0318 F5)
 
-## Current measured inputs and open gates
+## Current preparation status
 
-Step 2 fresh absence proof is complete on Bun 1.4.2. Step 3 full-backlog CLI is complete: 35 changesets, 60 planned version bumps (57 patch, 3 minor). These are preparation inputs, not completed version/CI/publication boxes.
-
-R4 remains NOT RUN by peers; s8-release-review-preparation.md records the refusal and precise review targets. Accepted lane branch/freshness drift does not make aggregate SOT exit 0 in release-readiness. Final tag, version PR, six-check roster, live-hybrid evidence, buyer install proof and buyer-facing release content remain open. Do not run readiness against an invented tag or check these boxes based on historical releases.
+Product candidate `98a3501d` has clean code/security repair verdicts with their stated
+coverage limits. R378 candidate SOT has only the two explicitly accepted drift classes;
+aggregate release SOT remains open. Fresh removal proof passes on `c9250e86`.
+Pending changesets are retained for the later version workflow. No final tag, version PR,
+tag-bound audit, live-hybrid result, buyer-install proof or publication is claimed.

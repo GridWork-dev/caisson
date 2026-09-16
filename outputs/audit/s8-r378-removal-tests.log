@@ -1,0 +1,80 @@
+bun test v1.4.2 (744846f84)
+
+packages/rate-limit/src/token-bucket.test.ts:
+(pass) TokenBucketLimiter > allows up to capacity then denies, with a positive retryAfterSec [0.36ms]
+(pass) TokenBucketLimiter > refills at the window boundary (injected clock) [0.06ms]
+(pass) TokenBucketLimiter > buckets and IPs are independent [0.05ms]
+(pass) TokenBucketLimiter > checkGlobal bounds aggregate throughput across distinct IPs [0.05ms]
+(pass) TokenBucketLimiter > map stays bounded under a spray of distinct IPs [1.55ms]
+(pass) clientIp > trusts X-Real-IP [0.15ms]
+(pass) clientIp > ignores forwarded-for style headers [0.50ms]
+(pass) clientIp > missing header collapses to the shared 'unknown' sentinel
+
+services/license/src/issue-app.integration.test.ts:
+[service-license] ALERT: rate-limiter infrastructure failure; bucket=issue; policy=fail-closed
+(pass) POST /issue (ADR-0110) > /issue fails closed with 503 and alerts when limiter check throws [2.02ms]
+[service-license] ALERT: rate-limiter infrastructure failure; bucket=issue; policy=fail-closed
+(pass) POST /issue (ADR-0110) > /issue fails closed with 503 and alerts when limiter checkGlobal throws [0.09ms]
+[service-license] ALERT: rate-limiter infrastructure failure; bucket=issue; policy=fail-closed
+(pass) POST /issue (ADR-0110) > /admin/affiliate/mint fails closed with 503 and alerts when limiter check throws [0.03ms]
+[service-license] ALERT: rate-limiter infrastructure failure; bucket=issue; policy=fail-closed
+(pass) POST /issue (ADR-0110) > /admin/affiliate/mint fails closed with 503 and alerts when limiter checkGlobal throws [0.02ms]
+(pass) POST /issue (ADR-0110) > issues a token for a purchased account that verifies to its resolved entitlements [9.27ms]
+(pass) POST /issue (ADR-0110) > an account with no purchases issues a token with empty entitlements [2.78ms]
+(pass) POST /issue (ADR-0110) > persist & reuse: a second /issue for the SAME (account, major) re-serves the stored token [6.02ms]
+(pass) POST /issue (ADR-0110) > rotate: true forces a FRESH mint that replaces the stored grant in place (key rotation) [7.85ms]
+(pass) POST /issue (ADR-0110) > a different major for the same account mints + stores its own independent grant [5.09ms]
+(pass) POST /issue (ADR-0110) > without a Bearer → 401 [0.15ms]
+(pass) POST /issue (ADR-0110) > with a wrong Bearer → 401 [0.06ms]
+(pass) POST /issue (ADR-0110) > an unknown body field → 400 (Zod .strict()) [0.50ms]
+(pass) POST /issue (ADR-0110) > an unknown tier → 400 (shared licenseTierSchema) [0.16ms]
+(pass) POST /issue (ADR-0110) > invalid JSON → 400 [0.39ms]
+(pass) POST /issue (ADR-0110) > wrong method on /issue → 405 [0.06ms]
+(pass) POST /issue admin-scoped credential (ADR-0220) > the admin token authorizes /issue and reissue re-serves the SAME stored token [4.15ms]
+(pass) POST /issue admin-scoped credential (ADR-0220) > the primary token still works on the admin-configured app [1.98ms]
+(pass) POST /issue admin-scoped credential (ADR-0220) > no bearer → 401, and a wrong bearer → 401 (credential gating) [0.15ms]
+(pass) POST /issue admin-scoped credential (ADR-0220) > an app WITHOUT an admin token rejects the admin credential (no accidental widening) [0.04ms]
+(pass) POST /issue updates windows (ADR-0244/0255) > a one-time buyer's token carries updatesWindows[entitlementId] = granted_at + 12 months [3.23ms]
+(pass) POST /issue updates windows (ADR-0244/0255) > a subscription-only account's token carries an empty updatesWindows map (unbounded, ADR-0244 §4) [2.68ms]
+(pass) POST /issue updates windows (ADR-0244/0255) > UNCHANGED map → stored token re-served byte-identical; CHANGED map → re-mint in place [10.83ms]
+(pass) POST /issue updates windows (ADR-0244/0255) > renewing entitlement X re-mints and extends ONLY X's window — an unrenewed entitled Y keeps its own [5.94ms]
+(pass) POST /issue snapshot-at-sale entitledSince (ADR-0257 §1.2) > a one-time buyer's token carries entitledSince[entitlementId] = granted_at [2.79ms]
+(pass) POST /issue snapshot-at-sale entitledSince (ADR-0257 §1.2) > a subscription-only account's token carries an empty entitledSince map (grandfathered) [2.77ms]
+(pass) POST /issue snapshot-at-sale entitledSince (ADR-0257 §1.2) > entitledSince change ALONE re-mints even when updatesWindows is byte-identical [5.88ms]
+(pass) issuer non-issue routes > GET /health → 200 + security headers (public) [0.12ms]
+(pass) issuer non-issue routes > every response carries the serving revision, gate or no gate [0.31ms]
+(pass) issuer non-issue routes > origin gate exempts the exact health probe path and accepts both rotation secrets [0.18ms]
+(pass) issuer non-issue routes > the health carve is exact — near-miss paths stay behind the origin gate [0.16ms]
+(pass) issuer non-issue routes > a query string does not widen the carve — same path, same response [0.06ms]
+(pass) issuer non-issue routes > the carved path equals the healthcheckPath Railway actually probes [5.44ms]
+(pass) issuer non-issue routes > origin gate independently rejects a direct /issue request [0.27ms]
+(pass) issuer non-issue routes > unknown path → 404 [0.07ms]
+
+apps/site/lib/ask-ai/handler.test.ts:
+(pass) 400 on non-JSON body [10.97ms]
+(pass) 400 on a missing question and on an unknown field (.strict) [1.07ms]
+(pass) 413 on an oversized body, rejected before parse/Turnstile (CWE-770) [0.13ms]
+(pass) 403 when Turnstile verification fails (fail closed), before any paid work [0.10ms]
+(pass) anonymous → public lane model; valid session → premium lane model [1.43ms]
+(pass) grounded answer streams token(s) + citations, and settles the reservation with the real cost [0.35ms]
+(pass) sentinel reply escalates (insufficient_context), no citations [0.14ms]
+(pass) a framing-leak reply escalates (leaked_framing) instead of returning it [0.08ms]
+(pass) retrieval failure and empty retrieval both escalate (never ungrounded) [0.29ms]
+(pass) public lane whose reservation is refused fails CLOSED to escalation, without retrieving, generating, or settling [0.12ms]
+(pass) premium (authed) lane is metered too — its OWN reservation + settle, not a free lane [0.14ms]
+(pass) premium lane AT its own cap fails CLOSED to escalation too, without retrieving or generating [0.09ms]
+(pass) capture receives lane, question, and the terminal outcome on both paths [0.17ms]
+(pass) a capture failure never reaches the response (best-effort), and no capture runs on a 403 [0.22ms]
+(pass) escalate receives the question + reason on a genuine couldn't-answer outcome [0.10ms]
+(pass) escalate is never called on a resolved answer [0.10ms]
+(pass) escalate is never called for spend_cap (a capacity signal, not a question a human needs) [0.07ms]
+(pass) an escalate failure never reaches the response (best-effort) [0.12ms]
+(pass) captureGeneration receives the usage on a resolved answer (tokens, cost, no error) [0.16ms]
+(pass) captureGeneration still fires on a successful-but-escalated generation (sentinel) [0.09ms]
+(pass) captureGeneration reports is_error on a generation failure [0.17ms]
+(pass) captureGeneration is NOT called when no model ran (spend_cap) [0.07ms]
+
+ 64 pass
+ 0 fail
+ 168 expect() calls
+Ran 64 tests across 3 files. [2.53s]

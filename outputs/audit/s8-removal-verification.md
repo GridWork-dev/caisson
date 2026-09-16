@@ -1,5 +1,15 @@
 # S8 diagnostic removal verification — R324
 
+## R378 fresh candidate proof — 2026-09-16
+
+Candidate c9250e861117c6c05b06002835a76cfb9bde60e2: all five proof items pass.
+Exact eight-file hashes, four marker UUIDs, five identifiers, ancestry and changeset
+accounting: [s8-r378-absence.json](s8-r378-absence.json). Fresh Bun 1.4.2 tests
+64/0/168, build and six-file lint pass. Source/emitted artifacts match the historical
+removal hashes below. Only the two approval/egress repair changesets differ from main.
+The R373 code/security reviews later ran and passed with stated limits; the older
+never-ran statement below is historical. Final candidate CI remains a separate PR gate.
+
 Removal merge: `0b2046e722750a732ad23aa6f9d9ff230fbd2d5d` (#479, forge-verified 2026-09-14T17:50:51Z). Verified candidate: `bb99e27ee809f9b764cac6ef1632a4de9de8e196`, with removal `0b2046e722750a732ad23aa6f9d9ff230fbd2d5d` as its second parent; ancestry check exited zero. Subsequent receipt-only commits do not change these measured source files.
 
 1. **Source:** all four fixed UUID markers, `[s8-direct-key]`, `[s8-direct-ip]`, `s8ProbeDeadline`, `s8ProbeMarkers` and `observeKey` absent from the three named implementation paths.

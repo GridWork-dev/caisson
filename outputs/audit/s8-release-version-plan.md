@@ -70,3 +70,10 @@ Of the 52 currently eligible package tarballs, 44 have planned version bumps. Un
 | `@caisson/verify-pack`                 | patch | 0.2.3   | 0.2.4   | dependent |
 
 The local-store egress guard is planned for 1.1.2; betterstack-adapter for 0.0.11. Site session-hint hardening is an application deployment effect (site 0.4.1), not proof that the dependent auth bump publishes that change. Consumers have not moved as a result of this status calculation.
+
+## R378 inventory readback — 2026-09-16
+
+Installed @changesets/cli 2.31.1 full-backlog status confirms 37 pending files and
+60 workspace bumps (57 patch, 3 minor, no major). The two additional pending files
+are the approval and egress repairs; the effective version plan below is unchanged.
+No files consumed or package versions written. See s8-r378-changesets.log.

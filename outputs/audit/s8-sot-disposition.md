@@ -1,5 +1,14 @@
 # S8 SOT disposition — 2026-09-10
 
+## R378 current disposition — 2026-09-16
+
+The authorized build-state correction c9250e86 reconciles ADR-0427 and the two
+measured count rows. The single SOT rerun returns GREEN for ADR and package parity
+and every other check except the two accepted EXPECTED-DRIFT classes: frontmatter
+freshness and branch hygiene. Exact sixteen-document/source-date evidence is in
+[s8-r378-sot.log](s8-r378-sot.log). No dates, branches or other worktrees changed.
+R378 allows green-PR preparation; aggregate release readiness still requires SOT exit 0.
+
 The operator resolved the prior SOT stop and directed continuation. This is a scoped disposition, not a claim that the unmodified aggregate SOT command is green.
 
 | Check                 | Disposition                                                                                                                                                                                                                                                                                                                                          |

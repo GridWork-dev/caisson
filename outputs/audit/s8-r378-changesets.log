@@ -1,0 +1,67 @@
+🦋  info Packages to be bumped at patch:
+🦋  info
+🦋  - @caisson/ai-kit
+🦋  - @caisson/cli
+🦋  - @caisson/email
+🦋  - @caisson/local-store
+🦋  - @caisson/service-betterstack-adapter
+🦋  - @caisson/audit-worm
+🦋  - @caisson/agent-runner
+🦋  - @caisson/admin
+🦋  - @caisson/service-license
+🦋  - @caisson/site
+🦋  - @caisson/service-docs
+🦋  - @caisson/license-verify
+🦋  - @caisson/tenancy-rls
+🦋  - @caisson/demos
+🦋  - @caisson/service-intel
+🦋  - @caisson/observability
+🦋  - @caisson/audit-harness
+🦋  - @caisson/alerting
+🦋  - @caisson/agent-dev
+🦋  - @caisson/local-inference
+🦋  - @caisson/demo-registry
+🦋  - @caisson/access-review
+🦋  - @caisson/compliance
+🦋  - @caisson/risk-register
+🦋  - @caisson/platform-migrations
+🦋  - @caisson/platform-reads
+🦋  - @caisson/license-issue
+🦋  - @caisson/registry
+🦋  - @caisson/agent-trajectory
+🦋  - @caisson/ai-meter
+🦋  - @caisson/auth
+🦋  - @caisson/billing-orchestration
+🦋  - @caisson/credits
+🦋  - @caisson/field-crypto
+🦋  - @caisson/jobs
+🦋  - @caisson/mcp-server
+🦋  - @caisson/org-controls
+🦋  - @caisson/prompt-registry
+🦋  - @caisson/rate-limit
+🦋  - @caisson/standards-gate
+🦋  - @caisson/ai-config
+🦋  - @caisson/artifact-render
+🦋  - @caisson/billing
+🦋  - @caisson/compliance-core
+🦋  - @caisson/frameworks-pack
+🦋  - @caisson/guardrails
+🦋  - @caisson/local-privacy
+🦋  - @caisson/local-sync
+🦋  - @caisson/migrate
+🦋  - @caisson/oscal-spine
+🦋  - @caisson/pricebook
+🦋  - @caisson/retention-runner
+🦋  - @caisson/signing-primitive
+🦋  - @caisson/trust-page
+🦋  - @caisson/ui-pro
+🦋  - @caisson/verify-pack
+🦋  - @caisson/ai-evals
+🦋  ---
+🦋  info Packages to be bumped at minor:
+🦋  info
+🦋  - @caisson/tool-exec
+🦋  - @caisson/kernel
+🦋  - @caisson/agent-kernel
+🦋  ---
+🦋  info NO packages to be bumped at major

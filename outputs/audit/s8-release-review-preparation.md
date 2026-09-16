@@ -1,34 +1,52 @@
-# S8 release review preparation — R4 NOT SATISFIED
+# S8 release review preparation — R378 green-PR boundary
 
-## Binding and evidence status
+Current product review candidate: `98a3501d1e3cdf2e30955b1f7d6d4345cac5e732`.
+R378 adds only the authorized build-state correction at `c9250e86`; later preparation
+and receipt commits contain no product changes. Forge main remains
+`7e11672c29d21b57a12cf1ad1d4758abbd12b66b`. No release tag or version is selected.
 
-Prepared on 2026-09-15. Scope: v2026.08.18..05081a20091d3a7971609daab94008c8d352688e, plus this preparation's eventual commit. The measured initial scope is 88 commits, 425 paths, +20,995 / -3,643. These are scope counts, not proof that every line has been audited. Main baseline is 7e11672c29d21b57a12cf1ad1d4758abbd12b66b; reconciliation is a5d9cfea5136a2fd8a18ea73b574b5968ff765aa.
+## Completed review chain
 
-**Peer code review and security dispatches were refused admission and never ran.** The earlier measured projection was 98% against a 95% ceiling. No retry, override, alternate review dispatch or quota-reset wait occurred. This preparation carries one set of eyes. It is not independently reviewed and does not satisfy the release checklist's R4 full SHIP-audit requirement. No new admission refusal is claimed in R352.
+- Original cumulative code review: [R356 report](s8-r356-retry3-REVIEW.md), six findings;
+  subsequent repairs and review rounds are preserved in RUN-NOTES.
+- [R370/R371 security](s8-r370-371-SECURITY.md): eight of nine threats closed with
+  targeted cumulative security-sensitive inspection; candidate checklist binding remained open.
+- [R373 code review](s8-r373-REVIEW.md) and [R373 security](s8-r373-SECURITY.md):
+  **PASS WITH DISCLOSURES**, no new findings. CR-07/WR-03 and WR-02 closed; security's
+  inherited register is 9/9 closed. These renewals cover two repair files, not a new
+  exhaustive review of the entire cumulative release. Inherited coverage stays explicit.
 
-This file deliberately is not a tag-named release audit. scripts/release-readiness.ts:293 only checks audit-file existence; writing a placeholder at that path would satisfy a weak mechanical check without satisfying R4. The actual release audit must cover the final version/attestation SHA, which does not yet exist.
+The historical refused dispatches never ran and supply no review evidence. The later
+completed reports above supersede the preparation's former one-set-of-eyes status.
+Historical direct bucket-key correlation was not remeasured by these code reviews.
+The embedding DNS resolution/transport race remains a disclosed residual. R344's
+OS-only runtime gate retains the documented application/unfixed CVEs.
 
-## Review targets and the claims still dependent on this lane's judgment
+## Candidate preflight
 
-| Dimension          | Exact first targets                                                                                                                                                                                                                                                             | Claim requiring independent challenge                                                                                                                                                                                                                        |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Task 1 measurement | outputs/audit/s8-direct-key-prediction.md; eight-observation entry in RUN-NOTES; docs/deploy/receipts/caisson-license.json and caisson-site.json                                                                                                                                | Historical marker/request/deployment/instance correlation supports per-client A/B keying and forged-header resistance, rather than conflating proxy srcIp with the application key. Current tests do not independently validate historical live correlation. |
-| Diagnostic removal | apps/site/lib/ask-ai/handler.ts; packages/rate-limit/src/token-bucket.ts; services/license/src/app.ts; their three tests                                                                                                                                                        | The exact marker census and two-argument signature checks cover the introduced diagnostic completely; fresh three-path equality with e2116849 and rebuilt hashes support this, but choosing those proof boundaries is this lane's judgment.                  |
-| Egress and auth    | packages/local-store/src/embed-scrub-guard.ts; services/betterstack-adapter/handler.ts; packages/audit-worm/src/anchor-transparency.ts; apps/site/lib/auth-server.ts; packages/kernel/src/origin-gate.ts; apps/admin/src/lib/cloudflare-access.ts; apps/site/lib/demos-proxy.ts | The cumulative changes close destination/redirect credential travel and cookie/origin weaknesses without admitting alternate trust paths. No fresh cumulative security pass is claimed.                                                                      |
-| Money and license  | services/license/src/app.ts; services/license/src/deploy.ts; packages/tenancy-rls/src/pool.ts; services/support-bot/src/caisson_support_bot/billing_grant.py                                                                                                                    | Restored limiter decisions, deployment/migration behavior, tenant isolation and grant lifecycle remain safe across the complete release range. Three targeted suites are narrower than this claim.                                                           |
-| Runtime policy     | tools/security/image_scan_policy.py; tools/security/rescan_runtime_images.py; tools/security/rescan_base_images.py; .github/workflows/security-scan.yml and publish-image.yml                                                                                                   | R344's OS-only fixable HIGH/CRITICAL enforcement, complete runtime image census and residual reporting implement the ruling faithfully. Application CVEs remain acknowledged; green OS gates are not dependency repairs.                                     |
-| Release integrity  | .github/workflows/version-pr.yml, release-train.yml, publish.yml, mirror-sync.yml, deploy-railway.yml; registry/scripts/ci-publish-step.ts; scripts/release-readiness.ts                                                                                                        | Version consumption, append-only ledger/sidecar, sibling byte stability and downstream ref binding form a valid chain. The 60 planned workspace bumps do not prove 52 packages pack successfully or all historical R2 keys match.                            |
+R378 SOT ran once after the docs correction: ADR ceiling and package counts GREEN;
+only frontmatter freshness and branch hygiene are EXPECTED-DRIFT by explicit ruling.
+Aggregate SOT still exits 1 and is not final release-readiness green. Exact document
+and source dates are in [the captured output](s8-r378-sot.log); no freshness dates or
+branches were changed.
 
-The native TypeScript Go dependencies and support-bot msgpack/setuptools HIGH application findings retained under R344 remain follow-ups, not repaired vulnerabilities. The exact twelve-row inventory and available fixes are in the handoff S8-R344-PR-BODY.md and OPERATOR-ACT-S8-R344-JOINT-WAVE.md.
+Fresh diagnostic removal proof: [s8-r378-absence.json](s8-r378-absence.json).
+All four marker UUIDs and five diagnostic identifiers are absent from six source/test
+files and both rebuilt limiter artifacts; hashes match the prior removal proof.
+Three implementation files equal pre-diagnostic e2116849; six source/test files equal
+bound main. Removal is an ancestor, the temporary changeset is absent, and the only
+new changesets are the approval and egress repairs. Bun 1.4.2: 64/0/168, build/lint pass.
 
-## What is verified now
+R373 verification remains bound to unchanged product bytes: readiness 36/0/75;
+affected tests 146/0/505 with accepted pre-existing auth-account teardown exit 99;
+root gate 199/199 tasks at concurrency 2, all tail gates green. Both new regressions
+failed before repair; two new and eleven prior mutations failed with exact restoration.
 
-- Bun 1.4.2; 64 targeted tests, 0 failures, 168 assertions; limiter build and six-file lint pass.
-- Four exact marker UUIDs and five identifiers absent from the three implementations, three test files and rebuilt limiter JS/declarations; original two-argument interface retained.
-- Three implementation paths equal e2116849; six source/test paths and all changesets equal 7e11672c. Temporary changeset absent; empty removal changeset retained.
-- Installed @changesets/cli 2.31.1 resolves 35 pending changesets to 60 workspace bumps: 57 patch, 3 minor; 20 explicit, 40 dependent. Exact table: s8-release-version-plan.md.
-- The existing lane-to-main diff contains eleven markdown artifacts and two deployment receipt JSON files; production/configuration matches bound main. The cumulative release audit must still cover all 425 paths, not just this thirteen-path lane diff.
+## Remaining release acts
 
-## Disposition required
-
-R272's permission to finish task 1 with one set of eyes is not a completed cumulative release audit. The release packet requires an explicit R4 disposition and forbids retrying the refused reviews. The concrete next decision is who supplies the cumulative review evidence, or an explicit release-scoped disposition of that missing review; this lane has no clean reviewer verdict to attach. No independent pass or gate waiver is inferred from successful main image/deploy runs.
+This is preparation for the authorized green PR, not the final tag-named R4 audit.
+Version consumption, final reviewed parent and attestation-only successor, seven-check
+CI on that successor, substantive tag-bound R4 audit, aggregate SOT, live-hybrid evidence,
+52-package eligibility/repack proof and consumer propagation remain later gates.
+No final checklist item is marked complete from this preparation. Merge, tag, publish,
+deployment and live probes require their later rulings.
