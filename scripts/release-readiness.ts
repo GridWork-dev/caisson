@@ -11,9 +11,8 @@
  *      merged version-PR commit; a tag cut on a stray branch must never train).
  *   0b. Release tag signed (ADR-0382) — `git tag -v` verifies the tag against the allowed-signers
  *      file. ADVISORY for now: tags cut before the lock are unsigned and cannot become signed.
- *   1. CI green on the release SHA — the five required checks (check, standards-gate,
- *      registry-index, oscal-conformance, deterministic — the last per the ADR-0327 scan-gate
- *      flip) completed successfully.
+ *   1. CI green on the release SHA — all seven required checks, including the source security
+ *      layer, support-bot and the R359 runtime-images-gate aggregate, completed successfully.
  *   2. Changesets drained — no pending .changeset/*.md (the version PR consumed them —
  *      version-pr.yml, ADR-0325; never a feature-branch or tag-path act).
  *   3. CHANGELOGs written — every non-private workspace package's CHANGELOG.md leads with its
@@ -52,6 +51,8 @@ export const REQUIRED_CHECKS = [
   // the same commit — this list treats a check that never reported as `missing`, so a
   // path-scoped required check would red readiness on every release that did not touch the bot.
   "support-bot",
+  // R359 / CR-05: source scans cannot stand in for the enforcing runtime-image matrix.
+  "runtime-images-gate",
 ] as const;
 
 interface Args {

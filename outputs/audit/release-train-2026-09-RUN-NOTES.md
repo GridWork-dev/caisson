@@ -1,5 +1,13 @@
 # S8 release train run notes — 2026-09-10
 
+## R359 — CR-05 aggregate and membership mutation predictions
+
+CR-06 committed normally as **a415ee21**, clean readback, lane 45 ahead. CR-05 adds the always-running runtime-images-gate, depending on selector and complete matrix, failing for failure/cancellation/skip/empty results. Required-check membership and structural/behavioral contracts make this the seventh required check. R344's image classification is untouched.
+
+Initial targeted suite on **Bun 1.4.2: 25 pass / 0 fail / 61 assertions**. Predictions before mutation: removing the matrix-result check makes the named failed-matrix test red; removing required membership makes its named contract test red (**Bun 1.4.2 expected for each: 0 pass / 1 fail / 1 assertion**). Each fixed file will restore byte-identically by SHA-256 and be retested on Bun 1.4.2 before commit. No container builds or live scans run here.
+
+Both mutations measured on **Bun 1.4.2: each 0 pass / 1 fail / 1 assertion**. Aggregate restored hash **f7d2d7514069330a9e98168bd0e2eaeb4d673e287c1e81655f3914397512cc7d**; readiness membership restored hash **10cc88cacaee8465c1c528ba9eb67868142b9c8e9bcf9b89406a1d7f013a719a**. Named aggregate after restore on **Bun 1.4.2: 1 pass / 0 fail / 1 assertion**; final full readiness suite on **Bun 1.4.2: 25 pass / 0 fail / 61 assertions**. Raw evidence: handoff/S8-R359-CR05-aggregate.result.json and S8-R359-CR05-membership.result.json. Old six-check statements in historical receipts remain historical; current required set is seven.
+
 ## R359 — CR-06 repair and mutation prediction
 
 R359 locks the six repairs and their order; accepted SPEC/PLAN updated in the first repair commit. CR-06's existence-only R4 decision is replaced by strict file-backed frontmatter validation, exact previous-release/tag/SHA binding, clean/zero-critical status, reviewed scope and both reviewer identities/timestamps. Graph coverage excludes scripts/; named source reads supplied the implementation evidence.

@@ -18,7 +18,7 @@ verification steps after the train runs; they are deliberately not checkboxes.
       2026-07-12, first ride). publish.yml re-verifies ancestry and byte-reproduces every
       tarball hash at the tag — a mismatch stops the train
 - [ ] CI green on the release SHA (check · standards-gate · registry-index · oscal-conformance ·
-      deterministic · support-bot — the push-to-main run on the version-PR merge commit)
+      deterministic · support-bot · runtime-images-gate — the push-to-main run on the version-PR merge commit)
 - [ ] `bun run sot` green
 - [ ] R4 fresh full audit of the cumulative diff since the last release tag, on file at
       `outputs/audit/release-audit-<tag>.md` (SHIP-audit lane: gw-code-reviewer +

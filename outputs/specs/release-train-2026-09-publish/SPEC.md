@@ -16,7 +16,7 @@ Prepare an evidence-bound release PR that can move the pending Caisson fixes to 
 1. The temporary S8 diagnostic is absent from implementation, tests, changesets and freshly built limiter output, with unchanged original header selection and charging behavior.
 2. The full pending backlog has exact effective versions, including dependent workspaces, and is distinct from registry publication eligibility.
 3. The cumulative release scope since v2026.08.18 is identified; R4 review, candidate SOT and all checklist assertions have explicit evidence or remain visibly open.
-4. A release PR may be called green only with its exact head and all active check outcomes recorded; six required checks are check, standards-gate, registry-index, oscal-conformance, deterministic and support-bot.
+4. A release PR may be called green only with its exact head and all active check outcomes recorded; seven required checks are check, standards-gate, registry-index, oscal-conformance, deterministic, support-bot and runtime-images-gate (R359 / CR-05).
 5. Version consumption, final release SHA/tag and consumer propagation remain later separately authorized acts. No package-consumer upgrade is claimed from deployment or PR evidence.
 
 ## Context

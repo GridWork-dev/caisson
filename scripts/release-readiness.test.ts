@@ -17,6 +17,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 
 import { afterAll, describe, expect, test } from "bun:test";
@@ -122,6 +123,14 @@ interface Job {
   name?: string;
   if?: string;
   needs?: string | string[];
+  "continue-on-error"?: boolean;
+  steps?: {
+    name?: string;
+    run?: string;
+    env?: Record<string, string>;
+    if?: string;
+    "continue-on-error"?: boolean;
+  }[];
 }
 interface Trigger {
   paths?: string[];
@@ -179,7 +188,7 @@ describe("REQUIRED_CHECKS — the release-readiness gate's own input", () => {
 
   test("the set is non-empty, deduplicated, and at full strength", () => {
     // Guard the guard: a floor below the real size lets one silently drop out.
-    expect(REQUIRED_CHECKS.length).toBeGreaterThanOrEqual(6);
+    expect(REQUIRED_CHECKS.length).toBeGreaterThanOrEqual(7);
     expect(new Set(REQUIRED_CHECKS).size).toBe(REQUIRED_CHECKS.length);
     // And the parse itself must have found something, or every check below is vacuous.
     expect(byName.size).toBeGreaterThan(10);
@@ -208,6 +217,8 @@ describe("REQUIRED_CHECKS — the release-readiness gate's own input", () => {
     // path-filter job. quality.yml already has a `changes` job of exactly that shape, so this is a
     // pattern the repo can produce, not a hypothetical.
     const conditional = REQUIRED_CHECKS.flatMap((name) => {
+      // The fail-closed aggregate is tested structurally and behaviorally below.
+      if (name === "runtime-images-gate") return [];
       const hit = byName.get(name);
       if (!hit) return [];
       const reasons: string[] = [];
@@ -228,5 +239,52 @@ describe("REQUIRED_CHECKS — the release-readiness gate's own input", () => {
     // advisory silently restores "a red bot deploys anyway", which no structural check would catch.
     expect(REQUIRED_CHECKS).toContain("support-bot");
     expect(byName.get("support-bot")?.file).toBe("support-bot.yml");
+  });
+
+  test("runtime images aggregate is required by release readiness", () => {
+    expect(REQUIRED_CHECKS).toContain("runtime-images-gate");
+  });
+
+  test("runtime aggregate always consumes the selector and complete matrix", () => {
+    const hit = byName.get("runtime-images-gate");
+    expect(hit?.file).toBe("security-scan.yml");
+    expect(hit?.job.if).toBe("always()");
+    expect(hit?.job.needs).toEqual(["runtime-select", "runtime-images"]);
+    expect(hit?.job["continue-on-error"]).not.toBe(true);
+    expect(hit?.job.steps).toHaveLength(1);
+    const step = hit?.job.steps?.[0];
+    expect(step?.if).toBeUndefined();
+    expect(step?.["continue-on-error"]).not.toBe(true);
+    expect(step?.env).toEqual({
+      SELECT_RESULT: "${{ needs.runtime-select.result }}",
+      MATRIX_RESULT: "${{ needs.runtime-images.result }}",
+    });
+  });
+
+  function aggregate(select: string, matrix: string): number | null {
+    const script = byName.get("runtime-images-gate")?.job.steps?.[0]?.run;
+    if (!script) throw new Error("runtime aggregate script missing");
+    // Execute the actual workflow gate with synthetic outcomes; no scanners or credentials.
+    return spawnSync("bash", ["-c", script], {
+      env: {
+        PATH: process.env.PATH,
+        SELECT_RESULT: select,
+        MATRIX_RESULT: matrix,
+      },
+    }).status;
+  }
+
+  test("runtime aggregate rejects a failed matrix member", () => {
+    expect(aggregate("success", "failure")).toBe(1);
+  });
+
+  test("runtime aggregate is green only when both dependencies succeed", () => {
+    for (const select of ["success", "failure", "cancelled", "skipped", ""]) {
+      for (const matrix of ["success", "failure", "cancelled", "skipped", ""]) {
+        expect(aggregate(select, matrix)).toBe(
+          select === "success" && matrix === "success" ? 0 : 1,
+        );
+      }
+    }
   });
 });
