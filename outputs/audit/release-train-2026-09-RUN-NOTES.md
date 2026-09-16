@@ -1,5 +1,11 @@
 # S8 release train run notes — 2026-09-10
 
+## R354 continuation — corrected in-worktree inline briefs
+
+S8_REVIEW_RETRY (2026-09-16T00:13:35Z) dispositions best-effort telemetry HTTP 500 as non-blocking and diagnoses the child's sed/chaining/outside-worktree reads as correctly denied. Hook and sandbox remain unchanged. Both corrected briefs are copied to outputs/audit/s8-r354-code-review-brief.md and s8-r354-security-brief.md and supplied in full inline. They begin with the operator's exact tool rules, use relative paths, prohibit skill reads and tell the child to stop on any permitted-command denial. Scoped packs are restored temporarily inside the worktree.
+
+Prediction before dispatch: each governed thread starts; the same telemetry 500 may appear and is recorded without stopping; code review returns a REVIEW verdict, then security review runs sequentially and returns SECURITY. Findings are independent outputs, not predicted passes. A new BLOCKED on a permitted command stops without retry. Review scope remains v2026.08.18..895849a6 (89 commits/430 paths); later commits are administrative receipts/briefs only. No forge merge, tag, version dispatch, publish, deploy or branch deletion.
+
 ## R354 outcome — S8_RELEASE_HELD on review execution failures
 
 Fresh audited quota: **7d 18.0% used, resets 4d; reading 2026-09-15T23:57Z**. The stale quota refusal is superseded by R354. **code_review was admitted**, thread **01a0a784-327d-7b11-ad3c-813aeab85e26** started. First unexpected line: `gw dispatch: admission receipt telemetry skipped: dispatch admission sink returned 500`. Security dispatch was withheld.
