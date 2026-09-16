@@ -8,6 +8,17 @@ status: accepted
 
 # Plan — release-train-2026-09-publish
 
+## R359 gate-retry disposition — 2026-09-16T03:30:26Z
+
+The operator classified the first full-check exit 137 and cancellation exit 130 as
+resource kills. Authorized sequence: ai-kit alone, then one full equivalent check
+with Turbo concurrency 2; individually rerun any killed task, but never count a kill
+as a pass or test failure. A true test failure stops verbatim. Both commands have now
+exited 0, including every root-check tail gate; no individual kill recovery was needed.
+Exact counts and commands are in RUN-NOTES. Resume the two sequential reviews below,
+then packet steps 4–6 only on clean verdicts. This supersedes the original single-run
+limit solely for the prescribed retry and does not authorize any later release act.
+
 ## R359 repair cycle — accepted designs, ordered atomic commits
 
 S8_REPAIRS_AUTHORIZED (2026-09-16T02:37:11Z) authorizes the six returned designs without reopening forks. Main thread owns edits on this lane. Order and verification:
@@ -58,6 +69,6 @@ Commit the preparation and receipts normally with a message file. Read back HEAD
 
 ## Task 4: Open the authorized release PR after prerequisites
 
-Depends on tasks 1–3 and resolved review/preflight disposition. Push only chore/release-train-2026-09; receipt history rides under R315. Use audited exec endpoint for forge acts. Open one release PR against main with exact verification and limitations. Record all six required checks and every additional active check on its actual head; report S8_RELEASE_PR and idle at green. Do not forge-merge, dispatch version-pr, tag, publish or deploy. On any failed check, floor denial or unexpected result, record S8_RELEASE_HELD and the operator packet.
+Depends on tasks 1–3 and resolved review/preflight disposition. Push only chore/release-train-2026-09; receipt history rides under R315. Use audited exec endpoint for forge acts. Open one release PR against main with exact verification and limitations. Record all seven required checks (including runtime-images-gate) and every additional active check on its actual head; report S8_RELEASE_PR and idle at green. Do not forge-merge, dispatch version-pr, tag, publish or deploy. On any failed check, floor denial or unexpected result, record S8_RELEASE_HELD and the operator packet.
 
 Later commands and predictions are bound in OPERATOR-ACT-S8-RELEASE-PUBLISH.md. This plan does not turn future acts into present authority.

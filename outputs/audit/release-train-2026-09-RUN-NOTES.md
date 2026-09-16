@@ -1,5 +1,83 @@
 # S8 release train run notes — 2026-09-10
 
+## R359 HOLD — renewed code review BLOCKED (2026-09-16)
+
+The bounded full gate passed, then governed code review completed on candidate
+`c6156d8ce916ced54fba3309b6999c9a7a73167a`, thread
+`01a0a84b-a63d-7431-a961-aa2bf55bcf66`. Process exit 0 means report delivery;
+the substantive verdict is **FAIL / BLOCKED**, reviewed 03:48:24Z, 46 files,
+two blockers and one warning. No conforming-command denial was observed.
+
+Finding titles, verbatim:
+
+- **CR-07: The exact-SHA audit contract is self-referential and cannot produce a green release**
+- **CR-08: Checkout silently falls back from the selected organization to the personal account**
+- **WR-01: Denied or abandoned approvals permanently exhaust the default approval store**
+
+Full report: [s8-r359-REVIEW.md](s8-r359-REVIEW.md). Original CR-01, CR-02, CR-04
+and CR-05 are closed at the inspected seams; CR-03 and CR-06 are not fully closed.
+The review does not re-audit the entire original 430-path release. Its explicit
+coverage limits remain. No parent repair or new design lock followed the findings.
+
+Raw streamed log: estate handoff/S8-R359-code-review.log, **1,214,002 bytes**,
+SHA-256 `b2806e43ffe643e9746e556c5d51d98dadc1e21d368f649c7619ee860e6dab95`;
+in-repo copy: [s8-r359-code-review.log](s8-r359-code-review.log).
+Exact unformatted report is preserved in handoff/S8-R359-REVIEW-VERBATIM.md,
+**15,455 bytes**, SHA-256
+`1cde9680c30caa9b4dad8c41b43fcb66e3543ca54b1e2467e75c82796972f062`.
+
+**Security NOT DISPATCHED** under the R359 blocker stop: no second admission check,
+no auditor process, no security verdict. [Security disposition](s8-r359-SECURITY.md).
+The local gate's green result is not an independent security pass. The code review's
+proposed reviewed-SHA/attestation-successor design, commerce resolver split and
+approval rejection/expiry policy require operator disposition; no fork is chosen here.
+
+**S8_RELEASE_HELD.** New packet, with the full findings verbatim:
+`/home/gw/lab/briefs/estate-2026-09/handoff/OPERATOR-ACT-S8-R359-REVIEW-BLOCKERS.md`.
+No security dispatch, further candidate gate, push or release PR. No merge, version
+dispatch, tag, publish, deployment, live probe or branch deletion. SOT not rerun
+after this stop; last accepted branch/freshness disposition remains historical.
+Only owned temporary-pack cleanup, receipt formatting/verification and normal
+evidence commit follow. This is a review hold, not recurrence of the process-kill hold.
+
+## R359 gate retry — full local check GREEN (2026-09-16)
+
+`S8_GATE_RETRY` at 03:30:26Z dispositions the previous process kills as box memory
+pressure, not a test verdict, and authorizes ai-kit alone followed by one full check
+with bounded Turbo concurrency. Candidate: `c6156d8c`, product tree unchanged since
+the six repair commits. The prior hold below is superseded by this ruling.
+
+Read both package scripts before execution. Ai-kit command was its configured
+`bun test --timeout 60000 ./src`, run inside packages/ai-kit. **Bun 1.4.2 — 170 pass /
+0 fail / 602 assertions**, exit 0. Log: [ai-kit retry](s8-r359-ai-kit-retry.log).
+
+The root check script is a shell chain, so the equivalent invocation added
+`--concurrency=2` directly to Turbo and retained all four tail gates:
+
+```sh
+turbo run build lint typecheck test --no-daemon --concurrency=2 && oxlint deploy && tsc -p deploy/tsconfig.json && bun test deploy/*.test.ts && bun run gate
+```
+
+The repository node_modules/.bin was prepended to PATH, as for a package script.
+**Exit 0; 199/199 Turbo tasks successful, 191 cached, 1m11.451s.** No killed task
+needed an individual rerun. All captured Bun banners are **1.4.2 (744846f84)**.
+Completed-suite output totals, **including cached task replay**, are **7,019 pass /
+0 fail / 28,115 assertions**; these are not a claim that all tests freshly executed.
+Deploy tests contributed **Bun 1.4.2 — 64 pass / 0 fail / 329 assertions** across
+13 files. Standards gate: 67 checked, 5 scaffold-skipped, all conforming.
+Log: [bounded full check](s8-r359-full-check-bounded.log). Raw handoff SHA-256:
+`1ae1b5770e6259b3a5624b16b6bb4989b37871683bd5886a856c990e671ec3aa`.
+The in-repo copy normalizes CRLF to LF before staging; raw handoff remains intact.
+Normalized in-repo log: 1,221,023 bytes, SHA-256
+`4550115da292095dc52bda6f01b73734892414f361dc953dc5fb6bd50f3b0cbe`.
+
+Fresh audited headroom: **37% used**, reading 03:37Z. Renewed governed code review
+was admitted, thread `01a0a84b-a63d-7431-a961-aa2bf55bcf66`, streamed by the parent
+directly to handoff/S8-R359-code-review.log. Expected best-effort telemetry HTTP 500
+is non-blocking under the ruling. This records admission only, not a review verdict.
+Security follows only after the code-review verdict permits it. The six repaired
+blockers remain subject to independent reassessment. No release PR or push yet.
+
 ## R359 HOLD — full check exits 137 outside repair scope (2026-09-16)
 
 All six ordered repair commits are now complete:

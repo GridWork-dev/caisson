@@ -1,5 +1,43 @@
 # S8 release train receipt — R356 retry 3 review blockers
 
+## Current hold — R359 renewed review BLOCKED
+
+The authorized gate retry is green. Renewed code review of
+`c6156d8ce916ced54fba3309b6999c9a7a73167a` returned **FAIL / BLOCKED** at
+2026-09-16T03:48:24Z: 46 reviewed files, two blockers and one warning.
+
+- **CR-07: The exact-SHA audit contract is self-referential and cannot produce a green release**
+- **CR-08: Checkout silently falls back from the selected organization to the personal account**
+- **WR-01: Denied or abandoned approvals permanently exhaust the default approval store**
+
+Titles are verbatim. Complete findings and remedy choices:
+[s8-r359-REVIEW.md](s8-r359-REVIEW.md). Original CR-01/02/04/05 are closed within
+reviewed scope; CR-03/06 remain unresolved. Full cumulative coverage is not claimed.
+Raw report/log hashes and exact gate results are in RUN-NOTES.
+
+Security **NOT DISPATCHED**, no security verdict and no implicit pass. R359 stops
+before further candidate gates or PR. No repair or architecture fork was selected.
+**S8_RELEASE_HELD**; packet:
+`/home/gw/lab/briefs/estate-2026-09/handoff/OPERATOR-ACT-S8-R359-REVIEW-BLOCKERS.md`.
+No push, release PR, merge, version dispatch, tag, publish, deployment, live probe
+or branch deletion. Await operator disposition of the verbatim findings.
+
+## Current disposition — R359 bounded full gate GREEN; reviews pending
+
+`S8_GATE_RETRY` (2026-09-16T03:30:26Z) supersedes the exit-137 hold below. Ai-kit
+alone passed: **Bun 1.4.2 — 170 pass / 0 fail / 602 assertions**, exit 0. The full
+root-check equivalent with Turbo `--concurrency=2` then completed **exit 0, 199/199
+tasks, 191 cached**. All tail gates ran: deploy lint/typecheck, deploy tests
+(**Bun 1.4.2 — 64 pass / 0 fail / 329 assertions**), and standards (67 checked,
+5 scaffold-skipped). Captured complete-suite totals including cache replays:
+**Bun 1.4.2 — 7,019 pass / 0 fail / 28,115 assertions**. No task needed a further
+kill recovery. Exact command and evidence links are in RUN-NOTES.
+
+Fresh headroom 37% used; renewed code review admitted and running. No fresh passing
+review or security verdict is claimed. No release PR, push, merge, version dispatch,
+tag, publish, live probe, deployment or branch deletion. Next: the two sequential
+review verdicts, then packet steps 4–6 only if both permit proceeding.
+
 ## Current hold — R359 full gate exit 137 (2026-09-16)
 
 The exit-99 hold below was explicitly dispositioned by `S8_CR03_CONTINUE` at 03:12:07Z.

@@ -1,0 +1,230 @@
+bun test v1.4.2 (744846f84)
+
+src/mcp-run-tools.test.ts:
+(pass) MCP run tools field-crypto context > run_status never acquires a KMS context [4.48ms]
+(pass) MCP run tools field-crypto context > a run that completes without parking never acquires a KMS context [27.84ms]
+(pass) MCP run tools field-crypto context > the first park acquires one KMS context and zeroizes it after sealing [14.57ms]
+(pass) MCP run tools field-crypto context > the production-shaped runner shares one tenant transaction for wrapped keys and parked state [12.90ms]
+
+src/byok-resolver.test.ts:
+(pass) buildByokResolver (ADR-0162) > an env-pointer lane resolves through the boot registry (unchanged path) [0.50ms]
+(pass) buildByokResolver (ADR-0162) > a per-tenant lane pulls the tenant key and builds a provider [0.09ms]
+(pass) buildByokResolver (ADR-0162) > the built client is cached per (account, provider) within the TTL [0.08ms]
+(pass) buildByokResolver (ADR-0162) > a per-tenant lane without an accountId is refused [0.15ms]
+(pass) buildByokResolver (ADR-0162) > a per-tenant lane without a resolveTenantKey port is refused [0.03ms]
+(pass) buildByokResolver (ADR-0162) > no stored key for the tenant is refused (fail-closed) [0.04ms]
+(pass) buildByokResolver (ADR-0162) > bedrock is rejected for per-tenant BYOK (multi-part credential) [0.03ms]
+(pass) laneKeySource (ADR-0182 pricebook discriminator) > an env-pointer lane resolves to 'env' [0.01ms]
+(pass) laneKeySource (ADR-0182 pricebook discriminator) > a per-tenant (BYOK) lane resolves to 'tenant'
+
+src/approval.test.ts:
+(pass) runToolLoop — parks on a gated tool (in-memory) > a gated tool call parks instead of executing; the trajectory has tool.proposed but no tool.result [642.09ms]
+(pass) runToolLoop — parks on a gated tool (in-memory) > a gated tool without a configured runState fails the run fail-closed [28.14ms]
+(pass) approveToolCall / denyToolCall — orchestration (in-memory) > approve appends tool.approved once, enqueues the resume job, and is idempotent on retry [26.03ms]
+(pass) approveToolCall / denyToolCall — orchestration (in-memory) > F2 self-heal: a crash-shaped retry (CAS committed, append missing) still ends with tool.approved present [24.95ms]
+(pass) approveToolCall / denyToolCall — orchestration (in-memory) > approve requires a non-empty actor [28.59ms]
+(pass) approveToolCall / denyToolCall — orchestration (in-memory) > approve on an unknown/mismatched toolCallId is rejected [31.11ms]
+(pass) approveToolCall / denyToolCall — orchestration (in-memory) > deny appends tool.denied + run.finished(failed) and finishes the run [31.07ms]
+(pass) resumeToolLoop — continues a parked run (in-memory) > approve then resume: the approved tool executes and the run completes [40.75ms]
+(pass) resumeToolLoop — continues a parked run (in-memory) > two concurrent resumes of the SAME approval: exactly one executes the tool [36.30ms]
+(pass) resumeToolLoop — continues a parked run (in-memory) > resume without an approval (still parked) is rejected fail-closed [24.57ms]
+(pass) resumeToolLoop — continues a parked run (in-memory) > resume after a deny is rejected fail-closed (never executes the denied tool) [24.62ms]
+(pass) resumeToolLoop — continues a parked run (in-memory) > resume of an unknown runId is rejected fail-closed [19.19ms]
+(pass) park/approve/resume across a REAL process boundary (PGlite, fresh store objects) > park via one set of store objects; approve + resume via COMPLETELY FRESH ones [45.02ms]
+
+src/byok-store.integration.test.ts:
+(pass) tenant_ai_credential (ADR-0162, RLS + field-crypto) > a key round-trips: sealed on write, opened on read [2.53ms]
+(pass) tenant_ai_credential (ADR-0162, RLS + field-crypto) > a re-put REPLACES the stored key (rotatable credential) [2.01ms]
+(pass) tenant_ai_credential (ADR-0162, RLS + field-crypto) > a missing key reads undefined [0.44ms]
+(pass) tenant_ai_credential (ADR-0162, RLS + field-crypto) > RLS isolates accounts — tenant B cannot read tenant A's key [0.92ms]
+(pass) tenant_ai_credential (ADR-0162, RLS + field-crypto) > the ciphertext at rest is not the plaintext (encrypted-at-rest) [1.03ms]
+
+src/agent-loop.test.ts:
+(pass) runToolLoop — the governed per-step harness > tool-call then stop: completed, exact event envelope, ledger-equal projection [659.27ms]
+(pass) runToolLoop — the governed per-step harness > restart-shaped retry with the same runId settles the METER exactly once (no double charge) [32.27ms]
+(pass) runToolLoop — the governed per-step harness > never-stopping model halts at maxSteps with step-ceiling [33.12ms]
+(pass) runToolLoop — the governed per-step harness > budget exhaustion mid-run is a 402-shaped failure BEFORE the next reserve [22.16ms]
+(pass) runToolLoop — the governed per-step harness > short wallet: reserve 402s fail-closed, the model is never called [16.81ms]
+(pass) runToolLoop — the governed per-step harness > a REQUIRED append failure prevents the step (fail-closed inversion) [15.60ms]
+(pass) runToolLoop — the governed per-step harness > a model.call append failure cannot orphan a reservation (BL-01: append is pre-reserve) [15.93ms]
+(pass) runToolLoop — the governed per-step harness > a model.usage append failure fails the run with money already consistent [20.34ms]
+(pass) runToolLoop — the governed per-step harness > the provider call is ALWAYS output-bounded by the priced estimate (audit F1) [20.25ms]
+(pass) runToolLoop — the governed per-step harness > a persistently-dead store still resolves a failed result (terminal append best-effort) [16.05ms]
+(pass) runToolLoop — the governed per-step harness > provider failure refunds the reservation [23.25ms]
+(pass) runToolLoop — the governed per-step harness > tool step is metered before execution and its failure fails the run [24.56ms]
+(pass) runToolLoop — the governed per-step harness > a model proposing an undeclared tool fails the run [20.33ms]
+(pass) runToolLoop — the governed per-step harness > output-guard block fails the run after settlement (spend already real) [20.71ms]
+(pass) runToolLoop — the governed per-step harness > input-guard block throws before any event or spend [15.73ms]
+(pass) runToolLoop — the governed per-step harness > maxSteps and creditBudget must be positive integers [14.16ms]
+
+src/structured-generate.test.ts:
+(pass) structuredGenerate > parses a well-formed JSON completion into the typed value [906.44ms]
+(pass) structuredGenerate > throws a typed error with reason 'refusal' on an empty completion [25.52ms]
+(pass) structuredGenerate > throws a typed error with reason 'invalid_json' on malformed JSON [24.86ms]
+(pass) structuredGenerate > throws a typed error with reason 'schema_mismatch' on well-formed JSON that fails the schema [26.84ms]
+
+src/agent-runtime-demo.test.ts:
+(pass) parent-SPEC demo — start/park/approve/resume/finish across the CLI + MCP surfaces > a governed run parks on a gated tool, is approved via the CLI, resumed, and finishes clean [886.87ms]
+
+src/providers.test.ts:
+(pass) AI SDK v7 provider and transport matrix (ADR-0160/0201/0213) > openai → exact model identity, endpoint, and bounded fetch [0.20ms]
+(pass) AI SDK v7 provider and transport matrix (ADR-0160/0201/0213) > anthropic → exact model identity, endpoint, and bounded fetch [0.07ms]
+(pass) AI SDK v7 provider and transport matrix (ADR-0160/0201/0213) > google → exact model identity, endpoint, and bounded fetch [0.06ms]
+(pass) AI SDK v7 provider and transport matrix (ADR-0160/0201/0213) > openrouter → exact model identity, endpoint, and bounded fetch [0.20ms]
+(pass) AI SDK v7 provider and transport matrix (ADR-0160/0201/0213) > local → exact model identity, endpoint, and bounded fetch [0.13ms]
+(pass) AI SDK v7 provider and transport matrix (ADR-0160/0201/0213) > ollama → exact model identity, endpoint, and bounded fetch [0.02ms]
+(pass) AI SDK v7 provider and transport matrix (ADR-0160/0201/0213) > bedrock → exact model identity, endpoint, and bounded fetch [0.10ms]
+(pass) AI SDK v7 provider and transport matrix (ADR-0160/0201/0213) > azure-openai → exact model identity, endpoint, and bounded fetch [0.09ms]
+(pass) AI SDK v7 provider and transport matrix (ADR-0160/0201/0213) > groq → exact model identity, endpoint, and bounded fetch [0.02ms]
+(pass) AI SDK v7 provider and transport matrix (ADR-0160/0201/0213) > mistral → exact model identity, endpoint, and bounded fetch [0.01ms]
+(pass) AI SDK v7 provider and transport matrix (ADR-0160/0201/0213) > together → exact model identity, endpoint, and bounded fetch
+(pass) AI SDK v7 provider and transport matrix (ADR-0160/0201/0213) > one instance per distinct provider across lanes [0.05ms]
+(pass) openai-compatible backends resolve the CHAT path (ADR-0201) > openrouter → languageModel is the chat model ("openrouter.chat") [0.02ms]
+(pass) openai-compatible backends resolve the CHAT path (ADR-0201) > local → languageModel is the chat model ("local.chat") [0.01ms]
+(pass) openai-compatible backends resolve the CHAT path (ADR-0201) > ollama → languageModel is the chat model ("ollama.chat")
+(pass) openai-compatible backends resolve the CHAT path (ADR-0201) > groq → languageModel is the chat model ("groq.chat")
+(pass) openai-compatible backends resolve the CHAT path (ADR-0201) > mistral → languageModel is the chat model ("mistral.chat")
+(pass) openai-compatible backends resolve the CHAT path (ADR-0201) > together → languageModel is the chat model ("together.chat") [0.01ms]
+(pass) openai-compatible backends resolve the CHAT path (ADR-0201) > a local/ollama lane without baseUrl fails closed (no api.openai.com / localhost fallback) [0.10ms]
+(pass) openai-compatible backends resolve the CHAT path (ADR-0201) > groq/mistral/together fail closed on a missing key (real paid vendor APIs, ADR-0171) [0.03ms]
+(pass) openai-compatible backends resolve the CHAT path (ADR-0201) > the SSRF guard is unchanged on the compatible path (round-4/5 remediation) [0.08ms]
+(pass) parseAiSettings — the ADR-0160 config fields (region / apiVersion / apiSecretEnv) > accepts the new optional fields [0.10ms]
+(pass) parseAiSettings — the ADR-0160 config fields (region / apiVersion / apiSecretEnv) > still rejects unknown keys (.strict, ADR-0002) [0.14ms]
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects non-https scheme [0.03ms]
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects file: scheme [0.01ms]
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects credentials in URL
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects cloud metadata IP
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects decimal-encoded metadata IP [0.01ms]
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects octal-encoded loopback
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects loopback 127/8
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects private 10/8
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects private 172.16/12
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects private 192.168/16
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects 0.0.0.0
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects localhost
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects .local mDNS host
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects IPv6 loopback
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects IPv6 link-local fe80::/10 [0.03ms]
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects IPv6 unique-local fc00::/7
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > rejects malformed URL [0.02ms]
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > accepts public https provider [0.03ms]
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > accepts self-hosted public https gateway [0.01ms]
+(pass) providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2) > a lane with no baseUrl still builds (openrouter's https default is safe) [0.02ms]
+(pass) timeoutFetch — the fetch-deadline floor (ADR-0213) > a fast response resolves within the budget [0.95ms]
+(pass) timeoutFetch — the fetch-deadline floor (ADR-0213) > a stalling response aborts at the deadline instead of hanging [20.28ms]
+(pass) timeoutFetch — the fetch-deadline floor (ADR-0213) > every create* provider factory receives this fetch — one instance per timeoutMs call [0.04ms]
+
+src/embed.test.ts:
+(pass) embed() — happy path > reserves before the call, reconciles to actual, refunds the phantom output leg [834.31ms]
+(pass) embedMany() — batch sizing > one reservation/reconcile pair covers the whole batch, not one per value [20.11ms]
+(pass) fail-closed credit gate — reserve BEFORE the call > a short wallet 402s and the model is never called [17.99ms]
+(pass) provider failure — refund > a thrown doEmbed refunds the reservation to zero and rethrows [19.69ms]
+(pass) provider failure — refund > embed() refunds to zero when model resolution fails after reserve [21.38ms]
+(pass) provider failure — refund > embedMany() refunds to zero when model resolution fails after reserve [21.71ms]
+(pass) provider reports no usage — chars/4 fallback (not a full refund) > an unreported usage falls back to the chars/4 estimate over the embedded value [20.05ms]
+(pass) provider reports no usage — chars/4 fallback (not a full refund) > a reported usage whose derived cost overflows the ledger falls back safely [19.69ms]
+(pass) provider reports no usage — chars/4 fallback (not a full refund) > an unsafe deterministic fallback fails before reserve or provider execution [15.51ms]
+(pass) BYOK lane — $0 wallet end-to-end (ADR-0182) > a metered embed() on a BYOK lane records usage but never moves the wallet [18.01ms]
+(pass) callId idempotency > a retried embed() under the same callId settles exactly once [20.36ms]
+
+src/usage.test.ts:
+(pass) normalizeLanguageUsage > normalizes legacy flat usage without exposing an SDK type [0.05ms]
+(pass) normalizeLanguageUsage > prefers a valid nested cache-read count [0.06ms]
+(pass) normalizeLanguageUsage > treats partial, fractional, malformed, or out-of-range primary counts as unreported [0.08ms]
+(pass) normalizeLanguageUsage > does not discount malformed cache-read usage [11.88ms]
+(pass) normalizeLanguageUsage > keeps unreported usage distinct from a reported zero [0.07ms]
+(pass) normalizeEmbeddingUsage > normalizes a reported token count as input-only usage [0.02ms]
+(pass) normalizeEmbeddingUsage > falls back to deterministic input estimates for invalid usage [0.02ms]
+(pass) normalizeEmbeddingUsage > falls back when a reported count is negative or outside the ledger range [0.01ms]
+(pass) canPersistUsage > rejects derived money values that exceed PostgreSQL integer columns [0.10ms]
+(pass) SDK usage-accounting golden > pins integer ledger outcomes across every migration-sensitive path [988.82ms]
+
+src/gateway.integration.test.ts:
+(pass) full pipeline — resolve(name@version) → render → reserve → call → reconcile > the metered call trues to actual; the render → usage link is recorded at ground truth [824.96ms]
+(pass) full pipeline — resolve(name@version) → render → reserve → call → reconcile > a same-callId retry settles EXACTLY once — reserve + reconcile are idempotent [28.76ms]
+(pass) fail-closed credit gate — reserve BEFORE the provider call > an empty wallet 402s, never calls the model, and records no usage_event [25.01ms]
+(pass) hard cap → circuit breaker → 402 > crossing a hard cap trips the breaker; the next infer 402s without a provider call [27.56ms]
+(pass) guardrails — fail-closed input block → 422 > a flagged input throws GuardrailError 422, never calls the model or spends, emits a metadata event [19.67ms]
+(pass) render → usage → eval linkage recorded > one immutable prompt version threads render → usage_event → an ai-evals run [25.98ms]
+
+src/gateway.test.ts:
+(pass) happy path — resolve → reserve → call → reconcile > a prompt resolves by name@version, the call meters end-to-end, balance trues to actual [831.74ms]
+(pass) happy path — resolve → reserve → call → reconcile > the gateway also accepts raw messages (no registry) — promptVersionId is null [22.55ms]
+(pass) happy path — resolve → reserve → call → reconcile > trusted registry system messages retain their ordered v7 prompt role [24.82ms]
+(pass) happy path — resolve → reserve → call → reconcile > raw caller system messages preserve their position in the pre-v7 public prompt contract [23.07ms]
+(pass) fail-closed credit gate — reserve BEFORE the call > a short wallet 402s and the model is NEVER called [19.97ms]
+(pass) guardrails — fail-closed input block > a flagged input throws GuardrailError 422, never calls the model, never spends [18.38ms]
+(pass) hard cap → circuit breaker > crossing a hard cap trips the breaker; the next infer 402s without a call [24.20ms]
+(pass) PII reversible tokenize round-trip > the model sees redacted PII; the output restores it for the caller [23.83ms]
+(pass) createProviderRegistry resolver > infer() runs over a registry built from the ai-config lanes [22.17ms]
+(pass) BYOK lane — $0 wallet end-to-end (ADR-0182) > a metered infer() on a BYOK lane records usage but never moves the wallet [21.63ms]
+(pass) provider reports no usage — settle at reserved (no silent refund) > a completed call with undefined token counts settles at the reservation, never grants a refund [22.84ms]
+(pass) provider reports no usage — settle at reserved (no silent refund) > usage that overflows a derived ledger integer is treated as unreported [23.78ms]
+(pass) provider reports no usage — settle at reserved (no silent refund) > a completed fallback larger than the reservation charges the consumed estimate [24.16ms]
+(pass) provider reports no usage — settle at reserved (no silent refund) > an unsafe consumed fallback settles at the bounded reservation estimate [23.62ms]
+(pass) provider reports no usage — settle at reserved (no silent refund) > an unsafe reservation estimate fails before reserve or provider execution [18.21ms]
+(pass) charge-above-reservation shortfall — orphaned reservation (CAISSON-108 finding 1) > infer(): a reconcile debit past the wallet classifies the failure and strands no partial write [28.12ms]
+(pass) charge-above-reservation shortfall — orphaned reservation (CAISSON-108 finding 1) > inferStream(): the same shortfall classifies the failure identically [45.18ms]
+(pass) post-reservation model setup failure — refund > infer() refunds to zero when model resolution fails after reserve [24.30ms]
+(pass) post-reservation model setup failure — refund > inferStream() refunds to zero when model resolution fails after reserve [24.83ms]
+952 |     expect(rows).toEqual([{ credits: 0 }]);
+953 |   });
+954 | 
+955 |   test("inferStream() refunds a doStream rejection before the first delta", async () => {
+956 |     await seed(1000);
+957 |     const failure = new Error("stream setup down");
+                              ^
+error: stream setup down
+      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/packages/ai-kit/src/gateway.test.ts:957:25)
+
+(pass) post-reservation model setup failure — refund > inferStream() refunds a doStream rejection before the first delta [25.56ms]
+977 |     expect(rows).toEqual([{ credits: 0 }]);
+978 |   });
+979 | 
+980 |   test("inferStream() refunds a middleware rejection before the first delta", async () => {
+981 |     await seed(1000);
+982 |     const failure = new Error("stream middleware down");
+                              ^
+error: stream middleware down
+      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/packages/ai-kit/src/gateway.test.ts:982:25)
+
+(pass) post-reservation model setup failure — refund > inferStream() refunds a middleware rejection before the first delta [25.59ms]
+(pass) streaming infer — inferStream > a stream that is never iterated still runs eagerly and reconciles [34.97ms]
+(pass) streaming infer — inferStream > dropping an iterator after one next without return still reconciles [78.33ms]
+(pass) streaming infer — inferStream > return before the first next cancels and reconciles the reservation [65.62ms]
+(pass) streaming infer — inferStream > an already-aborted signal settles ZERO — provably pre-contact, provider never reached (CAISSON-108 finding 2) [23.21ms]
+(pass) streaming infer — inferStream > an iterator remains stably done after the stream completes [34.43ms]
+(pass) streaming infer — inferStream > creating an iterator does not lock the stream before its first read [25.89ms]
+(pass) streaming infer — inferStream > raw caller system messages preserve their position through inferStream [24.81ms]
+(pass) streaming infer — inferStream > happy path: a fully-drained stream reconciles to the provider's ACTUAL usage [24.96ms]
+(pass) streaming infer — inferStream > an abandoned stream (consumer stops early) still reconciles — no leaked reservation [54.26ms]
+(pass) streaming infer — inferStream > an aborted stream (abortSignal fires mid-call) still reconciles — no leaked reservation [41.23ms]
+(pass) streaming infer — inferStream > soft/hard cap is enforced on the streamed estimate, before the provider is ever reached [26.33ms]
+1383 |   });
+1384 | 
+1385 |   test("a stream error part propagates to the consumer and still reconciles — no leaked reservation", async () => {
+1386 |     await seed(1000);
+1387 |     const s = sink();
+1388 |     const boom = new Error("boom");
+                            ^
+error: boom
+      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/packages/ai-kit/src/gateway.test.ts:1388:22)
+
+(pass) streaming infer — inferStream > a stream error part propagates to the consumer and still reconciles — no leaked reservation [29.69ms]
+(pass) streaming infer — inferStream > a normal finish with no reported usage settles at the reservation, never a silent refund [29.39ms]
+(pass) streaming infer — inferStream > a finished stream fallback larger than the reservation charges the consumed estimate [29.38ms]
+(pass) streaming infer — inferStream > an output-guard block on normal finish still reconciles the actual spend before rejecting [25.82ms]
+(pass) streaming infer — inferStream > PII tokenized on input is restored on the settled text, but never per-delta on the raw stream [25.44ms]
+(pass) streaming infer — inferStream > a large multi-chunk stream accumulates every delta in order on both textStream and settled.text [25.60ms]
+(pass) streaming infer — inferStream > opts.middleware wraps the streamed provider call via wrapLanguageModel [26.90ms]
+(pass) streaming infer — inferStream > a finish with finishReason 'length' (maxOutputTokens truncation) still reconciles to the provider's ACTUAL usage [25.26ms]
+(pass) streaming infer — inferStream > an empty stream (zero chunks, finish reports zero usage) settles a full refund — no leaked reservation [25.29ms]
+(pass) streaming infer — inferStream > a same-callId retry on inferStream settles the meter legs EXACTLY once (idempotent) [29.28ms]
+(pass) trajectory observation — additive, never fails the metered call > infer() emits model.call (prompt digest only) then model.usage (metered) [24.98ms]
+(pass) trajectory observation — additive, never fails the metered call > infer() swallows a recorder failure and surfaces a trajectory.record_failed warning [23.45ms]
+(pass) trajectory observation — additive, never fails the metered call > inferStream() emits model.call then model.usage on a normal drain [25.30ms]
+
+ 170 pass
+ 0 fail
+ 602 expect() calls
+Ran 170 tests across 12 files. [11.71s]
