@@ -263,6 +263,13 @@ jobs:
       # doc 04 §4 + the T30 bypass suite. A staging deploy that does not re-prove the
       # origin gate is how the gate silently regresses: nothing else in the pipeline
       # touches it, and the first place you would notice is production.
+      - name: resolve raw staging origins through the governed argv gate
+        id: staging-origins
+        env:
+          GCP_NONPROD_PROJECT: ${{ vars.GCP_NONPROD_PROJECT }}
+          GCP_REGION: ${{ vars.GCP_REGION }}
+        run: bun run deploy/staging-origins.ts >> "$GITHUB_OUTPUT"
+
       - name: origin + Access bypass suite
         env:
           ENVIRONMENT: staging
@@ -272,6 +279,7 @@ jobs:
           # here, and unlike post-deploy this run must also exercise the origin + Access
           # bypass suite rather than only the happy path.
           MODE: staging
+          STAGING_ORIGIN_URLS: ${{ steps.staging-origins.outputs.staging_origin_urls }}
           # Empty on repos with no Cloudflare Access app. smoke.ts calls the public
           # hostname through Cloudflare, and an Access-protected hostname answers 302 to
           # the login page without a service token — indistinguishable from a broken

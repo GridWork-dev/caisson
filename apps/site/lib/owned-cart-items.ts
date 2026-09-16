@@ -19,8 +19,15 @@ import { getSession } from "./auth.ts";
 export async function getOwnedCartItemIds(): Promise<ReadonlySet<string>> {
   const session = await getSession();
   if (session === null) return new Set();
-  const grants = await readScoped(session.accountId, (tx) =>
-    readEntitlementGrants(tx, session.accountId),
+  return getOwnedCartItemIdsForAccount(session.accountId);
+}
+
+/** Server-only: accountId must come from a verified session, never request input. */
+export async function getOwnedCartItemIdsForAccount(
+  accountId: string,
+): Promise<ReadonlySet<string>> {
+  const grants = await readScoped(accountId, (tx) =>
+    readEntitlementGrants(tx, accountId),
   );
   const activeIds = new Set(
     grants.filter((g) => g.status === "active").map((g) => g.entitlementId),

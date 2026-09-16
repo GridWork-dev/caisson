@@ -29,3 +29,17 @@ Authority: R332 and matching SPEC. Main-thread implementation and self-assessmen
 3. Re-evaluate saved run 34983075951 reports without another scan: all ten runtime reports should pass the narrowed policy, retaining the twelve unique fixable application rows and their fixed versions. This is policy evaluation of existing reports, not fresh vulnerability intelligence.
 4. Commit and push only the policy, tests and associated phase documentation on PR 482. Predict CI builds/scans and all active checks pass, subject to new scanner intelligence. Read both PR heads and complete rosters; hold both under R336 for the joint cockpit wave. No merge, deployment or publication.
 5. Record dependency follow-ups: remove TypeScript compiler binary from runtime images; repair msgpack/setuptools in support-bot. These repairs are not authorized here. Peer dispatches remain refused and never ran; classification, summary visibility and CI evidence interpretation retain one set of eyes.
+
+## Historical lane R332 record (superseded by R333/R335/R344 above)
+
+The following preserves the original lane narrative at 8754070c; it is historical evidence, not the operative scanner policy or current verification status.
+
+# S8 R332 scheduled rescan plan
+
+Authority: R332 and matching SPEC. Main-thread implementation and self-assessment; no delegated admission retry.
+
+1. Census 6604844a3f17633e5221075af6d01966620eaaed: eight first-party Dockerfiles, fourteen FROM lines, eleven external references, two unique digest pins (ten Bun, one Python). Lane still carries earlier pins; dynamic extraction must follow each actual checkout. Do not modify Dockerfiles in this task.
+2. Add dependency-free Python collector/scanner and focused unittest coverage. Hook these checks and base-image scanning into the existing credential-free deterministic job, reusing its pinned Trivy install. Add daily 06:37 UTC schedule, isolate scheduled concurrency from push runs, disable checkout credential persistence. Keep publishing workflow unchanged.
+3. Before execution predict: unit tests pass; mutation removing cron or failure propagation is caught; eight files and two images at 6604844a, three images on the older lane; formatting, whitespace and relevant lint pass. Cron proof yields one tick daily including month/year/leap boundaries. Tests simulate scanner statuses and do not assert real CVE cleanliness.
+4. CI prediction: six required checks pass; source scanner and real base scan complete without HIGH/CRITICAL findings. A contrary result, first floor denial or failed gate stops; no retries. The deliberate negative fixtures/mutations must fail exactly as predicted. SOT retains only already-dispositioned branch/freshness drift.
+5. Commit implementation separately from lane receipts. If task 3 remains blocked, fresh branch off origin/main carries only rescan implementation/spec/plan/verification; open PR and wait for actual green. No lane history push, no merge or schedule dispatch. Record peer refusal and claims relying on own judgment (extraction completeness, anonymous boundary, platform/scope, cron semantics).

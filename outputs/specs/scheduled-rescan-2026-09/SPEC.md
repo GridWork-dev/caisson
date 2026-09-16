@@ -25,3 +25,26 @@ These are rebuilt runtime images, not the already-deployed or privately publishe
 Peer code/security dispatches were refused admission and never ran; no retry and no independent review pass. Main-thread claims requiring independent scrutiny: complete runtime target extraction, anonymous/local scanner boundary, custom fixability policy, raw-error visibility and equivalence limits between rebuilt and deployed images.
 
 Hold both PRs for the R336 cockpit wave. Task 3 resumes only on cockpit S8_PUBLISH_GREEN after the resulting main publisher passes all six scan steps. Preserve branches; no lane merge, publish or deployment.
+
+## Historical lane R332 record (superseded by R333/R335/R344 above)
+
+The following preserves the original lane narrative at 8754070c; it is historical evidence, not the operative scanner policy or current verification status.
+
+---
+
+phase: scheduled-rescan-2026-09
+tags: [security, infra]
+tier: STANDARD
+---
+
+# S8 task 2: scheduled source and base-image rescans
+
+R332 (EST-ASK-290) locks daily scans of main source and the exact digest-pinned external bases declared by first-party Dockerfiles. Extend security-scan only; no scheduled publish, registry credentials, private published-image scan, deployment or merge. Task 3 still awaits cockpit S8_PUBLISH_GREEN. Work on the lane; if that signal remains absent when ready, prepare a separate rescan PR and report S8_RESCAN_PR. Preserve all branches.
+
+## Acceptance
+
+- Daily 06:37 UTC cron, mechanically enumerated across calendar boundaries; first eligible tick after landing, subject to GitHub scheduling delays.
+- Existing deterministic source scan runs against the default-branch event SHA. Derive bases from tracked Dockerfiles, excluding buyer templates, deduplicate exact references and omit real prior-stage aliases/scratch. Missing digest, unsupported FROM syntax, empty external census or a scanner error fails visibly.
+- Pinned Trivy scans public base images remotely at linux/amd64 with refreshed vulnerability intelligence, HIGH/CRITICAL enforcement and no ignore-unfixed relaxation. No registry login or credentials. Retain per-image SARIF and source-to-image census artifacts.
+- Scope excludes app layers and dependencies added during builds, private published images, other image platforms and downstream consumer images.
+- Test extraction, alias handling, malformed pins, anonymous scanner arguments, error propagation and cron selection. Peer dispatches remain refused/not run under standing no-retry ruling; no independent review pass.

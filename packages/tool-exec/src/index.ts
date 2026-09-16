@@ -11,3 +11,10 @@ export {
   type ToolExecConfig,
   type ToolExec,
 } from "./tool-exec.ts";
+export {
+  APPROVAL_TTL_MS,
+  createMemoryApprovalStore,
+  type ToolApproval,
+  type ToolApprovalStore,
+  type StoredToolApproval,
+} from "./approval.ts";

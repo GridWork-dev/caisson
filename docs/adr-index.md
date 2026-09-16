@@ -7,7 +7,7 @@ grounds:
 
 # ADR index
 
-Current ADR ceiling: **0422** — S16 unifies the Bun fleet and adds Docker build smoke coverage.
+Current ADR ceiling: **0427** — S8 tool approvals support rejection and expiry.
 
 Canonical catalog of every Architecture Decision Record in `knowledge/decisions/`. This
 file is a **synthesized view** (number -> title -> domain -> status -> supersession). It does
@@ -1119,6 +1119,11 @@ ADR-0088 numbering split held — no collision).
 | [0420](../knowledge/decisions/ADR-0420-schedule-the-subprocess-environment-default-flip.md) | `@caisson/agent-kernel` and `@caisson/tool-exec` gain an opt-in per-command child environment; the inherit-everything default stays for one more release cycle and the flip to narrow is scheduled as a **major** with migration notes. The current default is pinned by a test asserting a child DOES see a parent canary, so the flip cannot land silently. |
 | [0421](../knowledge/decisions/ADR-0421-caisson-internal-use-grant.md) | Internal GridWork use of any `@caisson/*` package is granted, commercial included (operator ruling Round 2 #13): it does not pass through the Paddle catalog, changes no `license` field or catalog membership, and does not extend to anything shipped to a third party. Names its five subjects so the grant is greppable — `ai-evals`, `alerting`, `audit-worm`, `observability`, `rate-limit`. The **distribution** half is answered separately and is **blocked**: GitHub Packages is out estate-wide and SPEC D3's vendor-by-copy is proven only on single-file configs, while `audit-worm` is 66 files with three workspace-internal deps. Scopes the gridwork-core authority-ledger dogfood without authorizing it — no `@caisson/*` import lands there until distribution is answered |
 | [0422](../knowledge/decisions/ADR-0422-unify-bun-fleet-and-smoke-next-build-images.md) | Unifies all Bun pins on 1.4.2 with image index digests, retiring PR #478's temporary build/runtime split after the September 10–12 Next build outage. Adds path-gated demos/site Docker build smoke with CI mutation evidence and records the Next typegen regeneration; a Bun regression in the Next build path reopens the decision. |
+| [0423](../knowledge/decisions/ADR-0423-bind-tool-approvals-to-private-records.md) | R359 locks private digest-bound, one-shot tool approval records, current-policy revalidation and spec-owned child environment; supersedes ADR-0360 S3 caller-owned execution proposals. |
+| [0424](../knowledge/decisions/ADR-0424-recheck-cart-entitlements-before-checkout.md) | R359 locks real-session ownership and server-created cart transactions after current entitlement filtering; supersedes ADR-0418 hint-absence short-circuit. |
+| [0425](../knowledge/decisions/ADR-0425-bind-release-audit-to-reviewed-parent.md) | R370 binds R4 to reviewed_sha and proves the final successor changes only the tag audit and checklist; supersedes CR-06 self-reference. |
+| [0426](../knowledge/decisions/ADR-0426-fail-closed-commerce-account-resolution.md) | R371 separates strict commerce account resolution from dashboard availability fallback; supersedes that resolver choice in ADR-0424. |
+| [0427](../knowledge/decisions/ADR-0427-reject-and-expire-pending-tool-approvals.md) | S8_REPAIRS_2 adds atomic rejection and fifteen-minute pending approval expiry; extends ADR-0423 with bounded capacity reclamation. |
 
 ---
 

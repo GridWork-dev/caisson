@@ -16,8 +16,8 @@ import styles from "./schematics.module.css";
 // anything spawns — a bad shape throws ValidationError. Only then does execFile(command, argv)
 // run — never execSync, never shell:true, the validated args ARE the argv array. propose()/
 // execute() (ADR-0360 S3) split that same lookup+validate from the actual spawn: propose() parks
-// a serializable ProposedToolCall for an external approval step; execute() re-checks the name
-// still maps to the SAME command (the allowlist may have changed) but never re-validates args.
+// a digest-bound ToolApproval backed by a private record (ADR-0423); execute() consumes it once,
+// checks current policy, revalidates the original input, and checks the resulting argv digest.
 export function ToolExecSheet() {
   return (
     <Sheet
@@ -70,18 +70,11 @@ export function ToolExecSheet() {
         y={136}
         w={134}
         h={30}
-        head="ProposedToolCall"
-        sub="serializable · parked"
+        head="ToolApproval"
+        sub="digest · stored"
       />
       <Flow x1={234} y1={151} x2={248} y2={151} />
-      <SNode
-        x={248}
-        y={138}
-        w={80}
-        h={26}
-        head="execute()"
-        sub="re-checks cmd"
-      />
+      <SNode x={248} y={138} w={80} h={26} head="execute()" sub="revalidates" />
       <TitleBlock x={198} y={168} w={130} text="TOOL-EXEC · 1/1" />
     </Sheet>
   );

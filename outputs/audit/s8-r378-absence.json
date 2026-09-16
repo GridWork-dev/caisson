@@ -1,0 +1,75 @@
+{
+  "candidate": "c9250e861117c6c05b06002835a76cfb9bde60e2",
+  "runtime": "1.4.2",
+  "markers": [
+    "92c71b83-737c-493b-b87d-e3c470e0075a",
+    "4747a030-572b-4e80-b82f-693c074525d3",
+    "ececae63-b992-4c4f-96fe-ee080b7de94d",
+    "d22df131-3dd4-4fd8-ac7b-c9397bb8f1da"
+  ],
+  "identifiers": [
+    "[s8-direct-key]",
+    "[s8-direct-ip]",
+    "s8ProbeDeadline",
+    "s8ProbeMarkers",
+    "observeKey"
+  ],
+  "measured": [
+    {
+      "path": "apps/site/lib/ask-ai/handler.ts",
+      "sha256": "1359c935a4558a928f4e5810e7b02e59ac1fb983820e0749dbfdac61295e9099",
+      "diagnosticMatches": []
+    },
+    {
+      "path": "packages/rate-limit/src/token-bucket.ts",
+      "sha256": "3e5f9606f3cc1c7d912724ea25ee11d0abb0356c9499a8674b6f5751bce97795",
+      "diagnosticMatches": []
+    },
+    {
+      "path": "services/license/src/app.ts",
+      "sha256": "97a2aae5cd981b8995e2bd945b6dc19b521ce10a7a451a83c92fa3ecebf99709",
+      "diagnosticMatches": []
+    },
+    {
+      "path": "apps/site/lib/ask-ai/handler.test.ts",
+      "sha256": "b60c6d56f099a6c17d20d8089c34c6e17096539c8baa465a9e39293fda8c1110",
+      "diagnosticMatches": []
+    },
+    {
+      "path": "packages/rate-limit/src/token-bucket.test.ts",
+      "sha256": "9b011568e4d773721de990dd1356adaa05b9ce54f34039e46a57bf1e57888d9d",
+      "diagnosticMatches": []
+    },
+    {
+      "path": "services/license/src/issue-app.integration.test.ts",
+      "sha256": "cde33e44f5c3bdf3e15f2143c4b6dc096430bcde6ed2944bde1561447dfc8d34",
+      "diagnosticMatches": []
+    },
+    {
+      "path": "packages/rate-limit/dist/token-bucket.js",
+      "sha256": "9102ea692227822125ab132391536f4531eca0ec170e134a6ef8bc66d2092b7c",
+      "diagnosticMatches": []
+    },
+    {
+      "path": "packages/rate-limit/dist/token-bucket.d.ts",
+      "sha256": "e871e8461f1547f7c9e45f0b87c1e94246bdcfdb87bd4c0048a7645fd7b814d6",
+      "diagnosticMatches": []
+    }
+  ],
+  "implementationDiffVsPreDiagnostic": "empty",
+  "sixPathDiffVsMain": "empty",
+  "removalAncestor": true,
+  "temporaryChangesetPresent": false,
+  "removalChangeset": "---\n---\n\nRemove the temporary diagnostic introduced by 7e54ddc5b05a4ee922468790efec2654666840da after the completed S8 probes.\n",
+  "accountedChangesets": [
+    ".changeset/s8-bound-tool-approvals.md",
+    ".changeset/s8-resolved-embedding-egress.md"
+  ],
+  "tests": {
+    "pass": 64,
+    "fail": 0,
+    "assertions": 168
+  },
+  "buildExit": 0,
+  "lintExit": 0
+}

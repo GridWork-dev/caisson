@@ -1,0 +1,158 @@
+bun test v1.4.2 (744846f84)
+
+deploy/smoke.test.ts:
+(pass) public Caisson deployment smoke > maps the staging workflow environment to a fail-closed smoke config [0.14ms]
+(pass) public Caisson deployment smoke > parses the workflow's canary JSON without exposing its values [0.56ms]
+(pass) public Caisson deployment smoke > covers every service through Cloudflare and proxies demos through the site [1.63ms]
+(pass) public Caisson deployment smoke > staging proves authenticated success, public Access denial and raw origin denial without leaking credentials [0.63ms]
+(pass) public Caisson deployment smoke > removing the Access boundary makes staging fail [0.25ms]
+(pass) public Caisson deployment smoke > removing the raw origin boundary makes staging fail [0.13ms]
+(pass) public Caisson deployment smoke > authenticated staging requests still reject login redirects [0.08ms]
+(pass) public Caisson deployment smoke > unrelated redirects and generic errors do not establish an Access denial [0.30ms]
+(pass) public Caisson deployment smoke > a Cloudflare-marked 403 is an accepted public denial [0.16ms]
+(pass) public Caisson deployment smoke > missing or malformed raw origins fail before any HTTP probe [0.37ms]
+(pass) public Caisson deployment smoke > scopes rollback smoke to the selected service [0.13ms]
+(pass) public Caisson deployment smoke > smokes zero-traffic tag URLs directly with each service's origin header [0.52ms]
+(pass) public Caisson deployment smoke > keeps pre-migration canary smoke free of schema-dependent writes [0.14ms]
+(pass) public Caisson deployment smoke > requires valid mode, tag, and Access credentials [0.72ms]
+(pass) public Caisson deployment smoke > fails on public status, headers, or write-boundary regressions [0.29ms]
+
+deploy/staging-origins.test.ts:
+(pass) the governed gcloud argv gate resolves every staging service and validates names [2.83ms]
+(pass) invalid project/region never reaches the gcloud execution seam [0.17ms]
+(pass) gcloud failure and wrong resource metadata fail closed [0.44ms]
+(pass) raw URL map rejects missing, duplicate and unexpected services [0.06ms]
+(pass) staging workflow resolves origins before smoke and passes the exact resolver output [0.38ms]
+
+scripts/release-readiness.test.ts:
+(pass) R4 audit attestation > R4 rejects an existing empty audit instead of accepting its filename [0.57ms]
+(pass) R4 audit attestation > R4 accepts a clean audit bound to the exact base, tag and final SHA [0.69ms]
+(pass) R4 audit attestation > R4 rejects failed verdict [0.16ms]
+(pass) R4 audit attestation > R4 rejects blocking finding [0.07ms]
+(pass) R4 audit attestation > R4 rejects wrong SHA [0.04ms]
+(pass) R4 audit attestation > R4 rejects wrong base [0.04ms]
+(pass) R4 audit attestation > R4 rejects wrong tag [0.05ms]
+(pass) R4 audit attestation > R4 rejects empty scope [0.14ms]
+(pass) R4 audit attestation > R4 rejects blank scope [0.14ms]
+(pass) R4 audit attestation > R4 rejects no reviewers [0.12ms]
+(pass) R4 audit attestation > R4 rejects duplicate roles [0.10ms]
+(pass) R4 audit attestation > R4 rejects blank identity [0.13ms]
+(pass) R4 audit attestation > R4 rejects invalid timestamp [0.14ms]
+(pass) R4 audit attestation > R4 rejects unknown metadata [0.10ms]
+(pass) R4 audit attestation > R4 fails closed for absent, malformed and prose-only artifacts [0.08ms]
+(pass) REQUIRED_CHECKS — the release-readiness gate's own input > every workflow file parses — a throw here would blank the whole suite [0.01ms]
+(pass) REQUIRED_CHECKS — the release-readiness gate's own input > the set is non-empty, deduplicated, and at full strength [0.02ms]
+(pass) REQUIRED_CHECKS — the release-readiness gate's own input > every required check is a job some workflow actually reports under that name [0.02ms]
+(pass) REQUIRED_CHECKS — the release-readiness gate's own input > no required check is path-scoped — a skipped check never reports and reads as missing [0.11ms]
+(pass) REQUIRED_CHECKS — the release-readiness gate's own input > no required check is conditionally skippable — only the CAISSON-96 draft guard is allowed [0.04ms]
+(pass) REQUIRED_CHECKS — the release-readiness gate's own input > support-bot is in the set — ADR-0414 promoted it before automating its deploy [0.01ms]
+(pass) REQUIRED_CHECKS — the release-readiness gate's own input > runtime images aggregate is required by release readiness
+(pass) REQUIRED_CHECKS — the release-readiness gate's own input > runtime aggregate always consumes the selector and complete matrix [0.03ms]
+(pass) REQUIRED_CHECKS — the release-readiness gate's own input > runtime aggregate rejects a failed matrix member [1.61ms]
+(pass) REQUIRED_CHECKS — the release-readiness gate's own input > runtime aggregate is green only when both dependencies succeed [15.58ms]
+
+apps/site/lib/paddle-checkout.test.ts:
+(pass) G6 — an init failure does not poison checkout for the rest of the session > a rejected initializePaddle() propagates, and the NEXT call retries fresh [0.78ms]
+(pass) abandoned-checkout discount fork (SPEC-abandoned-checkout-email.md, 2026-07-10 lock) > a discount code is threaded into Checkout.open's discountCode option [0.07ms]
+(pass) abandoned-checkout discount fork (SPEC-abandoned-checkout-email.md, 2026-07-10 lock) > an omitted discount code is never passed as an explicit key [0.05ms]
+(pass) G35 — the cart clears on checkout.completed, not on overlay-open > onCheckoutCompleted fires only for the checkout.completed event, until unregistered [0.09ms]
+(pass) server cart opens only the validated transaction id, without overriding lines or account [0.11ms]
+
+apps/site/lib/cart-routes.test.ts:
+(pass) already-owned checkout lines are dropped before Paddle receives current catalog prices [0.60ms]
+(pass) an all-owned cart never reaches Paddle [0.11ms]
+(pass) forged hint without a session cannot create checkout [0.07ms]
+(pass) client account, price and quantity injection and unknown catalog items fail before Paddle [0.25ms]
+(pass) failed entitlement read blocks transaction creation [0.15ms]
+(pass) cross-origin checkout is rejected before session or payment work [0.05ms]
+(pass) production checkout route binds session, scoped ownership and server transaction creation [0.27ms]
+
+apps/site/lib/auth-account.test.ts:
+[apps/site] DATABASE_URL unset — using an in-memory PGlite double (dev only).
+(pass) getSession resolves a fresh user to their personal account (accountId == userId) [1281.08ms]
+(pass) G8: the active-account cookie switches an invited seat to the org account [1.94ms]
+(pass) G8: a cookie naming an account the user does NOT belong to falls back to personal [0.64ms]
+(pass) G16: getOwnedCartItemIds maps an active entitlement grant to its catalog cart id [17.58ms]
+
+apps/site/lib/paddle-cart-transaction.test.ts:
+(pass) Paddle receives server-selected lines and account with bounded redirect-free requests [1.40ms]
+(pass) unavailable or private discount never creates a transaction [0.16ms]
+(pass) missing server key fails closed before egress [0.06ms]
+(pass) provider errors and malformed transaction ids fail closed [0.28ms]
+
+packages/local-store/src/egress-guard.test.ts:
+(pass) scrubForEgress (secret-scrub contract) > C — drops a secret-named assignment value, keeps key + separator [0.20ms]
+(pass) scrubForEgress (secret-scrub contract) > B — drops only the URL password, keeps scheme/user/host [0.01ms]
+(pass) scrubForEgress (secret-scrub contract) > D — redacts a bare inline token, surrounding text intact
+(pass) scrubForEgress (secret-scrub contract) > A — collapses a PEM private-key block whole
+(pass) scrubForEgress (secret-scrub contract) > clean text passes through unchanged (no false positive)
+(pass) scrubForEgress (secret-scrub contract) > idempotent — re-scrubbing already-scrubbed text is a no-op
+(pass) looksLikeSecret > true when the text carries a redactable span [0.01ms]
+(pass) looksLikeSecret > false for clean text
+(pass) guardEmbedder (scrub-before-egress) > the wrapped backend never receives a raw secret [0.15ms]
+(pass) createCloudEmbedder (test-doubled transport — no live call) > rejects a public hostname resolving to private space before fetch [0.71ms]
+(pass) createCloudEmbedder (test-doubled transport — no live call) > resolves immediately before every request including a changed DNS answer [0.33ms]
+(pass) createCloudEmbedder (test-doubled transport — no live call) > rejects a private, loopback or metadata endpoint at construction [0.12ms]
+(pass) createCloudEmbedder (test-doubled transport — no live call) > a public https endpoint still constructs and embeds [0.07ms]
+(pass) createCloudEmbedder (test-doubled transport — no live call) > refuses to follow a redirect on the credential-bearing POST [0.06ms]
+(pass) createCloudEmbedder (test-doubled transport — no live call) > scrubs content before the request body leaves the box [0.06ms]
+(pass) createCloudEmbedder (test-doubled transport — no live call) > rejects a non-https endpoint (fail-closed) [0.08ms]
+(pass) createCloudEmbedder (test-doubled transport — no live call) > rejects an unknown config field (strict boundary) [0.05ms]
+(pass) createCloudEmbedder (test-doubled transport — no live call) > a wrong-dim response throws fail-closed (never corrupts the index) [0.06ms]
+(pass) createCloudEmbedder (test-doubled transport — no live call) > a failed transport throws a redaction-safe error (no secret) [0.15ms]
+
+packages/tool-exec/src/browser-safety.test.ts:
+(pass) `./browser` is browser-safe > no module reachable from src/browser.ts imports a node builtin (transitive)
+(pass) `./browser` is browser-safe > guard the guard: the walk really resolved a graph, including across packages [0.02ms]
+(pass) `./browser` is browser-safe > positive control: the `.` barrel DOES report the irreducibly node-only module [0.76ms]
+(pass) `./browser` is a subset of `.` > every runtime name exported by ./browser is also exported by the barrel [0.18ms]
+
+packages/tool-exec/src/tool-exec.test.ts:
+(pass) createToolExec — default-deny allowlist > an unregistered command name is refused [0.14ms]
+(pass) createToolExec — default-deny allowlist > an empty allowlist refuses everything [0.05ms]
+(pass) createToolExec — schema-validated args, no exec on failure > args failing the schema are rejected BEFORE any exec [0.16ms]
+(pass) createToolExec — a valid call > returns a provenance record with exit code, output, resolved args [0.13ms]
+(pass) createToolExec — a valid call > reason is omitted from the record when not supplied [0.04ms]
+(pass) createToolExec — a non-zero exit / spawn failure > a non-zero exit is captured, not thrown [0.05ms]
+(pass) createToolExec — real spawn (default ExecFn), a safe binary > actually execs node -e and captures bounded stdout [10.22ms]
+(pass) createToolExec — env leak guard (THREAT: parent-secret inheritance), real default execFn > with env supplied on the allowlist entry, the child does NOT see the canary and DOES see PATH [7.86ms]
+(pass) createToolExec — env leak guard (THREAT: parent-secret inheritance), real default execFn > with no env on the allowlist entry (today's default), the child DOES see the canary — pins the inherit-everything default so a future flip shows up in CI [8.58ms]
+(pass) createToolExec — two-phase gate (ADR-0360 S3): propose() then execute() > propose validates + parks without spawning; execute later runs the SAME validated argv [0.98ms]
+(pass) createToolExec — two-phase gate (ADR-0360 S3): propose() then execute() > propose rejects an unregistered command BEFORE anything is parked [0.08ms]
+(pass) createToolExec — two-phase gate (ADR-0360 S3): propose() then execute() > propose rejects args failing the schema, BEFORE anything is parked [0.11ms]
+(pass) createToolExec — two-phase gate (ADR-0360 S3): propose() then execute() > execute rejects a hand-built proposal without a stored approval [0.13ms]
+(pass) createToolExec — two-phase gate (ADR-0360 S3): propose() then execute() > execute refuses a proposal whose command no longer matches the allowlist (drift defense) [0.11ms]
+(pass) createToolExec — two-phase gate (ADR-0360 S3): propose() then execute() > execute refuses a proposal for a name removed from the allowlist since propose [0.10ms]
+(pass) createToolExec — two-phase gate (ADR-0360 S3): propose() then execute() > the existing single-phase run() path is untouched by the two-phase addition [0.04ms]
+(pass) ADR-0423 — stored approval integrity > mutated approved arguments never spawn [0.08ms]
+(pass) ADR-0423 — stored approval integrity > forged IDs, digests, reasons and policy versions are rejected [0.24ms]
+(pass) ADR-0423 — stored approval integrity > altered proposal environment is rejected and current spec owns child env [0.19ms]
+(pass) ADR-0423 — stored approval integrity > environment and policy-version rotation invalidate outstanding approvals [0.17ms]
+(pass) ADR-0423 — stored approval integrity > current schema revalidates saved original input, including object-to-argv transforms [0.61ms]
+(pass) ADR-0423 — stored approval integrity > a changed schema transform cannot alter the approved argv [0.19ms]
+(pass) ADR-0423 — stored approval integrity > atomic consumption prevents replay and concurrent double execution [0.19ms]
+
+packages/agent-dev/src/tool-exec-wiring.test.ts:
+(pass) agent-dev edition — bundled tool-exec gate (ADR-0178) > the tool-exec surface is re-exported from the one edition import home
+(pass) agent-dev edition — bundled tool-exec gate (ADR-0178) > the composed edition exposes a fail-closed default-deny tool-exec gate [2.54ms]
+
+apps/demos/components/poke/tool-exec-poke.test.ts:
+(pass) the poke's client graph is browser-safe (static source walk, NOT a build) > no module reachable from the client entry imports a node builtin (transitive) [0.02ms]
+(pass) the poke's client graph is browser-safe (static source walk, NOT a build) > the walk really crossed into the package's browser entry, never the spawn half [0.01ms]
+(pass) the poke's client graph is browser-safe (static source walk, NOT a build) > positive control: the package's `.` barrel DOES taint, so the walker is not blind [0.90ms]
+(pass) the poke's gate IS the package's gate > a valid browser proposal matches validated fields but cannot mint approval authority [0.74ms]
+(pass) the poke's gate IS the package's gate > reason is omitted when not supplied, matching the package [0.20ms]
+(pass) the poke's gate IS the package's gate > an unregistered name is denied with the package's own NotFoundError instance [0.12ms]
+(pass) the sample allowlist actually gates > git-status accepts only the exact argv its schema names [0.12ms]
+(pass) the sample allowlist actually gates > a proposed call's args is always a string array, never a concatenated command [0.02ms]
+
+apps/site/app/api/cart/owned/route.test.ts:
+(pass) valid durable session without a hint returns owned items [22.82ms]
+(pass) independently evicting the hint leaves a durable session ownership read intact [4.16ms]
+(pass) forged hint without a durable session grants no ownership [2.57ms]
+(pass) production owned route binds the real session and scoped entitlement reader [0.11ms]
+
+ 125 pass
+ 0 fail
+ 457 expect() calls
+Ran 125 tests across 13 files. [1.91s]

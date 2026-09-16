@@ -2,16 +2,29 @@
 // neutral: the embed transport is a TEST-DOUBLE (no live cloud call in CI). Proves the scrub contract,
 // scrub-before-egress (the backend never sees a raw secret), the fail-closed https + dimension gates,
 // and that a failed transport throws a redaction-safe error carrying no secret.
-import { describe, expect, test } from "bun:test";
+import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { InternalError, ValidationError } from "@caisson/kernel";
-import {
-  createCloudEmbedder,
-  guardEmbedder,
-  looksLikeSecret,
-  scrubForEgress,
-  type EmbedFetch,
-} from "./embed-scrub-guard.ts";
+import type { EmbedFetch } from "./embed-scrub-guard.ts";
 import type { Embedder } from "./embedder.ts";
+
+// Resolver seam, not a replacement of the security guard. The real kernel guard inspects
+// these synthetic DNS answers; neither DNS nor the transport reaches a live service.
+const dns: { addresses: { address: string }[]; calls: number } = {
+  addresses: [{ address: "93.184.216.34" }],
+  calls: 0,
+};
+mock.module("node:dns/promises", () => ({
+  lookup: async () => {
+    dns.calls++;
+    return dns.addresses;
+  },
+}));
+const { createCloudEmbedder, guardEmbedder, looksLikeSecret, scrubForEgress } =
+  await import("./embed-scrub-guard.ts");
+beforeEach(() => {
+  dns.addresses = [{ address: "93.184.216.34" }];
+  dns.calls = 0;
+});
 
 describe("scrubForEgress (secret-scrub contract)", () => {
   test("C — drops a secret-named assignment value, keeps key + separator", () => {
@@ -85,6 +98,53 @@ describe("createCloudEmbedder (test-doubled transport — no live call)", () => 
       headers: { "content-type": "application/json" },
     });
   }
+
+  test("rejects a public hostname resolving to private space before fetch", async () => {
+    dns.addresses = [
+      { address: "93.184.216.34" },
+      { address: "169.254.169.254" },
+    ];
+    const fetchImpl = mock<EmbedFetch>(() =>
+      Promise.resolve(okResponse([0.1, 0.2])),
+    );
+    const embedder = createCloudEmbedder(
+      {
+        endpoint: "https://embed.example.com/v1",
+        apiKey: "test-key",
+        model: "m",
+        dim: 2,
+      },
+      fetchImpl,
+    );
+    await expect(embedder.embed("buyer content")).rejects.toThrow(
+      /private address/,
+    );
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(dns.calls).toBe(1);
+  });
+
+  test("resolves immediately before every request including a changed DNS answer", async () => {
+    const order: string[] = [];
+    const fetchImpl: EmbedFetch = (_url, init) => {
+      order.push(`fetch-after-resolution-${dns.calls}`);
+      expect(init?.redirect).toBe("error");
+      return Promise.resolve(okResponse([0.1, 0.2]));
+    };
+    const embedder = createCloudEmbedder(
+      {
+        endpoint: "https://embed.example.com/v1",
+        apiKey: "test-key",
+        model: "m",
+        dim: 2,
+      },
+      fetchImpl,
+    );
+    await embedder.embed("first");
+    dns.addresses = [{ address: "127.0.0.1" }];
+    await expect(embedder.embed("second")).rejects.toThrow(/private address/);
+    expect(order).toEqual(["fetch-after-resolution-1"]);
+    expect(dns.calls).toBe(2);
+  });
 
   test("rejects a private, loopback or metadata endpoint at construction", () => {
     // The schema's `.refine` proves only the SCHEME. Every host below is valid https, so a

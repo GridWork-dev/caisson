@@ -1,0 +1,10 @@
+{
+  "base": "e08b4b36",
+  "runtime": "Bun 1.4.2",
+  "argv": ["bun", "test", "apps/site/lib/auth-account.test.ts"],
+  "exit": 99,
+  "stdout": "bun test v1.4.2 (744846f84)\n",
+  "stderr": "\napps/site/lib/auth-account.test.ts:\n[apps/site] DATABASE_URL unset \u2014 using an in-memory PGlite double (dev only).\n(pass) getSession resolves a fresh user to their personal account (accountId == userId) [1073.85ms]\n(pass) G8: the active-account cookie switches an invited seat to the org account [1.96ms]\n(pass) G8: a cookie naming an account the user does NOT belong to falls back to personal [0.65ms]\n(pass) G16: getOwnedCartItemIds maps an active entitlement grant to its catalog cart id [18.55ms]\n\n 4 pass\n 0 fail\n 9 expect() calls\nRan 4 tests across 1 file. [1365.00ms]\n",
+  "fixed_sha256": "0e7bc139a7c51ca39478dee71d51ae9e3514228cc9bb0746f3e6f4f176e271ea",
+  "restored_sha256": "0e7bc139a7c51ca39478dee71d51ae9e3514228cc9bb0746f3e6f4f176e271ea"
+}

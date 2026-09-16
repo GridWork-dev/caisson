@@ -64,6 +64,37 @@ export async function getSession(): Promise<SessionContext | null> {
   }
 }
 
+/** ADR-0426: commerce must never substitute a personal tenant after a membership failure. */
+export async function getCheckoutSession(): Promise<SessionContext | null> {
+  const auth = await getAuth();
+  if (auth === null) return null;
+  const result = await auth.api.getSession({ headers: await headers() });
+  if (result === null) return null;
+  const userId = result.user.id;
+  const requestedAccountId = (await cookies()).get(
+    ACTIVE_ACCOUNT_COOKIE,
+  )?.value;
+  const account = await resolveCheckoutAccount(userId, requestedAccountId);
+  return { userId, ...account };
+}
+
+export async function resolveCheckoutAccount(
+  userId: string,
+  requestedAccountId?: string,
+): Promise<{ accountId: string; role: Role }> {
+  const memberships = await listMyAccounts(userId);
+  const active = selectActiveAccount(memberships, requestedAccountId);
+  // A stale/forged explicit selection also cannot silently charge another tenant.
+  if (
+    !active ||
+    (requestedAccountId !== undefined &&
+      active.accountId !== requestedAccountId)
+  ) {
+    throw new Error("Checkout account could not be resolved");
+  }
+  return { accountId: active.accountId, role: active.role };
+}
+
 /** Every account the signed-in user belongs to (bootstraps the personal account on first read,
  *  same as `resolveActiveAccount`) — throws on a DB error; callers fail-safe individually. */
 async function listMyAccounts(userId: string): Promise<AccountMembership[]> {

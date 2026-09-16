@@ -107,3 +107,16 @@ describe("G35 — the cart clears on checkout.completed, not on overlay-open", (
     expect(fired).toBe(1); // unregistered — no further calls
   });
 });
+
+test("server cart opens only the validated transaction id, without overriding lines or account", async () => {
+  const { openCartTransaction } = await import("./paddle-checkout.ts");
+  fakeCheckoutOpen.mockClear();
+  const transactionId = `txn_${"a".repeat(26)}`;
+  expect(await openCartTransaction(transactionId)).toBe(true);
+  expect(fakeCheckoutOpen.mock.calls[0]?.[0]).toEqual({
+    transactionId,
+    settings: { showAddTaxId: true },
+  });
+  expect(await openCartTransaction("forged")).toBe(false);
+  expect(fakeCheckoutOpen).toHaveBeenCalledTimes(1);
+});

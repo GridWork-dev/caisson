@@ -1,54 +1,105 @@
-// Regression coverage for ADR-0418: GET /api/cart/owned short-circuits on the hint cookie's
-// ABSENCE before ever calling getOwnedCartItemIds() — the server-side half of the optimization a
-// prior revision did client-side (skipping the fetch itself via a client-readable hint cookie).
-// This route takes no params and has no dependency-injection seam (unlike
-// `app/api/audit/proof/route.ts`'s `createTenantProofRoute(dependencies)` factory), so — per the
-// existing `mock.module("next/headers", ...)` idiom already used by `lib/auth.test.ts` and
-// `lib/auth-account.test.ts` for the same reason (this runs outside a real Next request scope) —
-// `cookies()` is stubbed here rather than inventing a new mocking layer. `@/lib/owned-cart-items`
-// is stubbed too, purely to observe whether it was ever called; the cookie's PRESENCE case below
-// proves it still IS called — the hint is a fail-open optimization, never a trust boundary.
-import { expect, mock, test } from "bun:test";
-import { SESSION_HINT_COOKIE_NAME } from "@/lib/session-hint-cookie";
+// ADR-0424 regression: real Better Auth durable cookies, optional hint independently absent.
+import { expect, test } from "bun:test";
+import { Database } from "bun:sqlite";
+import { getMigrations } from "better-auth/db/migration";
+import { createCaptureEmailer } from "@caisson/email";
+import type { Pool } from "pg";
+import { createAuth, SESSION_HINT_COOKIE_NAME } from "@/lib/auth-server";
+import { cartOwnedHandler } from "@/lib/cart-routes";
 
-let hintCookiePresent = false;
-let getOwnedCartItemIdsCalls = 0;
+async function fixture() {
+  const database = new Database(":memory:");
+  const emailer = createCaptureEmailer();
+  const auth = await createAuth({
+    database: database as unknown as Pool,
+    secret: "test-secret-value-at-least-32-characters-long",
+    hmacKey: "test-hmac-key-value-at-least-32-characters-long",
+    emailer,
+    baseURL: "http://localhost:3030",
+  });
+  const { runMigrations } = await getMigrations({ ...auth.options, database });
+  await runMigrations();
+  await auth.api.signInMagicLink({
+    body: { email: "buyer@example.com" },
+    headers: new Headers(),
+  });
+  const url = String((emailer.sent[0]!.data as { url: string }).url);
+  const verified = await auth.handler(new Request(url));
+  const cookies = verified.headers
+    .getSetCookie()
+    .map((cookie) => cookie.split(";")[0]!);
+  let reads = 0;
+  const handler = cartOwnedHandler({
+    session: async (request) => {
+      const session = await auth.api.getSession({ headers: request.headers });
+      return session
+        ? { userId: session.user.id, accountId: session.user.id, role: "owner" }
+        : null;
+    },
+    owned: async () => {
+      reads++;
+      return new Set(["module:field-crypto"]);
+    },
+  });
+  const request = (values: string[]) =>
+    new Request("http://localhost:3030/api/cart/owned", {
+      headers: { cookie: values.join("; ") },
+    });
+  return { database, handler, cookies, request, reads: () => reads };
+}
 
-mock.module("next/headers", () => ({
-  cookies: async () => ({
-    get: (name: string) =>
-      name === SESSION_HINT_COOKIE_NAME && hintCookiePresent
-        ? { name, value: "1" }
-        : undefined,
-  }),
-}));
-
-mock.module("@/lib/owned-cart-items", () => ({
-  getOwnedCartItemIds: async (): Promise<Set<string>> => {
-    getOwnedCartItemIdsCalls++;
-    return new Set(["module:audit-worm"]);
-  },
-}));
-
-test("no hint cookie: returns {owned: []} without ever calling getOwnedCartItemIds", async () => {
-  hintCookiePresent = false;
-  getOwnedCartItemIdsCalls = 0;
-  const { GET } = await import("./route.ts");
-
-  const response = await GET();
-
-  expect(await response.json()).toEqual({ owned: [] });
-  expect(getOwnedCartItemIdsCalls).toBe(0);
-  expect(response.headers.get("cache-control")).toBe("private, no-store");
+test("valid durable session without a hint returns owned items", async () => {
+  const f = await fixture();
+  try {
+    const response = await f.handler(
+      f.request(
+        f.cookies.filter((c) => !c.startsWith(`${SESSION_HINT_COOKIE_NAME}=`)),
+      ),
+    );
+    expect(await response.json()).toEqual({ owned: ["module:field-crypto"] });
+    expect(f.reads()).toBe(1);
+    expect(response.headers.get("cache-control")).toBe("private, no-store");
+  } finally {
+    f.database.close();
+  }
 });
 
-test("hint cookie present: falls through to the real session resolution (a hint is a fail-open optimization, not a grant)", async () => {
-  hintCookiePresent = true;
-  getOwnedCartItemIdsCalls = 0;
-  const { GET } = await import("./route.ts");
+test("independently evicting the hint leaves a durable session ownership read intact", async () => {
+  const f = await fixture();
+  try {
+    expect(await (await f.handler(f.request(f.cookies))).json()).toEqual({
+      owned: ["module:field-crypto"],
+    });
+    // Browser evicts an expired optional hint while retaining the still-valid session token.
+    const withoutHint = f.cookies.filter(
+      (c) => !c.startsWith(`${SESSION_HINT_COOKIE_NAME}=`),
+    );
+    expect(await (await f.handler(f.request(withoutHint))).json()).toEqual({
+      owned: ["module:field-crypto"],
+    });
+    expect(f.reads()).toBe(2);
+  } finally {
+    f.database.close();
+  }
+});
 
-  const response = await GET();
+test("forged hint without a durable session grants no ownership", async () => {
+  const f = await fixture();
+  try {
+    expect(
+      await (
+        await f.handler(f.request([`${SESSION_HINT_COOKIE_NAME}=1`]))
+      ).json(),
+    ).toEqual({ owned: [] });
+    expect(f.reads()).toBe(0);
+  } finally {
+    f.database.close();
+  }
+});
 
-  expect(await response.json()).toEqual({ owned: ["module:audit-worm"] });
-  expect(getOwnedCartItemIdsCalls).toBe(1);
+test("production owned route binds the real session and scoped entitlement reader", async () => {
+  const source = await Bun.file(new URL("./route.ts", import.meta.url)).text();
+  expect(source).toContain("session: getSession");
+  expect(source).toContain("owned: getOwnedCartItemIdsForAccount");
+  expect(source).not.toContain("SESSION_HINT_COOKIE_NAME");
 });

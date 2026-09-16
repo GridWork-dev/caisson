@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { STAGING_SERVICES } from "./staging-origins.ts";
 
 const subject = await import("./smoke.ts").catch(() => undefined);
 
@@ -21,6 +22,36 @@ const originSecrets = {
   "caisson-license": originSecret,
   "caisson-docs": originSecret,
 };
+
+const stagingOriginUrls = Object.fromEntries(
+  STAGING_SERVICES.map((service) => [
+    service,
+    `https://${service}-123456789.us-east1.run.app`,
+  ]),
+);
+const stagingConfig = {
+  environment: "staging",
+  mode: "staging",
+  stagingOriginUrls,
+  accessClientId: "staging-id",
+  accessClientSecret: "staging-secret",
+};
+async function stagingResponse(
+  input: string | URL | Request,
+  init?: RequestInit,
+): Promise<Response> {
+  if (new URL(String(input)).hostname.endsWith(".run.app"))
+    return new Response(null, { status: 403 });
+  if (!new Headers(init?.headers).has("cf-access-client-id"))
+    return new Response(null, {
+      status: 302,
+      headers: {
+        location:
+          "https://gridwork.cloudflareaccess.com/cdn-cgi/access/login/caisson.gwstg.dev",
+      },
+    });
+  return responseFor(input, init);
+}
 
 async function responseFor(
   _input: string | URL | Request,
@@ -52,6 +83,7 @@ describe("public Caisson deployment smoke", () => {
       mode: "staging",
       canaryTag: undefined,
       canaryUrls: undefined,
+      stagingOriginUrls: undefined,
       originSecrets: undefined,
       service: undefined,
       accessClientId: "staging-id",
@@ -131,54 +163,159 @@ describe("public Caisson deployment smoke", () => {
     expect(calls[0]?.headers.has("cf-access-client-id")).toBe(false);
   });
 
-  test("sends Access credentials on every staging request and rejects the login redirect", async () => {
-    expect(subject?.runSmoke).toBeFunction();
-    if (!subject) return;
-
-    const calls: Array<{
+  test("staging proves authenticated success, public Access denial and raw origin denial without leaking credentials", async () => {
+    const calls: {
+      url: string;
+      method: string;
       headers: Headers;
       redirect: RequestRedirect | undefined;
-    }> = [];
-    await subject.runSmoke(
-      {
-        environment: "staging",
-        mode: "staging",
-        accessClientId: "staging-id",
-        accessClientSecret: "staging-secret",
-      },
-      async (input, init) => {
-        calls.push({
-          headers: new Headers(init?.headers),
-          redirect: init?.redirect,
-        });
-        return responseFor(input, init);
-      },
+    }[] = [];
+    await subject!.runSmoke(stagingConfig, async (input, init, opts) => {
+      expect(opts?.timeoutMs).toBe(10_000);
+      calls.push({
+        url: String(input),
+        method: init?.method ?? "GET",
+        headers: new Headers(init?.headers),
+        redirect: init?.redirect,
+      });
+      return stagingResponse(input, init);
+    });
+    expect(calls).toHaveLength(18);
+    const raw = calls.filter((c) => c.url.includes(".run.app"));
+    const anonymousPublic = calls.filter(
+      (c) =>
+        !c.url.includes(".run.app") && !c.headers.has("cf-access-client-id"),
     );
-
-    expect(calls).toHaveLength(8);
-    for (const call of calls) {
-      expect(call.redirect).toBe("manual");
-      expect(call.headers.get("cf-access-client-id")).toBe("staging-id");
-      expect(call.headers.get("cf-access-client-secret")).toBe(
-        "staging-secret",
-      );
+    expect(raw).toHaveLength(5);
+    expect(anonymousPublic).toHaveLength(5);
+    for (const call of [...raw, ...anonymousPublic]) {
+      expect(call.headers.has("cf-access-client-secret")).toBe(false);
+      expect(call.headers.has("x-gridwork-origin-secret")).toBe(false);
+      expect(call.headers.has("authorization")).toBe(false);
+      expect(call.headers.has("x-serverless-authorization")).toBe(false);
+      expect(call.method).toBe("GET");
     }
+    for (const call of calls) expect(call.redirect).toBe("manual");
+    expect(raw.map((c) => c.url)).toEqual(
+      STAGING_SERVICES.map(
+        (service) =>
+          `${stagingOriginUrls[service]}${service === "caisson-license" || service === "caisson-docs" ? "/health" : service === "caisson-demos" ? "/demos/healthz" : "/healthz"}`,
+      ),
+    );
+  });
 
+  test("removing the Access boundary makes staging fail", async () => {
     await expect(
-      subject.runSmoke(
-        {
-          environment: "staging",
-          mode: "staging",
-          accessClientId: "staging-id",
-          accessClientSecret: "staging-secret",
-        },
+      subject!.runSmoke(stagingConfig, async (input, init) => {
+        if (!String(input).includes(".run.app"))
+          return responseFor(input, init);
+        return stagingResponse(input, init);
+      }),
+    ).rejects.toThrow("Access denial boundary returned 200");
+  });
+
+  test("removing the raw origin boundary makes staging fail", async () => {
+    await expect(
+      subject!.runSmoke(stagingConfig, async (input, init) => {
+        if (String(input).includes(".run.app")) return responseFor(input, init);
+        return stagingResponse(input, init);
+      }),
+    ).rejects.toThrow("raw origin/IAM denial boundary returned 200");
+  });
+
+  test("authenticated staging requests still reject login redirects", async () => {
+    await expect(
+      subject!.runSmoke(
+        stagingConfig,
         async () =>
           new Response(null, {
             status: 302,
-            headers: { location: "https://access.example/login" },
+            headers: {
+              location:
+                "https://gridwork.cloudflareaccess.com/cdn-cgi/access/login",
+            },
           }),
       ),
     ).rejects.toThrow("caisson-site health returned 302");
+  });
+
+  test("unrelated redirects and generic errors do not establish an Access denial", async () => {
+    for (const denial of [
+      new Response(null, {
+        status: 302,
+        headers: { location: "https://evil.example/login" },
+      }),
+      new Response(null, {
+        status: 302,
+        headers: {
+          location:
+            "https://gridwork.cloudflareaccess.com.evil.example/cdn-cgi/access/login",
+        },
+      }),
+      new Response(null, { status: 403 }),
+      new Response(null, { status: 500 }),
+    ])
+      await expect(
+        subject!.runSmoke(stagingConfig, async (input, init) =>
+          new Headers(init?.headers).has("cf-access-client-id")
+            ? responseFor(input, init)
+            : denial,
+        ),
+      ).rejects.toThrow("Access denial boundary");
+  });
+
+  test("a Cloudflare-marked 403 is an accepted public denial", async () => {
+    await subject!.runSmoke(stagingConfig, async (input, init) => {
+      if (
+        !String(input).includes(".run.app") &&
+        !new Headers(init?.headers).has("cf-access-client-id")
+      )
+        return new Response(null, {
+          status: 403,
+          headers: { server: "cloudflare", "cf-ray": "test-ray" },
+        });
+      return stagingResponse(input, init);
+    });
+  });
+
+  test("missing or malformed raw origins fail before any HTTP probe", async () => {
+    let calls = 0;
+    const transport = async () => {
+      calls++;
+      throw new Error("must not request");
+    };
+    await expect(
+      subject!.runSmoke(
+        { ...stagingConfig, stagingOriginUrls: undefined },
+        transport,
+      ),
+    ).rejects.toThrow("STAGING_ORIGIN_URLS is required");
+    for (const raw of [
+      "http://x.run.app",
+      "https://x.run.app.evil.example",
+      "https://x.run.app@evil.example",
+      "https://evil.example@x.run.app",
+      "https://x.run.app:443",
+      "https://x.run.app/path",
+      "https://x.run.app?next=evil",
+      "https://x.run.app#x",
+      "https://x.run.app\nhttps://evil.example",
+      "https://x.run.app/",
+      "https://x.run.app\\evil",
+      "https://r42---x.run.app",
+      "https://x..run.app",
+    ]) {
+      await expect(
+        subject!.runSmoke(
+          {
+            ...stagingConfig,
+            stagingOriginUrls: { ...stagingOriginUrls, "caisson-site": raw },
+          },
+          transport,
+        ),
+      ).rejects.toThrow("STAGING_ORIGIN_URLS");
+    }
+    expect(calls).toBe(0);
   });
 
   test("scopes rollback smoke to the selected service", async () => {

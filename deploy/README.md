@@ -50,3 +50,24 @@ secret exists.
 The Wave-3 merge freeze remains binding: do not merge or run production deploys
 until T34 fronts Railway and each gated Railway service has its matching origin
 secret.
+
+## Staging denial checks (R359 CR-04)
+
+The staging workflow resolves the complete raw service URL map using
+`deploy/staging-origins.ts`: the shared tool-exec allowlist validates the `gcloud run
+services describe` argv, project, region and service keys. The returned metadata must
+name the requested service. `STAGING_ORIGIN_URLS` accepts only unique canonical HTTPS
+Cloud Run host URLs, without credentials, ports, paths, tags, query strings or fragments.
+Both URL shapes documented by Google are accepted; opaque service identifiers are not
+parsed or synthesized. See https://docs.cloud.google.com/run/docs/triggering/https-request.
+
+For every staging service, smoke requires authenticated public health success, public
+health denial without Access credentials (a Cloudflare Access login redirect or a
+Cloudflare-marked 403), and raw service health denial without any credential (401/403).
+Demos' raw denial is IAM protection, not an origin-secret assertion. Negative legs use
+fresh headers and manual redirects, so Access/origin/IAM credentials never reach them.
+The raw denial proves refusal at the raw surface, not which middleware produced it;
+a Cloudflare-marked 403 likewise establishes edge denial, not policy-rule attribution.
+
+These legs execute only in the authorized staging deploy workflow. Unit tests use fake
+transports and fake argv execution; local verification does not probe the live fleet.
