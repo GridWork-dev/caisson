@@ -1,5 +1,13 @@
 # S8 release train run notes — 2026-09-10
 
+## R359 — CR-02 resolved embedding egress
+
+CR-05 committed as **c233a951**, clean readback, lane 46 ahead. CR-02 calls the canonical resolved URL guard immediately before every embedding request and keeps redirect:error. The construction-time literal guard remains. The test injects DNS answers into the resolver, uses the real kernel guard and proves the transport is untouched for a public-looking hostname resolving into private space. A second request with a changed DNS answer is rejected. The canonical kernel's documented resolve/fetch TOCTOU residual is unchanged; this repair does not claim connect-time IP pinning. A local-store patch changeset records the package repair.
+
+Initial targeted tests on **Bun 1.4.2: 19 pass / 0 fail / 35 assertions**. Prediction before mutation: remove the per-request resolved check, leaving the former literal-only behavior; the named private-resolution regression must fail (**Bun 1.4.2 expected: 0 pass / 1 fail / 1 assertion**). Restore by hash, retest, lint and build the affected package before commit. No live DNS or HTTP probe.
+
+Mutation measured on **Bun 1.4.2: 0 pass / 1 fail / 1 assertion**, with the blocked request incorrectly resolving. Fixed/restored source SHA-256 **fa41c8f387795ed4ca442ab4d1fdbfa776635426b2dac533fa40df13e11a15d4** matched. Restored suite on **Bun 1.4.2: 19 pass / 0 fail / 35 assertions**. Targeted lint and local-store build passed on Bun 1.4.2. Raw evidence: handoff/S8-R359-CR02-mutation.result.json.
+
 ## R359 — CR-05 aggregate and membership mutation predictions
 
 CR-06 committed normally as **a415ee21**, clean readback, lane 45 ahead. CR-05 adds the always-running runtime-images-gate, depending on selector and complete matrix, failing for failure/cancellation/skip/empty results. Required-check membership and structural/behavioral contracts make this the seventh required check. R344's image classification is untouched.

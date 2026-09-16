@@ -33,7 +33,10 @@ import {
 // The `/node` subpath, not the root: `ssrf.ts` reaches `node:dns/promises`. Safe here because
 // `createCloudEmbedder` is exported only from the node entry (`index.ts`) — never from
 // `./browser`, whose graph deliberately excludes this module.
-import { assertSafePublicUrl } from "@caisson/kernel/node";
+import {
+  assertSafePublicUrl,
+  assertSafePublicUrlResolved,
+} from "@caisson/kernel/node";
 import { assertEmbeddingDim } from "./embedder.ts";
 import type { Embedder } from "./embedder.ts";
 
@@ -104,11 +107,8 @@ export function createCloudEmbedder(
   fetchImpl: EmbedFetch = fetchWithTimeout,
 ): Embedder {
   const config = parseStrict(CloudEmbedConfigSchema, rawConfig);
-  // The schema's `.refine` proves the SCHEME; it says nothing about the DESTINATION. Without this,
-  // `https://169.254.169.254/…` or any internal host is a valid config and `embed()` POSTs the
-  // Bearer credential there. Checked once at construction, not per-embed: `guardEmbedder` wraps
-  // per-text, so a resolving (DNS) guard on that path would cost a lookup per embedded string and
-  // break split-horizon deployments. Literal-host containment is what this seam can honestly claim.
+  // Reject literal-private destinations synchronously, then resolve again at EVERY request.
+  // R359 / CR-02: configuration-time validation cannot certify a hostname's current addresses.
   assertSafePublicUrl(config.endpoint);
   return guardEmbedder({
     dim: config.dim,
@@ -117,6 +117,7 @@ export function createCloudEmbedder(
       // Omit `timeoutMs` entirely when unset (exactOptionalPropertyTypes) ⇒ the fetchWithTimeout default.
       const timeout =
         config.timeoutMs === undefined ? {} : { timeoutMs: config.timeoutMs };
+      await assertSafePublicUrlResolved(config.endpoint);
       const res = await fetchImpl(
         config.endpoint,
         {
