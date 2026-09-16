@@ -32,6 +32,10 @@ Captured completed-suite subtotals only: **Bun 1.4.2 — 5,379 pass / 0 fail /
 Every captured Bun test banner is 1.4.2 (744846f84). Full log:
 [s8-r359-full-check.log](s8-r359-full-check.log), SHA-256
 `5c9c524dacffbdf1a24b3c5632073622842b368208dddaa541102a8f962b0f0a`.
+That hash binds the raw handoff log (1,096,319 bytes). Git normalized six CRLF line
+endings on add; the committed log is 1,096,313 bytes, SHA-256
+`68a6c5e1017c6e100af045ddf97f86f82ab01a933f7006e6d633d3de4661daac`.
+Both copies retain the same test/gate output; the normalization is explicitly receipted.
 
 Verbatim gate tail:
 
