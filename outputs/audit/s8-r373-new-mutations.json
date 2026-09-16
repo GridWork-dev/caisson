@@ -1,0 +1,34 @@
+[
+  {
+    "file": "scripts/release-readiness.ts",
+    "argv": [
+      "bun",
+      "test",
+      "scripts/release-readiness.test.ts",
+      "--test-name-pattern",
+      "R373 rejects committed incomplete"
+    ],
+    "runtime": "Bun 1.4.2",
+    "fixed_sha256": "bfdfa978d04866a2fdc709c3a054da4dfcb030d7807600f0fe60641886f268a6",
+    "restored_sha256": "bfdfa978d04866a2fdc709c3a054da4dfcb030d7807600f0fe60641886f268a6",
+    "mutation_exit": 1,
+    "stdout": "bun test v1.4.2 (744846f84)\n  \u2713 per-release checklist \u2014 all boxes checked at 9c2eade3acd1e6dcd4909d5ac08b88e0cc0720c6\n",
+    "stderr": "\nscripts/release-readiness.test.ts:\n148 |     const path = join(repo, `docs/releases/${binding.tag}-checklist.md`);\n149 |     writeFileSync(path, \"- [ ] live evidence pending\\n\");\n150 |     const candidate = commit(repo);\n151 |     writeFileSync(path, \"- [x] live evidence complete\\n\");\n152 |     expect(auditSuccessorIsValid(repo, binding.tag, candidate)).toBe(true);\n153 |     expect(checkChecklist(binding.tag, candidate, repo)).toBe(false);\n                                                               ^\nerror: expect(received).toBe(expected)\n\nExpected: false\nReceived: true\n\n      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/scripts/release-readiness.test.ts:153:58)\n(fail) R4 audit attestation > R373 rejects committed incomplete checklist despite completed dirty copy [28.19ms]\n\n 0 pass\n 34 filtered out\n 1 fail\n 2 expect() calls\nRan 1 test across 1 file. [67.00ms]\n"
+  },
+  {
+    "file": "scripts/release-readiness.ts",
+    "argv": [
+      "bun",
+      "test",
+      "scripts/release-readiness.test.ts",
+      "--test-name-pattern",
+      "R373 rejects committed audit with leading"
+    ],
+    "runtime": "Bun 1.4.2",
+    "fixed_sha256": "c7bf4793280542842c3eadac0e3239d8605218411827a1eef7f7cebc23ca58db",
+    "restored_sha256": "c7bf4793280542842c3eadac0e3239d8605218411827a1eef7f7cebc23ca58db",
+    "mutation_exit": 1,
+    "stdout": "bun test v1.4.2 (744846f84)\n",
+    "stderr": "\nscripts/release-readiness.test.ts:\n131 |     const path = join(repo, `outputs/audit/release-audit-${binding.tag}.md`);\n132 |     writeFileSync(path, `\\n${readFileSync(path, \"utf8\")}`);\n133 |     const candidate = commit(repo);\n134 |     // A clean working copy must not rescue malformed committed bytes either.\n135 |     writeFileSync(path, readFileSync(path, \"utf8\").trimStart());\n136 |     expect(auditSuccessorIsValid(repo, binding.tag, candidate)).toBe(false);\n                                                                      ^\nerror: expect(received).toBe(expected)\n\nExpected: false\nReceived: true\n\n      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/scripts/release-readiness.test.ts:136:65)\n(fail) R4 audit attestation > R373 rejects committed audit with leading newline before frontmatter [26.65ms]\n\n 0 pass\n 35 filtered out\n 1 fail\n 1 expect() calls\nRan 1 test across 1 file. [62.00ms]\n"
+  }
+]

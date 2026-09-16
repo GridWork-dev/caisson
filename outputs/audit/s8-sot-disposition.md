@@ -70,3 +70,78 @@ All nine other branches and four other linked worktrees remain preserved; branch
 | `docs/state/outstanding-work.md`      | 2026-09-05       | decisions-and-forks: 2026-09-14; Self, production-readiness, deploy STATE and provider-console-checks: 2026-09-09                                                           |
 | `docs/state/package-catalog.md`       | 2026-09-02       | package.json, packages/ and registry/: 2026-09-14; apps/ and services/: 2026-09-15; tooling/: 2026-09-09                                                                    |
 | `docs/state/production-readiness.md`  | 2026-09-05       | Self, outstanding-work, launch-runbook, deploy STATE and provider-console-checks: 2026-09-09                                                                                |
+
+## R373 candidate stop — 2026-09-16
+
+Candidate 98a3501d. Aggregate SOT exits 1. Newly unaccepted: ADR ceiling mismatch
+(build-state 0422 versus other sources 0427) and package count mismatch
+(local-store 12/10/1200 versus 12/10/1201; tool-exec 4/2/308 versus 5/3/509).
+Execution stopped before PR. No build-state edit or date bump; all branches preserved.
+Branch preservation remains EXPECTED-DRIFT. The following freshness evidence is
+the command's exact document/declared-date/source-date output, not a diagnosis that
+all prose is stale. Full raw command output: s8-r373-sot.log.
+
+```text
+    docs/state/compatibility-matrix.md: grounds "packages/cli/templates/" committed 2026-09-14, doc says updated: 2026-08-25
+    docs/state/decisions-and-forks.md: last committed 2026-09-16, but its own updated: says 2026-09-05
+    docs/state/operator-surface.md: last committed 2026-09-09, but its own updated: says 2026-09-05
+    docs/state/operator-surface.md: grounds "docs/state/production-readiness.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/state/operator-surface.md: grounds "docs/ops/launch-runbook.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/state/operator-surface.md: grounds "docs/ops/operator-walkthrough.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/state/operator-surface.md: grounds "docs/ops/provider-console-checks.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/state/operator-surface.md: grounds "docs/ops/probe-accounts.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/state/operator-surface.md: grounds "docs/state/outstanding-work.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/state/operator-surface.md: grounds "docs/state/decisions-and-forks.md" committed 2026-09-16, doc says updated: 2026-09-05
+    docs/state/outstanding-work.md: last committed 2026-09-09, but its own updated: says 2026-09-05
+    docs/state/outstanding-work.md: grounds "docs/state/decisions-and-forks.md" committed 2026-09-16, doc says updated: 2026-09-05
+    docs/state/outstanding-work.md: grounds "docs/state/production-readiness.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/state/outstanding-work.md: grounds "docs/deploy/STATE.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/state/outstanding-work.md: grounds "docs/ops/provider-console-checks.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/state/package-catalog.md: grounds "package.json" committed 2026-09-14, doc says updated: 2026-09-02
+    docs/state/package-catalog.md: grounds "packages/" committed 2026-09-16, doc says updated: 2026-09-02
+    docs/state/package-catalog.md: grounds "apps/" committed 2026-09-16, doc says updated: 2026-09-02
+    docs/state/package-catalog.md: grounds "services/" committed 2026-09-15, doc says updated: 2026-09-02
+    docs/state/package-catalog.md: grounds "registry/" committed 2026-09-14, doc says updated: 2026-09-02
+    docs/state/package-catalog.md: grounds "tooling/" committed 2026-09-09, doc says updated: 2026-09-02
+    docs/state/production-readiness.md: last committed 2026-09-09, but its own updated: says 2026-09-05
+    docs/state/production-readiness.md: grounds "docs/state/outstanding-work.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/state/production-readiness.md: grounds "docs/ops/launch-runbook.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/state/production-readiness.md: grounds "docs/deploy/STATE.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/state/production-readiness.md: grounds "docs/ops/provider-console-checks.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/db-restore.md: grounds "docs/deploy/STATE.md" committed 2026-09-09, doc says updated: 2026-08-28
+    docs/ops/db-restore.md: grounds "docs/operations.md" committed 2026-09-14, doc says updated: 2026-08-28
+    docs/ops/launch-runbook.md: last committed 2026-09-09, but its own updated: says 2026-09-05
+    docs/ops/launch-runbook.md: grounds "docs/state/outstanding-work.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/launch-runbook.md: grounds "docs/state/production-readiness.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/launch-runbook.md: grounds "docs/deploy/STATE.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/launch-runbook.md: grounds "docs/ops/provider-console-checks.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/operator-walkthrough.md: last committed 2026-09-09, but its own updated: says 2026-09-05
+    docs/ops/operator-walkthrough.md: grounds "docs/state/outstanding-work.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/operator-walkthrough.md: grounds "docs/state/decisions-and-forks.md" committed 2026-09-16, doc says updated: 2026-09-05
+    docs/ops/operator-walkthrough.md: grounds "docs/state/production-readiness.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/operator-walkthrough.md: grounds "docs/deploy/STATE.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/operator-walkthrough.md: grounds "docs/ops/provider-console-checks.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/parallel-session-waves.md: last committed 2026-09-09, but its own updated: says 2026-09-05
+    docs/ops/parallel-session-waves.md: grounds "docs/state/decisions-and-forks.md" committed 2026-09-16, doc says updated: 2026-09-05
+    docs/ops/probe-accounts.md: last committed 2026-09-09, but its own updated: says 2026-09-05
+    docs/ops/probe-accounts.md: grounds "apps/site/lib/auth-server.ts" committed 2026-09-15, doc says updated: 2026-09-05
+    docs/ops/probe-accounts.md: grounds "docs/state/outstanding-work.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/probe-accounts.md: grounds "docs/deploy/STATE.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/provider-console-checks.md: last committed 2026-09-09, but its own updated: says 2026-09-05
+    docs/ops/provider-console-checks.md: grounds "docs/ops/probe-accounts.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/provider-console-checks.md: grounds "docs/ops/operator-walkthrough.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/provider-console-checks.md: grounds "docs/ops/launch-runbook.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/provider-console-checks.md: grounds "docs/state/outstanding-work.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/provider-console-checks.md: grounds "docs/state/production-readiness.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/ops/provider-console-checks.md: grounds "docs/state/decisions-and-forks.md" committed 2026-09-16, doc says updated: 2026-09-05
+    docs/ops/release-tag-signing.md: grounds "scripts/release-readiness.ts" committed 2026-09-16, doc says updated: 2026-08-19
+    docs/ops/release-tag-signing.md: grounds ".github/workflows/release-train.yml" committed 2026-09-14, doc says updated: 2026-08-19
+    docs/architecture.md: last committed 2026-09-09, but its own updated: says 2026-09-05
+    docs/architecture.md: grounds "package.json" committed 2026-09-14, doc says updated: 2026-09-05
+    docs/architecture.md: grounds ".github/workflows/ci.yml" committed 2026-09-14, doc says updated: 2026-09-05
+    docs/architecture.md: grounds "docs/deploy/STATE.md" committed 2026-09-09, doc says updated: 2026-09-05
+    docs/build-state.md: last committed 2026-09-14, but its own updated: says 2026-09-05
+    docs/deploy/STATE.md: last committed 2026-09-09, but its own updated: says 2026-09-05
+    docs/deploy/STATE.md: grounds "docs/build-state.md" committed 2026-09-14, doc says updated: 2026-09-05
+    docs/deploy/STATE.md: grounds "docs/ops/launch-runbook.md" committed 2026-09-09, doc says updated: 2026-09-05
+```

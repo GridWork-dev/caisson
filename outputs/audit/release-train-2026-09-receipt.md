@@ -1,5 +1,80 @@
 # S8 release train receipt — R370/R371 security hold
 
+## Current hold — R373 candidate SOT (2026-09-16)
+
+**S8_RELEASE_HELD.** Repairs are committed: CR-07/WR-03 `0bd7433f`, WR-02
+`98a3501d`; evidence normalization `159bffbd`. Reviewed candidate:
+`98a3501d1e3cdf2e30955b1f7d6d4345cac5e732`.
+Both renewed reviews returned **PASS WITH DISCLOSURES**, no new findings.
+Both scoped findings are closed. Security's inherited register is **9/9 closed**;
+this is a focused renewal, not a fresh exhaustive audit of all 430 cumulative paths.
+Code thread `01a0aae9-2b65-7871-b010-64be97e4cac1`;
+security thread `01a0aaef-9e6d-7ce1-9a5c-fe7e1a48db31`. Both ran to completion; no command denial recorded.
+
+The first resumed candidate SOT exited **1**, adding two unaccepted drift checks:
+
+- **adr-ceiling-parity:** filesystem, CLAUDE, index and decision board agree at
+  ADR-0427; `docs/build-state.md` remains ADR-0422.
+- **package-count-parity:** `docs/build-state.md:519` local-store records
+  `12 / 10 / 1200`, disk truth `12 / 10 / 1201`; line 529 tool-exec records
+  `4 / 2 / 308`, disk truth `5 / 3 / 509`.
+
+These omissions are in the lane's repair documentation. No vendored or third-party
+drift explanation is claimed. The first unexpected gate result stops packet step 5.
+No document correction, date bump, gate waiver or SOT retry followed.
+Branch hygiene remains **EXPECTED-DRIFT** under preservation. Frontmatter freshness
+still identifies 16 documents; the exact declared/source dates are preserved in
+s8-r373-sot.log and the SOT disposition appendix. Neither is aggregate SOT green.
+
+Completed immediately before the stop: forge main is still
+`7e11672c29d21b57a12cf1ad1d4758abbd12b66b`; removal tests Bun 1.4.2 **64/0/168**,
+exit 0; limiter build exit 0; installed `bun node_modules/@changesets/cli/bin.js status`
+exit 0. Fresh removal source/emitted marker census, six-file lint and complete
+five-item absence proof were not completed in this resumed preflight. Earlier
+full root gate remains **199/199**, 197 cached, exit 0; combined affected suite
+**146/0/505** with accepted baseline exit 99; eleven prior and both new mutations
+RED with exact restoration. No further full-gate or review run after this stop.
+
+Reports: [code review](s8-r373-REVIEW.md), [security](s8-r373-SECURITY.md).
+Operator packet:
+`/home/gw/lab/briefs/estate-2026-09/handoff/OPERATOR-ACT-S8-R373-SOT-HOLD.md`.
+Remaining: disposition of the build-state ADR/count drift; then fresh candidate
+preflight, current review/checklist preparation and the authorized green PR.
+Final version/tag/attestation, pack proof, aggregate release SOT, live-hybrid evidence
+and consumer propagation remain later acts. No push, PR, merge, version dispatch,
+tag, publish, deploy, live probe or branch deletion. Hold evidence only is committed.
+
+## R373 code review clean; security next (2026-09-16)
+
+Code thread `01a0aae9-2b65-7871-b010-64be97e4cac1` completed exit 0 with
+**PASS WITH DISCLOSURES**, zero findings. Both CR-07/WR-03 and WR-02 closed within
+the two-file repair scope; reviewed-parent contract preserved. No command denial.
+Report: s8-r373-REVIEW.md; raw handoff S8-R373-REVIEW-VERBATIM.md SHA-256
+`ce2b174c19e98beba7b249ddb42e52baa2fde3251543bb053bb0abbd07b5e65d` (6,918 bytes).
+A two-file repair review is not a new exhaustive cumulative audit.
+
+Fresh audited quota before security: **50% used**, reading 15:56Z. Sequential security
+dispatch follows on unchanged candidate 98a3501d. No security pass is inferred.
+
+## R373 verification complete; code review admitted for dispatch (2026-09-16)
+
+Repairs `0bd7433f` and `98a3501d` follow evidence commit `159bffbd`; each had a
+clean immediate readback. Candidate `98a3501d1e3cdf2e30955b1f7d6d4345cac5e732`.
+Bun 1.4.2 combined targeted suite **146/0/505**, accepted baseline exit 99.
+Eleven prior mutation arms rerun once: all RED and hash-identical restoration.
+New regression/mutation evidence is in s8-r373-{new,prior}-mutations.json.
+
+Full root check equivalent run once with Turbo concurrency 2: exit 0, **199/199
+tasks, 197 cached, 621ms**. All tail gates completed. Captured Bun totals including
+cache replay **7,029/0/28,203**; fresh deploy **64/0/329**; standards 67 checked,
+5 scaffold-skipped. Raw handoff log SHA-256
+`047187848c542458065dc1717ca03d3689770b5e49bcfc3efbe57c878ecaa4db` (1,221,605 bytes);
+LF/trailing-whitespace-normalized in-repo copy
+`cff33be6e7deeba2e580df1a72bf91074b3b764b67ec9d4140414de9f4c34f45` (1,220,784 bytes).
+Fresh audited quota **49% used**, reading 15:48Z. Code dispatch is next; no admission
+or verdict is inferred from this quota measurement. Security follows a permitted code
+verdict and a fresh quota read. No PR/push or later release act yet.
+
 ## R373 WR-02 repair — raw attestation bytes (2026-09-16)
 
 Checklist binding committed `0bd7433f`, clean readback. Both checklist and audit
