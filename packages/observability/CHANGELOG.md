@@ -1,5 +1,22 @@
 # @caisson/observability
 
+## 0.3.9
+
+### Patch Changes
+
+- 87b07c6: Redact camelCase, snake_case, plural, numbered, fused and fullwidth PII attribute keys. The span
+  attribute deny-list's word-boundary terms could not see a boundary inside `userEmail` or
+  `user_email`, so PII-named span attributes reached the OTLP sink unredacted. `isSensitiveAttributeKey`
+  is the new predicate: it NFKC-normalizes the key and tests the deny-list against both the raw key and
+  a camelCase/snake_case word split; the raw `SENSITIVE_ATTRIBUTE_KEY` export is deprecated for direct
+  use. The kernel deep scrubber gains the same camelCase split for its anchored `dob`/`mrn` tokens.
+  Both splitters are linear in the key length.
+- 9cb7681: Span-attribute scrub: an exact OTel semantic-convention attribute name no longer trips the credential terms of the key deny-list. `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, `session.id`, `mcp.session.id` and 15 other real attribute names were reaching the OTLP sink as `[REDACTED]`, blanking LLM usage and session correlation. The exemption is exact-match only and never reaches the PII arm, so `user.email` and `user.full_name` (also semconv names) still redact, as do header templates, case variants, and anything the package does not export. The suite now sweeps the package's full exported name set.
+- Updated dependencies [87b07c6]
+- Updated dependencies [7d39669]
+- Updated dependencies [498b279]
+  - @caisson/kernel@0.10.0
+
 ## 0.3.8
 
 ### Patch Changes

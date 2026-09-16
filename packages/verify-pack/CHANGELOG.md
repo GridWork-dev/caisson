@@ -1,5 +1,14 @@
 # @caisson/verify-pack
 
+## 0.2.4
+
+### Patch Changes
+
+- Updated dependencies [87b07c6]
+- Updated dependencies [7d39669]
+- Updated dependencies [498b279]
+  - @caisson/kernel@0.10.0
+
 ## 0.2.3
 
 ### Patch Changes

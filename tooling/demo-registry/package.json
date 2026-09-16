@@ -1,6 +1,6 @@
 {
   "name": "@caisson/demo-registry",
-  "version": "0.2.15",
+  "version": "0.2.16",
   "private": true,
   "description": "A private cross-package component-demo registry: one Zod-typed catalog of every @caisson/ui, @caisson/ui-pro, and per-package ./ui surface, with sample data and a live demo renderer per entry. Never published; apps/admin's catalog reads it now, apps/site's /ui gallery repoints to it later. Kept out of the sold registry index.",
   "license": "LicenseRef-Caisson-Commercial",

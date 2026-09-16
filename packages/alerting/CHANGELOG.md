@@ -1,5 +1,17 @@
 # @caisson/alerting
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [e211684]
+- Updated dependencies [87b07c6]
+- Updated dependencies [7d39669]
+- Updated dependencies [69b3ba3]
+- Updated dependencies [498b279]
+  - @caisson/email@0.5.8
+  - @caisson/kernel@0.10.0
+
 ## 0.3.1
 
 ### Patch Changes

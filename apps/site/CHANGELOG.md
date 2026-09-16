@@ -1,5 +1,154 @@
 # @caisson/site
 
+## 0.4.1
+
+### Patch Changes
+
+- 1e2f79a: Health probe paths now answer ahead of the edge origin gate. The platform healthcheck reaches each container internally and cannot carry the edge-injected origin-secret header, so arming the gate as the first check made every one of the four gated services fail its own readiness probe and froze the whole deploy path. The exemption is keyed on exact string equality against each service's configured `healthcheckPath`, never a prefix, so a trailing slash, a longer path, a differing case and a traversal segment all stay behind the gate; a per-service test pins the constant against the deployment manifest so a drift in either cannot silently re-freeze deploys.
+
+  Because the probe path is now reachable without the secret, the responses shrink to liveness for unauthenticated callers. The docs service withholds its corpus chunk count, and the license service and the operator control-plane withhold their registry index digest and entry count, unless the caller presents a valid origin secret. Traffic arriving through the edge carries that header, so the registry index parity probe keeps reading the digest from both services; only a caller reaching a raw platform origin directly is reduced to a bare status.
+
+- af2e132: The agent-readable index now names both categories the product actually sells into. Its summary line described compliance infrastructure for regulated SaaS and stopped there, so an answer engine classifying the product for governance of AI coding agents had nothing structured to read — the governed-agent kernel, the sandboxed runner and the default-deny tool-execution gate were listed in the flat module catalog but never surfaced as a category. The summary now names both, and a dedicated section leads with the framing above the modules that make the claim true. Each of those modules is resolved from the module-page catalog by slug rather than restated, so a renamed or retired module fails the build instead of shipping a dead link into the file engines quote verbatim.
+
+  Two whole route families were missing from the index: the comparison pages and the writing pieces. Both now have their own headings and are generated from the same records the pages themselves render, so adding either lands in the index with no second edit. Tests pin every entry in both catalogs individually rather than counting them, and the governance section's assertions are scoped to that section — a whole-file check passes on those module links whatever the section contains, because the module catalog lists them too.
+
+- 8619c41: Document three module surfaces that previously had no guide, and correct two metering examples.
+
+  New: a getting-started guide for the OSCAL module covering the evidence-pack round trip, XML
+  conversion, the ISO 27001 statement of applicability, and control-id lookup against the pinned
+  NIST catalog. New: an end-to-end tutorial for the governed agent loop, covering approval-gated
+  tools, the parked result, the operator approve and deny flow, resume behaviour, and every failure
+  code the loop can return. Added to the field-encryption page: a migration section for callers
+  upgrading from a pre-1.0 release, covering the borrowed-key callback that replaced direct key
+  derivation, the runner change, and the key-store interface addition.
+
+  The metering quickstart named a model with no entry in the bundled price book, so pasting it
+  raised a configuration error before the first call. Both examples now name a priced model, and the
+  agent-loop guide states the requirement so the failure is diagnosable rather than surprising.
+
+- 7e11672: Upgrade runtime OS layers on pinned bases and gate fixable HIGH/CRITICAL runtime OS findings while reporting application and raw-base residuals.
+- 7d39669: Report the serving revision on every deployed service.
+
+  Each service now answers with an `x-caisson-revision` response header naming the commit its
+  running image was built from, so "which code is actually live" is one request instead of an
+  inference from how a route behaves.
+
+  The kernel gains `servingRevision()` and the constants behind it on the `@caisson/kernel/node`
+  entry. It reads a `.caisson-revision` carrier written into the uploaded tree at deploy time; a
+  build that did not come through that path reports `unknown` rather than guessing.
+
+  The header is deliberately not gated behind origin verification: it has to stay readable exactly
+  when that gate is the thing misbehaving, which is the case it exists to diagnose.
+
+- ac1a1a4: The signed-in session hint cookie used to skip an ownership check for signed-out visitors is now
+  HttpOnly, so page scripts can no longer read a visitor's authentication state from it. The
+  ownership check itself always fires now; the server route short-circuits internally when the
+  cookie is absent, so the same signed-out fast path is preserved without exposing a readable
+  auth signal.
+- f6282dc: Site crawl hygiene and a corrected identity claim.
+
+  The root JSON-LD advertised the development repository as a `sameAs` identity surface. That
+  repository is private, so the URL returns 404 to any anonymous crawler and the claim was broken
+  rather than merely weak. It now points at the public organization page, which resolves, and a
+  pinning test keeps it from drifting back.
+
+  Crawl rules keep robots off the authenticated walls, and the orphaned demo route is now reachable
+  from the sitemap instead of being published with no inbound path.
+
+- 4087f8e: The root Organization now carries two entity-association edges to the GridWork Digital hub: a
+  shared `founder` Person and `subjectOf` pointing at the hub's Caisson case study, each by `@id`
+  only. No subsidiary predicate is published in either direction — the two companies are separate
+  LLCs with common ownership at the individual level — and a test over the serialized graph keeps
+  `parentOrganization` / `subOrganization` from ever appearing. Both target IRIs are pinned verbatim.
+- 69b3ba3: Routine non-major dependency refresh.
+
+  `apps/site` picks up `@azure/identity`, `@plausible-analytics/tracker`, `motion` and
+  `web-vitals` point releases (the `motion` 13.x major stays held). The CLI's
+  `@modelcontextprotocol/sdk` moves to `1.30.0`, and `@caisson/ai-kit`'s own
+  devDependency moves in lockstep — it imports the SDK's `Server` type directly alongside
+  `@caisson/mcp-server`, a workspace sibling that shares a resolution subtree with the
+  CLI, and a split version there makes the two `Server` types nominally distinct at
+  typecheck. The email package's `nodemailer` moves to `9.0.5`. Root build tooling moves
+  too: `@types/bun`, `dependency-cruiser` to `18.2.0` with its patch file re-cut,
+  `eslint-plugin-storybook`, `knip`, `oxfmt` and `oxlint`.
+
+  Three bumps prepared alongside these are deliberately **not** here. Each independently
+  breaks something, and none is fixable by choosing a different version:
+
+  - **`fumadocs-core` / `fumadocs-mdx` / `fumadocs-ui`.** Two separate blockers, and the
+    second only appeared under the browser gate. First, the static search client's
+    `initOrama` option is deprecated in favour of `initDB` and its default now builds
+    against `zbsearch` rather than `@orama/orama` — that part is a _trivial_ adoption, a
+    deletion: drop the hand-written init and call `oramaStaticClient()` bare, because the
+    library default is already `create({ schema: { _: "string" } })` and `zbsearch`'s
+    tokenizer defaults `language` to `"english"` on its own. Second, and the actual
+    blocker: **16.15.1 renders two `main` landmarks on `/docs`.** The site's docs layout
+    renders none of its own by design, so both come from fumadocs, and the P1 browser
+    guard fails with `Expected: 1, Received: 2`. Notably the search guard
+    (`P1-004`, focus return on every dismissal path) **passes** under the migration, so
+    the search half is sound — the a11y regression is what holds the line.
+  - **`kysely` `0.29.4` to `0.29.5`.** Only `apps/site` declares kysely, as a single exact
+    pin, so there are never two copies of it. Moving it perturbs the peer-hash of
+    `@better-auth/core`, and the site imports `better-auth` and
+    `@better-auth/kysely-adapter` side by side; they then land on differently-hashed
+    copies of the shared core whose `BetterAuthOptions` are nominally distinct under
+    `exactOptionalPropertyTypes`. An override forcing one `@better-auth/core` version does
+    not help — an override pins a version, not a peer-hash.
+  - **A repo-wide `jose` pin.** On its own, from a clean baseline, it reproduces exactly
+    the same three errors in the same file by the same mechanism. Both peer-hash items are
+    tracked as backlog work; the override route is already ruled out.
+
+  An earlier draft of this note argued the reverse of that last point: that the `jose` pin
+  was load-bearing, and that dropping it would split the auth core and stop the site
+  typechecking. That is backwards. Measured from `main`'s manifests as a green baseline,
+  adding one group at a time: the pin alone produces the split, and `main` itself carries
+  two `jose` versions and exactly one `@better-auth/core` while typechecking clean.
+
+- Updated dependencies [ac1a1a4]
+- Updated dependencies [e211684]
+- Updated dependencies [045b21e]
+- Updated dependencies [6604844]
+- Updated dependencies [ac1a1a4]
+- Updated dependencies [1e2f79a]
+- Updated dependencies [ac1a1a4]
+- Updated dependencies [498b279]
+- Updated dependencies [7e11672]
+- Updated dependencies [f02b193]
+- Updated dependencies [cd694f1]
+- Updated dependencies [cd694f1]
+- Updated dependencies [87b07c6]
+- Updated dependencies [9cb7681]
+- Updated dependencies [7d39669]
+- Updated dependencies [69b3ba3]
+- Updated dependencies [498b279]
+  - @caisson/ai-kit@0.6.5
+  - @caisson/cli@0.8.1
+  - @caisson/email@0.5.8
+  - @caisson/local-store@1.1.2
+  - @caisson/audit-worm@2.2.4
+  - @caisson/service-license@0.1.5
+  - @caisson/tenancy-rls@0.6.1
+  - @caisson/registry-schema@0.5.12
+  - @caisson/ui@0.6.7
+  - @caisson/observability@0.3.9
+  - @caisson/kernel@0.10.0
+  - @caisson/demo-registry@0.2.16
+  - @caisson/platform-migrations@0.3.5
+  - @caisson/platform-reads@0.3.1
+  - @caisson/ai-meter@1.1.3
+  - @caisson/auth@0.4.5
+  - @caisson/credits@0.6.3
+  - @caisson/field-crypto@1.1.2
+  - @caisson/org-controls@0.4.2
+  - @caisson/prompt-registry@1.1.2
+  - @caisson/rate-limit@0.2.1
+  - @caisson/pricebook@0.8.5
+  - @caisson/brand@0.1.6
+  - @caisson/ui-pro@0.3.8
+  - @caisson/billing@0.6.9
+  - @caisson/compliance-core@0.7.2
+  - @caisson/migrate@0.2.14
+
 ## 0.4.0
 
 ### Minor Changes

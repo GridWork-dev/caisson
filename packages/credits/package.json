@@ -1,6 +1,6 @@
 {
   "name": "@caisson/credits",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Integer credit wallet with an append-only ledger, debit-before-spend (HTTP 402), and idempotent credit grants.",
   "license": "LicenseRef-Caisson-Commercial",
   "type": "module",

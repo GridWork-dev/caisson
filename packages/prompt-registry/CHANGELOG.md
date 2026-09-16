@@ -1,5 +1,18 @@
 # @caisson/prompt-registry
 
+## 1.1.2
+
+### Patch Changes
+
+- Updated dependencies [498b279]
+- Updated dependencies [cd694f1]
+- Updated dependencies [87b07c6]
+- Updated dependencies [7d39669]
+- Updated dependencies [498b279]
+  - @caisson/tenancy-rls@0.6.1
+  - @caisson/ui@0.6.7
+  - @caisson/kernel@0.10.0
+
 ## 1.1.1
 
 ### Patch Changes

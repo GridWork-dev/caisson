@@ -1,6 +1,6 @@
 {
   "name": "@caisson/local-sync",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Local-first sync engine: changeset capture, HLC stamps, LWW reconciliation, and tombstone-aware convergence.",
   "license": "LicenseRef-Caisson-Commercial",
   "type": "module",

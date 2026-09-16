@@ -1,6 +1,6 @@
 {
   "name": "@caisson/license-verify",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "description": "Offline license-token verification: a signed wire codec (PREFIX-TIER-base64url(payload+sig)) plus offline Ed25519 verify (crypto.verify over kernel canonicalize) with a baked-in public key, entitlements[]+tier+expiry claims, fail-safe-to-community, perpetual-per-major. Only offline verify lives here; issuance is a separate private service.",
   "license": "Apache-2.0",
   "type": "module",

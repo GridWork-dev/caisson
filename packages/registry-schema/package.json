@@ -1,6 +1,6 @@
 {
   "name": "@caisson/registry-schema",
-  "version": "0.5.11",
+  "version": "0.5.12",
   "description": "Open registry contract (Apache-2.0): module-manifest schema + index schema + allowlist helpers + feature-tags + entitlement-expansion. zod/fs-only. The commercial @caisson/registry service re-exports this.",
   "license": "Apache-2.0",
   "type": "module",

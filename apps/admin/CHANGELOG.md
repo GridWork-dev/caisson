@@ -1,5 +1,60 @@
 # @caisson/admin
 
+## 0.1.5
+
+### Patch Changes
+
+- ac1a1a4: The registry index digest on the license service's and the operator control-plane's health endpoints no longer depends on the edge origin-secret header. That header proves the request arrived through the front-door edge layer, not who is asking, and the edge layer injects it into every request that goes through it — so every ordinary public caller was already getting the field, and only a caller reaching the raw platform origin directly saw a bare status. The digest itself is a hash of a file the module registry already serves publicly, so there was nothing left for the header to protect. Both endpoints now return the digest and entry count to every caller whenever the underlying index file is present and readable; an unreadable or missing file is still the only reason the fields are omitted.
+- 1e2f79a: Health probe paths now answer ahead of the edge origin gate. The platform healthcheck reaches each container internally and cannot carry the edge-injected origin-secret header, so arming the gate as the first check made every one of the four gated services fail its own readiness probe and froze the whole deploy path. The exemption is keyed on exact string equality against each service's configured `healthcheckPath`, never a prefix, so a trailing slash, a longer path, a differing case and a traversal segment all stay behind the gate; a per-service test pins the constant against the deployment manifest so a drift in either cannot silently re-freeze deploys.
+
+  Because the probe path is now reachable without the secret, the responses shrink to liveness for unauthenticated callers. The docs service withholds its corpus chunk count, and the license service and the operator control-plane withhold their registry index digest and entry count, unless the caller presents a valid origin secret. Traffic arriving through the edge carries that header, so the registry index parity probe keeps reading the digest from both services; only a caller reaching a raw platform origin directly is reduced to a bare status.
+
+- 7e11672: Upgrade runtime OS layers on pinned bases and gate fixable HIGH/CRITICAL runtime OS findings while reporting application and raw-base residuals.
+- 7d39669: Report the serving revision on every deployed service.
+
+  Each service now answers with an `x-caisson-revision` response header naming the commit its
+  running image was built from, so "which code is actually live" is one request instead of an
+  inference from how a route behaves.
+
+  The kernel gains `servingRevision()` and the constants behind it on the `@caisson/kernel/node`
+  entry. It reads a `.caisson-revision` carrier written into the uploaded tree at deploy time; a
+  build that did not come through that path reports `unknown` rather than guessing.
+
+  The header is deliberately not gated behind origin verification: it has to stay readable exactly
+  when that gate is the thing misbehaving, which is the case it exists to diagnose.
+
+- Updated dependencies [e211684]
+- Updated dependencies [045b21e]
+- Updated dependencies [ac1a1a4]
+- Updated dependencies [1e2f79a]
+- Updated dependencies [ac1a1a4]
+- Updated dependencies [498b279]
+- Updated dependencies [7e11672]
+- Updated dependencies [cd694f1]
+- Updated dependencies [cd694f1]
+- Updated dependencies [87b07c6]
+- Updated dependencies [9cb7681]
+- Updated dependencies [7d39669]
+- Updated dependencies [69b3ba3]
+- Updated dependencies [498b279]
+  - @caisson/email@0.5.8
+  - @caisson/audit-worm@2.2.4
+  - @caisson/service-license@0.1.5
+  - @caisson/tenancy-rls@0.6.1
+  - @caisson/registry-schema@0.5.12
+  - @caisson/ui@0.6.7
+  - @caisson/observability@0.3.9
+  - @caisson/kernel@0.10.0
+  - @caisson/demo-registry@0.2.16
+  - @caisson/platform-migrations@0.3.5
+  - @caisson/platform-reads@0.3.1
+  - @caisson/auth@0.4.5
+  - @caisson/credits@0.6.3
+  - @caisson/org-controls@0.4.2
+  - @caisson/rate-limit@0.2.1
+  - @caisson/brand@0.1.6
+  - @caisson/compliance-core@0.7.2
+
 ## 0.1.4
 
 ### Patch Changes

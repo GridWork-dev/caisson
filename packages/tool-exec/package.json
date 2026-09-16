@@ -1,6 +1,6 @@
 {
   "name": "@caisson/tool-exec",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Governed tool-call / sandboxed-exec primitive for Agentic-Dev: default-deny allowlist + Zod-strict argument schemas + execFile arg-arrays only (no shell) + structured argument provenance.",
   "license": "LicenseRef-Caisson-Commercial",
   "type": "module",

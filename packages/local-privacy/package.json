@@ -1,6 +1,6 @@
 {
   "name": "@caisson/local-privacy",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Local-first privacy gate: strict zero-egress policy parsing and the EgressGuard wrapper over the kernel fetchWithTimeout chokepoint.",
   "license": "LicenseRef-Caisson-Commercial",
   "type": "module",

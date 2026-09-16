@@ -1,6 +1,6 @@
 {
   "name": "@caisson/ui",
-  "version": "0.6.6",
+  "version": "0.6.7",
   "description": "Caisson design-system kit — a typed OKLCH token floor plus a consistent component recipe: Radix behavior + co-located CSS + data-* variants, shipped as framework-agnostic raw .tsx.",
   "license": "Apache-2.0",
   "type": "module",

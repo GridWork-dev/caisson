@@ -1,6 +1,6 @@
 {
   "name": "@caisson/access-review",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Audit-prep access-review campaigns: a WORM-logged, per-reviewee attested approve/revoke decision record over an imported membership snapshot, opened on a jobs-riding cadence and closed on completion or deadline.",
   "license": "LicenseRef-Caisson-Commercial",
   "type": "module",

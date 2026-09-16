@@ -1,5 +1,20 @@
 # @caisson/service-intel
 
+## 0.0.11
+
+### Patch Changes
+
+- 7e11672: Upgrade runtime OS layers on pinned bases and gate fixable HIGH/CRITICAL runtime OS findings while reporting application and raw-base residuals.
+- Updated dependencies [498b279]
+- Updated dependencies [87b07c6]
+- Updated dependencies [9cb7681]
+- Updated dependencies [7d39669]
+- Updated dependencies [498b279]
+  - @caisson/tenancy-rls@0.6.1
+  - @caisson/observability@0.3.9
+  - @caisson/kernel@0.10.0
+  - @caisson/alerting@0.3.2
+
 ## 0.0.10
 
 ### Patch Changes

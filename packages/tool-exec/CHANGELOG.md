@@ -1,5 +1,29 @@
 # @caisson/tool-exec
 
+## 0.4.0
+
+### Minor Changes
+
+- f02b193: Bind two-phase approvals to private one-shot records and revalidate current policy before execution. Legacy hand-built proposals are rejected; the browser preview and run path remain unchanged.
+
+  Pending approvals now expire after fifteen minutes and support atomic reject(approvalId) without spawning. Durable approval-store adapters must implement rejection and expiration cleanup.
+
+- ac1a1a4: Let hook and tool subprocesses run under a caller-supplied environment.
+
+  A `CommandHookSpec` (agent-kernel) and a `CommandSpec` allowlist entry (tool-exec) may now set an
+  optional `env` object. Supplied, it is passed to the spawned process verbatim, never merged with
+  the parent's environment, so a caller narrowing a child to exactly the vars it needs must include
+  `PATH` explicitly if the command needs it. Absent, the default is unchanged: the child inherits
+  the parent's full environment. Flipping that default is a separate, deliberate major version, not
+  this change.
+
+### Patch Changes
+
+- Updated dependencies [87b07c6]
+- Updated dependencies [7d39669]
+- Updated dependencies [498b279]
+  - @caisson/kernel@0.10.0
+
 ## 0.3.1
 
 ### Patch Changes

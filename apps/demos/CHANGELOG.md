@@ -1,5 +1,63 @@
 # @caisson/demos
 
+## 0.1.1
+
+### Patch Changes
+
+- 7e11672: Upgrade runtime OS layers on pinned bases and gate fixable HIGH/CRITICAL runtime OS findings while reporting application and raw-base residuals.
+- 7d39669: Report the serving revision on every deployed service.
+
+  Each service now answers with an `x-caisson-revision` response header naming the commit its
+  running image was built from, so "which code is actually live" is one request instead of an
+  inference from how a route behaves.
+
+  The kernel gains `servingRevision()` and the constants behind it on the `@caisson/kernel/node`
+  entry. It reads a `.caisson-revision` carrier written into the uploaded tree at deploy time; a
+  build that did not come through that path reports `unknown` rather than guessing.
+
+  The header is deliberately not gated behind origin verification: it has to stay readable exactly
+  when that gate is the thing misbehaving, which is the case it exists to diagnose.
+
+- Updated dependencies [045b21e]
+- Updated dependencies [f02b193]
+- Updated dependencies [f02b193]
+- Updated dependencies [cd694f1]
+- Updated dependencies [87b07c6]
+- Updated dependencies [ac1a1a4]
+- Updated dependencies [7d39669]
+- Updated dependencies [498b279]
+  - @caisson/local-store@1.1.2
+  - @caisson/audit-worm@2.2.4
+  - @caisson/agent-runner@0.3.2
+  - @caisson/tool-exec@0.4.0
+  - @caisson/ui@0.6.7
+  - @caisson/kernel@0.10.0
+  - @caisson/agent-kernel@0.8.0
+  - @caisson/alerting@0.3.2
+  - @caisson/local-inference@0.2.1
+  - @caisson/access-review@0.3.5
+  - @caisson/risk-register@0.3.5
+  - @caisson/agent-trajectory@0.6.1
+  - @caisson/ai-meter@1.1.3
+  - @caisson/auth@0.4.5
+  - @caisson/billing-orchestration@0.4.2
+  - @caisson/credits@0.6.3
+  - @caisson/field-crypto@1.1.2
+  - @caisson/org-controls@0.4.2
+  - @caisson/prompt-registry@1.1.2
+  - @caisson/artifact-render@0.2.5
+  - @caisson/billing@0.6.9
+  - @caisson/compliance-core@0.7.2
+  - @caisson/frameworks-pack@0.8.2
+  - @caisson/guardrails@0.5.1
+  - @caisson/local-privacy@0.2.1
+  - @caisson/local-sync@0.2.2
+  - @caisson/oscal-spine@0.2.2
+  - @caisson/retention-runner@0.2.2
+  - @caisson/signing-primitive@0.4.2
+  - @caisson/trust-page@0.3.5
+  - @caisson/ai-evals@0.5.2
+
 ## 0.1.0
 
 ### Minor Changes

@@ -1,5 +1,17 @@
 # @caisson/billing-orchestration
 
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies [498b279]
+- Updated dependencies [87b07c6]
+- Updated dependencies [7d39669]
+- Updated dependencies [498b279]
+  - @caisson/tenancy-rls@0.6.1
+  - @caisson/kernel@0.10.0
+  - @caisson/billing@0.6.9
+
 ## 0.4.1
 
 ### Patch Changes

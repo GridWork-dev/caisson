@@ -1,5 +1,15 @@
 # @caisson/tenancy-rls
 
+## 0.6.1
+
+### Patch Changes
+
+- 498b279: Add bounded Postgres pool construction for autoscaled runtimes and finite migration jobs, and use it in generated applications.
+- Updated dependencies [87b07c6]
+- Updated dependencies [7d39669]
+- Updated dependencies [498b279]
+  - @caisson/kernel@0.10.0
+
 ## 0.6.0
 
 ### Minor Changes
