@@ -1,5 +1,34 @@
 # S8 release train run notes — 2026-09-10
 
+## R359 CR-01 — private digest-bound tool approvals (2026-09-16)
+
+Fourth repair in the ordered R359 cycle. ADR-0423 records the operator lock; the index,
+CLAUDE ceiling and live board agree. Execution consumes a server-private snapshot once,
+checks the public and recomputed canonical digest, revalidates saved original input under
+the current schema, rejects changed validated argv and derives env solely from current
+CommandSpec. The pure browser preview has no execution authority. Application approval
+actor authentication remains the integrating server's responsibility. Default pending
+records are bounded to 1,000 and do not survive restart; durable adapters owe atomic consume.
+
+Verification: Bun 1.4.2 — 37 pass / 0 fail / 90 assertions across tool-exec, browser graph,
+demos preview and agent-dev wiring. Package build and targeted lint pass. A syntax error
+introduced in the causal site-copy edit was corrected before the restored green run.
+
+Predicted and measured guard removals (each named test RED, each restored byte-identically):
+
+- Digest binding: Bun 1.4.2 — 0 pass / 1 fail / 1 assertion.
+- Strict envelope/environment rejection: Bun 1.4.2 — 0 pass / 1 fail / 2 assertions.
+- Current policy fingerprint: Bun 1.4.2 — 0 pass / 1 fail / 1 assertion.
+- Current schema validation: Bun 1.4.2 — 0 pass / 1 fail / 2 assertions.
+- Revalidated argv digest: Bun 1.4.2 — 0 pass / 1 fail / 1 assertion.
+- Atomic consumption: Bun 1.4.2 — 0 pass / 1 fail / 1 assertion.
+
+Fixed/restored SHA-256: tool-exec.ts
+`34809fcde263c2227c3ee611a6b61bb510c3803e423328d95cb8e0fb39547667`;
+approval.ts `5f1dfc347761ba28dca334e558d3fb9edb533c447cd446f4d3958372f0a6d1f2`.
+Machine receipts: estate handoff `S8-R359-CR01-{digest,env,policy,schema,argv,once}.result.json`.
+Restored suite: Bun 1.4.2 — 37 pass / 0 fail / 90 assertions. No review verdict is claimed.
+
 ## R359 — CR-02 resolved embedding egress
 
 CR-05 committed as **c233a951**, clean readback, lane 46 ahead. CR-02 calls the canonical resolved URL guard immediately before every embedding request and keeps redirect:error. The construction-time literal guard remains. The test injects DNS answers into the resolver, uses the real kernel guard and proves the transport is untouched for a public-looking hostname resolving into private space. A second request with a changed DNS answer is rejected. The canonical kernel's documented resolve/fetch TOCTOU residual is unchanged; this repair does not claim connect-time IP pinning. A local-store patch changeset records the package repair.

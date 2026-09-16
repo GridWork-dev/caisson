@@ -8,9 +8,18 @@
 // `env` on a `CommandSpec` to narrow a child to exactly the vars it needs (used verbatim, never
 // merged with `process.env`). Flipping the default to always-narrow is a separate major bump.
 import { execFile as execFileCb } from "node:child_process";
-import { NotFoundError } from "@caisson/kernel";
+import { NotFoundError, parseStrict, ValidationError } from "@caisson/kernel";
 import { createToolProposer } from "./propose.ts";
-import type { CommandSpec, ProposedToolCall } from "./propose.ts";
+import type { CommandSpec } from "./propose.ts";
+import {
+  approvalDigest,
+  commandPolicyFingerprint,
+  createMemoryApprovalStore,
+  equalApprovalDigest,
+  toolApprovalSchema,
+  type ToolApproval,
+  type ToolApprovalStore,
+} from "./approval.ts";
 
 /** Structured argument provenance for one governed call. Plain data, not WORM. */
 export interface ExecResult {
@@ -94,6 +103,8 @@ export interface ToolExecConfig {
   readonly execFn?: ExecFn;
   /** Injectable clock — never `Date.now()` inline, so provenance timestamps are testable. */
   readonly now?: () => number;
+  /** Private server-side record store; durable adapters must atomically consume records. */
+  readonly approvalStore?: ToolApprovalStore;
 }
 
 export interface ToolExec {
@@ -102,20 +113,15 @@ export interface ToolExec {
    * Two-phase gate, phase 1: validate `args` against the allowlisted command's schema WITHOUT
    * spawning anything. Same fail-closed lookup/validation as `run` — unregistered `name` throws
    * `NotFoundError`, a bad shape throws `ValidationError` — so a proposal that parks for external
-   * approval is already known-safe-to-execute the moment it exists.
+   * approval records exactly what was validated; execution still rechecks current policy.
    */
-  propose(
-    name: string,
-    args: unknown,
-    reason?: string,
-  ): Promise<ProposedToolCall>;
+  propose(name: string, args: unknown, reason?: string): Promise<ToolApproval>;
   /**
    * Two-phase gate, phase 2: execute a call `propose` already validated (e.g. after an external
-   * approval decision). Re-checks the name is STILL allowlisted to the SAME command — defense
-   * against the allowlist changing between propose and execute — but never re-validates `args`,
-   * which were already validated at propose time.
+   * approval decision). Consume the immutable stored record once, verify the canonical digest,
+   * revalidate original input under the current schema, and derive environment from current policy.
    */
-  execute(proposed: ProposedToolCall): Promise<ExecResult>;
+  execute(proposed: unknown): Promise<ExecResult>;
 }
 
 /**
@@ -137,6 +143,7 @@ export function createToolExec(config: ToolExecConfig): ToolExec {
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const execFn = config.execFn ?? defaultExecFn;
   const now = config.now ?? Date.now;
+  const approvals = config.approvalStore ?? createMemoryApprovalStore();
 
   const spawn = async (
     command: string,
@@ -175,19 +182,77 @@ export function createToolExec(config: ToolExecConfig): ToolExec {
       name: string,
       args: unknown,
       reason?: string,
-    ): Promise<ProposedToolCall> {
-      return gate.propose(name, args, reason);
+    ): Promise<ToolApproval> {
+      const input: unknown = structuredClone(args);
+      const validated = gate.propose(name, input, reason);
+      const spec = gate.lookup(name)!;
+      const unsigned = {
+        approvalId: crypto.randomUUID(),
+        name,
+        command: validated.command,
+        args: [...validated.args],
+        policyVersion: spec.policyVersion ?? "1",
+        ...(reason === undefined ? {} : { reason }),
+      };
+      const proposal = parseStrict(toolApprovalSchema, {
+        ...unsigned,
+        digest: approvalDigest(unsigned),
+      });
+      await approvals.put({
+        proposal,
+        input,
+        policyFingerprint: commandPolicyFingerprint(spec),
+      });
+      return structuredClone(proposal);
     },
 
-    async execute(proposed: ProposedToolCall): Promise<ExecResult> {
-      const spec = gate.lookup(proposed.name);
-      if (spec === undefined || spec.command !== proposed.command) {
-        throw new NotFoundError(
-          `No command registered for "${proposed.name}" matching its proposed command (allowlist changed since propose)`,
-          { command: proposed.name },
+    async execute(raw: unknown): Promise<ExecResult> {
+      const proposed = parseStrict(toolApprovalSchema, raw);
+      const stored = await approvals.consume(proposed.approvalId);
+      if (!stored)
+        throw new NotFoundError("Approval is unknown or already consumed");
+      if (
+        !equalApprovalDigest(proposed.digest, stored.proposal.digest) ||
+        !equalApprovalDigest(approvalDigest(proposed), stored.proposal.digest)
+      ) {
+        throw new ValidationError(
+          "Approval record does not match the approved proposal",
         );
       }
-      return spawn(spec.command, proposed.args, proposed.reason, proposed.env);
+      const spec = gate.lookup(stored.proposal.name);
+      if (
+        !spec ||
+        !equalApprovalDigest(
+          commandPolicyFingerprint(spec),
+          stored.policyFingerprint,
+        )
+      ) {
+        throw new NotFoundError(
+          "Command policy changed since approval was proposed",
+        );
+      }
+      const current = gate.propose(
+        stored.proposal.name,
+        stored.input,
+        stored.proposal.reason,
+      );
+      const currentDigest = approvalDigest({
+        ...stored.proposal,
+        command: current.command,
+        args: [...current.args],
+      });
+      if (!equalApprovalDigest(currentDigest, stored.proposal.digest)) {
+        throw new ValidationError(
+          "Current command validation differs from the approved proposal",
+        );
+      }
+      // No environment is accepted from the public approval envelope or old stored proposal.
+      return spawn(
+        spec.command,
+        current.args,
+        current.reason,
+        spec.env === undefined ? undefined : { ...spec.env },
+      );
     },
   };
 }

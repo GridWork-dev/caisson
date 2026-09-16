@@ -1,7 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
 import { NotFoundError, ValidationError } from "@caisson/kernel";
-import { createToolExec, type ExecFn } from "./index.ts";
+import {
+  createMemoryApprovalStore,
+  createToolExec,
+  type ExecFn,
+} from "./index.ts";
 
 /** A hermetic double: records every call and returns a canned result. No process ever spawns. */
 function fakeExecFn(): {
@@ -187,7 +191,7 @@ describe("createToolExec — two-phase gate (ADR-0360 S3): propose() then execut
       ["hello", "world"],
       "smoke",
     );
-    expect(proposed).toEqual({
+    expect(proposed).toMatchObject({
       name: "echo",
       command: "/bin/echo",
       args: ["hello", "world"],
@@ -223,37 +227,44 @@ describe("createToolExec — two-phase gate (ADR-0360 S3): propose() then execut
     expect(calls).toHaveLength(0);
   });
 
-  test("execute never re-validates args — a proposal built by hand still spawns with its own array", async () => {
-    const { fn, calls } = fakeExecFn();
-    const toolExec = createToolExec({ allowlist: [echoSpec], execFn: fn });
-    const result = await toolExec.execute({
-      name: "echo",
-      command: "/bin/echo",
-      args: ["already", "validated"],
-    });
-    expect(result.ok).toBe(true);
-    expect(calls[0]?.args).toEqual(["already", "validated"]);
-  });
-
-  test("execute refuses a proposal whose command no longer matches the allowlist (drift defense)", async () => {
+  test("execute rejects a hand-built proposal without a stored approval", async () => {
     const { fn, calls } = fakeExecFn();
     const toolExec = createToolExec({ allowlist: [echoSpec], execFn: fn });
     await expect(
       toolExec.execute({
         name: "echo",
-        command: "/bin/rm", // proposed against a DIFFERENT command than the current allowlist entry
-        args: ["-rf", "/"],
+        command: "/bin/echo",
+        args: ["already", "validated"],
       }),
-    ).rejects.toThrow(NotFoundError);
+    ).rejects.toThrow(ValidationError);
+    expect(calls).toHaveLength(0);
+  });
+
+  test("execute refuses a proposal whose command no longer matches the allowlist (drift defense)", async () => {
+    const { fn, calls } = fakeExecFn();
+    const spec = { ...echoSpec };
+    const toolExec = createToolExec({ allowlist: [spec], execFn: fn });
+    const proposed = await toolExec.propose("echo", ["hi"]);
+    spec.command = "/bin/other";
+    await expect(toolExec.execute(proposed)).rejects.toThrow(NotFoundError);
     expect(calls).toHaveLength(0);
   });
 
   test("execute refuses a proposal for a name removed from the allowlist since propose", async () => {
     const { fn, calls } = fakeExecFn();
-    const toolExec = createToolExec({ allowlist: [], execFn: fn });
-    await expect(
-      toolExec.execute({ name: "echo", command: "/bin/echo", args: ["x"] }),
-    ).rejects.toThrow(NotFoundError);
+    const approvalStore = createMemoryApprovalStore();
+    const issuer = createToolExec({
+      allowlist: [echoSpec],
+      execFn: fn,
+      approvalStore,
+    });
+    const proposed = await issuer.propose("echo", ["x"]);
+    const toolExec = createToolExec({
+      allowlist: [],
+      execFn: fn,
+      approvalStore,
+    });
+    await expect(toolExec.execute(proposed)).rejects.toThrow(NotFoundError);
     expect(calls).toHaveLength(0);
   });
 
@@ -263,5 +274,129 @@ describe("createToolExec — two-phase gate (ADR-0360 S3): propose() then execut
     const result = await toolExec.run("echo", ["still", "works"]);
     expect(result.ok).toBe(true);
     expect(calls).toHaveLength(1);
+  });
+});
+
+describe("ADR-0423 — stored approval integrity", () => {
+  test("mutated approved arguments never spawn", async () => {
+    const { fn, calls } = fakeExecFn();
+    const gate = createToolExec({ allowlist: [echoSpec], execFn: fn });
+    const proposal = await gate.propose("echo", ["approved"]);
+    await expect(
+      gate.execute({ ...proposal, args: ["changed"] }),
+    ).rejects.toThrow(ValidationError);
+    expect(calls).toHaveLength(0);
+  });
+
+  test("forged IDs, digests, reasons and policy versions are rejected", async () => {
+    const { fn, calls } = fakeExecFn();
+    const gate = createToolExec({ allowlist: [echoSpec], execFn: fn });
+    for (const patch of [
+      { approvalId: crypto.randomUUID() },
+      { digest: "0".repeat(64) },
+      { reason: "not approved" },
+      { policyVersion: "forged" },
+    ]) {
+      const proposal = await gate.propose("echo", ["approved"], "reason");
+      await expect(gate.execute({ ...proposal, ...patch })).rejects.toThrow();
+    }
+    expect(calls).toHaveLength(0);
+  });
+
+  test("altered proposal environment is rejected and current spec owns child env", async () => {
+    const seen: unknown[] = [];
+    const gate = createToolExec({
+      allowlist: [{ ...echoSpec, env: { PATH: "/safe/bin" } }],
+      execFn: async (_command, _args, opts) => {
+        seen.push(opts.env);
+        return { stdout: "", stderr: "", exitCode: 0 };
+      },
+    });
+    const proposal = await gate.propose("echo", ["approved"]);
+    expect("env" in proposal).toBe(false);
+    await expect(
+      gate.execute({ ...proposal, env: { PATH: "/hostile/bin" } }),
+    ).rejects.toThrow(ValidationError);
+    expect(seen).toEqual([]);
+    await gate.execute(proposal);
+    expect(seen).toEqual([{ PATH: "/safe/bin" }]);
+  });
+
+  test("environment and policy-version rotation invalidate outstanding approvals", async () => {
+    const { fn, calls } = fakeExecFn();
+    const spec = {
+      ...echoSpec,
+      env: { PATH: "/old/bin" },
+      policyVersion: "v1",
+    };
+    const gate = createToolExec({ allowlist: [spec], execFn: fn });
+    const oldEnv = await gate.propose("echo", ["approved"]);
+    spec.env.PATH = "/new/bin";
+    await expect(gate.execute(oldEnv)).rejects.toThrow(NotFoundError);
+    const oldVersion = await gate.propose("echo", ["approved"]);
+    spec.policyVersion = "v2";
+    await expect(gate.execute(oldVersion)).rejects.toThrow(NotFoundError);
+    expect(calls).toHaveLength(0);
+  });
+
+  test("current schema revalidates saved original input, including object-to-argv transforms", async () => {
+    const { fn, calls } = fakeExecFn();
+    let allowed = true;
+    const spec = {
+      ...echoSpec,
+      argsSchema: z
+        .object({ text: z.string() })
+        .strict()
+        .refine(() => allowed, "policy narrowed")
+        .transform(({ text }) => [text]),
+    };
+    const gate = createToolExec({ allowlist: [spec], execFn: fn });
+    const input = { text: "approved" };
+    const first = await gate.propose("echo", input);
+    input.text = "caller mutated original";
+    await gate.execute(first);
+    expect(calls[0]?.args).toEqual(["approved"]);
+    const second = await gate.propose("echo", { text: "another" });
+    allowed = false;
+    await expect(gate.execute(second)).rejects.toThrow(ValidationError);
+    expect(calls).toHaveLength(1);
+  });
+
+  test("a changed schema transform cannot alter the approved argv", async () => {
+    const { fn, calls } = fakeExecFn();
+    let suffix = "old";
+    const gate = createToolExec({
+      allowlist: [
+        {
+          ...echoSpec,
+          argsSchema: z
+            .array(z.string())
+            .transform((args) => [...args, suffix]),
+        },
+      ],
+      execFn: fn,
+    });
+    const proposal = await gate.propose("echo", ["approved"]);
+    suffix = "new";
+    await expect(gate.execute(proposal)).rejects.toThrow(ValidationError);
+    expect(calls).toHaveLength(0);
+  });
+
+  test("atomic consumption prevents replay and concurrent double execution", async () => {
+    const { fn, calls } = fakeExecFn();
+    const gate = createToolExec({ allowlist: [echoSpec], execFn: fn });
+    const proposal = JSON.parse(
+      JSON.stringify(await gate.propose("echo", ["approved"])),
+    ) as unknown;
+    const results = await Promise.allSettled([
+      gate.execute(proposal),
+      gate.execute(proposal),
+    ]);
+    expect(results.map((r) => r.status).sort()).toEqual([
+      "fulfilled",
+      "rejected",
+    ]);
+    expect(calls).toHaveLength(1);
+    await expect(gate.execute(proposal)).rejects.toThrow(NotFoundError);
   });
 });

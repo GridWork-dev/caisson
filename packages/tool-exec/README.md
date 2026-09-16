@@ -58,3 +58,25 @@ A name not on the allowlist, or args that fail the schema, throw before any proc
 `bun test packages/tool-exec/src` — default-deny (unregistered name, empty allowlist),
 schema-rejects-before-exec, a valid call's full provenance record, a non-zero exit captured (not
 thrown), and one real `execFile` spawn against `node -e` proving the bounded-output path end to end.
+
+## Two-phase approvals (ADR-0423)
+
+`await tool.propose(name, input, reason)` returns a serializable `ToolApproval`:
+random approval ID, canonical digest, policy version, command, validated argv and reason.
+Keep the `ToolExec` instance and its record store on the trusted server. Only call
+`execute(approval)` after your application authenticates and authorizes the approval
+actor; the package does not implement that actor's authentication or approval UI.
+
+Execution atomically consumes the private record, checks the public digest, revalidates
+the saved original input with the current schema, and requires the resulting argv to
+match what was approved. Command, explicit environment or `policyVersion` rotation
+invalidates outstanding records. Environment is never accepted in the public envelope.
+The ADR-0420 inherited-environment default remains unchanged when a spec omits `env`.
+
+The default store snapshots input and holds at most 1,000 pending records in memory;
+restart loses pending approvals. For persistence, inject `approvalStore` implementing
+create-only `put` and atomic get-and-delete `consume`; never expose either to clients.
+A digest is an integrity binding to this trusted record, not a signature over arbitrary
+client data. Invalid or rotated execution attempts consume the record once its ID is
+resolved; request a new proposal after rejection. `createToolProposer` remains a pure
+browser-safe validation preview; its `ProposedToolCall` cannot be passed to `execute`.
