@@ -1,5 +1,32 @@
 # S8 release train run notes — 2026-09-10
 
+## R359 CR-04 — staging negative boundaries (2026-09-16)
+
+Sixth ordered repair. Staging now resolves the raw fleet URL map through the shared
+schema-validated tool-exec gcloud argv gate, pins returned resource names, and validates
+the complete map before any HTTP probe. The workflow passes that exact output to smoke.
+Each target must pass authenticated public health, credential-free public Access denial,
+and credential-free raw run.app denial. Demos is explicitly IAM-only. Denial responses
+establish refusal at the tested surface, not attribution to a particular middleware/rule.
+No live gcloud call, HTTP probe or deployment was executed during this repair.
+
+Initial/restored suite: **Bun 1.4.2 — 20 pass / 0 fail / 196 assertions**. Targeted lint
+and deploy typecheck pass. The typecheck initially caught a test-only literal-union
+expectation mismatch; widening the actual-side array through Object.keys fixed it without
+changing the contract assertion. No outside-causal-path failure occurred.
+
+Predicted guard removals, each followed by SHA-256 identical source restoration:
+
+- Access denial assertion removed: **Bun 1.4.2 — 0 pass / 1 fail / 1 assertion**.
+- Raw origin/IAM denial assertion removed: **Bun 1.4.2 — 0 pass / 1 fail / 1 assertion**.
+- Pre-egress raw URL validation removed: **Bun 1.4.2 — 0 pass / 1 fail / 2 assertions**.
+
+Fixed/restored smoke.ts SHA-256:
+`23ee716d31f41f0c8c65a73261d60e3e67b7d9473707d802a2013fdd4c2dcaa3`.
+Machine receipts: estate handoff `S8-R359-CR04-{access,origin,url}.result.json`.
+Restored suite: **Bun 1.4.2 — 20 pass / 0 fail / 196 assertions**, exit 0.
+R344 OS-only image classification remains unchanged.
+
 ## R359 CR-03 — continuation ruling and cart repair (2026-09-16)
 
 The 03:12:07Z `S8_CR03_CONTINUE` ruling accepts the baseline exit 99 as pre-existing

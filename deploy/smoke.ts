@@ -5,6 +5,7 @@ import {
 import { ORIGIN_SECRET_HEADER } from "../packages/kernel/src/origin-gate.ts";
 import { z } from "zod";
 import { reportCliError } from "./manifest.ts";
+import { validateStagingOrigins } from "./staging-origins.ts";
 
 const REQUEST_TIMEOUT_MS = 10_000;
 const CANARY_TAG = /^r[0-9]{1,20}$/;
@@ -40,6 +41,7 @@ const SmokeConfigSchema = z
     ]),
     canaryTag: z.string().trim().regex(CANARY_TAG).optional(),
     canaryUrls: ServiceMapSchema.optional(),
+    stagingOriginUrls: ServiceMapSchema.optional(),
     originSecrets: ServiceMapSchema.optional(),
     service: ServiceKeySchema.optional(),
     accessClientId: z.string().min(1).max(2_048).regex(HEADER_VALUE).optional(),
@@ -57,6 +59,7 @@ export type SmokeConfig = {
   mode: string;
   canaryTag?: string | undefined;
   canaryUrls?: Record<string, string> | undefined;
+  stagingOriginUrls?: Record<string, string> | undefined;
   originSecrets?: Record<string, string> | undefined;
   service?: string | undefined;
   accessClientId?: string | undefined;
@@ -296,6 +299,8 @@ function validateConfig(
     throw new Error("SERVICE is required for rollback smoke");
   }
 
+  if (canaryMode && parsed.stagingOriginUrls)
+    throw new Error("STAGING_ORIGIN_URLS is only valid for staging smoke");
   if (canaryMode) {
     const canaryUrls = normalizeCanaryUrls(parsed.canaryUrls!);
     const originSecrets = validateOriginSecrets(parsed.originSecrets!);
@@ -308,6 +313,14 @@ function validateConfig(
       }
     }
     return { ...parsed, canaryUrls, originSecrets };
+  }
+
+  if (parsed.mode === "staging") {
+    if (!parsed.stagingOriginUrls)
+      throw new Error("STAGING_ORIGIN_URLS is required for staging smoke");
+    parsed.stagingOriginUrls = validateStagingOrigins(parsed.stagingOriginUrls);
+  } else if (parsed.stagingOriginUrls) {
+    throw new Error("STAGING_ORIGIN_URLS is only valid for staging smoke");
   }
 
   const targets = selectedTargets(parsed.environment, parsed.service);
@@ -447,6 +460,61 @@ async function assertWriteBoundary(
   assertSecurityHeaders(response, `${target.key} write auth boundary`);
 }
 
+/** Negative legs use fresh headers: neither Access tokens, IAM tokens nor origin secrets. */
+async function assertStagingDenials(
+  config: ReturnType<typeof validateConfig>,
+  target: Target,
+  transport: TimedFetcher,
+): Promise<void> {
+  const publicDenied = await transport(
+    `${target.origin}${target.healthPath}`,
+    {
+      method: "GET",
+      redirect: "manual",
+      headers: { accept: "text/html, application/json" },
+    },
+    { timeoutMs: REQUEST_TIMEOUT_MS },
+  );
+  let accessDenied = false;
+  if ([302, 303, 307].includes(publicDenied.status)) {
+    try {
+      const login = new URL(publicDenied.headers.get("location") ?? "");
+      accessDenied =
+        login.protocol === "https:" &&
+        login.username === "" &&
+        login.password === "" &&
+        login.port === "" &&
+        /^[a-z0-9-]+\.cloudflareaccess\.com$/.test(login.hostname) &&
+        login.pathname.startsWith("/cdn-cgi/access/login");
+    } catch {
+      /* Relative, malformed or unrelated redirects do not prove Access denial. */
+    }
+  } else if (publicDenied.status === 403) {
+    accessDenied =
+      publicDenied.headers.get("server") === "cloudflare" &&
+      publicDenied.headers.has("cf-ray");
+  }
+  if (!accessDenied)
+    throw new Error(
+      `${target.key} Access denial boundary returned ${publicDenied.status}`,
+    );
+
+  const rawDenied = await transport(
+    `${config.stagingOriginUrls![target.key]!}${target.canaryHealthPath}`,
+    {
+      method: "GET",
+      redirect: "manual",
+      headers: { accept: "application/json" },
+    },
+    { timeoutMs: REQUEST_TIMEOUT_MS },
+  );
+  if (rawDenied.status !== 401 && rawDenied.status !== 403) {
+    throw new Error(
+      `${target.key} raw origin/IAM denial boundary returned ${rawDenied.status}`,
+    );
+  }
+}
+
 export async function runSmoke(
   rawConfig: SmokeConfig,
   transport: TimedFetcher = fetchWithTimeout,
@@ -483,6 +551,8 @@ export async function runSmoke(
         identityTokenProvider,
       );
     }
+    if (config.mode === "staging")
+      await assertStagingDenials(config, target, transport);
   }
 
   if (config.mode === "pre-migration") return;
@@ -512,7 +582,7 @@ export async function runSmoke(
 }
 
 function serviceMapFromEnvironment(
-  name: "CANARY_URLS" | "ORIGIN_SECRETS",
+  name: "CANARY_URLS" | "ORIGIN_SECRETS" | "STAGING_ORIGIN_URLS",
   value: string | undefined,
 ): Record<string, string> | undefined {
   const source = value?.trim();
@@ -548,6 +618,10 @@ export function smokeConfigFromEnvironment(
     canaryUrls: serviceMapFromEnvironment(
       "CANARY_URLS",
       environmentVariables.CANARY_URLS,
+    ),
+    stagingOriginUrls: serviceMapFromEnvironment(
+      "STAGING_ORIGIN_URLS",
+      environmentVariables.STAGING_ORIGIN_URLS,
     ),
     originSecrets: serviceMapFromEnvironment(
       "ORIGIN_SECRETS",
