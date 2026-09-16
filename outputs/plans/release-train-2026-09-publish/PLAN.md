@@ -8,6 +8,19 @@ status: accepted
 
 # Plan — release-train-2026-09-publish
 
+## R359 repair cycle — accepted designs, ordered atomic commits
+
+S8_REPAIRS_AUTHORIZED (2026-09-16T02:37:11Z) authorizes the six returned designs without reopening forks. Main thread owns edits on this lane. Order and verification:
+
+1. CR-06: strict R4 frontmatter gate bound to base/tag/final SHA, clean status, zero critical findings, reviewed scope and completed reviewer identities/timestamps. File-backed empty/failed/wrong-SHA/passing fixtures; mutate to the former existence-only decision, named negative test red, hash-identical restore and green.
+2. CR-05: unconditional stable runtime-images-gate aggregate requiring matrix success; require it in readiness. Contract tests execute aggregate decisions; mutate the gate/membership, red, restore and green. R344 classification stays untouched.
+3. CR-02: resolve and validate the endpoint before every embedding request; retain redirect:error. Resolver-seam private-destination test proves fetch is not called; remove resolved validation, red, restore and green.
+4. CR-01: immutable digest-bound approval records, consumed once, canonical name/command/validated args/reason/policy version; current-spec revalidation and environment. Negative tests for argument/environment mutation, forgery and allowlist rotation. Append the next free ADR above 0422 and update index/CLAUDE ceiling in this commit. Mutate approval enforcement, red, restore and green.
+5. CR-03: real session ownership lookup and server-created checkout with current entitlement filtering before Paddle. Four named regression cases; append one money-path ADR and update index/CLAUDE ceiling. Mutate ownership/checkout guards, red, restore and green.
+6. CR-04: authenticated public success, anonymous Access denial and strictly validated raw Cloud Run origin denial. Resolve raw URLs through governed gcloud argv calls in the staging workflow; no live probes here. Unit tests and two independent boundary-removal mutations must fail, restore and pass.
+
+Every atomic commit includes tests and RUN-NOTES with Bun 1.4.2 beside counts and restoration hashes. Then run all touched-package targeted tests and exactly one full bun run check (or equivalent); record counts. Fresh headroom precedes sequential governed code_review and security_audit on the six repair commits, exact R356 inline tool rules, parent-shell streamed logs. Clean verdicts permit packet steps 4–6 to the green release PR. A conforming-command BLOCKED line, a re-review/security BLOCKER or a red gate outside the repair's causal path stops. Expected mutation reds and causal repair failures are not unrelated-gate stops. Telemetry 500 remains non-blocking. No merge/tag/version dispatch/publish/deploy/branch deletion.
+
 ## Superseding review execution authority — R354/R356 retry 3
 
 R354 authorizes the cumulative R4 review; R356's exact child Git rules and S8_REVIEW_RETRY_3 (2026-09-16T02:03:36Z) govern this continuation. The historical no-retry paragraphs below no longer hold these two dispatches. Main thread obtains fresh limits, then dispatches code_review/gw-code-reviewer followed by security_audit/gw-security-auditor, deep lane, asynchronous shared-read, repo-read. Review target: v2026.08.18..895849a677cdb2e1a9a48d11b9c73a2ac1a0ae6c (89 commits / 430 paths). Both complete inline briefs retain the six priority targets and evidence limitations.

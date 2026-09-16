@@ -35,6 +35,7 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { z } from "zod";
 import { checkRegistryCoverage } from "../registry/scripts/coverage-invariants";
 
 const REPO = resolve(import.meta.dir, "..");
@@ -291,15 +292,90 @@ function checkRegistryCoverageGate(): void {
 }
 
 // --- 5. R4 audit artifact ------------------------------------------------------------------------
-function checkAuditArtifact(tag: string): void {
-  const path = join(REPO, "outputs/audit", `release-audit-${tag}.md`);
-  record(
-    "R4 release audit on file",
-    existsSync(path),
-    existsSync(path)
-      ? `outputs/audit/release-audit-${tag}.md`
-      : `MISSING outputs/audit/release-audit-${tag}.md — run the full SHIP-audit-lane review of the diff since the last release tag`,
-  );
+const releaseRef = z.string().regex(/^v[0-9][A-Za-z0-9._-]{0,100}$/);
+const auditBindingSchema = z
+  .object({
+    base: releaseRef,
+    tag: releaseRef,
+    sha: z.string().regex(/^[a-f0-9]{40}$/),
+  })
+  .strict();
+const releaseAuditSchema = auditBindingSchema
+  .extend({
+    schema_version: z.literal(1),
+    status: z.literal("clean"),
+    critical: z.literal(0),
+    reviewed_scope: z
+      .array(z.string().trim().min(1).max(512))
+      .min(1)
+      .max(10000),
+    reviewers: z
+      .array(
+        z
+          .object({
+            role: z.enum(["code_review", "security_audit"]),
+            identity: z.string().trim().min(1).max(200),
+            reviewed_at: z.iso.datetime({ offset: true }),
+          })
+          .strict(),
+      )
+      .length(2)
+      .refine(
+        (reviewers) =>
+          new Set(reviewers.map((reviewer) => reviewer.role)).size === 2,
+        "Both code review and security audit must be completed",
+      ),
+  })
+  .strict();
+
+export type AuditBinding = z.infer<typeof auditBindingSchema>;
+
+/** File-backed boundary: a filename alone is never an R4 attestation. */
+export function auditArtifactIsValid(
+  path: string,
+  expected: AuditBinding,
+): boolean {
+  try {
+    const binding = auditBindingSchema.parse(expected);
+    const source = readFileSync(path, "utf8");
+    const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(source);
+    if (!frontmatter || source.length > 1_000_000) return false;
+    const audit = releaseAuditSchema.parse(Bun.YAML.parse(frontmatter[1]!));
+    return (
+      audit.base === binding.base &&
+      audit.tag === binding.tag &&
+      audit.sha === binding.sha
+    );
+  } catch {
+    return false;
+  }
+}
+
+function checkAuditArtifact(tag: string, sha: string): void {
+  try {
+    // Exclude the candidate itself: its tag may already exist when readiness runs.
+    const base = run("git", [
+      "describe",
+      "--tags",
+      "--abbrev=0",
+      "--match",
+      "v[0-9]*",
+      `${sha}^`,
+    ]);
+    const binding = auditBindingSchema.parse({ base, tag, sha });
+    const path = join(REPO, "outputs/audit", `release-audit-${binding.tag}.md`);
+    record(
+      "R4 release audit on file",
+      auditArtifactIsValid(path, binding),
+      `requires clean code/security audit for ${base}..${sha}, tag ${tag}`,
+    );
+  } catch {
+    record(
+      "R4 release audit on file",
+      false,
+      "cannot bind a valid audit to the previous release, tag and final SHA",
+    );
+  }
 }
 
 // --- 6. per-release checklist --------------------------------------------------------------------
@@ -371,7 +447,7 @@ if (import.meta.main) {
   checkChangelogs();
   checkSot();
   checkRegistryCoverageGate();
-  checkAuditArtifact(tag);
+  checkAuditArtifact(tag, sha);
   checkChecklist(tag);
   if (local) checkLiveHybrid();
 

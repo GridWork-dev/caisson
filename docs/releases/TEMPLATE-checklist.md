@@ -31,6 +31,20 @@ verification steps after the train runs; they are deliberately not checkboxes.
 - [ ] No open P0/P1 against the buyer install path (registry tarballs resolve for
       `dist-tags.latest` of every published package)
 
+## R4 artifact schema (R359 / CR-06)
+
+The audit file must begin with strict YAML frontmatter containing only: schema_version: 1,
+status: clean, critical: 0, base (previous release tag), tag (this release), sha (the exact
+40-character final candidate SHA), reviewed_scope (a non-empty array of paths), and reviewers.
+Reviewers contains exactly one code_review and one security_audit entry; each has role,
+identity (non-empty), and reviewed_at (an ISO timestamp with timezone). Unknown fields, failed
+verdicts, incomplete identities, empty scope and mismatched bindings fail closed. The gate
+derives the previous release from the candidate's parent history; it never trusts the audit
+file to choose its own comparison base. Prose follows the closing frontmatter delimiter.
+
+Do not copy a preparation or failed report to the tag-named path. Produce the actual completed
+audit for the final candidate; the existence of this template is not an attestation.
+
 ## Post-release verification (after the train completes)
 
 - (post) Registry spot-check: `bun add @caisson/kernel@latest` from a clean env with the

@@ -1,5 +1,13 @@
 # S8 release train run notes — 2026-09-10
 
+## R359 — CR-06 repair and mutation prediction
+
+R359 locks the six repairs and their order; accepted SPEC/PLAN updated in the first repair commit. CR-06's existence-only R4 decision is replaced by strict file-backed frontmatter validation, exact previous-release/tag/SHA binding, clean/zero-critical status, reviewed scope and both reviewer identities/timestamps. Graph coverage excludes scripts/; named source reads supplied the implementation evidence.
+
+Initial targeted gate on **Bun 1.4.2: 21 pass / 0 fail / 26 assertions**. Before mutation: reverting auditArtifactIsValid to the original existence-only decision must make the named existing-empty-audit regression fail (**Bun 1.4.2 expected: 0 pass / 1 fail**); restoring the fixed bytes by SHA-256 must return the full suite green. No live release gate, forge or external probe is invoked.
+
+Mutation measured on **Bun 1.4.2: 0 pass / 1 fail / 1 assertion**, failure was `Expected: false; Received: true` for the existing-empty-audit regression. Fixed/restored scripts/release-readiness.ts SHA-256: **27a5e18e1fb15276d8ce0bf78815ac8cdc066b13b9c7e71393e9197d448429bb**, equal before/after. Restored suite on **Bun 1.4.2: 21 pass / 0 fail / 26 assertions**. Targeted oxlint and whitespace check passed. Evidence: handoff/S8-R359-CR06-mutation.result.json. The final fixture typing adjustment does not change the mutated production bytes.
+
 ## R354/R356 retry 3 outcome — substantive review FAIL, six blockers
 
 Fresh audited limits: **7d 23.0% used, resets 3d; reading 2026-09-16T02:04Z**. Code-review thread **01a0a7f5-e432-7dc3-8421-31c31a36f252** ran to completion without interruption. Parent-shell redirection preserved stdout/stderr directly in handoff/S8-R356-CODE-REVIEW.log; no Node REPL capture occurred. The expected best-effort telemetry 500 was ignored. Dispatch **exit 0** records successful report delivery, not a review pass.

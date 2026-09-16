@@ -9,12 +9,108 @@
 // produce — a `needs: changes` + `if: needs.changes.outputs.x` gate (quality.yml already has that
 // `changes` job), a `paths:` at 6-space indent under a nested `on:`, and flow-style
 // `push: { paths: [...] }`. A text heuristic over YAML is the wrong tool when a parser is in hand.
-import { readdirSync, readFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { describe, expect, test } from "bun:test";
+import { afterAll, describe, expect, test } from "bun:test";
 
-import { REQUIRED_CHECKS } from "./release-readiness.ts";
+import { auditArtifactIsValid, REQUIRED_CHECKS } from "./release-readiness.ts";
+
+describe("R4 audit attestation", () => {
+  const dir = mkdtempSync(join(tmpdir(), "caisson-r4-"));
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+  const binding = {
+    base: "v2026.08.18",
+    tag: "v2026.09.16",
+    sha: "a".repeat(40),
+  };
+  const clean = {
+    schema_version: 1,
+    ...binding,
+    status: "clean",
+    critical: 0,
+    reviewed_scope: ["scripts/release-readiness.ts"],
+    reviewers: [
+      {
+        role: "code_review",
+        identity: "gw-code-reviewer",
+        reviewed_at: "2026-09-16T02:37:11Z",
+      },
+      {
+        role: "security_audit",
+        identity: "gw-security-auditor",
+        reviewed_at: "2026-09-16T02:37:11Z",
+      },
+    ],
+  };
+  function fixture(text: string): string {
+    const path = join(dir, `${crypto.randomUUID()}.md`);
+    writeFileSync(path, text);
+    return path;
+  }
+  const document = (value: unknown) =>
+    `---\n${JSON.stringify(value)}\n---\n# Audit\n`;
+
+  test("R4 rejects an existing empty audit instead of accepting its filename", () => {
+    expect(auditArtifactIsValid(fixture(""), binding)).toBe(false);
+  });
+  test("R4 accepts a clean audit bound to the exact base, tag and final SHA", () => {
+    expect(auditArtifactIsValid(fixture(document(clean)), binding)).toBe(true);
+  });
+  test.each([
+    ["failed verdict", { status: "issues_found" }],
+    ["blocking finding", { critical: 1 }],
+    ["wrong SHA", { sha: "b".repeat(40) }],
+    ["wrong base", { base: "v2026.07.30" }],
+    ["wrong tag", { tag: "v2026.09.17" }],
+    ["empty scope", { reviewed_scope: [] }],
+    ["blank scope", { reviewed_scope: ["  "] }],
+    ["no reviewers", { reviewers: [] }],
+    [
+      "duplicate roles",
+      { reviewers: [clean.reviewers[0], clean.reviewers[0]] },
+    ],
+    [
+      "blank identity",
+      {
+        reviewers: [
+          { ...clean.reviewers[0], identity: " " },
+          clean.reviewers[1],
+        ],
+      },
+    ],
+    [
+      "invalid timestamp",
+      {
+        reviewers: [
+          { ...clean.reviewers[0], reviewed_at: "yesterday" },
+          clean.reviewers[1],
+        ],
+      },
+    ],
+    ["unknown metadata", { bypass: true }],
+  ] as const)("R4 rejects %s", (_label, patch) => {
+    expect(
+      auditArtifactIsValid(fixture(document({ ...clean, ...patch })), binding),
+    ).toBe(false);
+  });
+  test("R4 fails closed for absent, malformed and prose-only artifacts", () => {
+    expect(auditArtifactIsValid(join(dir, "absent.md"), binding)).toBe(false);
+    expect(auditArtifactIsValid(fixture("---\n[invalid\n---\n"), binding)).toBe(
+      false,
+    );
+    expect(
+      auditArtifactIsValid(fixture("Reviewed and approved"), binding),
+    ).toBe(false);
+  });
+});
 
 const WORKFLOWS_DIR = join(import.meta.dir, "..", ".github", "workflows");
 
