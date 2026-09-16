@@ -1,5 +1,160 @@
 # S8 release train run notes — 2026-09-10
 
+## R373 evidence recovery — S8_REPAIRS_3 (2026-09-16)
+
+Operator ruling EST-ASK-331=A authorizes repairing CR-07/WR-03 and WR-02,
+one commit per finding, after a separate evidence commit. Only trailing spaces/tabs
+in the three named in-repo evidence copies were removed. Handoff originals remain
+untouched; all three original SHA-256 values were checked against the previous packet.
+The in-repo full-check log is now LF- and trailing-whitespace-normalized, so its older
+in-repo hash is historical. Current normalized copies:
+
+- `s8-r370-371-REVIEW.md`: 12,253 bytes; SHA-256 `e555320393c67c1f70e13f035fb39158d72f2f87d5bc2fbbf715bd61ef6bc330`.
+- `s8-r370-371-SECURITY.md`: 11,747 bytes; SHA-256 `48c9600026bf0192e0b5f148072c33bb5471864422d78eaed3f0a3b0ced35003`.
+- `s8-r370-371-full-check.log`: 1,220,709 bytes; SHA-256 `031418bdd36648e690103543dfd11349026ad5c77093b00ababb135fb2551f8c`.
+
+The prior security verdict remains BLOCKED until both repairs and renewed reviews
+complete. Required sequence: pre-repair RED regressions, restored GREEN and blob-read
+mutations, eleven prior mutation arms once, targeted tests, bounded full gate once,
+then serial governed code/security reviews with fresh quota reads. Clean verdicts alone
+permit packet steps 4–6 to a green PR; no merge/tag/publish/deploy or branch deletion.
+
+## Additional stop — staged whitespace check (2026-09-16)
+
+After whole-tree `bun run format:check` passed (3,539 files) and the unstaged
+`git diff --check` passed, exactly eleven owned audit files were staged.
+`git diff --cached --check` then exited **2**. It reported trailing whitespace in
+`s8-r370-371-REVIEW.md`, `s8-r370-371-SECURITY.md` (Markdown hard-break spaces),
+and `s8-r370-371-full-check.log` (captured command output).
+The earlier unstaged check did not cover those then-untracked artifacts.
+
+Stopped before commit; no whitespace normalization, retry or bypass followed.
+The three product repair commits remain durable at `23966290`; this new hold
+receipt and review evidence are saved but **not committed**. Eleven files remain
+staged; this stop note also modifies the working copies of RUN-NOTES and receipt.
+The operator handoff packet contains the same stop note. No clean-worktree claim.
+The security blocker CR-07/WR-03 remains independently open.
+
+## Current hold — R370/R371 security BLOCKED (2026-09-16)
+
+**S8_RELEASE_HELD.** Reviewed candidate
+`23966290343c342d2fcf81775c73d98151223fb1`; ordered repair commits
+CR-07 `a81c537ae0ebc2b7be0c682f84af5840217f6438`,
+CR-08 `18b9c7b7138c5308503c094dc55307867f06f47d`,
+WR-01 `23966290343c342d2fcf81775c73d98151223fb1`.
+The prior pending/hold entries below are chronological history, superseded by this entry.
+
+Both governed peer dispatches ran sequentially and returned reports (process exit 0
+means report delivery). Code review: **PASS WITH DISCLOSURES**, 25 files,
+zero blockers/two warnings. Security: **BLOCKED**, **8/9 closed, 1/9 open**.
+Security reclassifies **CR-07 / WR-03 — Candidate checklist is not blob-bound**
+as a blocker: a completed dirty workspace checklist can mask an incomplete checklist
+in the candidate commit. CR-08 and WR-01 are closed within the reviewed scope.
+**WR-02 — Git object bytes are normalized before frontmatter validation** remains
+a warning: `.trim()` removes leading whitespace before the byte-zero check.
+No exhaustive fresh review of all 430 cumulative release paths is claimed.
+
+Full root gate already completed once with Turbo concurrency 2: exit 0,
+**199/199 tasks, 163 cached**; captured Bun 1.4.2 totals including replay
+**7,029 pass / 0 fail / 28,149 assertions**. Combined targeted suite:
+**142 pass / 0 fail / 500 assertions**, accepted pre-existing auth-account exit 99.
+All eleven mutation arms failed as predicted and restored exact hashes.
+These local results do not override the independent security blocker.
+
+Reports: [code review](s8-r370-371-REVIEW.md) and
+[security audit](s8-r370-371-SECURITY.md). Threads:
+code `01a0aaa5-7303-7971-b0df-b1a7bb4f2ee2`;
+security `01a0aaad-14d3-7851-813e-f8af895903cc`.
+The code-review log includes one router denial of a nonconforming piped rg command;
+no retry followed. Security returned without a recorded command denial.
+This does not retroactively turn the code tool run into a clean run.
+
+Operator packet:
+`/home/gw/lab/briefs/estate-2026-09/handoff/OPERATOR-ACT-S8-R370-371-SECURITY-HOLD.md`.
+Required remedies recorded for the next ruling: read checklist and audit as raw
+candidate Git blobs; add incomplete-committed/complete-dirty checklist regression
+and leading-whitespace committed-audit regression; renew targeted verification,
+mutation proof and review/security verdicts. No remedy was applied after the blocker.
+Packet steps 4–6 and green release PR remain open. Final tag CI, version/attestation,
+pack proof and release propagation evidence remain future acts.
+
+Only hold bookkeeping proceeds: preserve reports/logs, remove the three owned packs
+after byte-identical handoff-copy verification, format/check owned evidence and commit
+normally. SOT is not rerun after this blocker; earlier EXPECTED-DRIFT branch preservation
+and document-freshness dispositions remain historical, not a new green gate claim.
+No push, release PR, merge, tag, publish, deployment, live probe or branch deletion.
+
+### Preserved raw evidence
+
+Handoff originals; both review logs are byte-identical to their in-repo copies.
+
+| File                               |     Bytes | SHA-256                                                            |
+| ---------------------------------- | --------: | ------------------------------------------------------------------ |
+| `S8-R370-371-code-review.log`      |   305,672 | `3e4b7090efb1cc8ee2ece7a05f14729a56127a8073ca9359fd41f5023778d777` |
+| `S8-R370-371-security.log`         | 1,160,559 | `7f4a609b2a279c92dbd813e71a463a99699e99244d8480fbd018da8d64a6cfb9` |
+| `S8-R370-371-REVIEW-VERBATIM.md`   |    11,166 | `1171b0a6c1e27358690ceaf210526ad6a7e9032b04cd3a18427759481c499fbf` |
+| `S8-R370-371-SECURITY-VERBATIM.md` |    10,404 | `fc6304aef789347d35e82997fb5bba0461ec196392af34a593aac04d3368562a` |
+
+## R370/R371 code review — PASS WITH DISCLOSURES; security admitted
+
+Code thread `01a0aaa5-7303-7971-b0df-b1a7bb4f2ee2` returned a complete report,
+process exit 0, candidate `23966290343c342d2fcf81775c73d98151223fb1`.
+Verdict **PASS WITH DISCLOSURES**, 25 reviewed files, zero blockers/two warnings.
+CR-07, CR-08 and WR-01 are closed in the reported failure paths. The original
+430-path release was not exhaustively re-audited. Report and transcript:
+[s8-r370-371-REVIEW.md](s8-r370-371-REVIEW.md),
+[s8-r370-371-code-review.log](s8-r370-371-code-review.log).
+
+Warnings remain visible, not accepted as fixed: **WR-02: The committed audit is
+normalized before strict validation**; **WR-03: Checklist completion is checked in
+the working tree, not in the tagged commit**. The reviewer permits security review
+but recommends correction before final green PR/exact committed-byte claims.
+No product mutation has followed this verdict while security reviews the same head.
+
+At 14:40:40Z the raw log records a router-level denial of a nonconforming piped rg
+command. It violated the explicit one-command/no-pipeline rules; it is not a denial
+of a command satisfying those rules. No alternative/retry followed. This is disclosed,
+not hidden as a clean tool run; R359 stops on a conforming-command denial or review
+blocker, neither of which occurred. The final report preserves the verbatim denial.
+
+Fresh audited headroom before security: **45% used**, reading 14:43Z. Sequential
+security dispatch started with the same corrected tool rules, streamed by the parent
+to handoff/S8-R370-371-security.log. The brief includes both warnings and requests
+cumulative security-sensitive seam coverage with explicit limits; there is no inherited
+security pass. Current verdict is pending. No push, PR or later release act.
+
+## R370/R371 three-commit readback and full gate (2026-09-16)
+
+Ordered commits: CR-07 `a81c537a`, CR-08 `18b9c7b7`, WR-01 `23966290`.
+Review candidate: `23966290343c342d2fcf81775c73d98151223fb1`.
+All three normal commits had clean immediate worktree readbacks; no bypass flags.
+
+Combined affected coverage: **Bun 1.4.2 — 142 pass / 0 fail / 500 assertions**, 15
+files, accepted pre-existing auth-account exit 99. The isolated checkout runner passes
+its eight cases; child assertions are not included in the outer Bun total. Log:
+[s8-r370-371-targeted.log](s8-r370-371-targeted.log). All eleven RED mutation results,
+commands, stderr and fixed/restored hashes: [s8-r370-371-mutations.json](s8-r370-371-mutations.json).
+
+Read package.json again, then ran the complete root check chain with only Turbo
+concurrency changed: turbo run build lint typecheck test --no-daemon --concurrency=2,
+then oxlint deploy, tsc -p deploy/tsconfig.json, bun test deploy/*.test.ts, bun run gate.
+All chained tasks completed **exit 0; 199/199 Turbo tasks; 163 cached; 44.438s**.
+Captured completed-suite totals including cache replay: **Bun 1.4.2 — 7,029 pass /
+0 fail / 28,149 assertions**. Fresh tail deploy tests **Bun 1.4.2 — 64/0/329**;
+standards 67 checked, 5 scaffold-skipped, all conforming. No task was killed or retried.
+[s8-r370-371-full-check.log](s8-r370-371-full-check.log).
+Raw handoff log 1,221,530 bytes, SHA-256
+`b4668e81c0ef4a15530d78ced2cd628a6b5a8481a1ace31142b8947cd4848b52`;
+LF-normalized in-repo copy 1,221,521 bytes, SHA-256
+`4a38f3a9a9c1a7b1b132397dd4b4aeced651f12b9e5bccede1ee37cd7c23ef33`.
+
+Fresh audited headroom **43% used**, reading 14:34Z. Governed code review admitted,
+thread `01a0aaa5-7303-7971-b0df-b1a7bb4f2ee2`, with the exact corrected inline tool rules.
+The expected telemetry HTTP 500 is non-blocking. Parent streams directly to handoff
+S8-R370-371-code-review.log. Packs refreshed after all three repairs. Review is pending;
+no pass is inferred from admission or local tests. Security follows on permitted verdict.
+No push or release PR yet; final version/tag/readiness/propagation acts remain unauthorised.
+
 ## S8_REPAIRS_2 WR-01 — reject and expire pending approvals (2026-09-16)
 
 CR-08 committed `18b9c7b7`. ADR-0427 extends ADR-0423 append-only: atomic reject by ID,

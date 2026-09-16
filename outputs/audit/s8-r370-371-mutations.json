@@ -1,0 +1,181 @@
+{
+  "runtime": "Bun 1.4.2 (744846f84)",
+  "mutations": [
+    {
+      "file": "scripts/release-readiness.ts",
+      "argv": [
+        "bun",
+        "test",
+        "scripts/release-readiness.test.ts",
+        "--test-name-pattern",
+        "rejects an audit naming C"
+      ],
+      "runtime": "Bun 1.4.2",
+      "fixed_sha256": "3bd8305c9284d7fc68d2211d55166da8f880bb4f3bb110bbf545b7329f9f9d04",
+      "restored_sha256": "3bd8305c9284d7fc68d2211d55166da8f880bb4f3bb110bbf545b7329f9f9d04",
+      "mutation_exit": 1,
+      "stdout": "bun test v1.4.2 (744846f84)\n",
+      "stderr": "\nscripts/release-readiness.test.ts:\n143 |     const a = git(repo, \"rev-parse\", \"HEAD\");\n144 |     // C is a real distinct existing commit, not an invented forty-character fixture.\n145 |     const c = git(repo, \"rev-parse\", `${a}^`);\n146 |     attestation(repo, c);\n147 |     const b = commit(repo);\n148 |     expect(auditSuccessorIsValid(repo, binding.tag, b)).toBe(false);\n                                                              ^\nerror: expect(received).toBe(expected)\n\nExpected: false\nReceived: true\n\n      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/scripts/release-readiness.test.ts:148:57)\n(fail) R4 audit attestation > R4 real Git lifecycle rejects an audit naming C instead of parent A [25.41ms]\n\n 0 pass\n 31 filtered out\n 1 fail\n 1 expect() calls\nRan 1 test across 1 file. [61.00ms]\n"
+    },
+    {
+      "file": "scripts/release-readiness.ts",
+      "argv": [
+        "bun",
+        "test",
+        "scripts/release-readiness.test.ts",
+        "--test-name-pattern",
+        "accepts review A then attestation-only B"
+      ],
+      "runtime": "Bun 1.4.2",
+      "fixed_sha256": "3bd8305c9284d7fc68d2211d55166da8f880bb4f3bb110bbf545b7329f9f9d04",
+      "restored_sha256": "3bd8305c9284d7fc68d2211d55166da8f880bb4f3bb110bbf545b7329f9f9d04",
+      "mutation_exit": 1,
+      "stdout": "bun test v1.4.2 (744846f84)\n",
+      "stderr": "\nscripts/release-readiness.test.ts:\n113 |     const repo = scratch();\n114 |     const a = git(repo, \"rev-parse\", \"HEAD\");\n115 |     attestation(repo, a);\n116 |     const b = commit(repo);\n117 |     expect(a).not.toBe(b);\n118 |     expect(auditSuccessorIsValid(repo, binding.tag, b)).toBe(true);\n                                                              ^\nerror: expect(received).toBe(expected)\n\nExpected: true\nReceived: false\n\n      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/scripts/release-readiness.test.ts:118:57)\n(fail) R4 audit attestation > R4 real Git lifecycle accepts review A then attestation-only B [27.22ms]\n\n 0 pass\n 31 filtered out\n 1 fail\n 2 expect() calls\nRan 1 test across 1 file. [74.00ms]\n"
+    },
+    {
+      "file": "scripts/release-readiness.ts",
+      "argv": [
+        "bun",
+        "test",
+        "scripts/release-readiness.test.ts",
+        "--test-name-pattern",
+        "rejects unreviewed successor path product.ts"
+      ],
+      "runtime": "Bun 1.4.2",
+      "fixed_sha256": "3bd8305c9284d7fc68d2211d55166da8f880bb4f3bb110bbf545b7329f9f9d04",
+      "restored_sha256": "3bd8305c9284d7fc68d2211d55166da8f880bb4f3bb110bbf545b7329f9f9d04",
+      "mutation_exit": 1,
+      "stdout": "bun test v1.4.2 (744846f84)\n",
+      "stderr": "\nscripts/release-readiness.test.ts:\n134 |     const a = git(repo, \"rev-parse\", \"HEAD\");\n135 |     attestation(repo, a);\n136 |     mkdirSync(dirname(join(repo, path)), { recursive: true });\n137 |     writeFileSync(join(repo, path), \"unreviewed product or policy byte\\n\");\n138 |     const b = commit(repo);\n139 |     expect(auditSuccessorIsValid(repo, binding.tag, b)).toBe(false);\n                                                              ^\nerror: expect(received).toBe(expected)\n\nExpected: false\nReceived: true\n\n      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/scripts/release-readiness.test.ts:139:57)\n(fail) R4 audit attestation > R4 real Git lifecycle rejects unreviewed successor path product.ts [27.69ms]\n\n 0 pass\n 31 filtered out\n 1 fail\n 1 expect() calls\nRan 1 test across 1 file. [74.00ms]\n"
+    },
+    {
+      "file": "apps/site/lib/cart-routes.ts",
+      "argv": [
+        "bun",
+        "test",
+        "./apps/site/test-fixtures/checkout-account.test.ts",
+        "--test-name-pattern",
+        "selected organization membership failure"
+      ],
+      "runtime": "Bun 1.4.2",
+      "fixed_sha256": "f3d232f0eacc18b06a0593ec4ac43a025d4677c06926be04f130589d0dcb7114",
+      "restored_sha256": "f3d232f0eacc18b06a0593ec4ac43a025d4677c06926be04f130589d0dcb7114",
+      "mutation_exit": 1,
+      "stdout": "bun test v1.4.2 (744846f84)\n",
+      "stderr": "\napps/site/test-fixtures/checkout-account.test.ts:\n36 | }));\n37 | mock.module(\"../lib/db.ts\", () => ({ ...realDb, getDb: async () => ({}) }));\n38 | mock.module(\"@caisson/auth\", () => ({\n39 |   ...realAuth,\n40 |   resolveUserAccounts: async () => {\n41 |     if (failure) throw new Error(\"membership resolution failed\");\n                                ^\nerror: membership resolution failed\n      at resolveUserAccounts (/home/gw/lab/worktrees/caisson/release-train-2026-09/apps/site/test-fixtures/checkout-account.test.ts:41:28)\n      at listMyAccounts (/home/gw/lab/worktrees/caisson/release-train-2026-09/apps/site/lib/auth.ts:102:27)\n      at async resolveCheckoutAccount (/home/gw/lab/worktrees/caisson/release-train-2026-09/apps/site/lib/auth.ts:85:29)\n      at async getCheckoutSession (/home/gw/lab/worktrees/caisson/release-train-2026-09/apps/site/lib/auth.ts:77:25)\n      at async <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/apps/site/lib/cart-routes.ts:52:32)\n      at async <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/apps/site/test-fixtures/checkout-account.test.ts:87:24)\n(fail) selected organization membership failure reaches neither entitlements nor Paddle [0.65ms]\n\n 0 pass\n 7 filtered out\n 1 fail\nRan 1 test across 1 file. [653.00ms]\n"
+    },
+    {
+      "file": "apps/site/lib/auth.ts",
+      "argv": [
+        "bun",
+        "test",
+        "./apps/site/test-fixtures/checkout-account.test.ts",
+        "--test-name-pattern",
+        "selected organization membership failure"
+      ],
+      "runtime": "Bun 1.4.2",
+      "fixed_sha256": "24db96cdb5ddc01ea10aa77af25eb4b2f4389d99acd76bde2457d589ec8128cd",
+      "restored_sha256": "24db96cdb5ddc01ea10aa77af25eb4b2f4389d99acd76bde2457d589ec8128cd",
+      "mutation_exit": 1,
+      "stdout": "bun test v1.4.2 (744846f84)\n",
+      "stderr": "\napps/site/test-fixtures/checkout-account.test.ts:\n83 |   transactionCalls = [];\n84 | });\n85 | test(\"selected organization membership failure reaches neither entitlements nor Paddle\", async () => {\n86 |   failure = true;\n87 |   const result = await POST(request());\n88 |   expect(result.status).toBe(503);\n                             ^\nerror: expect(received).toBe(expected)\n\nExpected: 503\nReceived: 200\n\n      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/apps/site/test-fixtures/checkout-account.test.ts:88:25)\n(fail) selected organization membership failure reaches neither entitlements nor Paddle [1.46ms]\n\n 0 pass\n 7 filtered out\n 1 fail\n 1 expect() calls\nRan 1 test across 1 file. [666.00ms]\n"
+    },
+    {
+      "file": "apps/site/lib/auth.ts",
+      "argv": [
+        "bun",
+        "test",
+        "./apps/site/test-fixtures/checkout-account.test.ts",
+        "--test-name-pattern",
+        "an explicit unverified account"
+      ],
+      "runtime": "Bun 1.4.2",
+      "fixed_sha256": "24db96cdb5ddc01ea10aa77af25eb4b2f4389d99acd76bde2457d589ec8128cd",
+      "restored_sha256": "24db96cdb5ddc01ea10aa77af25eb4b2f4389d99acd76bde2457d589ec8128cd",
+      "mutation_exit": 1,
+      "stdout": "bun test v1.4.2 (744846f84)\n",
+      "stderr": "\napps/site/test-fixtures/checkout-account.test.ts:\n103 |   expect(ownedCalls).toEqual([\"org\"]);\n104 |   expect(transactionCalls).toEqual([\"org\"]);\n105 | });\n106 | test(\"an explicit unverified account never silently falls back for commerce\", async () => {\n107 |   requestedAccount = \"stale-or-forged\";\n108 |   expect((await POST(request())).status).toBe(503);\n                                               ^\nerror: expect(received).toBe(expected)\n\nExpected: 503\nReceived: 200\n\n      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/apps/site/test-fixtures/checkout-account.test.ts:108:42)\n(fail) an explicit unverified account never silently falls back for commerce [1.40ms]\n\n 0 pass\n 7 filtered out\n 1 fail\n 1 expect() calls\nRan 1 test across 1 file. [635.00ms]\n"
+    },
+    {
+      "file": "packages/tool-exec/src/approval.ts",
+      "argv": [
+        "bun",
+        "test",
+        "packages/tool-exec/src/approval-lifecycle.test.ts",
+        "--test-name-pattern",
+        "memory consume deletes an expired record"
+      ],
+      "runtime": "Bun 1.4.2",
+      "fixed_sha256": "dc2ec8a6b51e53ed1fe3d6d90786a64c81587dd1bab8eb740423550f6632c53a",
+      "restored_sha256": "dc2ec8a6b51e53ed1fe3d6d90786a64c81587dd1bab8eb740423550f6632c53a",
+      "mutation_exit": 1,
+      "stdout": "bun test v1.4.2 (744846f84)\n",
+      "stderr": "\npackages/tool-exec/src/approval-lifecycle.test.ts:\n85 |   let at = 100;\n86 |   const store = createMemoryApprovalStore(() => at);\n87 |   const f = fixture(store);\n88 |   const pending = await f.gate.propose(\"echo\", []);\n89 |   at = pending.expiresAt;\n90 |   expect(await store.consume(pending.approvalId)).toBeUndefined();\n                                                       ^\nerror: expect(received).toBeUndefined()\n\nReceived: {\n  proposal: {\n    approvalId: \"9c288d73-24c9-4097-a824-7708c56c0bd3\",\n    expiresAt: 1800000900000,\n    digest: \"21fab6233509dc88546432ac83d3c3afc952644c3b6dbf1319b8d3af90d277e9\",\n    policyVersion: \"1\",\n    name: \"echo\",\n    command: \"/bin/echo\",\n    args: [],\n  },\n  input: [],\n  policyFingerprint: \"be11a87cc48791ca9f8389a0446aed3673c7436cfb79383ce675c619e32eaefe\",\n}\n\n      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/packages/tool-exec/src/approval-lifecycle.test.ts:90:51)\n(fail) memory consume deletes an expired record and never returns it [1.83ms]\n\n 0 pass\n 8 filtered out\n 1 fail\n 1 expect() calls\nRan 1 test across 1 file. [26.00ms]\n"
+    },
+    {
+      "file": "packages/tool-exec/src/approval.ts",
+      "argv": [
+        "bun",
+        "test",
+        "packages/tool-exec/src/approval-lifecycle.test.ts",
+        "--test-name-pattern",
+        "client cannot extend"
+      ],
+      "runtime": "Bun 1.4.2",
+      "fixed_sha256": "dc2ec8a6b51e53ed1fe3d6d90786a64c81587dd1bab8eb740423550f6632c53a",
+      "restored_sha256": "dc2ec8a6b51e53ed1fe3d6d90786a64c81587dd1bab8eb740423550f6632c53a",
+      "mutation_exit": 1,
+      "stdout": "bun test v1.4.2 (744846f84)\n",
+      "stderr": "\npackages/tool-exec/src/approval-lifecycle.test.ts:\n117 | test(\"client cannot extend the digest-bound expiration\", async () => {\n118 |   const f = fixture();\n119 |   const pending = await f.gate.propose(\"echo\", []);\n120 |   await expect(\n121 |     f.gate.execute({ ...pending, expiresAt: pending.expiresAt + 1 }),\n122 |   ).rejects.toThrow(ValidationError);\n                  ^\nerror: expect(received).rejects.toThrow(expected)\n\nExpected promise that rejects\nReceived promise that resolved: Promise { <resolved> }\n\n      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/packages/tool-exec/src/approval-lifecycle.test.ts:122:13)\n(fail) client cannot extend the digest-bound expiration [1.76ms]\n\n 0 pass\n 8 filtered out\n 1 fail\n 1 expect() calls\nRan 1 test across 1 file. [23.00ms]\n"
+    },
+    {
+      "file": "packages/tool-exec/src/tool-exec.ts",
+      "argv": [
+        "bun",
+        "test",
+        "packages/tool-exec/src/approval-lifecycle.test.ts",
+        "--test-name-pattern",
+        "executor rejects an expired record"
+      ],
+      "runtime": "Bun 1.4.2",
+      "fixed_sha256": "134d6dbfa5aae116993748a67408ce766ba7d0b3b9eb51bfabfa4252ce7bda65",
+      "restored_sha256": "134d6dbfa5aae116993748a67408ce766ba7d0b3b9eb51bfabfa4252ce7bda65",
+      "mutation_exit": 1,
+      "stdout": "bun test v1.4.2 (744846f84)\n",
+      "stderr": "\npackages/tool-exec/src/approval-lifecycle.test.ts:\n108 |       return found;\n109 |     },\n110 |   });\n111 |   const pending = await f.gate.propose(\"echo\", []);\n112 |   f.advance(APPROVAL_TTL_MS);\n113 |   await expect(f.gate.execute(pending)).rejects.toThrow(NotFoundError);\n                                                      ^\nerror: expect(received).rejects.toThrow(expected)\n\nExpected promise that rejects\nReceived promise that resolved: Promise { <resolved> }\n\n      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/packages/tool-exec/src/approval-lifecycle.test.ts:113:49)\n(fail) executor rejects an expired record returned by a durable adapter [1.74ms]\n\n 0 pass\n 8 filtered out\n 1 fail\n 1 expect() calls\nRan 1 test across 1 file. [25.00ms]\n"
+    },
+    {
+      "file": "packages/tool-exec/src/approval.ts",
+      "argv": [
+        "bun",
+        "test",
+        "packages/tool-exec/src/approval-lifecycle.test.ts",
+        "--test-name-pattern",
+        "1000 expired approvals"
+      ],
+      "runtime": "Bun 1.4.2",
+      "fixed_sha256": "dc2ec8a6b51e53ed1fe3d6d90786a64c81587dd1bab8eb740423550f6632c53a",
+      "restored_sha256": "dc2ec8a6b51e53ed1fe3d6d90786a64c81587dd1bab8eb740423550f6632c53a",
+      "mutation_exit": 1,
+      "stdout": "bun test v1.4.2 (744846f84)\n",
+      "stderr": "\npackages/tool-exec/src/approval-lifecycle.test.ts:\n52 |     async put(record) {\n53 |       if (now() >= record.proposal.expiresAt)\n54 |         throw new Error(\"Approval already expired\");\n55 |       const id = record.proposal.approvalId;\n56 |       if (records.has(id) || records.size >= 1000) {\n57 |         throw new Error(\n                       ^\nerror: Approval store refused duplicate or excess pending record\n      at put (/home/gw/lab/worktrees/caisson/release-train-2026-09/packages/tool-exec/src/approval.ts:57:19)\n      at propose (/home/gw/lab/worktrees/caisson/release-train-2026-09/packages/tool-exec/src/tool-exec.ts:205:23)\n      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/packages/tool-exec/src/approval-lifecycle.test.ts:64:30)\n(fail) 1000 expired approvals reclaim capacity on the next proposal [12.37ms]\n\n 0 pass\n 8 filtered out\n 1 fail\nRan 1 test across 1 file. [33.00ms]\n"
+    },
+    {
+      "file": "packages/tool-exec/src/approval.ts",
+      "argv": [
+        "bun",
+        "test",
+        "packages/tool-exec/src/approval-lifecycle.test.ts",
+        "--test-name-pattern",
+        "1000 rejected approvals"
+      ],
+      "runtime": "Bun 1.4.2",
+      "fixed_sha256": "dc2ec8a6b51e53ed1fe3d6d90786a64c81587dd1bab8eb740423550f6632c53a",
+      "restored_sha256": "dc2ec8a6b51e53ed1fe3d6d90786a64c81587dd1bab8eb740423550f6632c53a",
+      "mutation_exit": 1,
+      "stdout": "bun test v1.4.2 (744846f84)\n",
+      "stderr": "\npackages/tool-exec/src/approval-lifecycle.test.ts:\n46 |   const rejected = await Promise.all(\n47 |     pending.map((p) => f.gate.reject(p.approvalId)),\n48 |   );\n49 |   expect(rejected.filter(Boolean)).toHaveLength(1000);\n50 |   expect(f.spawns()).toBe(0);\n51 |   expect(await f.gate.reject(pending[0]!.approvalId)).toBe(false);\n                                                           ^\nerror: expect(received).toBe(expected)\n\nExpected: false\nReceived: true\n\n      at <anonymous> (/home/gw/lab/worktrees/caisson/release-train-2026-09/packages/tool-exec/src/approval-lifecycle.test.ts:51:55)\n(fail) 1000 rejected approvals reclaim capacity without spawning or replay [23.94ms]\n\n 0 pass\n 8 filtered out\n 1 fail\n 4 expect() calls\nRan 1 test across 1 file. [45.00ms]\n"
+    }
+  ]
+}
