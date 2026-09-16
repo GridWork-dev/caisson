@@ -1,5 +1,34 @@
 # @caisson/kernel
 
+## 0.10.0
+
+### Minor Changes
+
+- 7d39669: Report the serving revision on every deployed service.
+
+  Each service now answers with an `x-caisson-revision` response header naming the commit its
+  running image was built from, so "which code is actually live" is one request instead of an
+  inference from how a route behaves.
+
+  The kernel gains `servingRevision()` and the constants behind it on the `@caisson/kernel/node`
+  entry. It reads a `.caisson-revision` carrier written into the uploaded tree at deploy time; a
+  build that did not come through that path reports `unknown` rather than guessing.
+
+  The header is deliberately not gated behind origin verification: it has to stay readable exactly
+  when that gate is the thing misbehaving, which is the case it exists to diagnose.
+
+- 498b279: Add fixed-length origin request verification with two-secret rotation support.
+
+### Patch Changes
+
+- 87b07c6: Redact camelCase, snake_case, plural, numbered, fused and fullwidth PII attribute keys. The span
+  attribute deny-list's word-boundary terms could not see a boundary inside `userEmail` or
+  `user_email`, so PII-named span attributes reached the OTLP sink unredacted. `isSensitiveAttributeKey`
+  is the new predicate: it NFKC-normalizes the key and tests the deny-list against both the raw key and
+  a camelCase/snake_case word split; the raw `SENSITIVE_ATTRIBUTE_KEY` export is deprecated for direct
+  use. The kernel deep scrubber gains the same camelCase split for its anchored `dob`/`mrn` tokens.
+  Both splitters are linear in the key length.
+
 ## 0.9.0
 
 ### Minor Changes

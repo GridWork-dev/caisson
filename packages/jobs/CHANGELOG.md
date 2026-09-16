@@ -1,5 +1,16 @@
 # @caisson/jobs
 
+## 0.7.4
+
+### Patch Changes
+
+- Updated dependencies [498b279]
+- Updated dependencies [87b07c6]
+- Updated dependencies [7d39669]
+- Updated dependencies [498b279]
+  - @caisson/tenancy-rls@0.6.1
+  - @caisson/kernel@0.10.0
+
 ## 0.7.3
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@caisson/service-license",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "description": "Merchant-of-Record billing webhook + idempotent credit grants + account-entitlement store/resolver + the Ed25519 offline-license ISSUER HTTP surface (ADR-0089/0017/0071/0108). A gated invoice.paid grants cycle credits AND the plan's entitlements; the lazy bearer-gated POST /issue signs an account's resolved entitlements into a license token via @caisson/license-issue.",
   "license": "LicenseRef-Caisson-Commercial",

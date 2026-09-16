@@ -11,7 +11,7 @@
     "demo": "bun run src/evidence-path.ts"
   },
   "dependencies": {
-    "@caisson/kernel": "^0.9.0"
+    "@caisson/kernel": "^0.10.0"
   },
   "devDependencies": {
     "oxlint": "^1.78.0",

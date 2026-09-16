@@ -1,6 +1,6 @@
 {
   "name": "@caisson/field-crypto",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Per-tenant authenticated field encryption: HKDF key derivation, AES-256-GCM, a versioned envelope, a Drizzle column type, and a pluggable FieldKeyProvider with a KMS seam.",
   "license": "LicenseRef-Caisson-Commercial",
   "type": "module",

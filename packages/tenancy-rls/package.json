@@ -1,6 +1,6 @@
 {
   "name": "@caisson/tenancy-rls",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Fail-closed multi-tenant Postgres row-level security: FORCE policies, withTenant, and a missing-filter proof.",
   "license": "Apache-2.0",
   "type": "module",

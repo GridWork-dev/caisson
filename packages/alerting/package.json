@@ -1,6 +1,6 @@
 {
   "name": "@caisson/alerting",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "SOC2 CC7.2 multi-channel alerting pipeline: dedup, rate-cap with digest fallback, IANA-timezone quiet hours with a critical override, multi-channel delivery (email, webhook, Slack, Telegram), and a structured audit log.",
   "license": "LicenseRef-Caisson-Commercial",
   "type": "module",

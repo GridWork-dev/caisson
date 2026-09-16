@@ -1,6 +1,6 @@
 {
   "name": "@caisson/cli",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "create-caisson generator: composes a tailored repo from the versioned registry; agent-drivable; codegen-credit metered.",
   "license": "Apache-2.0",
   "bin": {

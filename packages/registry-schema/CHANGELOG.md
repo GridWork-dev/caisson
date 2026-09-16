@@ -1,5 +1,11 @@
 # @caisson/registry-schema
 
+## 0.5.12
+
+### Patch Changes
+
+- cd694f1: Patch-bump registry-schema because workspace dependency resolution moved under the bun.lock change. The packed bytes differ from the recorded 0.5.11 tarball despite no package source change, so the release needs a new version and an append-only tarball row.
+
 ## 0.5.11
 
 ### Patch Changes

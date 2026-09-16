@@ -1,6 +1,6 @@
 {
   "name": "@caisson/service-docs",
-  "version": "0.0.15",
+  "version": "0.0.16",
   "private": true,
   "description": "AI-native docs corpus + retrieval service. Builds a chunked, agent-queryable corpus from the repo's authoritative docs, emits a canonical llms.txt, and serves a typed POST /query retrieval contract that the (Python) support-bot and buyer agents consume cross-language. Read-by-agents — distinct from apps/site's read-by-humans Fumadocs site.",
   "license": "LicenseRef-Caisson-Commercial",

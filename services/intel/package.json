@@ -1,6 +1,6 @@
 {
   "name": "@caisson/service-intel",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "private": true,
   "description": "Standing intelligence daemon for the operator control plane. Watches compliance frameworks, competitor pages, GitHub traction, product analytics, and production errors; detects change cheaply and deterministically, then appends durable findings to the admin database's intel schema. Error signal additionally routes through the alerting pipeline to the operator's Telegram bridge and an auto-filed issue.",
   "license": "LicenseRef-Caisson-Commercial",

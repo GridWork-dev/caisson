@@ -1,6 +1,6 @@
 {
   "name": "@caisson/standards-gate",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "description": "The ONE standards gate (ADR-0021/0022): license-boundary (AGPL) + down-only dependency + manifest validation. The only registry ingress runs through this.",
   "bin": {

@@ -1,6 +1,6 @@
 {
   "name": "@caisson/artifact-render",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Shared render primitive for buyer-facing compliance artifacts: a readiness-language claim filter, allowlist-based field redaction, and citation-row rendering — the seam the ISO 27001 SoA generator and the buyer trust-page generator both render through.",
   "license": "LicenseRef-Caisson-Commercial",
   "type": "module",

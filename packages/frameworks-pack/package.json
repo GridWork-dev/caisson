@@ -1,6 +1,6 @@
 {
   "name": "@caisson/frameworks-pack",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Compliance framework catalogs as config-as-code: the typed canonical-control model plus own-authored SOC2-TSC, HIPAA-Security, and EU-AI-Act control packs with crosswalk references to each framework's requirement ids.",
   "license": "LicenseRef-Caisson-Commercial",
   "type": "module",
