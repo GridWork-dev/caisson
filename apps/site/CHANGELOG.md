@@ -55,7 +55,7 @@
   Crawl rules keep robots off the authenticated walls, and the orphaned demo route is now reachable
   from the sitemap instead of being published with no inbound path.
 
-- 4087f8e: The root Organization now carries two entity-association edges to the GridWork Digital hub: a
+- 4087f8e: The root Organization now carries two entity-association edges to the associated company's public hub: a
   shared `founder` Person and `subjectOf` pointing at the hub's Caisson case study, each by `@id`
   only. No subsidiary predicate is published in either direction — the two companies are separate
   LLCs with common ownership at the individual level — and a test over the serialized graph keeps
