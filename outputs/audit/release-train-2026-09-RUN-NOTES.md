@@ -1,5 +1,19 @@
 # S8 release train run notes — 2026-09-10
 
+## R354 corrected-brief retry — permitted Git command denied
+
+Both corrected in-worktree briefs were committed normally as **725c1865** and the entire code-review brief was supplied inline. Fresh audited limits: **7d 19.0% used, resets 3d; reading 2026-09-16T00:21Z**. Thread **01a0a797-3d3d-7db1-8c53-d4e4cd332388** started; the expected best-effort telemetry 500 was ignored under the ruling.
+
+The first tool command permitted by the corrected brief was denied verbatim:
+
+```text
+Command blocked by PreToolUse hook: BLOCKED: repo-read delegated Codex children may run only bounded read commands. Command: git -C . status --short --branch
+```
+
+The reviewer stopped itself as instructed and returned **BLOCKED, 0 files reviewed**. Dispatch process exit 0 means it returned the report, not that review passed. Reviewer report: outputs/audit/s8-r354-retry-REVIEW.md; verbatim copy and structured evidence: handoff/S8-R354-RETRY-REVIEW-VERBATIM.md and S8-R354-RETRY-HOLD.json. No alternate command, retry or security dispatch followed. Four owned temporary worktree pack copies were removed after the reviewer exited; handoff originals remain.
+
+**S8_RELEASE_HELD** under the explicit permitted-command-denial stop. R4 remains unsatisfied; SECURITY remains not dispatched. Current packet: /home/gw/lab/briefs/estate-2026-09/handoff/**OPERATOR-ACT-S8-R354-GIT-READ-HOLD.md**. No hook/sandbox change, product repair, further candidate gate, push, PR, forge merge, tag, version dispatch, publish, deploy or branch deletion. Last SOT evidence remains R352.
+
 ## R354 continuation — corrected in-worktree inline briefs
 
 S8_REVIEW_RETRY (2026-09-16T00:13:35Z) dispositions best-effort telemetry HTTP 500 as non-blocking and diagnoses the child's sed/chaining/outside-worktree reads as correctly denied. Hook and sandbox remain unchanged. Both corrected briefs are copied to outputs/audit/s8-r354-code-review-brief.md and s8-r354-security-brief.md and supplied in full inline. They begin with the operator's exact tool rules, use relative paths, prohibit skill reads and tell the child to stop on any permitted-command denial. Scoped packs are restored temporarily inside the worktree.
