@@ -1,6 +1,6 @@
 {
   "name": "@caisson/pricebook",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "description": "The commerce price-book: plan-book (providerPriceId -> creditsPerCycle), action-book (per-action credit cost), and the shared cents->credits grant conversion. Distinct from ai-meter's per-ai-call cost book; both share kernel's one credit denomination.",
   "license": "LicenseRef-Caisson-Commercial",
   "type": "module",

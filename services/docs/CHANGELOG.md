@@ -1,5 +1,38 @@
 # @caisson/service-docs
 
+## 0.0.16
+
+### Patch Changes
+
+- 1e2f79a: Health probe paths now answer ahead of the edge origin gate. The platform healthcheck reaches each container internally and cannot carry the edge-injected origin-secret header, so arming the gate as the first check made every one of the four gated services fail its own readiness probe and froze the whole deploy path. The exemption is keyed on exact string equality against each service's configured `healthcheckPath`, never a prefix, so a trailing slash, a longer path, a differing case and a traversal segment all stay behind the gate; a per-service test pins the constant against the deployment manifest so a drift in either cannot silently re-freeze deploys.
+
+  Because the probe path is now reachable without the secret, the responses shrink to liveness for unauthenticated callers. The docs service withholds its corpus chunk count, and the license service and the operator control-plane withhold their registry index digest and entry count, unless the caller presents a valid origin secret. Traffic arriving through the edge carries that header, so the registry index parity probe keeps reading the digest from both services; only a caller reaching a raw platform origin directly is reduced to a bare status.
+
+- 7e11672: Upgrade runtime OS layers on pinned bases and gate fixable HIGH/CRITICAL runtime OS findings while reporting application and raw-base residuals.
+- 7d39669: Report the serving revision on every deployed service.
+
+  Each service now answers with an `x-caisson-revision` response header naming the commit its
+  running image was built from, so "which code is actually live" is one request instead of an
+  inference from how a route behaves.
+
+  The kernel gains `servingRevision()` and the constants behind it on the `@caisson/kernel/node`
+  entry. It reads a `.caisson-revision` carrier written into the uploaded tree at deploy time; a
+  build that did not come through that path reports `unknown` rather than guessing.
+
+  The header is deliberately not gated behind origin verification: it has to stay readable exactly
+  when that gate is the thing misbehaving, which is the case it exists to diagnose.
+
+- Updated dependencies [045b21e]
+- Updated dependencies [f02b193]
+- Updated dependencies [87b07c6]
+- Updated dependencies [9cb7681]
+- Updated dependencies [7d39669]
+- Updated dependencies [498b279]
+  - @caisson/local-store@1.1.2
+  - @caisson/observability@0.3.9
+  - @caisson/kernel@0.10.0
+  - @caisson/rate-limit@0.2.1
+
 ## 0.0.15
 
 ### Patch Changes

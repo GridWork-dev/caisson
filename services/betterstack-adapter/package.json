@@ -1,6 +1,6 @@
 {
   "name": "@caisson/service-betterstack-adapter",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "private": true,
   "description": "Minimal stateless Cloudflare Worker (CAISSON-53): reshapes Better Stack's Uptime 'Incident' outgoing webhook (no native Discord delivery on the operator's plan) into a Discord embed POST, unifying uptime alerts into the same ops Discord channel as the job/watcher alerting wired the same wave.",
   "license": "LicenseRef-Caisson-Commercial",

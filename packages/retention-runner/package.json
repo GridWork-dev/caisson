@@ -1,6 +1,6 @@
 {
   "name": "@caisson/retention-runner",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "CCPA/GDPR right-to-erasure runner: pluggable multi-store erasure (object-storage purge, cascade DB delete, orphan sweep) with per-target error isolation and a reason-tagged audit row, scheduled via @caisson/jobs.",
   "license": "LicenseRef-Caisson-Commercial",
   "type": "module",

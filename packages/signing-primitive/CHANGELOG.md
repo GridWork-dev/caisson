@@ -1,5 +1,14 @@
 # @caisson/signing-primitive
 
+## 0.4.2
+
+### Patch Changes
+
+- Updated dependencies [87b07c6]
+- Updated dependencies [7d39669]
+- Updated dependencies [498b279]
+  - @caisson/kernel@0.10.0
+
 ## 0.4.1
 
 ### Patch Changes

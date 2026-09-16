@@ -1,5 +1,11 @@
 # @caisson/ui
 
+## 0.6.7
+
+### Patch Changes
+
+- cd694f1: Patch-bump ui because workspace dependency resolution moved under the bun.lock change. The packed bytes differ from the recorded 0.6.6 tarball despite no package source change, so the release needs a new version and an append-only tarball row.
+
 ## 0.6.6
 
 ### Patch Changes

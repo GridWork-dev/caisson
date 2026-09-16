@@ -1,6 +1,6 @@
 {
   "name": "@caisson/rate-limit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Shared abuse-throttle primitives: an in-memory per-IP token-bucket limiter for unauthenticated surfaces, and a Postgres-backed per-account token-bucket store for authenticated ones.",
   "license": "Apache-2.0",
   "type": "module",

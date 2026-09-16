@@ -1,5 +1,21 @@
 # @caisson/license-verify
 
+## 0.3.10
+
+### Patch Changes
+
+- 7d39669: Document what a license key stopping actually looks like, and the three things that cause it.
+
+  The README explained the fail-safe-to-community mechanism but never named the symptom a buyer
+  searches for. It now covers the common case — a renewal that never reached the process, since
+  verification reads the token it is handed — alongside an elapsed expiry and a major-version
+  boundary, and says how to tell the three apart. Behaviour is unchanged; this is documentation.
+
+- Updated dependencies [87b07c6]
+- Updated dependencies [7d39669]
+- Updated dependencies [498b279]
+  - @caisson/kernel@0.10.0
+
 ## 0.3.9
 
 ### Patch Changes

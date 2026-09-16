@@ -1,6 +1,6 @@
 {
   "name": "@caisson/license-issue",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "private": true,
   "description": "Ed25519 offline-license issuer: the private counterpart to @caisson/license-verify. Holds the signing key behind a Signer port (default Ed25519Signer over a node:crypto PKCS8 env key; KMS is an un-wired seam) and mints signed license tokens by signing exactly canonicalize(parse(claims)) - the byte-identical payload @caisson/license-verify re-derives. Never published; the signing code lives only with the issuer service.",
   "license": "LicenseRef-Caisson-Commercial",
