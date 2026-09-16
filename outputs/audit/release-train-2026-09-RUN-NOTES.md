@@ -1,5 +1,19 @@
 # S8 release train run notes — 2026-09-10
 
+## R354 outcome — S8_RELEASE_HELD on review execution failures
+
+Fresh audited quota: **7d 18.0% used, resets 4d; reading 2026-09-15T23:57Z**. The stale quota refusal is superseded by R354. **code_review was admitted**, thread **01a0a784-327d-7b11-ad3c-813aeab85e26** started. First unexpected line: `gw dispatch: admission receipt telemetry skipped: dispatch admission sink returned 500`. Security dispatch was withheld.
+
+The admitted child then hit `BLOCKED: repo-read delegated Codex children may run only bounded read commands.` on sed-based skill/brief reads. The handoff brief also proved inaccessible inside its repo-read sandbox; placing it outside the workspace was this lane's preparation defect. No boundary was widened. Parent interrupted native child PID 988668 after observing the floor denial; dispatch exit 1 and both child/dispatcher gone. The child attempted alternate reads before interruption; the parent made no retry/replacement dispatch.
+
+**No completed REVIEW; SECURITY never dispatched; R4 still unsatisfied.** The two outputs/audit/s8-r354-REVIEW.md and s8-r354-SECURITY.md are explicitly execution receipts, not verdicts. Exact evidence and the fresh limits line: handoff/S8-R354-DISPATCH-HOLD.json. Packet: /home/gw/lab/briefs/estate-2026-09/handoff/**OPERATOR-ACT-S8-R354-REVIEW-EXECUTION-HOLD.md**. Four owned temporary packs moved out of the worktree to the handoff after interruption. No product edits, further release gates, PR, push, forge merge, tag, version dispatch, publication, deployment or branch deletion. The last SOT evidence remains R352; no new SOT pass is claimed after this stop.
+
+## R354 cumulative review dispatch prediction
+
+S8_REVIEW_DISPATCH 2026-09-15T23:56:45Z authorizes fresh governed code_review and security_audit for cumulative R4 readiness. The stale 98% projection is superseded for this act; any fresh refusal still stops with no retry. Fresh audited limits: **7d 18.0% used, reset 4d; reading 2026-09-15T23:57Z**. Exact requested head **895849a677cdb2e1a9a48d11b9c73a2ac1a0ae6c**; 88/425 belongs to predecessor, with the preparation commit current scope is **89 commits / 430 paths** since v2026.08.18.
+
+Predict both read-only deep/repo-read reviews are admitted on current headroom. Verdicts/findings are independent measurements, not predeclared passes. Each brief quotes all six review targets and evidence limits. Four scoped Repomix packs are prepared; the package pack was narrowed after size inspection. No extra adversarial dispatch: R354 names the two cumulative roles. Main-thread gw dispatch uses the doctrine explicit governed-spawn exception; limits/forge reads remain behind exec endpoint. No forge merge, version dispatch, tag, publish, deploy or branch deletion.
+
 ## R352 outcome — S8_RELEASE_HELD at cumulative review disposition
 
 Preparation verification: repository format check passes on **3,503 files**; whitespace check passes. Readback confirms all **60** version rows match CLI old/new versions and all **nine** checklist boxes remain unchecked. A readback assertion initially assumed single-space Markdown cells; corrected once to parse formatter padding, then passed. Only eight owned documentation files are changed. Predict normal commit succeeds with those eight files and immediate status is clean; no push follows.

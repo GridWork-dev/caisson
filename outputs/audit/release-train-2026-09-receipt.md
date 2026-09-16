@@ -1,4 +1,12 @@
-# S8 release train receipt — runtime cleared; cumulative review held
+# S8 release train receipt — R354 review execution held
+
+## R354 outcome — S8_RELEASE_HELD on review execution failures
+
+Fresh audited quota: **7d 18.0% used, resets 4d; reading 2026-09-15T23:57Z**. The stale quota refusal is superseded by R354. **code_review was admitted**, thread **01a0a784-327d-7b11-ad3c-813aeab85e26** started. First unexpected line: `gw dispatch: admission receipt telemetry skipped: dispatch admission sink returned 500`. Security dispatch was withheld.
+
+The admitted child then hit `BLOCKED: repo-read delegated Codex children may run only bounded read commands.` on sed-based skill/brief reads. The handoff brief also proved inaccessible inside its repo-read sandbox; placing it outside the workspace was this lane's preparation defect. No boundary was widened. Parent interrupted native child PID 988668 after observing the floor denial; dispatch exit 1 and both child/dispatcher gone. The child attempted alternate reads before interruption; the parent made no retry/replacement dispatch.
+
+**No completed REVIEW; SECURITY never dispatched; R4 still unsatisfied.** The two outputs/audit/s8-r354-REVIEW.md and s8-r354-SECURITY.md are explicitly execution receipts, not verdicts. Exact evidence and the fresh limits line: handoff/S8-R354-DISPATCH-HOLD.json. Packet: /home/gw/lab/briefs/estate-2026-09/handoff/**OPERATOR-ACT-S8-R354-REVIEW-EXECUTION-HOLD.md**. Four owned temporary packs moved out of the worktree to the handoff after interruption. No product edits, further release gates, PR, push, forge merge, tag, version dispatch, publication, deployment or branch deletion. The last SOT evidence remains R352; no new SOT pass is claimed after this stop.
 
 ## R352 outcome — S8_RELEASE_HELD at cumulative review disposition
 
