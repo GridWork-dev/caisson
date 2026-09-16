@@ -7,7 +7,7 @@ grounds:
 
 # ADR index
 
-Current ADR ceiling: **0426** — S8 commerce account resolution fails closed.
+Current ADR ceiling: **0427** — S8 tool approvals support rejection and expiry.
 
 Canonical catalog of every Architecture Decision Record in `knowledge/decisions/`. This
 file is a **synthesized view** (number -> title -> domain -> status -> supersession). It does
@@ -1123,6 +1123,7 @@ ADR-0088 numbering split held — no collision).
 | [0424](../knowledge/decisions/ADR-0424-recheck-cart-entitlements-before-checkout.md) | R359 locks real-session ownership and server-created cart transactions after current entitlement filtering; supersedes ADR-0418 hint-absence short-circuit. |
 | [0425](../knowledge/decisions/ADR-0425-bind-release-audit-to-reviewed-parent.md) | R370 binds R4 to reviewed_sha and proves the final successor changes only the tag audit and checklist; supersedes CR-06 self-reference. |
 | [0426](../knowledge/decisions/ADR-0426-fail-closed-commerce-account-resolution.md) | R371 separates strict commerce account resolution from dashboard availability fallback; supersedes that resolver choice in ADR-0424. |
+| [0427](../knowledge/decisions/ADR-0427-reject-and-expire-pending-tool-approvals.md) | S8_REPAIRS_2 adds atomic rejection and fifteen-minute pending approval expiry; extends ADR-0423 with bounded capacity reclamation. |
 
 ---
 

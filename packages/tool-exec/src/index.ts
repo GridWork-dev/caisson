@@ -12,6 +12,7 @@ export {
   type ToolExec,
 } from "./tool-exec.ts";
 export {
+  APPROVAL_TTL_MS,
   createMemoryApprovalStore,
   type ToolApproval,
   type ToolApprovalStore,

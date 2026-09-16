@@ -12,6 +12,7 @@ import { NotFoundError, parseStrict, ValidationError } from "@caisson/kernel";
 import { createToolProposer } from "./propose.ts";
 import type { CommandSpec } from "./propose.ts";
 import {
+  APPROVAL_TTL_MS,
   approvalDigest,
   commandPolicyFingerprint,
   createMemoryApprovalStore,
@@ -122,6 +123,8 @@ export interface ToolExec {
    * revalidate original input under the current schema, and derive environment from current policy.
    */
   execute(proposed: unknown): Promise<ExecResult>;
+  /** Caller must authorize rejection; atomically discard a pending ID without spawning. */
+  reject(approvalId: string): Promise<boolean>;
 }
 
 /**
@@ -143,7 +146,7 @@ export function createToolExec(config: ToolExecConfig): ToolExec {
   const timeoutMs = config.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const execFn = config.execFn ?? defaultExecFn;
   const now = config.now ?? Date.now;
-  const approvals = config.approvalStore ?? createMemoryApprovalStore();
+  const approvals = config.approvalStore ?? createMemoryApprovalStore(now);
 
   const spawn = async (
     command: string,
@@ -188,6 +191,7 @@ export function createToolExec(config: ToolExecConfig): ToolExec {
       const spec = gate.lookup(name)!;
       const unsigned = {
         approvalId: crypto.randomUUID(),
+        expiresAt: now() + APPROVAL_TTL_MS,
         name,
         command: validated.command,
         args: [...validated.args],
@@ -206,11 +210,24 @@ export function createToolExec(config: ToolExecConfig): ToolExec {
       return structuredClone(proposal);
     },
 
+    async reject(approvalId: string): Promise<boolean> {
+      return approvals.reject(
+        parseStrict(toolApprovalSchema.shape.approvalId, approvalId),
+      );
+    },
+
     async execute(raw: unknown): Promise<ExecResult> {
       const proposed = parseStrict(toolApprovalSchema, raw);
       const stored = await approvals.consume(proposed.approvalId);
       if (!stored)
         throw new NotFoundError("Approval is unknown or already consumed");
+      // Recheck after await even if a durable store returns a record just as it expires.
+      if (
+        !Number.isSafeInteger(stored.proposal.expiresAt) ||
+        now() >= stored.proposal.expiresAt
+      ) {
+        throw new NotFoundError("Approval expired");
+      }
       if (
         !equalApprovalDigest(proposed.digest, stored.proposal.digest) ||
         !equalApprovalDigest(approvalDigest(proposed), stored.proposal.digest)

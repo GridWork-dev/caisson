@@ -1,5 +1,13 @@
 # S8 release train receipt — R356 retry 3 review blockers
 
+## S8_REPAIRS_2 three repairs implemented; full gate and reviews next
+
+CR-07 a81c537a, CR-08 18b9c7b7; WR-01 now adds atomic rejection and fifteen-minute
+digest-bound expiry under ADR-0427. Bun 1.4.2 restored affected suite: 46 pass /
+0 fail / 121 assertions; build/lint pass. Five mutation arms restore exact hashes.
+Combined targeted tests, the single bounded full gate, then both sequential reviews
+remain. No independent pass, push or PR is claimed.
+
 ## R371 CR-08 executed; WR-01 next
 
 CR-07 committed a81c537a. Commerce now fails closed on membership resolution errors,

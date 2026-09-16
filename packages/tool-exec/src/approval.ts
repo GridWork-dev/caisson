@@ -4,9 +4,13 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import type { CommandSpec } from "./propose.ts";
 
+/** ADR-0427: pending approvals expire fifteen minutes after issuance, without renewal. */
+export const APPROVAL_TTL_MS = 15 * 60 * 1000;
+
 export const toolApprovalSchema = z
   .object({
     approvalId: z.uuid(),
+    expiresAt: z.number().int().nonnegative().safe(),
     digest: z.string().regex(/^[a-f0-9]{64}$/),
     policyVersion: z.string().min(1).max(200),
     name: z.string().min(1).max(256),
@@ -29,13 +33,26 @@ export interface ToolApprovalStore {
   put(record: StoredToolApproval): Promise<void>;
   /** Atomically get-and-delete; missing/already consumed IDs return undefined. */
   consume(approvalId: string): Promise<StoredToolApproval | undefined>;
+  /** Atomically delete without returning an executable record; true only when pending. */
+  reject(approvalId: string): Promise<boolean>;
 }
 
-/** Bounded process-local default. Durable adapters must implement atomic consume themselves. */
-export function createMemoryApprovalStore(): ToolApprovalStore {
+/** Durable adapters must enforce expiry and mutually atomic consume/reject themselves. */
+export function createMemoryApprovalStore(
+  now: () => number = Date.now,
+): ToolApprovalStore {
   const records = new Map<string, StoredToolApproval>();
+  const pruneExpired = () => {
+    const at = now();
+    for (const [id, record] of records) {
+      if (at >= record.proposal.expiresAt) records.delete(id);
+    }
+  };
   return {
     async put(record) {
+      pruneExpired();
+      if (now() >= record.proposal.expiresAt)
+        throw new Error("Approval already expired");
       const id = record.proposal.approvalId;
       if (records.has(id) || records.size >= 1000) {
         throw new Error(
@@ -47,7 +64,11 @@ export function createMemoryApprovalStore(): ToolApprovalStore {
     async consume(id) {
       const record = records.get(id);
       records.delete(id); // Before yielding: concurrent executions have at most one winner.
-      return record;
+      return record && now() < record.proposal.expiresAt ? record : undefined;
+    },
+    async reject(id) {
+      pruneExpired();
+      return records.delete(id); // Competes atomically with consume; never spawns.
     },
   };
 }
@@ -58,6 +79,7 @@ export function approvalDigest(proposal: Omit<ToolApproval, "digest">): string {
     .update(
       JSON.stringify([
         proposal.approvalId,
+        proposal.expiresAt,
         proposal.name,
         proposal.command,
         proposal.args,

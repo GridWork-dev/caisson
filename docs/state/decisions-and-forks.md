@@ -1,7 +1,7 @@
 ---
 updated: 2026-09-05
 status: live
-adr_ceiling: 0426
+adr_ceiling: 0427
 ---
 
 # Decisions & Forks — live board
@@ -15,6 +15,9 @@ narrative below. The operative catalog is Compliance $1,649, Everything $2,259, 
 `oscal-spine` $249; the amended merge point is before the first release train.
 
 ## Locked (→ ADRs / specs)
+
+S8_REPAIRS_2 locks atomic approval rejection and defined expiry:
+[ADR-0427](../../knowledge/decisions/ADR-0427-reject-and-expire-pending-tool-approvals.md).
 
 R371 / EST-ASK-329 locks strict commerce account resolution with the dashboard fallback
 unchanged: [ADR-0426](../../knowledge/decisions/ADR-0426-fail-closed-commerce-account-resolution.md).

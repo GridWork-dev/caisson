@@ -1,5 +1,33 @@
 # S8 release train run notes — 2026-09-10
 
+## S8_REPAIRS_2 WR-01 — reject and expire pending approvals (2026-09-16)
+
+CR-08 committed `18b9c7b7`. ADR-0427 extends ADR-0423 append-only: atomic reject by ID,
+fifteen-minute fixed lifetime, digest-bound expiresAt, post-consume execution expiry check,
+and expiry pruning before memory-store put/reject. Rejection cannot revoke a consume
+that already won. Stores stay private; callers authorize both execute and reject.
+Durable adapters must implement rejection, expiry enforcement and capacity cleanup with
+the same epoch-millisecond clock. The existing pending minor changeset is updated.
+
+**Bun 1.4.2 — 46 pass / 0 fail / 121 assertions**, exit 0, initial and restored affected
+suite (tool-exec plus demos and agent-dev consumers). Build/lint pass. The first build
+found an exactOptionalPropertyTypes error in the new test fixture (explicit undefined
+approvalStore); the fixture now omits the option when absent, and the build passed.
+This was causal repair iteration, not an unrelated gate stop.
+
+Five guard mutations on Bun 1.4.2 each exit 1: rejection without deletion **0 pass /
+1 fail / 4 assertions**; remove capacity pruning **0 pass / 1 fail**, throws before
+assertions; expired consume returned **0/1/1**; executor expiry guard removed **0/1/1**;
+expiration omitted from digest **0/1/1**. Byte-identical restoration hashes:
+
+- approval.ts: `dc2ec8a6b51e53ed1fe3d6d90786a64c81587dd1bab8eb740423550f6632c53a`
+- tool-exec.ts: `134d6dbfa5aae116993748a67408ce766ba7d0b3b9eb51bfabfa4252ce7bda65`
+
+Handoff logs: S8-R371-WR01-{tests,restored}.log; mutation machine evidence:
+S8-R371-WR01-mutation-{reject,prune,consume,execute,digest}.result.json.
+All three ruled repairs are implemented; combined targeted tests, one bounded full gate
+and both sequential reviews follow. No passing review, push, PR or release claim yet.
+
 ## R371 CR-08 — fail-closed commerce resolver (2026-09-16)
 
 CR-07 committed `a81c537a`. CR-08 adds getCheckoutSession/resolveCheckoutAccount and

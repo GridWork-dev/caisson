@@ -59,10 +59,10 @@ A name not on the allowlist, or args that fail the schema, throw before any proc
 schema-rejects-before-exec, a valid call's full provenance record, a non-zero exit captured (not
 thrown), and one real `execFile` spawn against `node -e` proving the bounded-output path end to end.
 
-## Two-phase approvals (ADR-0423)
+## Two-phase approvals (ADR-0423, extended by ADR-0427)
 
 `await tool.propose(name, input, reason)` returns a serializable `ToolApproval`:
-random approval ID, canonical digest, policy version, command, validated argv and reason.
+random approval ID, digest-bound expiresAt timestamp, canonical digest, policy version, command, validated argv and reason.
 Keep the `ToolExec` instance and its record store on the trusted server. Only call
 `execute(approval)` after your application authenticates and authorizes the approval
 actor; the package does not implement that actor's authentication or approval UI.
@@ -74,9 +74,24 @@ invalidates outstanding records. Environment is never accepted in the public env
 The ADR-0420 inherited-environment default remains unchanged when a spec omits `env`.
 
 The default store snapshots input and holds at most 1,000 pending records in memory;
-restart loses pending approvals. For persistence, inject `approvalStore` implementing
-create-only `put` and atomic get-and-delete `consume`; never expose either to clients.
+restart loses pending approvals. Every approval expires fifteen minutes after issuance
+(APPROVAL_TTL_MS), with no renewal. The server clock config.now supplies issuance and
+execution timestamps; adapters must use the same epoch-millisecond clock. Expiration is
+checked again after consuming a durable record, before spawn. A client cannot extend it.
+
+After an authorized denial/cancellation, call await tool.reject(approval.approvalId).
+It atomically deletes without spawning, returns true if a pending record was removed,
+and false if absent/expired/already consumed. Rejected IDs cannot later execute. Reject
+and consume compete for one atomic deletion: rejection cannot cancel execution that has
+already consumed its record. Caller authorization is required for rejection as for execute.
+
+For persistence, inject approvalStore implementing create-only put and mutually atomic
+get-and-delete consume and delete-only reject. Durable adapters must enforce expiry and
+reclaim expired records. Never expose store methods to clients. The default store removes
+expired records on put/reject and refuses them on consume; idle stale entries remain
+bounded until the next operation. Rejection/expiry free capacity without a process restart.
+
 A digest is an integrity binding to this trusted record, not a signature over arbitrary
 client data. Invalid or rotated execution attempts consume the record once its ID is
-resolved; request a new proposal after rejection. `createToolProposer` remains a pure
-browser-safe validation preview; its `ProposedToolCall` cannot be passed to `execute`.
+resolved; request a new proposal after rejection/expiry. createToolProposer remains a pure
+browser-safe validation preview; its ProposedToolCall cannot be passed to execute.
