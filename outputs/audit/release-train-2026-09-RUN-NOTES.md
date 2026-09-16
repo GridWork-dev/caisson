@@ -1,5 +1,41 @@
 # S8 release train run notes — 2026-09-10
 
+## R359 HOLD — baseline test process exits 99 during CR-03 (2026-09-16)
+
+Repair execution stopped at the ruled red-gate-outside-causal-path boundary. Four ordered
+repair commits are complete: CR-06 `a415ee21`, CR-05 `c233a951`, CR-02 `46169496`,
+CR-01 `e08b4b36`. CR-03 is an uncommitted work-in-progress; CR-04 has not started. No
+full `bun run check`, new review/security dispatch, push, PR, merge, tag, version dispatch,
+publish, deployment or branch deletion occurred in this repair continuation.
+
+Initial CR-03 targeted command (under the normal snip wrapper):
+`bun test apps/site/app/api/cart/owned/route.test.ts apps/site/lib/cart-routes.test.ts apps/site/lib/paddle-cart-transaction.test.ts apps/site/lib/paddle-checkout.test.ts apps/site/lib/auth-account.test.ts`
+reported **Bun 1.4.2 — 24 pass / 0 fail / 75 assertions**, but process exit **99**.
+This is not green. Site typecheck exited 0. The new real-Better-Auth cookie regressions
+alone exited 0: **Bun 1.4.2 — 4 pass / 0 fail / 11 assertions**.
+
+Isolation: `bun test apps/site/lib/auth-account.test.ts` reproduced process exit **99**
+with **Bun 1.4.2 — 4 pass / 0 fail / 9 assertions**. One controlled baseline comparison
+then temporarily restored `apps/site/lib/owned-cart-items.ts` from pre-CR-03 `e08b4b36`,
+ran that same unchanged test, and again measured exit **99**, **Bun 1.4.2 — 4 pass / 0 fail /
+9 assertions**. This proves the nonzero outcome survives removal of the CR-03 ownership
+implementation; no assertion failed, and no BLOCKED line was emitted. The underlying cause
+is not established. Installed PGlite contains a process.exitCode assignment, which is a
+lead only, not attribution. No exit-code reset or test-success override was applied.
+
+The in-progress ownership source was restored byte-identically; fixed and restored SHA-256:
+`0e7bc139a7c51ca39478dee71d51ae9e3514228cc9bb0746f3e6f4f176e271ea`.
+Exact baseline command, exit, output and hashes: estate handoff
+`S8-R359-CR03-baseline-exit99.json`.
+
+Unfinished CR-03 introduces session-backed owned reads, server-created filtered cart
+transactions and real-cookie/provider-seam regressions. ADR-0424 and its ceiling updates
+are drafted but not committed; CR-03 guard mutations and final validation remain undone.
+Work is preserved in the worktree plus handoff `S8-R359-CR03-in-progress.patch`,
+`S8-R359-CR03-untracked.json` and the matching `S8-R359-CR03-untracked/` tree. Those are
+recovery artifacts, not a completed repair or review verdict. Resume requires an operator
+ruling for the baseline exit-99 gate before continuing the ordered repair cycle.
+
 ## R359 CR-01 — private digest-bound tool approvals (2026-09-16)
 
 Fourth repair in the ordered R359 cycle. ADR-0423 records the operator lock; the index,

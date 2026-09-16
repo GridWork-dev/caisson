@@ -1,5 +1,20 @@
 # S8 release train receipt — R356 retry 3 review blockers
 
+## Current hold — R359 baseline exit 99 (2026-09-16)
+
+R359 repairs CR-06, CR-05, CR-02 and CR-01 committed in order at `a415ee21`, `c233a951`,
+`46169496`, `e08b4b36`. CR-03 remains uncommitted, including draft ADR-0424; CR-04 is
+unstarted. The targeted CR-03 command reported **Bun 1.4.2 — 24 pass / 0 fail / 75 assertions**
+but exited **99**. The unchanged auth-account test reproduced exit **99** against pre-CR-03
+ownership source: **Bun 1.4.2 — 4 pass / 0 fail / 9 assertions**. Source restored by SHA-256.
+R359's red-gate-outside-causal-path stop applies. No passing gate claim is made from the
+assertion totals. Root cause is unresolved; no bypass was attempted.
+
+Evidence and recovery paths are in RUN-NOTES under “R359 HOLD”; exact machine evidence is
+`/home/gw/lab/briefs/estate-2026-09/handoff/S8-R359-CR03-baseline-exit99.json`.
+The full check and renewed code/security reviews have not run. There is no release PR.
+No merge, tag, publish, deploy, version dispatch or branch deletion was performed.
+
 ## Current disposition — S8_RELEASE_HELD on six review blockers
 
 S8_REVIEW_RETRY_3 superseded the parent request-size hold: that rejection was an own-tool error, not a floor denial. Fresh audited limits showed **23.0% used**, reading **2026-09-16T02:04Z**. Governed code-review thread **01a0a7f5-e432-7dc3-8421-31c31a36f252** completed without interruption and streamed directly to disk; the expected telemetry 500 remained non-blocking. Exit 0 means the report was delivered.
