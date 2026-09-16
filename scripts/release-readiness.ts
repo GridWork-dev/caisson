@@ -99,6 +99,14 @@ function run(cmd: string, args: readonly string[], cwd = REPO): string {
     .trim();
 }
 
+/** Blob contents are parser input: preserve every byte, including leading whitespace. */
+function readGitBlob(repo: string, sha: string, path: string): string {
+  return execFileSync("git", ["show", `${sha}:${path}`], {
+    cwd: repo,
+    stdio: ["ignore", "pipe", "pipe"],
+  }).toString("utf8");
+}
+
 // --- 0. release SHA on main (ADR-0325) -----------------------------------------------------------
 function checkTagOnMain(sha: string): void {
   try {
@@ -410,14 +418,11 @@ export function auditSuccessorIsValid(
       const entry = run("git", ["ls-tree", tagSha, "--", path], repo);
       if (!entry.startsWith("100644 blob ")) return false;
     }
-    return auditSourceIsValid(
-      run("git", ["show", `${tagSha}:${auditPath}`], repo),
-      {
-        base,
-        tag,
-        reviewed_sha: reviewedSha,
-      },
-    );
+    return auditSourceIsValid(readGitBlob(repo, tagSha, auditPath), {
+      base,
+      tag,
+      reviewed_sha: reviewedSha,
+    });
   } catch {
     return false;
   }
@@ -439,7 +444,7 @@ export function checkChecklist(tag: string, sha: string, repo = REPO): boolean {
       .regex(/^[a-f0-9]{40}$/)
       .parse(sha);
     const path = `docs/releases/${tag}-checklist.md`;
-    const source = run("git", ["show", `${sha}:${path}`], repo);
+    const source = readGitBlob(repo, sha, path);
     const unchecked = (source.match(/^\s*-\s\[\s\]/gm) ?? []).length;
     record(
       "per-release checklist",

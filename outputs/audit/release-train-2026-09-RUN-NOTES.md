@@ -1,5 +1,21 @@
 # S8 release train run notes — 2026-09-10
 
+## R373 WR-02 repair — raw attestation bytes (2026-09-16)
+
+Checklist binding committed `0bd7433f`, clean readback. Both checklist and audit
+now use readGitBlob (execFileSync stdout, UTF-8, no trim). The separate metadata
+runner still trims command metadata. The byte-zero audit frontmatter contract stays.
+Committed leading-newline audit with corrected dirty copy: pre-repair Bun 1.4.2
+**0 pass / 1 fail / 1 assertion**, exit 1, as predicted. Restored readiness suite
+**36 pass / 0 fail / 75 assertions**, exit 0.
+
+Replacing the raw audit read with the old trimmed runner yields **0/1/1**, exit 1.
+Fixed/restored source SHA-256:
+`c7bf4793280542842c3eadac0e3239d8605218411827a1eef7f7cebc23ca58db`.
+Handoff evidence: S8-R373-WR02-*. The two repair commits are separate from evidence
+commit 159bffbd. Combined targeted tests, eleven prior mutation arms once, one bounded
+full gate and both serial independent reviews remain before any PR.
+
 ## R373 CR-07/WR-03 repair — candidate checklist (2026-09-16)
 
 Evidence recovery committed `159bffbd`, clean immediate readback. Checklist check

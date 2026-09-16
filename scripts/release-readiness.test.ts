@@ -125,6 +125,17 @@ describe("R4 audit attestation", () => {
     );
     expect(auditSuccessorIsValid(repo, binding.tag, b)).toBe(true);
   });
+  test("R373 rejects committed audit with leading newline before frontmatter", () => {
+    const repo = scratch();
+    attestation(repo, git(repo, "rev-parse", "HEAD"));
+    const path = join(repo, `outputs/audit/release-audit-${binding.tag}.md`);
+    writeFileSync(path, `\n${readFileSync(path, "utf8")}`);
+    const candidate = commit(repo);
+    // A clean working copy must not rescue malformed committed bytes either.
+    writeFileSync(path, readFileSync(path, "utf8").trimStart());
+    expect(auditSuccessorIsValid(repo, binding.tag, candidate)).toBe(false);
+  });
+
   test("R373 accepts committed complete checklist despite incomplete dirty copy", () => {
     const repo = scratch();
     attestation(repo, git(repo, "rev-parse", "HEAD"));
