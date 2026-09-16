@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { z } from "zod";
 // The /fetch subpath is the client-safe cut of the kernel (fetch.ts is pure, no server-only
 // imports) — mirrors `discord-connect.tsx`'s own client-side fetchWithTimeout usage.
 import { fetchWithTimeout } from "@caisson/kernel/fetch";
@@ -11,32 +12,29 @@ import { PADDLE_MOR_DISCLOSURE } from "@/lib/legal";
 import {
   isPaddleConfigured,
   onCheckoutCompleted,
-  openCartCheckout,
+  openCartTransaction,
 } from "@/lib/paddle-checkout";
 import { formatUsd } from "@/lib/pricing";
 
 import { useCart } from "./cart-provider";
 
+const checkoutResponseSchema = z
+  .object({
+    transactionId: z.string().regex(/^txn_[a-z0-9]{26}$/),
+    removed: z.array(z.string().max(128)).max(50),
+  })
+  .strict();
+
 export interface CartCheckoutPanelProps {
-  /** The buyer's account id, resolved server-side from the session cookie
-   *  (`requireDashboardSession` — never trusted from the client, security floor). */
-  accountId: string;
   /** The validated `?promo=` search param (server-validated shape, `dashboard/cart/page.tsx`) —
    *  threaded straight into `Paddle.Checkout.open({ discountCode })` when present. */
   promoCode?: string;
 }
 
-/**
- * The authed pay screen: ONE Paddle overlay for every line in the cart (`openCartCheckout`,
- * `lib/paddle-checkout.ts`), stamped with the server-verified `accountId` as
- * `custom_data.account_id` — the same key the webhook's `parsePaddleEvent` already reads to
- * resolve the tenant (ADR-0116).
- */
-export function CartCheckoutPanel({
-  accountId,
-  promoCode,
-}: CartCheckoutPanelProps) {
+/** The server filters current entitlements and creates the Paddle transaction (ADR-0424). */
+export function CartCheckoutPanel({ promoCode }: CartCheckoutPanelProps) {
   const { items, subtotal, clear } = useCart();
+  const [notice, setNotice] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const configured = isPaddleConfigured();
@@ -49,6 +47,7 @@ export function CartCheckoutPanel({
   async function pay() {
     setOpening(true);
     setError(null);
+    setNotice(null);
     try {
       // Abandoned-checkout capture (SPEC-abandoned-checkout-email.md §(a)): fire-and-forget, NEVER
       // awaited into the checkout path — a slow or failed capture must not delay or block
@@ -67,11 +66,33 @@ export function CartCheckoutPanel({
         // Best-effort capture — a missed nudge email is not worth surfacing to the buyer.
       });
 
-      const opened = await openCartCheckout(
-        items.map((item) => ({ priceId: item.priceId })),
-        accountId,
-        promoCode,
+      const response = await fetchWithTimeout(
+        "/api/cart/checkout",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            itemIds: items.map((item) => item.id),
+            ...(promoCode === undefined ? {} : { promoCode }),
+          }),
+        },
+        { timeoutMs: 35_000 },
       );
+      const result: unknown = await response.json();
+      const parsed = checkoutResponseSchema.safeParse(result);
+      if (!response.ok || !parsed.success) {
+        setError(
+          response.status === 409
+            ? "You already own these items. No checkout was created."
+            : "Checkout is unavailable right now. Please try again.",
+        );
+        return;
+      }
+      if (parsed.data.removed.length > 0)
+        setNotice(
+          "Already-owned items were removed from checkout. Review the updated total in Paddle before paying.",
+        );
+      const opened = await openCartTransaction(parsed.data.transactionId);
       // The Paddle overlay owns the rest of the flow once it opens — the cart clears on the
       // `checkout.completed` event (the useEffect above), not here.
       if (!opened) {
@@ -182,6 +203,11 @@ export function CartCheckoutPanel({
                 : "Pay now"}
           </Button>
 
+          {notice !== null && (
+            <p role="status" className="cs-footnote">
+              {notice}
+            </p>
+          )}
           {error !== null && (
             <p className="cs-footnote" style={{ color: "var(--cs-danger)" }}>
               {error}

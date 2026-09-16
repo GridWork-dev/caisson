@@ -155,3 +155,15 @@ export async function openCheckout(
 export function isPaddleConfigured(): boolean {
   return (process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN?.length ?? 0) > 0;
 }
+
+/** Open only the transaction whose lines/account the server validated (ADR-0424). */
+export async function openCartTransaction(
+  transactionId: string,
+): Promise<boolean> {
+  if (!/^txn_[a-z0-9]{26}$/.test(transactionId)) return false;
+  const paddle = await getPaddle();
+  if (!paddle) return false;
+  trackEvent("begin_checkout", { source: "server-cart" });
+  paddle.Checkout.open({ transactionId, settings: { showAddTaxId: true } });
+  return true;
+}

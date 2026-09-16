@@ -47,38 +47,8 @@ export { SESSION_HINT_COOKIE_NAME } from "./session-hint-cookie.ts";
 /** The prefixed session cookie name the security floor pins (`${cookiePrefix}.session_token`). */
 export const SESSION_COOKIE_NAME = "caisson.session_token";
 
-/**
- * `SESSION_HINT_COOKIE_NAME` (ADR-0418) is the server-minted session-HINT cookie. It carries no
- * session material (just `"1"`) and exists purely so `GET /api/cart/owned`
- * (`app/api/cart/owned/route.ts`) can short-circuit BEFORE resolving a session or touching the DB,
- * for the common signed-out visitor on every marketing page. A prior revision saved that same cost
- * client-side instead: the owned-items provider (`components/owned-items-provider.tsx`) read this
- * cookie via `document.cookie` to skip its fetch entirely, which required the cookie to be
- * readable by page JS — a same-origin auth SIGNAL any script on the page, including a third-party
- * one, could then observe for the saving of one request. ADR-0418 moved the optimization
- * server-side instead: the cookie is now `HttpOnly` (same as `SESSION_COOKIE_NAME` above — invisible
- * to `document.cookie`), the client always fetches, and only the route handler reads it (via
- * `cookies()`) to decide whether resolving a session is worth doing at all. It stays a fail-open
- * HINT, not a trust boundary either way: the cookie's PRESENCE never grants anything — a request
- * that carries it still goes through the real session resolution in `getOwnedCartItemIds()`.
- *
- * Wired as a top-level `hooks.after` (NOT `databaseHooks.session.*`, which was tried first and
- * discarded — its `context` is scoped to the internal adapter-write's OWN endpoint context, which
- * measurably does NOT survive into the final HTTP response: verified by driving a real sign-in
- * through `createAuth()` and inspecting the response's Set-Cookie headers). `hooks.after` runs on
- * EVERY request with the actual outer endpoint's `ctx`, whose `ctx.setCookie` mutations DO land in
- * the final response. `ctx.context.newSession` is better-auth's own per-request signal (set by
- * `setSessionCookie`, `cookies/index.mjs`) that a session cookie was just (re-)established THIS
- * request — true for every sign-in method (magic link, password, OAuth) AND for better-auth's own
- * updateAge-triggered session refresh (`api/routes/session.mjs`). Riding the refresh case means a
- * session that predates this cookie (an already-signed-in buyer who never re-authenticates) still
- * picks up the hint on its next natural refresh — normally within `session.updateAge` (default 1
- * day) of any authed request — without forcing a re-sign-in. Mint always uses
- * `newSession.session.expiresAt`, so the hint's expiry can never drift from the real cookie's.
- * Sign-out (`POST /sign-out`, `api/routes/sign-out.ts`) deletes the session but does NOT go
- * through `setSessionCookie`, so it's matched by path instead, clearing the hint alongside the
- * real session cookie it deletes.
- */
+/** Legacy HttpOnly hint mint/clear compatibility (ADR-0418). ADR-0424 removes the ownership
+ * short-circuit: this cookie never establishes session absence or controls checkout. */
 const sessionHintCookieHook = createAuthMiddleware(async (ctx) => {
   if (ctx.context.newSession) {
     // Unconditionally Secure (unlike the real session cookie, which only forces it in production —

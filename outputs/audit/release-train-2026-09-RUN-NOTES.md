@@ -1,5 +1,42 @@
 # S8 release train run notes — 2026-09-10
 
+## R359 CR-03 — continuation ruling and cart repair (2026-09-16)
+
+The 03:12:07Z `S8_CR03_CONTINUE` ruling accepts the baseline exit 99 as pre-existing
+and outside CR-03's causal path; it is no longer a stop for this repair. The PGlite
+in-memory double is the likely teardown path; no further diagnosis or test alteration.
+If the full runner reports it red, the PR must disclose it under “pre-existing, reproduced
+on the pre-repair tree” and cite `S8-R359-CR03-baseline-exit99.json`.
+
+CR-03 always resolves the real Better Auth session for ownership, then independently
+rechecks tenant-scoped active exact-SKU grants before server-side Paddle transaction
+creation. Client account/price/quantity overrides are rejected. Already-owned lines are
+removed; all-owned carts create no transaction. ADR-0424 records the money-path lock,
+configuration requirements and limited preflight guarantee; its index/CLAUDE/board ceiling
+updates are in this commit. No Paddle or other live probe was sent.
+
+Targeted restored run: **Bun 1.4.2 — 24 pass / 0 fail / 75 assertions**, exit 99 explicitly
+disposed above. Site typecheck and targeted lint pass. The four required regressions cover
+valid durable session without a hint, independently evicted hint, an owned checkout line,
+and forged hint without a session. Real in-memory Better Auth resolves the cookie cases;
+entitlement/provider seams and production binding contracts cover the remaining path.
+
+Predicted guard mutations all failed their named test, then restored the exact source bytes:
+
+- Hint-absence short-circuit restored: **Bun 1.4.2 — 0 pass / 1 fail / 1 assertion**.
+- Owned-line filtering removed: **Bun 1.4.2 — 0 pass / 1 fail / 4 assertions**.
+- Empty-cart guard removed: **Bun 1.4.2 — 0 pass / 1 fail / 1 assertion**.
+- Session guard removed: **Bun 1.4.2 — 0 pass / 1 fail / 1 assertion**.
+- Strict request boundary removed: **Bun 1.4.2 — 0 pass / 1 fail / 1 assertion**.
+- Catalog guard removed: **Bun 1.4.2 — 0 pass / 1 fail / 4 assertions**.
+- Same-origin guard removed: **Bun 1.4.2 — 0 pass / 1 fail / 0 assertions** (the test's
+  must-not-read session sentinel threw, proving forbidden work was reached).
+
+Fixed/restored cart-routes.ts SHA-256:
+`abdeb8074682c0c70829c324a15c8973f2c72b22e7be516f22db0b1190c26a1c`.
+Machine receipts: estate handoff `S8-R359-CR03-{hint,owned,empty,session,strict,catalog,origin}.result.json`.
+Restored **Bun 1.4.2 — 24 pass / 0 fail / 75 assertions**, accepted pre-existing exit 99.
+
 ## R359 HOLD — baseline test process exits 99 during CR-03 (2026-09-16)
 
 Repair execution stopped at the ruled red-gate-outside-causal-path boundary. Four ordered
