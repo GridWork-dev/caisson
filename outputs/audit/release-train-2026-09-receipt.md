@@ -1,4 +1,14 @@
-# S8 release train receipt — R356 evidence-save request rejected
+# S8 release train receipt — R356 retry 3 review blockers
+
+## Current disposition — S8_RELEASE_HELD on six review blockers
+
+S8_REVIEW_RETRY_3 superseded the parent request-size hold: that rejection was an own-tool error, not a floor denial. Fresh audited limits showed **23.0% used**, reading **2026-09-16T02:04Z**. Governed code-review thread **01a0a7f5-e432-7dc3-8421-31c31a36f252** completed without interruption and streamed directly to disk; the expected telemetry 500 remained non-blocking. Exit 0 means the report was delivered.
+
+Reviewer verdict, verbatim: **FAIL — six blocking correctness, security, money-path, and release-integrity defects remain.** Reported scope: **69 reviewed files**, **89 commits / 430 paths**, v2026.08.18..895849a677cdb2e1a9a48d11b9c73a2ac1a0ae6c. CR-01 approval integrity, CR-02 DNS-based embedding egress, CR-03 duplicate-purchase risk from a missing session hint, CR-04 missing staging denial legs, CR-05 runtime-image gate omitted from readiness, CR-06 unvalidated R4 audit-file existence. These are reviewer findings; no live exploit reproduction or parent repair has occurred.
+
+Full report: **s8-r356-retry3-REVIEW.md**. Exact raw log: **s8-r356-retry3-code-review.log**, 1,539,526 bytes, SHA-256 **a1dbc658153abd5b79406f3903b70e12fa53babfde014fbbac432d36772f7a43**. Verbatim unformatted report also preserved under handoff/S8-R356-RETRY3-REVIEW-VERBATIM.md. The report's claimed environment-file permission denial has no matching command event in that captured log and is not treated as a measured floor denial; its six blocker findings supply the stop.
+
+Security **NOT DISPATCHED**, no auditor verdict or security transcript, per **s8-r356-retry3-SECURITY.md**. The latest ruling stops on a review blocker, so no repair, further candidate gate, push or PR followed. R4 remains incomplete. Last candidate SOT evidence is R352, not a new green result. No forge merge, version dispatch, tag, publish, deploy or branch deletion. Current packet: /home/gw/lab/briefs/estate-2026-09/handoff/**OPERATOR-ACT-S8-R356-REVIEW-BLOCKERS.md**. Earlier entries below are historical.
 
 ## R356 execution hold — parent evidence-save request rejected
 

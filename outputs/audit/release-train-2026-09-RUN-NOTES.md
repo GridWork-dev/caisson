@@ -1,5 +1,25 @@
 # S8 release train run notes — 2026-09-10
 
+## R354/R356 retry 3 outcome — substantive review FAIL, six blockers
+
+Fresh audited limits: **7d 23.0% used, resets 3d; reading 2026-09-16T02:04Z**. Code-review thread **01a0a7f5-e432-7dc3-8421-31c31a36f252** ran to completion without interruption. Parent-shell redirection preserved stdout/stderr directly in handoff/S8-R356-CODE-REVIEW.log; no Node REPL capture occurred. The expected best-effort telemetry 500 was ignored. Dispatch **exit 0** records successful report delivery, not a review pass.
+
+Returned verdict, verbatim: **FAIL — six blocking correctness, security, money-path, and release-integrity defects remain.** The reviewer declares 69 reviewed files within the 89-commit / 430-path cumulative range v2026.08.18..895849a677cdb2e1a9a48d11b9c73a2ac1a0ae6c. These are source-review findings, not independently reproduced live exploits. No exhaustive review or clean R4 claim is made.
+
+Reported blockers: CR-01 externally parked tool-approval arguments/environment are not integrity-bound; CR-02 cloud-embedding DNS destinations are not resolved before credential-bearing requests; CR-03 missing optional session hint can allow duplicate purchases; CR-04 staging bypass suite omits the negative origin/Access legs; CR-05 readiness does not require the enforcing runtime-image matrix; CR-06 R4 accepts audit-file existence without validating verdict or SHA. Full returned report: **s8-r356-retry3-REVIEW.md**. Security status: **s8-r356-retry3-SECURITY.md**, NOT DISPATCHED, no verdict. The separate security audit was not launched after the blocker; no security log exists and none is fabricated.
+
+The unchanged raw transcript is committed as **s8-r356-retry3-code-review.log**, **1,539,526 bytes**, SHA-256 **a1dbc658153abd5b79406f3903b70e12fa53babfde014fbbac432d36772f7a43**; its hash equals the handoff log. The exact unformatted final report remains in handoff/S8-R356-RETRY3-REVIEW-VERBATIM.md; only the tracked markdown copy receives repository formatting. The transcript records 114 completed commands and a completed turn.
+
+Evidence discrepancy retained rather than silently corrected: the report says it stopped on `rg: ./services/intel/.env.example: Permission denied (os error 13)`. No matching permission-denial command-execution event appears in the captured transcript. This is an unsupported reviewer narration, not a newly measured floor denial. The six blocker findings independently supply the current stop condition. Parent bookkeeping also attempted a literal search including an absent .oxfmtignore path; that own-tool path error did not interrupt the review and did not become a gate failure.
+
+**S8_RELEASE_HELD** on the returned review blockers under S8_REVIEW_RETRY_3. No repair, second review dispatch, candidate gate, push or PR followed. Only documentation preservation, owned pack cleanup and normal commit verification. Last candidate SOT evidence remains R352's two accepted drift categories; no current aggregate-green claim. Packet: /home/gw/lab/briefs/estate-2026-09/handoff/**OPERATOR-ACT-S8-R356-REVIEW-BLOCKERS.md**. No forge merge, version dispatch, tag, publish, deploy, credential change or branch deletion.
+
+## R354/R356 retry 3 — direct-to-disk review evidence
+
+S8_REVIEW_RETRY_3 (2026-09-16T02:03:36Z) dispositions the prior Node REPL request-size rejection as an own-tool error, not a floor denial or stop-rule subject. Interrupting the healthy reviewer was the loss. A fresh code review, then security audit, is authorized. Parent-side errors must not interrupt a running reviewer. Exact R356 child tool rules remain unchanged.
+
+Prediction recorded before dispatch: fresh limits admit the governed code review; the known best-effort telemetry 500 may recur and is ignored; the reviewer returns a substantive verdict. Its stdout/stderr stream directly to handoff/S8-R356-CODE-REVIEW.log through parent-shell redirection. Security follows the returned verdict unless a blocker or conforming-command denial stops the lane, and streams to handoff/S8-R356-SECURITY.log. No Node REPL evidence capture. Both logs and verdicts will be committed as documentation; incomplete or blocked reviews do not count as passes. The authorized endpoint remains packet steps 4–6 and a green release PR, with no forge merge, version dispatch, tag, publish, deploy or branch deletion.
+
 ## R356 execution hold — parent evidence-save request rejected
 
 The exact Git-rule briefs were committed as **6a099f94a6ae06796d2f49dc082b2c7ea368ade5**. Fresh audited limits showed **7d 21.0% used, resets 3d; reading 2026-09-16T01:54Z**. Governed code_review thread **01a0a7ec-7f65-78d1-909d-4f53d6c9adf0** was admitted. Direct git subcommands and bounded source reads worked; no new reviewer hook denial was observed. The anticipated admission telemetry HTTP 500 remained non-blocking under the operator ruling.

@@ -8,6 +8,12 @@ status: accepted
 
 # Plan — release-train-2026-09-publish
 
+## Superseding review execution authority — R354/R356 retry 3
+
+R354 authorizes the cumulative R4 review; R356's exact child Git rules and S8_REVIEW_RETRY_3 (2026-09-16T02:03:36Z) govern this continuation. The historical no-retry paragraphs below no longer hold these two dispatches. Main thread obtains fresh limits, then dispatches code_review/gw-code-reviewer followed by security_audit/gw-security-auditor, deep lane, asynchronous shared-read, repo-read. Review target: v2026.08.18..895849a677cdb2e1a9a48d11b9c73a2ac1a0ae6c (89 commits / 430 paths). Both complete inline briefs retain the six priority targets and evidence limitations.
+
+Parent-shell redirection streams each dispatch to its handoff log. Do not capture evidence through Node REPL or interrupt a healthy review for a parent tool error. Preserve both logs and returned verdicts as documentation. Stop and quote any conforming-command BLOCKED line or review/security blocker; no implicit pass from exit 0. With clean verdicts, continue candidate checks and task 4 to the green PR only. Final version/tag/readiness evidence remains a later gate.
+
 This plan transcribes the already-authorized operator packet steps 2–6. Main thread owns context-bearing work and all external effects. The previous peer dispatch refusals stand: no new admission query, dispatch or alternate provider route. The skill's ordinary researcher dispatch is superseded by that operator constraint; repository and installed CLI sources were read directly.
 
 ## Task 1: Fresh removal proof and release inventory

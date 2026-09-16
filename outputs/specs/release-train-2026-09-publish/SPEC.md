@@ -21,6 +21,8 @@ Prepare an evidence-bound release PR that can move the pending Caisson fixes to 
 
 ## Context
 
+Current authority: R354 authorizes governed cumulative code review and security audit for R4. R356 and S8_REVIEW_RETRY_3 (2026-09-16T02:03:36Z) authorize the corrected sequential dispatches with output streamed directly to disk. Their exact review range is v2026.08.18..895849a677cdb2e1a9a48d11b9c73a2ac1a0ae6c, 89 commits / 430 paths; later lane commits are administrative evidence. A conforming-command denial or review/security blocker stops this continuation. Parent tool errors do not interrupt a healthy review. Earlier no-retry language records the historical hold and is superseded for this act only. A review verdict is still required; authorization is not a pass.
+
 The operator-approved sequence is OPERATOR-ACT-S8-RELEASE-PUBLISH.md under /home/gw/lab/briefs/estate-2026-09/handoff/. R350 authorized continuation after local reconciliation; R352/R353 corrected the local runtime and renewed steps 2–6. This SPEC records that existing authorized scope, not a new design fork. The historical task-1 SPEC/PLAN stays under release-train-2026-09. Pipeline locks and exact later-act commands stay in the operator packet.
 
 Candidate at preparation: 05081a20091d3a7971609daab94008c8d352688e; reconciliation a5d9cfea5136a2fd8a18ea73b574b5968ff765aa includes main 7e11672c29d21b57a12cf1ad1d4758abbd12b66b. Cumulative range currently has 88 commits and 425 changed paths (+20,995 / -3,643); this preparation adds documentation only and must be included in final review scope. All implementation/configuration bytes on the reconciled lane match bound main; lane differences are historical audit/planning and two deployment receipt JSON files.
@@ -28,7 +30,7 @@ Candidate at preparation: 05081a20091d3a7971609daab94008c8d352688e; reconciliati
 ## Scope
 
 - In scope: fresh absence proof, full-backlog version plan, release SPEC/PLAN, honest R4/checklist preparation, candidate checks and green release PR subject to review disposition.
-- Out of scope now: forge merge, version-workflow dispatch, tag, publication, deployment, credential changes, branch deletion, admission retry and R344 application dependency repair.
+- Out of scope now: forge merge, version-workflow dispatch, tag, publication, deployment, credential changes, branch deletion, retries beyond the current ruling and R344 application dependency repair.
 
 ## Tag rationale
 
