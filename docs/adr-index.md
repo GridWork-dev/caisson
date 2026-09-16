@@ -7,7 +7,7 @@ grounds:
 
 # ADR index
 
-Current ADR ceiling: **0424** — S8 rechecks session and entitlements before cart checkout.
+Current ADR ceiling: **0425** — S8 binds release review to the attestation successor parent.
 
 Canonical catalog of every Architecture Decision Record in `knowledge/decisions/`. This
 file is a **synthesized view** (number -> title -> domain -> status -> supersession). It does
@@ -1121,6 +1121,7 @@ ADR-0088 numbering split held — no collision).
 | [0422](../knowledge/decisions/ADR-0422-unify-bun-fleet-and-smoke-next-build-images.md) | Unifies all Bun pins on 1.4.2 with image index digests, retiring PR #478's temporary build/runtime split after the September 10–12 Next build outage. Adds path-gated demos/site Docker build smoke with CI mutation evidence and records the Next typegen regeneration; a Bun regression in the Next build path reopens the decision. |
 | [0423](../knowledge/decisions/ADR-0423-bind-tool-approvals-to-private-records.md) | R359 locks private digest-bound, one-shot tool approval records, current-policy revalidation and spec-owned child environment; supersedes ADR-0360 S3 caller-owned execution proposals. |
 | [0424](../knowledge/decisions/ADR-0424-recheck-cart-entitlements-before-checkout.md) | R359 locks real-session ownership and server-created cart transactions after current entitlement filtering; supersedes ADR-0418 hint-absence short-circuit. |
+| [0425](../knowledge/decisions/ADR-0425-bind-release-audit-to-reviewed-parent.md) | R370 binds R4 to reviewed_sha and proves the final successor changes only the tag audit and checklist; supersedes CR-06 self-reference. |
 
 ---
 

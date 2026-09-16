@@ -1,5 +1,30 @@
 # S8 release train run notes — 2026-09-10
 
+## R370 CR-07 — reviewed-parent attestation lifecycle (2026-09-16)
+
+S8_REPAIRS_2 locks option A. ADR-0425 records schema v2 reviewed_sha = final
+candidate single parent; only the exact tag audit and checklist paths can change in
+its successor. The allowlist is one constant, compared against a NUL-delimited Git
+name census with renames disabled and filename whitespace preserved. Committed blobs
+are read directly; merge successors and non-regular attestation files fail closed.
+Final CI still uses the final tag SHA. No real release tag, audit or publication is made.
+
+Verification: **Bun 1.4.2 — 32 pass / 0 fail / 70 assertions**, exit 0, both initial
+and restored suite. Scratch Git repositories build A (reviewed product), write audit
+naming A and commit B; B passes. Product/neighboring policy paths and a wrong real
+reviewed commit fail. Dirty worktree evidence cannot replace B. Named script lint passes.
+
+Three mutation arms (Bun 1.4.2) each exit 1: path allowlist removed **0 pass / 1 fail /
+1 assertion**; reviewed-SHA comparison removed **0/1/1**; self-referential tag SHA
+restored **0/1/2**. Every arm restores scripts/release-readiness.ts byte-identically,
+SHA-256 `3bd8305c9284d7fc68d2211d55166da8f880bb4f3bb110bbf545b7329f9f9d04`.
+Machine evidence: estate handoff S8-R370-CR07-mutation-{paths,binding,lifecycle}.result.json;
+full green logs S8-R370-CR07-tests.log and S8-R370-CR07-restored.log.
+
+CR-08 and WR-01 remain to execute, then targeted coverage, one bounded full gate and
+both sequential reviews. The prior review hold is superseded only for this ruled repair
+cycle; there is no passing independent review yet. No push or PR.
+
 ## R359 HOLD — renewed code review BLOCKED (2026-09-16)
 
 The bounded full gate passed, then governed code review completed on candidate

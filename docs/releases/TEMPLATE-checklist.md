@@ -11,14 +11,14 @@ verification steps after the train runs; they are deliberately not checkboxes.
 - [ ] Version PR merged to main (dispatch `version-pr.yml` → review → merge; ADR-0325):
       `.changeset/` drained, versions bumped, CHANGELOGs written, `bun.lock` refreshed, AND
       `registry/{ledger.jsonl,index.json,tarballs.json}` updated in the SAME commit
-- [ ] The draft GitHub Release's tag targets the version-PR merge commit or its
-      attestation-only successor (docs/audit/checklist only — no package bytes; readiness
-      reads the R4 audit + this checklist from the TAGGED tree, and this checklist is only
-      completable after the merge, so a successor commit is the normal shape — operator lock
-      2026-07-12, first ride). publish.yml re-verifies ancestry and byte-reproduces every
-      tarball hash at the tag — a mismatch stops the train
+- [ ] The draft release tag targets the single-parent attestation successor of the reviewed
+      version candidate. Only outputs/audit/release-audit-<tag>.md and
+      docs/releases/<tag>-checklist.md may differ from its reviewed parent (ADR-0425).
+      The tagged tree contains the audit naming reviewed_sha = that parent; readiness
+      verifies both the parent binding and exact changed-path allowlist. No product or
+      other documentation bytes may enter this successor.
 - [ ] CI green on the release SHA (check · standards-gate · registry-index · oscal-conformance ·
-      deterministic · support-bot · runtime-images-gate — the push-to-main run on the version-PR merge commit)
+      deterministic · support-bot · runtime-images-gate — the full run on the final tagged successor SHA)
 - [ ] `bun run sot` green
 - [ ] R4 fresh full audit of the cumulative diff since the last release tag, on file at
       `outputs/audit/release-audit-<tag>.md` (SHIP-audit lane: gw-code-reviewer +
@@ -31,19 +31,25 @@ verification steps after the train runs; they are deliberately not checkboxes.
 - [ ] No open P0/P1 against the buyer install path (registry tarballs resolve for
       `dist-tags.latest` of every published package)
 
-## R4 artifact schema (R359 / CR-06)
+## R4 artifact schema (R370 / ADR-0425)
 
-The audit file must begin with strict YAML frontmatter containing only: schema_version: 1,
-status: clean, critical: 0, base (previous release tag), tag (this release), sha (the exact
-40-character final candidate SHA), reviewed_scope (a non-empty array of paths), and reviewers.
-Reviewers contains exactly one code_review and one security_audit entry; each has role,
-identity (non-empty), and reviewed_at (an ISO timestamp with timezone). Unknown fields, failed
-verdicts, incomplete identities, empty scope and mismatched bindings fail closed. The gate
-derives the previous release from the candidate's parent history; it never trusts the audit
-file to choose its own comparison base. Prose follows the closing frontmatter delimiter.
+The audit begins with strict YAML frontmatter containing only: schema_version: 2,
+status: clean, critical: 0, base (previous release tag), tag (this release), reviewed_sha
+(the exact 40-character SHA of the tag candidate parent), reviewed_scope (a non-empty
+array of paths), and reviewers. Reviewers contains exactly one code_review and one
+security_audit entry, each with role, non-empty identity, and reviewed_at ISO timestamp
+with timezone. Unknown fields, failed verdicts, incomplete identities and wrong bindings
+fail closed. The gate derives the reviewed parent and previous release itself.
 
-Do not copy a preparation or failed report to the tag-named path. Produce the actual completed
-audit for the final candidate; the existence of this template is not an attestation.
+Review candidate A first. Commit its completed audit naming A and the completed checklist
+as successor B. Only these two tag-specific regular files may change. The gate reads the
+committed audit in B, proves B has exactly one parent A, and rejects every other changed
+path (including other audit or checklist files). Full CI still runs on B, not merely A.
+Never put B inside its own audit: that would change its SHA. The release workflow keeps
+passing the final tag SHA; readiness derives reviewed_sha with rev-parse <tag_sha>^.
+
+Do not copy a preparation or failed report into the tag-named path. No release tag or final
+attestation exists during preparation; this template is not a completed audit.
 
 ## Post-release verification (after the train completes)
 

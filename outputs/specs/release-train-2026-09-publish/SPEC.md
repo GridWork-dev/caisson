@@ -21,6 +21,14 @@ Prepare an evidence-bound release PR that can move the pending Caisson fixes to 
 
 ## Context
 
+S8_REPAIRS_2 (2026-09-16T13:59:37Z), R370/R371, continues the loop with three repairs:
+R4 reviews the tag candidate's parent and independently limits the successor to exactly
+the tag-specific audit/checklist path set; commerce fails closed on membership-resolution
+errors while dashboard fallback remains; approvals gain atomic rejection and defined
+expiry. Real Git lifecycle, production resolver binding and approval lifetime/capacity
+regressions plus mutation proof are required. Three atomic commits and append-only ADR
+extensions precede the bounded full gate and both sequential reviews.
+
 R359 (S8_REPAIRS_AUTHORIZED, 2026-09-16T02:37:11Z) supersedes the six-blocker hold and locks the review's six repair designs. Acceptance now also requires six ordered atomic repair commits (CR-06, CR-05, CR-02, CR-01, CR-03, CR-04), two append-only ADRs for approval integrity and checkout ownership, per-guard mutation proof with hash-identical restoration on Bun 1.4.2, one full repository gate after targeted coverage, and clean governed code/security re-reviews. No live staging probes are authorized; staging boundary behavior is proven locally with injected unit/mutation tests. R344's OS-only policy remains unchanged.
 
 Current authority: R354 authorizes governed cumulative code review and security audit for R4. R356 and S8_REVIEW_RETRY_3 (2026-09-16T02:03:36Z) authorize the corrected sequential dispatches with output streamed directly to disk. Their exact review range is v2026.08.18..895849a677cdb2e1a9a48d11b9c73a2ac1a0ae6c, 89 commits / 430 paths; later lane commits are administrative evidence. A conforming-command denial or review/security blocker stops this continuation. Parent tool errors do not interrupt a healthy review. Earlier no-retry language records the historical hold and is superseded for this act only. A review verdict is still required; authorization is not a pass.

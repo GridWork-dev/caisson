@@ -1,7 +1,7 @@
 ---
 updated: 2026-09-05
 status: live
-adr_ceiling: 0424
+adr_ceiling: 0425
 ---
 
 # Decisions & Forks — live board
@@ -15,6 +15,9 @@ narrative below. The operative catalog is Compliance $1,649, Everything $2,259, 
 `oscal-spine` $249; the amended merge point is before the first release train.
 
 ## Locked (→ ADRs / specs)
+
+R370 / EST-ASK-328 locks the reviewed-parent audit and exact attestation-only successor:
+[ADR-0425](../../knowledge/decisions/ADR-0425-bind-release-audit-to-reviewed-parent.md).
 
 R359 / EST-ASK-317 locks real-session ownership and server-side cart entitlement filtering
 before Paddle transaction creation: [ADR-0424](../../knowledge/decisions/ADR-0424-recheck-cart-entitlements-before-checkout.md).

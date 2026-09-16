@@ -1,5 +1,13 @@
 # S8 release train receipt — R356 retry 3 review blockers
 
+## R370/R371 repair cycle authorized
+
+S8_REPAIRS_2 supersedes the hold below for three ordered repairs and re-review.
+CR-07 is implemented under ADR-0425 with real Git lifecycle proof and three mutation
+arms; Bun 1.4.2 restored tests: 32 pass / 0 fail / 70 assertions. CR-08 and WR-01
+remain, followed by the bounded full gate and code/security reviews. No PR, push or
+release-readiness pass is claimed. Exact evidence is in RUN-NOTES.
+
 ## Current hold — R359 renewed review BLOCKED
 
 The authorized gate retry is green. Renewed code review of

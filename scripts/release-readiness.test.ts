@@ -11,29 +11,66 @@
 // `push: { paths: [...] }`. A text heuristic over YAML is the wrong tool when a parser is in hand.
 import {
   mkdtempSync,
+  mkdirSync,
   readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { spawnSync } from "node:child_process";
-import { join } from "node:path";
+import { execFileSync, spawnSync } from "node:child_process";
+import { dirname, join } from "node:path";
 
 import { afterAll, describe, expect, test } from "bun:test";
 
-import { auditArtifactIsValid, REQUIRED_CHECKS } from "./release-readiness.ts";
+import {
+  auditArtifactIsValid,
+  auditSuccessorIsValid,
+  ATTESTATION_ONLY_PATHS,
+  REQUIRED_CHECKS,
+} from "./release-readiness.ts";
 
 describe("R4 audit attestation", () => {
   const dir = mkdtempSync(join(tmpdir(), "caisson-r4-"));
   afterAll(() => rmSync(dir, { recursive: true, force: true }));
+  function git(repo: string, ...args: string[]): string {
+    return execFileSync("git", args, {
+      cwd: repo,
+      env: {
+        ...process.env,
+        GIT_CONFIG_GLOBAL: "/dev/null",
+        GIT_CONFIG_NOSYSTEM: "1",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    })
+      .toString()
+      .trim();
+  }
+  function scratch(): string {
+    const repo = mkdtempSync(join(dir, "repo-"));
+    git(repo, "init", "--quiet");
+    git(repo, "config", "user.name", "R4 lifecycle fixture");
+    git(repo, "config", "user.email", "r4@example.invalid");
+    writeFileSync(join(repo, "product.ts"), "export const version = 1;\n");
+    commit(repo);
+    git(repo, "tag", "v2026.08.18");
+    writeFileSync(join(repo, "product.ts"), "export const version = 2;\n");
+    commit(repo);
+    return repo;
+  }
+  function commit(repo: string): string {
+    git(repo, "add", ".");
+    git(repo, "commit", "--quiet", "-m", "test: lifecycle fixture");
+    return git(repo, "rev-parse", "HEAD");
+  }
+  const fixtureRepo = scratch();
   const binding = {
     base: "v2026.08.18",
     tag: "v2026.09.16",
-    sha: "a".repeat(40),
+    reviewed_sha: git(fixtureRepo, "rev-parse", "HEAD"),
   };
   const clean = {
-    schema_version: 1,
+    schema_version: 2,
     ...binding,
     status: "clean",
     critical: 0,
@@ -59,16 +96,74 @@ describe("R4 audit attestation", () => {
   const document = (value: unknown) =>
     `---\n${JSON.stringify(value)}\n---\n# Audit\n`;
 
+  function attestation(repo: string, reviewedSha: string): void {
+    mkdirSync(join(repo, "outputs/audit"), { recursive: true });
+    mkdirSync(join(repo, "docs/releases"), { recursive: true });
+    writeFileSync(
+      join(repo, `outputs/audit/release-audit-${binding.tag}.md`),
+      document({ ...clean, reviewed_sha: reviewedSha }),
+    );
+    writeFileSync(
+      join(repo, `docs/releases/${binding.tag}-checklist.md`),
+      "- [x] fixture\n",
+    );
+  }
+
+  test("R4 real Git lifecycle accepts review A then attestation-only B", () => {
+    const repo = scratch();
+    const a = git(repo, "rev-parse", "HEAD");
+    attestation(repo, a);
+    const b = commit(repo);
+    expect(a).not.toBe(b);
+    expect(auditSuccessorIsValid(repo, binding.tag, b)).toBe(true);
+    // Working-tree tampering cannot replace the committed attestation.
+    attestation(repo, git(repo, "rev-parse", "HEAD^"));
+    writeFileSync(
+      join(repo, `outputs/audit/release-audit-${binding.tag}.md`),
+      "invalid",
+    );
+    expect(auditSuccessorIsValid(repo, binding.tag, b)).toBe(true);
+  });
+  test.each([
+    "product.ts",
+    "outputs/audit/unreviewed.md",
+    "docs/releases/other-checklist.md",
+    " outputs/audit/other.md",
+  ])("R4 real Git lifecycle rejects unreviewed successor path %s", (path) => {
+    const repo = scratch();
+    const a = git(repo, "rev-parse", "HEAD");
+    attestation(repo, a);
+    mkdirSync(dirname(join(repo, path)), { recursive: true });
+    writeFileSync(join(repo, path), "unreviewed product or policy byte\n");
+    const b = commit(repo);
+    expect(auditSuccessorIsValid(repo, binding.tag, b)).toBe(false);
+  });
+  test("R4 real Git lifecycle rejects an audit naming C instead of parent A", () => {
+    const repo = scratch();
+    const a = git(repo, "rev-parse", "HEAD");
+    // C is a real distinct existing commit, not an invented forty-character fixture.
+    const c = git(repo, "rev-parse", `${a}^`);
+    attestation(repo, c);
+    const b = commit(repo);
+    expect(auditSuccessorIsValid(repo, binding.tag, b)).toBe(false);
+  });
+  test("R4 attestation allowlist names exactly the audit and checklist", () => {
+    expect(ATTESTATION_ONLY_PATHS).toEqual([
+      "outputs/audit/release-audit-{tag}.md",
+      "docs/releases/{tag}-checklist.md",
+    ]);
+  });
+
   test("R4 rejects an existing empty audit instead of accepting its filename", () => {
     expect(auditArtifactIsValid(fixture(""), binding)).toBe(false);
   });
-  test("R4 accepts a clean audit bound to the exact base, tag and final SHA", () => {
+  test("R4 accepts a clean audit bound to the exact base, tag and reviewed parent SHA", () => {
     expect(auditArtifactIsValid(fixture(document(clean)), binding)).toBe(true);
   });
   test.each([
     ["failed verdict", { status: "issues_found" }],
     ["blocking finding", { critical: 1 }],
-    ["wrong SHA", { sha: "b".repeat(40) }],
+    ["wrong SHA", { reviewed_sha: git(fixtureRepo, "rev-parse", "HEAD^") }],
     ["wrong base", { base: "v2026.07.30" }],
     ["wrong tag", { tag: "v2026.09.17" }],
     ["empty scope", { reviewed_scope: [] }],

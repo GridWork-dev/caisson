@@ -8,6 +8,30 @@ status: accepted
 
 # Plan — release-train-2026-09-publish
 
+## R370/R371 — second repair cycle (S8_REPAIRS_2)
+
+Operator ruling 2026-09-16T13:59:37Z authorizes three ordered commits on this lane:
+
+1. CR-07: schema binds reviewed_sha to the final candidate's single parent; independently
+   prove only the exact tag audit and checklist paths changed in the successor. Read
+   the committed artifact, retain full CI on tag SHA, and test the real A→B Git lifecycle,
+   product-byte rejection and wrong reviewed SHA. Append ADR-0425 and update ceilings.
+2. CR-08: split strict commerce account/session resolution from the existing dashboard
+   availability fallback. Put resolution inside the checkout failure boundary. Prove an
+   organization membership failure calls neither entitlements nor Paddle. Append the
+   next ADR superseding ADR-0424 only for this resolver behavior; leave dashboard intact.
+3. WR-01: atomic rejection deletes without spawning; pending approvals expire after a
+   defined finite lifetime. Test expiry, capacity reclamation, rejection and replay.
+   Append the next ADR extending ADR-0423; preserve existing integrity checks.
+
+Main thread owns each implementation. Each commit includes tests and named guard-removal
+mutations, byte-identical restoration hashes and Bun 1.4.2 counts in RUN-NOTES. Then run
+affected targeted tests and the full root gate once with Turbo concurrency 2. Fresh headroom,
+sequential governed code_review and security_audit (deep/shared-read/repo-read), corrected
+inline tool rules and parent-streamed logs follow. Clean verdicts permit packet steps 4–6
+and S8_RELEASE_PR, then hold at green. Stops and no-merge/publish/deploy/branch-delete
+boundaries remain unchanged. No new review verdict is implied by this authorization.
+
 ## R359 gate-retry disposition — 2026-09-16T03:30:26Z
 
 The operator classified the first full-check exit 137 and cancellation exit 130 as
