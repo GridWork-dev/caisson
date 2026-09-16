@@ -1,5 +1,67 @@
 # S8 release train run notes — 2026-09-10
 
+## R359 HOLD — full check exits 137 outside repair scope (2026-09-16)
+
+All six ordered repair commits are now complete:
+
+| Repair | Commit                                     |
+| ------ | ------------------------------------------ |
+| CR-06  | `a415ee2143c4bd278dc5c3ef2211d068ac9127e8` |
+| CR-05  | `c233a95177770a5578729a35091f1c69ac93bb73` |
+| CR-02  | `46169496795f3234042345457a88450b646cbd83` |
+| CR-01  | `e08b4b36c3d0d02d4f8a73b8ef99f7792e130cb1` |
+| CR-03  | `f28817fea878f6e9f678a6ea4f5bee0cc3702ef1` |
+| CR-04  | `7ee9b86d544808a38707992759806028ae4465cd` |
+
+Combined post-repair targeted suite: **Bun 1.4.2 — 125 pass / 0 fail / 457 assertions**
+across 13 files. Exit 99 is the explicitly accepted pre-existing auth-account outcome;
+no assertion failure was suppressed. Log: [s8-r359-targeted.log](s8-r359-targeted.log).
+The baseline JSON is now also in-repo for the eventual PR disclosure:
+[s8-r359-baseline-exit99.json](s8-r359-baseline-exit99.json).
+
+The single authorized full `bun run check` was run against `7ee9b86d`. **Bun 1.4.2 —
+full gate exit 137**, Turbo **193 successful / 199 total tasks**, **24 cached**,
+**1m5.433s**. Its named failed task is **`@caisson/ai-kit#test`**. Site build also reports
+exit 130 during the failed run; it is not independently diagnosed. This is distinct
+from the accepted exit 99 and outside the six repair paths, so R359's stop applies.
+No retry, exit-code override, dependency change or resource workaround was attempted.
+No OOM cause is asserted without evidence.
+
+Captured completed-suite subtotals only: **Bun 1.4.2 — 5,379 pass / 0 fail /
+18,241 assertions**. These omit unfinished suites and do not make the full gate green.
+Every captured Bun test banner is 1.4.2 (744846f84). Full log:
+[s8-r359-full-check.log](s8-r359-full-check.log), SHA-256
+`5c9c524dacffbdf1a24b3c5632073622842b368208dddaa541102a8f962b0f0a`.
+
+Verbatim gate tail:
+
+```text
+@caisson/site:build: error: script "build" exited with code 130
+@caisson/ai-kit#test:  ERROR  command (/home/gw/lab/worktrees/caisson/release-train-2026-09/packages/ai-kit) /home/gw/.bun/bin/bun run test exited (137)
+
+ Tasks:    193 successful, 199 total
+Cached:    24 cached, 199 total
+  Time:    1m5.433s
+Failed:    @caisson/ai-kit#test
+
+ ERROR  run failed: command  exited (137)
+error: script "check" exited with code 137
+```
+
+Installed `@changesets/cli` full-backlog status was independently refreshed with no
+`--since` filter: 37 changesets, still 60 effective bumps (57 patch / 3 minor). No versions
+were consumed. Machine output: estate handoff `S8-R359-changesets.json`.
+
+Fresh review packs were prepared but neither renewed reviewer was dispatched; no fresh
+headroom admission was attempted after the failed gate. Packs are preserved in estate
+handoff `S8-R359-review-packs/` while held. They are not review evidence. The earlier
+six-blocker review remains historical; this repair has no independent passing verdict.
+
+**S8_RELEASE_HELD.** Packet: estate handoff `OPERATOR-ACT-S8-R359-FULL-GATE-HOLD.md`.
+Remaining: operator disposition of the full-gate failure, sequential renewed code/security
+reviews, release packet steps 4–6 and green PR. No PR, push, merge, version dispatch, tag,
+publish, live probe, deployment or branch deletion. SOT was not run beyond the stop.
+
 ## R359 CR-04 — staging negative boundaries (2026-09-16)
 
 Sixth ordered repair. Staging now resolves the raw fleet URL map through the shared

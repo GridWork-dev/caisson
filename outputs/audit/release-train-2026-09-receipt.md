@@ -1,5 +1,24 @@
 # S8 release train receipt — R356 retry 3 review blockers
 
+## Current hold — R359 full gate exit 137 (2026-09-16)
+
+The exit-99 hold below was explicitly dispositioned by `S8_CR03_CONTINUE` at 03:12:07Z.
+CR-03 committed as `f28817fe`, CR-04 as `7ee9b86d`; all six repairs and both ADRs are
+committed. Combined targeted verification: **Bun 1.4.2 — 125 pass / 0 fail / 457 assertions**,
+with the accepted pre-existing exit 99.
+
+The full `bun run check` ran once against `7ee9b86d` and failed: **Bun 1.4.2, exit 137**,
+**193 / 199 Turbo tasks successful**, failed task **`@caisson/ai-kit#test`**. This failure
+is outside repair scope and distinct from the accepted exit 99. R359 requires stopping.
+The root cause is unestablished; no retry or override was performed.
+
+Logs and exact counts: [RUN-NOTES](release-train-2026-09-RUN-NOTES.md),
+[full gate](s8-r359-full-check.log), [targeted suite](s8-r359-targeted.log),
+[accepted pre-repair exit-99 evidence](s8-r359-baseline-exit99.json).
+Neither renewed review was dispatched; no passing review or release-readiness claim.
+**S8_RELEASE_HELD**, no release PR. No push, merge, tag, version/publish/deploy dispatch,
+live probe or branch deletion. Full-gate disposition precedes the remaining reviews and PR.
+
 ## Current hold — R359 baseline exit 99 (2026-09-16)
 
 R359 repairs CR-06, CR-05, CR-02 and CR-01 committed in order at `a415ee21`, `c233a951`,
