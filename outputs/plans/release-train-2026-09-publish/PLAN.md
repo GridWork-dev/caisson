@@ -8,6 +8,27 @@ status: accepted
 
 # Plan — release-train-2026-09-publish
 
+## R373 — candidate blob repairs (S8_REPAIRS_3)
+
+EST-ASK-331=A, 2026-09-16T15:41:58Z. The operator locks both repairs:
+CR-07/WR-03 reads the checklist from the candidate Git blob using the same SHA as
+the audit; WR-02 uses a raw stdout helper for both blob reads, preserving audit
+byte-zero frontmatter validation. Existing ADR-0425 design remains the contract.
+One evidence-only commit normalizes three named in-repo copies, preserving hashed
+handoff originals; then one implementation commit per finding.
+
+Main thread owns scripts/release-readiness.ts and its tests. First expose the existing
+checklist check for a scratch-repository regression without changing its read behavior;
+prove committed incomplete / dirty complete is RED, then repair and prove GREEN.
+Separately prove committed leading-newline audit RED, repair raw reads and prove GREEN.
+Remove each blob read guard, require RED and restore byte-identical fixed files.
+Run the targeted suite plus eleven prior mutation arms once, full root gate once
+with Turbo concurrency 2, then sequential governed code_review/gw-code-reviewer and
+security_audit/gw-security-auditor, deep/shared-read/repo-read, fresh quota before each,
+exact inline tool rules and parent-streamed logs. Clean verdicts permit packet steps
+4–6 and S8_RELEASE_PR only. Conforming-command floor denial, review/security blocker,
+or unrelated gate failure stops. No merge/tag/publish/deploy/live probe/branch deletion.
+
 ## R370/R371 — second repair cycle (S8_REPAIRS_2)
 
 Operator ruling 2026-09-16T13:59:37Z authorizes three ordered commits on this lane:

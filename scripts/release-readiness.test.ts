@@ -24,6 +24,7 @@ import { dirname, join } from "node:path";
 import { afterAll, describe, expect, test } from "bun:test";
 
 import {
+  checkChecklist,
   auditArtifactIsValid,
   auditSuccessorIsValid,
   ATTESTATION_ONLY_PATHS,
@@ -124,6 +125,34 @@ describe("R4 audit attestation", () => {
     );
     expect(auditSuccessorIsValid(repo, binding.tag, b)).toBe(true);
   });
+  test("R373 accepts committed complete checklist despite incomplete dirty copy", () => {
+    const repo = scratch();
+    attestation(repo, git(repo, "rev-parse", "HEAD"));
+    const candidate = commit(repo);
+    writeFileSync(
+      join(repo, `docs/releases/${binding.tag}-checklist.md`),
+      "- [ ] dirty copy\n",
+    );
+    expect(checkChecklist(binding.tag, candidate, repo)).toBe(true);
+  });
+  test("R373 rejects checklist absent from candidate despite complete working copy", () => {
+    const repo = scratch();
+    const candidate = git(repo, "rev-parse", "HEAD");
+    attestation(repo, candidate);
+    expect(checkChecklist(binding.tag, candidate, repo)).toBe(false);
+  });
+
+  test("R373 rejects committed incomplete checklist despite completed dirty copy", () => {
+    const repo = scratch();
+    attestation(repo, git(repo, "rev-parse", "HEAD"));
+    const path = join(repo, `docs/releases/${binding.tag}-checklist.md`);
+    writeFileSync(path, "- [ ] live evidence pending\n");
+    const candidate = commit(repo);
+    writeFileSync(path, "- [x] live evidence complete\n");
+    expect(auditSuccessorIsValid(repo, binding.tag, candidate)).toBe(true);
+    expect(checkChecklist(binding.tag, candidate, repo)).toBe(false);
+  });
+
   test.each([
     "product.ts",
     "outputs/audit/unreviewed.md",

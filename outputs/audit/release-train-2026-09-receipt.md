@@ -1,5 +1,20 @@
 # S8 release train receipt — R370/R371 security hold
 
+## R373 CR-07/WR-03 repair — candidate checklist (2026-09-16)
+
+Evidence recovery committed `159bffbd`, clean immediate readback. Checklist check
+now receives the same candidate SHA as the audit and reads its committed blob.
+An exported check and optional scratch-repo root expose the actual production check;
+pre-repair behavior was unchanged for the RED proof. Incomplete committed checklist
+plus completed dirty copy: Bun 1.4.2 **0 pass / 1 fail / 2 assertions**, as predicted.
+Restored suite: **35 pass / 0 fail / 74 assertions**, exit 0. Complete committed /
+incomplete dirty and absent committed / complete dirty cases are also covered.
+
+Blob-to-worktree mutation: **0/1/2**, exit 1; fixed/restored SHA-256
+`bfdfa978d04866a2fdc709c3a054da4dfcb030d7807600f0fe60641886f268a6`.
+Logs and mutation JSON are in handoff/S8-R373-CR07-*. WR-02 raw-byte normalization
+is deliberately the next separate finding commit; no review closure claimed yet.
+
 ## R373 evidence recovery — S8_REPAIRS_3 (2026-09-16)
 
 Operator ruling EST-ASK-331=A authorizes repairing CR-07/WR-03 and WR-02,

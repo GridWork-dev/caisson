@@ -432,25 +432,31 @@ function checkAuditArtifact(tag: string, sha: string): void {
 }
 
 // --- 6. per-release checklist --------------------------------------------------------------------
-function checkChecklist(tag: string): void {
-  const path = join(REPO, "docs/releases", `${tag}-checklist.md`);
-  if (!existsSync(path)) {
+export function checkChecklist(tag: string, sha: string, repo = REPO): boolean {
+  try {
+    releaseRef.parse(tag);
+    z.string()
+      .regex(/^[a-f0-9]{40}$/)
+      .parse(sha);
+    const path = `docs/releases/${tag}-checklist.md`;
+    const source = run("git", ["show", `${sha}:${path}`], repo);
+    const unchecked = (source.match(/^\s*-\s\[\s\]/gm) ?? []).length;
+    record(
+      "per-release checklist",
+      unchecked === 0,
+      unchecked === 0
+        ? `all boxes checked at ${sha}`
+        : `${String(unchecked)} unchecked box(es) at ${sha}`,
+    );
+    return unchecked === 0;
+  } catch {
     record(
       "per-release checklist",
       false,
-      `MISSING docs/releases/${tag}-checklist.md — copy docs/releases/TEMPLATE-checklist.md`,
+      `MISSING or unreadable docs/releases/${tag}-checklist.md at ${sha}`,
     );
-    return;
+    return false;
   }
-  const unchecked = (readFileSync(path, "utf8").match(/^\s*-\s\[\s\]/gm) ?? [])
-    .length;
-  record(
-    "per-release checklist",
-    unchecked === 0,
-    unchecked === 0
-      ? "all boxes checked"
-      : `${String(unchecked)} unchecked box(es)`,
-  );
 }
 
 // --- 7. live-hybrid golden leg (--local) ---------------------------------------------------------
@@ -501,7 +507,7 @@ if (import.meta.main) {
   checkSot();
   checkRegistryCoverageGate();
   checkAuditArtifact(tag, sha);
-  checkChecklist(tag);
+  checkChecklist(tag, sha);
   if (local) checkLiveHybrid();
 
   const failed = results.filter((r) => !r.ok);
