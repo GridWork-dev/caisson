@@ -1,5 +1,11 @@
 # S8 release train run notes — 2026-09-10
 
+## R356 — exact Git subcommand contract amended
+
+S8_REVIEW_RETRY_2 (2026-09-16T01:52:04Z), EST-ASK-314, explains that git -C was correctly rejected: the hook expects an allowed subcommand immediately after git. The operator's earlier rule text was incomplete. Both committed in-worktree briefs now contain the exact R356 paragraph, remove contrary git -C guidance, and retain one command, bounded reads, relative paths, no skills, no sed/chaining/redirects. This delegated reviewer exception does not change the parent lane's git -C convention. No hook or sandbox change.
+
+Prediction: normal brief commit succeeds; fresh limits allow the sequential code_review then security_audit. Threads start; telemetry HTTP 500 may recur and remains non-blocking by ruling. Each reviewer returns a substantive verdict or explicit limitations; no PASS assumed. A BLOCKED on a command satisfying the exact new rules stops and is pasted verbatim without retry. Product review range remains v2026.08.18..895849a6; later commits only preserve review authority/evidence.
+
 ## R354 corrected-brief retry — permitted Git command denied
 
 Both corrected in-worktree briefs were committed normally as **725c1865** and the entire code-review brief was supplied inline. Fresh audited limits: **7d 19.0% used, resets 3d; reading 2026-09-16T00:21Z**. Thread **01a0a797-3d3d-7db1-8c53-d4e4cd332388** started; the expected best-effort telemetry 500 was ignored under the ruling.
