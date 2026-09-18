@@ -70,6 +70,16 @@ jobs:
       # Changesets bumps package.json so the version PR cannot ship stale design metadata.
       - name: regenerate version-coupled design manifest
         run: bun run --filter @caisson/ui gen:manifest
+      # Template pins and their generated starter golden carry workspace versions too.
+      # Refresh before packing so this version PR records the final generator bytes.
+      - name: refresh generator template pins and Next starter golden
+        run: |
+          set -euo pipefail
+          bun registry/scripts/sync-generator-template-pins.ts
+          (
+            cd packages/cli
+            BLESS=1 bun test ./src/generate.test.ts -t "framework=next composes the Next.js starter"
+          )
       # The bumps change workspace package versions recorded in bun.lock — refresh it here (NOT
       # frozen) so the merge commit passes every `bun install --frozen-lockfile` gate downstream.
       - name: refresh bun.lock for the bumped versions
@@ -102,6 +112,7 @@ jobs:
           git add -A -- \
             ':(glob)**/package.json' ':(glob)**/CHANGELOG.md' '.changeset' bun.lock \
             packages/ds-manifest/src/base-manifest.json \
+            packages/cli/src/__golden__/generated-fileset-framework-next.json \
             registry/ledger.jsonl registry/index.json registry/tarballs.json
           if git diff --cached --quiet; then
             echo "::error::changeset version produced no changes — nothing to PR"
