@@ -432,6 +432,39 @@ describe("generate — framework templates (ADR-0287)", () => {
 
   test("framework=next composes the Next.js starter + matches its golden", () => {
     const { files } = generate(INDEX, { ...BASE, framework: "next" });
+    // A stale template and stale golden can agree. Bind the generated pins to
+    // workspace versions as well, so omitting the version-PR refresh is loud.
+    const template = JSON.parse(
+      readFileSync(
+        join(import.meta.dir, "../templates/framework/next/package.json"),
+        "utf8",
+      ),
+    ) as { dependencies: Record<string, string> };
+    const generated = JSON.parse(
+      files.find((file) => file.path === "package.json")?.content ?? "{}",
+    ) as {
+      dependencies: Record<string, string>;
+    };
+    const workspacePins: Record<string, string> = {};
+    const generatedPins: Record<string, string> = {};
+    for (const name of Object.keys(template.dependencies)) {
+      if (!name.startsWith("@caisson/")) continue;
+      const workspace = JSON.parse(
+        readFileSync(
+          join(
+            import.meta.dir,
+            "../../",
+            name.slice("@caisson/".length),
+            "package.json",
+          ),
+          "utf8",
+        ),
+      ) as { version: string };
+      workspacePins[name] = `^${workspace.version}`;
+      generatedPins[name] = generated.dependencies[name]!;
+    }
+    expect(Object.keys(workspacePins).length).toBeGreaterThan(0);
+    expect(generatedPins).toEqual(workspacePins);
     matchGolden(import.meta.url, "generated-fileset-framework-next", files);
   });
 
