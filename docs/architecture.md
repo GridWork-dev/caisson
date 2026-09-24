@@ -1,5 +1,5 @@
 ---
-updated: 2026-09-05
+updated: 2026-09-24
 status: live
 grounds:
   - package.json
@@ -64,9 +64,11 @@ Core contracts receive injected clients/config and do not read ambient provider 
   Cloudflare Access. PR #448 re-coupled admin to Access and **ADR-0415** ratified it, retiring
   ADR-0283's "no longer depends on it either way" claim; the better-auth session gate is unchanged.
   `apps/admin` now requires `CF_ACCESS_TEAM_DOMAIN` and `CF_ACCESS_AUD` at startup and verifies an
-  Access assertion on every request except the `/healthz` canary. **Not yet true in production:**
-  the serving revision predates #448, and no Access application fronts `admin.caisson.sh` today
-  (measured 2026-08-26) — production Access is deferred to the Wave-5 edge sequencing.
+  Access assertion on every request except the `/healthz` canary. The serving revision has carried
+  that check since the #464 carve unfroze deploys (2026-08-27), but no Access application fronts
+  `admin.caisson.sh` (last measured 2026-09-01: `/healthz` 200, `/` and `/api/health` 403), so every
+  non-probe admin route refuses until the application lands with the Wave-5 edge sequencing —
+  tracked as the CAISSON-208 residual in [outstanding work](state/outstanding-work.md).
 - **Buyer gates:** marketing/docs/API are public; `/dashboard*` and `/cart*` are Cloudflare Access
   gated pre-launch.
 - **Evidence:** audit chains, signed anchors, proof endpoints, and WORM exports keep redaction and
@@ -91,28 +93,30 @@ contrast implementation, including semantic, functional, and code-syntax colors.
 | support bot           | Railway Python service    | no public hostname                                   |
 | `registry.caisson.sh` | Cloudflare Worker         | live authenticated npm protocol                      |
 
-All six services run `9cb7681c` (the 2026-08-25 #455 ride, run `32892857628` — deployment ids
-`4294e507` site, `52b14a07` admin, `cd0fa10b` demos, `e1656466` docs, `86599eee` license,
-`2cc0825f` support-bot, verified against the applied manifests 2026-08-26). **`main` is ahead by
-4 commits / 151 files:** #448's ride failed on admin's healthcheck and Railway deploys are frozen
-until the gate topology is decided — see [deploy state](deploy/STATE.md) and CAISSON-208. The index parity probe reports
-`dc5ee000aebf`/54 entries equal across repo, license, Worker, and admin. Docs-RAG and support-bot
-are private services reachable only through a Turnstile-gated site proxy, so their source parity
-still has no automatable receipt — see
+Deploys are unfrozen since the #464 health-path carve (2026-08-27). The push path
+(`deploy-railway`, five services) last ran green at `fd6f6084` (run `35815698009`, 2026-09-23);
+`caisson-license` is dispatch-only and its newest receipt is `6604844a` (2026-09-14). The
+2026-09-16 version cut (#487) is not yet published, so the committed `registry/index.json` is ahead
+of the Worker's baked index until the next release train; the last recorded index-parity reading
+(`dc5ee000aebf`/54, 2026-08-26) predates that cut — see [deploy state](deploy/STATE.md). Docs-RAG
+and support-bot are private services reachable only through a Turnstile-gated site proxy, so their
+source parity still has no automatable receipt — see
 [production readiness](state/production-readiness.md).
 
 ## Gate stack
 
-| Gate                | Guards                                                                  |
-| ------------------- | ----------------------------------------------------------------------- |
-| `check`             | full workspace build, lint, and tests                                   |
-| formatting          | canonical formatting                                                    |
-| `standards-gate`    | license split, manifest/price authority, RLS and entitlement invariants |
-| dependency graph    | TypeScript-aware dependency direction and coverage sentinels            |
-| `registry-index`    | byte-identical rebuild from the append-only ledger                      |
-| `oscal-conformance` | OSCAL schema/round-trip validity                                        |
-| `deterministic`     | security scan and deterministic artifact checks                         |
-| `sot`               | ADR ceiling, state freshness, archive, tracker, and changeset drift     |
+| Gate                  | Guards                                                                  |
+| --------------------- | ----------------------------------------------------------------------- |
+| `check`               | full workspace build, lint, and tests                                   |
+| formatting            | canonical formatting                                                    |
+| `standards-gate`      | license split, manifest/price authority, RLS and entitlement invariants |
+| dependency graph      | TypeScript-aware dependency direction and coverage sentinels            |
+| `registry-index`      | byte-identical rebuild from the append-only ledger                      |
+| `oscal-conformance`   | OSCAL schema/round-trip validity                                        |
+| `deterministic`       | security scan and deterministic artifact checks                         |
+| `support-bot`         | the Python gate for `services/support-bot` (required since ADR-0414)    |
+| `runtime-images-gate` | aggregate of the per-image runtime scan matrix (required since R359)    |
+| `sot`                 | ADR ceiling, state freshness, archive, tracker, and changeset drift     |
 
 Local gates are executable. Private-repository access has been authorized since 2026-06-30, so
 GitHub Actions and release evidence are certifiable — the current dispositions live in

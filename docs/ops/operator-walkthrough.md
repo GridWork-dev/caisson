@@ -1,5 +1,5 @@
 ---
-updated: 2026-09-05
+updated: 2026-09-24
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -38,8 +38,10 @@ Use the repository hierarchy, not an external artifact:
 
 - [ ] Select the approved immutable commit and rollback target.
 - [ ] Deploy site, admin, license, docs-RAG, support-bot, and registry Worker from that commit.
-- [ ] Apply the pending migration chain through `0032_field_crypto_keys.sql`; attach schema,
-      forced-RLS, tenant-policy, and append-only-trigger receipts before the KMS probe.
+- [ ] The migration chain is already applied in production (`0030`–`0032` on 2026-07-27,
+      `schema_version` 29 → 32; `0033` on 2026-07-29 → 33 — see
+      [deploy state](../deploy/STATE.md)); before the KMS probe, re-attach schema, forced-RLS,
+      tenant-policy, and append-only-trigger receipts taken at the launch commit.
 - [ ] Prove manifest-digest parity plus health, checkout, entitlement, refund, RAG, and support.
 - [ ] After the fleet deploy, confirm docs/support answer Compliance at $1,649 and Everything at
       $2,259, and license fulfillment recognizes all current SKUs.
@@ -57,6 +59,8 @@ Use the repository hierarchy, not an external artifact:
 
 Seven provider-console checklists (Railway, Arnica, Grafana, Blacksmith, DMARC, key parity,
 Bedrock) — see [provider-console-checks](provider-console-checks.md) for the per-console steps.
+The Blacksmith check is superseded since CI moved to Ubicloud on 2026-09-10; its replacement is
+not yet written (provider-console-checks §4).
 
 - [ ] Complete all seven console checks in provider-console-checks.md.
 - [ ] Launch copy of `SESSION_TOKEN_HMAC_KEY`.

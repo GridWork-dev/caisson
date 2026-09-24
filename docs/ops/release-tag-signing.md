@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-19
+updated: 2026-09-24
 status: live
 grounds:
   - knowledge/decisions/ADR-0382-upgrade-credit-floor-and-tag-signing.md
@@ -90,8 +90,10 @@ rewriting them to satisfy a gate would defeat the gate.
 readiness 8/8, all propagation legs green.
 
 That satisfies the _first_ half of the old promotion condition, but promoting check 0b to blocking
-today would **fail every future train**. The readiness job runs `git tag -v` on a GitHub runner,
-which has no `~/.config/git/allowed_signers` — that file lives on the operator's box. In the
+today would **fail every future train**. The readiness job runs `git tag -v` on a CI runner
+(`vars.CI_RUNNER_LINUX`), which has no `~/.config/git/allowed_signers` — that file lives on the
+operator's box. Still true on 2026-09-24: no signer file is committed and the readiness job sets
+no `gpg.ssh.allowedSignersFile`. In the
 `v2026.07.27.1` readiness run, CI reported the tag as _"UNSIGNED or its signer is not in the
 allowed-signers file"_ while the tag was in fact correctly signed. The check cannot currently tell
 those two cases apart, and in CI it is always the second.

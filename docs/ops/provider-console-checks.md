@@ -1,5 +1,5 @@
 ---
-updated: 2026-09-05
+updated: 2026-09-24
 status: live
 grounds:
   - docs/ops/probe-accounts.md
@@ -166,6 +166,14 @@ Safe for a browser agent. Read-only billing/usage view.
 ---
 
 ## 4. Blacksmith minutes
+
+> **Superseded for this repository on 2026-09-10 (re-read 2026-09-24).** No workflow references
+> Blacksmith any more: every Linux job runs on `vars.CI_RUNNER_LINUX`, set to
+> `ubicloud-standard-2` on 2026-09-10 (estate R33/R257/R258, recorded in `ci.yml`'s runner-lineage
+> comment), and the macOS leg is back on GitHub `macos-15`. This check therefore reads a provider
+> caisson no longer runs CI on. Its Ubicloud replacement (console path, pass bar) has not been
+> written — an operator item, not something this runbook defines by inference. The procedure below
+> is kept as the record of the July baseline.
 
 ### Console + path
 

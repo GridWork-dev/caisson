@@ -1,16 +1,42 @@
 ---
-updated: 2026-09-05
+updated: 2026-09-24
 status: live
 ---
 
 # Build state & roadmap
 
-## Current state (2026-08-25)
+## Current state (2026-09-24)
 
-**ADR ceiling is `0427`; the latest release tag is `v2026.08.18`.** Its release-train `propagate`
+**ADR ceiling is `0427`; the latest release tag is still `v2026.08.18`, and the next release
+(`v2026.09.24`) is in preparation.** `main` is 58 commits past that tag. The version cut already
+landed: version PR #487 (`2ae0d7d6`, 2026-09-16) bumped 63 workspace versions and appended 47
+ledger/tarball rows, and #490 (`a620da44`, 2026-09-24) consumed the one remaining changeset, which
+named no packages. `.changeset/` is empty. None of those 47 tarballs is published yet — the daily
+`r2-parity-probe` has reported exactly those 47 objects missing since 2026-09-17, which is expected
+until the release train's registry leg runs. The release attests through ADR-0425's reviewed-parent
+successor: the R4 audit binds the reviewed commit, and only its audit and checklist may follow it.
+
+- **Since 2026-09-05:** Bun 1.4.2 across the fleet with a Docker build smoke for the Next images
+  (#481, ADR-0422; the demos/site image segfault fixed in #478); patched runtime OS layers plus a
+  daily image rescan gate (#482) and runner disk reclaim before scans (#483); approvals, checkout and
+  release-gate hardening (#484, ADR-0423–0427); the temporary S8 direct-key observation added (#476)
+  and removed (#479); generator template pins and golden synced after the version cut (#488); and
+  support-bot's transitive `anyio` raised to 4.14.2 for three CVEs (#489).
+- **58 packages:** 16 Apache-2.0 and 42 commercial; 72 Bun workspaces (`bun run sot`
+  package-count-parity green on `a620da44`).
+- **Fleet:** the push path last deployed green at `fd6f6084` (run `35815698009`, 2026-09-23);
+  `caisson-license` is dispatch-only and its newest receipt is `6604844a` (2026-09-14). See
+  [deploy state](deploy/STATE.md).
+
+## Prior state (2026-08-25)
+
+**The latest release tag was `v2026.08.18`.** Its release-train `propagate`
 leg FAILED at the `mirror-sync` "verify export — test" step and has not been re-run, so the tag
 exists but its propagation is unproven — do not read the tag alone as "shipped" (`gh run view
-32196107596`). The prior tag `v2026.08.06.1` was signed and cut 2026-08-06 on
+32196107596`). _(Corrected 2026-09-24: the `propagate` job was never re-run, but every leg was
+completed individually — leg 2 after the mirror-gate repair `7128ea74`, leg 4 on 2026-08-19 in run
+`32258237983` — see `docs/releases/v2026.08.18-checklist.md` and [deploy state](deploy/STATE.md).)_
+The prior tag `v2026.08.06.1` was signed and cut 2026-08-06 on
 the repair/attestation commit atop `aa6f4f17` (the version-PR merge) — the clean-main
 wave: ADR-0396 Wave B browser entries (guardrails / local-inference / local-privacy over the
 kernel/browser strict subset) with the poke retirement and demo-truthfulness fix (#402), the

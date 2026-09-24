@@ -1,5 +1,5 @@
 ---
-updated: 2026-09-05
+updated: 2026-09-24
 status: live
 grounds:
   - docs/build-state.md
@@ -10,6 +10,33 @@ grounds:
 ---
 
 # Deploy log
+
+## 2026-09-24 — ledger reconciliation: the push-path rides 2026-08-26 → 2026-09-23 (no new deploy)
+
+This entry deploys nothing. It records the `deploy-railway` runs this log never received after the
+2026-08-25 entry below, read back from the forge (`gh run list --workflow deploy-railway.yml`,
+2026-09-24) — CI deploys commit no receipt, so the run ids are the record.
+
+| Run                                                | Head                                                        | Result                                                                                      |
+| -------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 33014908371 (push, 2026-08-26)                     | `d68dac1d` (#460)                                           | FAILED at the admin step — still inside the CAISSON-208 freeze                              |
+| 33038022706 (push, 2026-08-27)                     | `1e2f79a0` (#464, the health-path carve)                    | success — the freeze ends                                                                   |
+| 33038099293 / 33038129812 (push, 2026-08-27)       | `045b21e3` (#465) / `af2e1329` (#466)                       | cancelled (superseded) / success                                                            |
+| 33213913109, 33217860502 (push + dispatch)         | `8619c41e` (#468)                                           | success — the dispatch carried license                                                      |
+| 33219199636 (push, 2026-08-28)                     | `7d396693` (#469)                                           | success                                                                                     |
+| 33595387079, 33596498025, 33596659689, 33642937581 | `3ae03371`, `ecfa65e7`, `ac1a1a45`, `69b3ba35` (2026-09-02) | success                                                                                     |
+| 34431098595, 34554314090, 34555354323              | `e2116849` (#475), `7e54ddc5` (#476), `127db655` (#477)     | FAILED at the demos step, 2026-09-10/11 — the Bun 1.3.14 next-swc teardown crash (ADR-0422) |
+| 34675184008 (push, 2026-09-12)                     | `a386502a` (#478, images on Bun 1.4.2)                      | success                                                                                     |
+| 34877205219, 34888117007, 35007285578              | `0b2046e7` (#479), `6604844a` (#481), `7e11672c` (#482)     | success                                                                                     |
+| 35122409283, 35156261036                           | `f02b1935` (#484), `2ae0d7d6` (#487)                        | success                                                                                     |
+| 35475647854, 35815698009                           | `271b0ace` (#489), `fd6f6084` (#488)                        | success — latest push-path ride                                                             |
+
+`a620da44` (#490) changed only a changeset file and triggered no deploy. **Current fleet:** the
+five push-path services (admin, demos, site, docs, support-bot) last deployed at `fd6f6084`;
+`caisson-license` is dispatch-only and its newest receipt is `6604844a` (2026-09-14, operator box),
+so it trails `main` by the runtime OS-layer patch (#482) and the version cut (#487) until the next
+release train's leg 4. The version cut's 47 tarballs are unpublished, so the Worker's baked index
+and R2 trail the repo (the daily `r2-parity-probe` reds on exactly those 47 since 2026-09-17).
 
 ## 2026-08-25 — Cloud Run Wave-3 prerequisites merged; BOTH triggered workflows FAILED, prod unaffected (runs 32904702977, 32904702863)
 

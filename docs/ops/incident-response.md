@@ -1,5 +1,5 @@
 ---
-updated: 2026-08-28
+updated: 2026-09-24
 status: live
 grounds:
   - docs/ops/db-restore.md
@@ -72,8 +72,8 @@ For "the last deploy broke something" — revert the RUNNING CODE without a DB a
    deployment (same code, fresh container). Use it for "the service crashed / picked up a stale env
    var and needs a clean restart," never as a substitute for rolling back to older code.
 
-This covers the 5 Railway services in the fleet (`caisson-site`, `caisson-license`,
-`caisson-admin`, `caisson-docs`, `caisson-support-bot`) and the registry Worker (Cloudflare —
+This covers the 6 Railway services in the fleet (`caisson-site`, `caisson-demos`,
+`caisson-license`, `caisson-admin`, `caisson-docs`, `caisson-support-bot`) and the registry Worker (Cloudflare —
 redeploy from the last-known-good commit via `registry/worker/deploy.sh`, there is no Cloudflare
 dashboard rollback equivalent to Railway's).
 

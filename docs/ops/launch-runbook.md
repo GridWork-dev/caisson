@@ -1,5 +1,5 @@
 ---
-updated: 2026-09-05
+updated: 2026-09-24
 status: live
 grounds:
   - docs/state/outstanding-work.md
@@ -20,23 +20,27 @@ corresponding hold being released.
 
 ## Current pre-launch posture
 
-- Railway runs site, admin, license, docs-RAG, and support-bot; Cloudflare runs the registry Worker.
+- Railway runs site, admin, demos, license, docs-RAG, and support-bot; Cloudflare runs the
+  registry Worker.
 - Marketing, docs, marketplace, and public APIs are public.
 - `/dashboard*` and `/cart*` remain Cloudflare Access gated. Checkout remains sandbox-only.
 - Admin uses in-app GitHub OAuth plus immutable numeric-user-ID allowlisting **and**, since PR
-  #448 / **ADR-0415**, a Cloudflare Access requirement in `apps/admin` itself. Access is not
-  fronting `admin.caisson.sh` in production yet (deferred to the Wave-5 edge sequencing), and the
-  serving revision predates #448.
+  #448 / **ADR-0415**, a Cloudflare Access requirement in `apps/admin` itself. The serving revision
+  has carried that requirement since the #464 carve unfroze deploys (2026-08-27), but Access is
+  not fronting `admin.caisson.sh` yet (deferred to the Wave-5 edge sequencing), so every non-probe
+  admin route refuses — the CAISSON-208 residual in outstanding-work.
 - Paddle is the sole merchant of record. The catalog is six bundles and 27 modules; production
   recreation is **36 products and 68 prices**.
 - Compliance is **$1,649** and Everything is **$2,259** (ADR-0383/0384). This runbook does not
   reopen pricing.
 - WORM remains GOVERNANCE pre-launch; launch requires a receipted forward-only COMPLIANCE
   escalation.
-- Health is green and index parity is **OK** as of 2026-08-01 — repository, license, Worker and
-  admin all report `dc5ee000aebf` over 54 entries. Docs/support parity stays uncertified (both are
-  private services behind a Turnstile-gated proxy, so no automatable receipt exists), and site
-  migrations `0030`–`0032` are unreceipted.
+- Index parity was last recorded **OK** on 2026-08-01 (repository, license, Worker and admin at
+  `dc5ee000aebf` over 54 entries). That reading predates the 2026-09-16 version cut (#487), whose
+  47 tarballs are unpublished, so the repository index now leads the Worker until the next release
+  train. Docs/support parity stays uncertified (both are private services behind a Turnstile-gated
+  proxy, so no automatable receipt exists). Site migrations `0030`–`0033` are applied and receipted
+  (2026-07-27 and 2026-07-29 — see [deploy state](../deploy/STATE.md)).
 
 ## Binding execution order
 
@@ -52,8 +56,10 @@ flowchart LR
     H --> I["Paid/public launch"]
 ```
 
-The preliminary fleet reconciliation proves the current safety source and applies the pending
-migration chain through `0032_field_crypto_keys.sql`. The final fleet reconciliation proves the
+The preliminary fleet reconciliation proves the current safety source and applies the migration
+chain through `0032_field_crypto_keys.sql` — executed 2026-07-27 (T4 in outstanding-work; `0033`
+followed on 2026-07-29), so Act 1 is a completed record kept as the procedure for any re-run. The
+final fleet reconciliation proves the
 immutable release tag. Paid/public launch is always after the release and final parity receipt.
 
 ## Act 1 — preliminary one-SHA fleet and migration

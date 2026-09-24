@@ -1,5 +1,5 @@
 ---
-updated: 2026-09-05
+updated: 2026-09-24
 status: live
 grounds:
   - docs/state/production-readiness.md
@@ -77,10 +77,18 @@ inbox).
 | `SESSION_TOKEN_HMAC_KEY` launch copy — verify against the already-armed hash-at-rest receipt before treating as new work (possibly a stale duplicate row)                                                                                                                                                                             | re-verify                                    | `docs/ops/operator-walkthrough.md` §60                      |
 | WORM anchor scheduler arming (TSA/Rekor/OTS) — deliberately deferred; when picked up it carries two buried sub-gates: the R-alpha signer-model fork lock, and explicit sign-off on **one irrevocable public Rekor test entry**                                                                                                        | deferred                                     | `outputs/plans/external-anchoring/PLAN-rekor-v1.1.md` R0/R1 |
 
+**Release `v2026.09.24` (2026-09-24):** the version cut is merged and unpublished. The operator
+acts left are attesting the per-release checklist's human boxes, the signed tag, and publishing
+the GitHub Release under an approval that covers the whole propagation chain (registry → Worker →
+mirror → Railway fleet; the public-npm leg stays unarmed). Owner:
+[outstanding-work](outstanding-work.md).
+
 ## 5. Provider-console checks (Gate D — seven)
 
 Agent-safe (read-only browser): Railway backup recency (<25h) · Arnica zero Critical/High ·
-Grafana Cloud usage <80% · Blacksmith projected spend vs the ~$79 baseline.
+Grafana Cloud usage <80% · Blacksmith projected spend vs the ~$79 baseline (superseded 2026-09-10:
+CI moved to Ubicloud via `CI_RUNNER_LINUX`; the replacement check is unwritten — see
+provider-console-checks §4).
 **HUMAN-ONLY**: DMARC aggregate reports in the personal inbox (prerequisite for p=reject) · AWS
 Bedrock model-access form (console shares creds with KMS + S3-WORM) · vault/Railway/local key-name
 parity (interactive `op signin` + personal Railway login). Detail + evidence formats:
@@ -101,16 +109,14 @@ operator-owned and is not edited without a lock, so the two disagree until the o
 
 ## 7. Held / self-healing / watches (no operator action now)
 
-- Renovate **#418** (non-major batch) + **#422** (jsdom 30): red only on the bun 7-day
-  `minimumReleaseAge` floor; they go green as versions age. `renovate.json` now carries
-  `minimumReleaseAge: "7 days"` so future batches arrive pre-aged. **#418 rider:** the
-  better-auth 1.6.26 bump inside it needs the session-adapter exact-pin lockstep review
-  (CAISSON-175) before merge, even on green.
-- support-bot base-image digest bump (#415) reaches prod on the next release train — its Railway
-  deploy is train-only.
+- _(Re-read 2026-09-24.)_ Renovate **#418** (non-major batch) and **#422** (jsdom 30) both merged
+  2026-08-15, and the support-bot base-image digest bump **#415** merged 2026-08-11 — none is held
+  any more. support-bot is no longer train-only: since ADR-0414 (2026-08-19) it rides the
+  `deploy-railway` push path after docs. `renovate.json` still carries `minimumReleaseAge:
+"7 days"`.
 - Monthly dispatches queued in Linear: gw-persona-walkthrough (CAISSON-184), gw-gtm-copywriter
   (CAISSON-174); pricing pulse (CAISSON-169); the intel/AEO triage stack (CAISSON-152–168) waits
   for a product sitting.
-- Stale rows to clear on next owner-doc touch: operator-walkthrough's 2026-07-25 GitHub-cert
-  open-PR line (those PRs merged); CAISSON-151's "hold until after 2026-07-30" date-gate has
-  passed — re-triage.
+- _(Re-read 2026-09-24.)_ Both stale rows this bullet used to list are cleared: operator-walkthrough's
+  GitHub-cert line already records #332–#340 merged green, and CAISSON-151 is Done in
+  [outstanding-work](outstanding-work.md) (its 1.6.26 follow-on is CAISSON-175).

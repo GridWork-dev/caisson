@@ -1,5 +1,5 @@
 ---
-updated: 2026-09-05
+updated: 2026-09-24
 status: live
 grounds:
   - apps/site/live/probe-session.ts
@@ -75,7 +75,7 @@ anything else (`safety.md` preflight rejects "default, personal, shared" profile
 ### 1.2 Create the account (self-serve sign-up, scripted)
 
 The site's better-auth instance requires email verification before a **password**
-account can sign in (`requireEmailVerification: true`, `apps/site/lib/auth-server.ts:148`)
+account can sign in (`requireEmailVerification: true`, `apps/site/lib/auth-server.ts:169`)
 — sign-up itself is unauthenticated and fully scriptable. `/api/auth/*` is public;
 Cloudflare Access covers `/dashboard*` and `/cart*` only
 (`infra/terraform/access.tf`, `site_gate`).
@@ -124,7 +124,7 @@ curl -sS -i -X POST https://caisson.sh/api/auth/sign-in/email \
 ```
 
 Expect `HTTP/2 200` and a `set-cookie: caisson.session_token=...` line
-(`SESSION_COOKIE_NAME` in `auth-server.ts:38`). If this 403s on Origin, check the
+(`SESSION_COOKIE_NAME` in `auth-server.ts:48`). If this 403s on Origin, check the
 header is present; if 401/no-cookie, the account is still unverified — return to §1.3.
 
 ---
