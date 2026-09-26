@@ -25,8 +25,8 @@ import { scrubPath } from "./scrub.ts";
  * scrubbed (`scrubPath`) before it is ever emitted — the raw client-controlled path must never
  * reach a span name or attribute (it can carry PII, secrets, or arbitrary values).
  *
- * Callers skip `/health` (liveness/readiness probes), matching the rate-limiter exemption already
- * in `services/docs` + `services/license` — a probe hitting every few seconds is noise, not a trace.
+ * Callers skip `/health` (liveness/readiness probes), matching the usual rate-limiter exemption —
+ * a probe hitting every few seconds is noise, not a trace.
  */
 export function withRequestSpan(
   handler: (req: Request) => Promise<Response>,

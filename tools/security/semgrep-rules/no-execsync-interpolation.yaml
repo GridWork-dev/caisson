@@ -5,12 +5,11 @@ rules:
     message: >-
       Never execSync()/exec() with a template literal or string concatenation containing
       a non-constant value — command injection. Use execFileSync(cmd, [args]) with an
-      argument array. (identity/security.md Shell execution.)
+      argument array.
     metadata:
       category: security
       cwe: "CWE-78: OS Command Injection"
       references:
-        - identity/security.md
         - packages/tool-exec/src/tool-exec.ts
     patterns:
       - pattern-either:

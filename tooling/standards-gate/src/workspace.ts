@@ -15,6 +15,8 @@ export interface Pkg {
   manifestPath: string | null;
   /** true once the package ships real code (src/ beyond .gitkeep, OR an entry/main/exports). */
   hasCode: boolean;
+  /** package.json `private: true` — never published to npm. */
+  private: boolean;
 }
 
 /** `workspaces` is either the legacy bare array or the bun-catalog object form
@@ -88,6 +90,7 @@ export function readWorkspace(root = findRoot()): Pkg[] {
       workspaceDeps: deps.filter((d) => d.startsWith("@caisson/")),
       manifestPath: existsSync(manifest) ? manifest : null,
       hasCode: shipsCode(dir, pj),
+      private: pj.private === true,
     });
   }
   return out;

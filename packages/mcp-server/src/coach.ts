@@ -1,6 +1,6 @@
-// Agent-assisted setup coach (ADR-0076 seam + ADR-0011). Four buyer tools that walk an ai-kit
-// buyer from "no AI config" to a validated `forge.config` — registered through the EXISTING
-// `registerTool` seam, each gated on the `ai-kit` entitlement (per-tool, timing-safe in the seam).
+// Agent-assisted setup coach (ADR-0076 seam + ADR-0011). Four tools that walk an ai-kit user from
+// "no AI config" to a validated `forge.config` — registered through the EXISTING `registerTool`
+// seam, visible to every authenticated caller once the host opts in.
 //
 // SECRETS-SAFE BY CONSTRUCTION:
 //   - No tool ever receives or returns a secret VALUE. Args carry env-var NAMES, provider/model
@@ -46,12 +46,11 @@ export interface CoachWriterPort {
  * The minimal slice of the ADR-0076 server seam the coach drives — just tool registration.
  * `McpServer` (from server.ts) is structurally assignable to this, so the coach never imports
  * the server (no dependency cycle). The handler ctx is intentionally narrowed to `{ args }`:
- * entitlement gating is the seam's job, so a coach handler needs no session.
+ * authentication is the seam's job, so a coach handler needs no session.
  */
 export interface CoachToolRegistrar {
   registerTool(registration: {
     name: string;
-    requiredEntitlement: string | null;
     /** Declarative manifest fields (ADR-0216) — validated by the real seam at registration time. */
     description: string;
     version: string;
@@ -59,10 +58,9 @@ export interface CoachToolRegistrar {
     handler: (ctx: { args: unknown }) => Promise<unknown>;
   }): void;
   /** The prompt-registration half of the seam. `McpServer` is structurally assignable to this. A
-   *  coach prompt handler needs no session (the seam gates entitlement) — just the validated args. */
+   *  coach prompt handler needs no session (the seam authenticates) — just the validated args. */
   registerPrompt(registration: {
     name: string;
-    requiredEntitlement: string | null;
     description: string;
     version: string;
     arguments: readonly {
@@ -85,8 +83,6 @@ export interface CoachOptions {
   readonly env: CoachEnvPort;
   /** Where the approved config is persisted. */
   readonly writer: CoachWriterPort;
-  /** Edition entitlement gating every coach tool. Default `"ai-kit"`. */
-  readonly requiredEntitlement?: string;
   /** Output path for the buyer config. Default `"forge.config.json"`. */
   readonly configPath?: string;
   /** Output path for the key-name template. Default `".env.example"`. */
@@ -197,22 +193,19 @@ const validateArgs = strictObject({
 });
 
 /**
- * Register the four setup-coach tools on `server` through the ADR-0076 seam. Each is gated on the
- * ai-kit entitlement (the seam re-checks it timing-safe per call) and is invisible (404) to a
- * non-entitled buyer.
+ * Register the four setup-coach tools on `server` through the ADR-0076 seam. Every authenticated
+ * caller sees them once the host passes `coach` options; without them no coach tool exists.
  */
 export function registerCoachTools(
   server: CoachToolRegistrar,
   options: CoachOptions,
 ): void {
-  const requiredEntitlement = options.requiredEntitlement ?? "ai-kit";
   const configPath = options.configPath ?? "forge.config.json";
   const envExamplePath = options.envExamplePath ?? ".env.example";
 
   // inspect_env: report which provider-key NAMES are set — presence (boolean) ONLY, never values.
   server.registerTool({
     name: "inspect_env",
-    requiredEntitlement,
     description:
       "Report which provider-key env-var NAMES are set (presence only, never values).",
     version: "1.0.0",
@@ -230,7 +223,6 @@ export function registerCoachTools(
   // propose_ai_config: turn desired AI lanes into a validated forge.config + the key NAMES to set.
   server.registerTool({
     name: "propose_ai_config",
-    requiredEntitlement,
     description:
       "Turn desired AI lanes into a validated forge.config plus the required env-var key NAMES.",
     version: "1.0.0",
@@ -263,7 +255,6 @@ export function registerCoachTools(
   // write_forge_config: APPROVAL-GATED, fail-closed. NAMES + config only — never a secret value.
   server.registerTool({
     name: "write_forge_config",
-    requiredEntitlement,
     description:
       "Persist an approved forge.config + .env.example (NAMES only). Fail-closed without approve:true.",
     version: "1.0.0",
@@ -284,7 +275,6 @@ export function registerCoachTools(
   // validate_setup: config parses AND every referenced key NAME is present (fail-closed verdict).
   server.registerTool({
     name: "validate_setup",
-    requiredEntitlement,
     description:
       "Verify a forge.config parses and every referenced key NAME is present in the environment.",
     version: "1.0.0",
@@ -298,13 +288,11 @@ export function registerCoachTools(
     },
   });
 
-  // setup_ai_config: the guided walkthrough that ties the four coach tools together. Gated on the
-  // SAME ai-kit entitlement (the seam re-checks it timing-safe per get) and invisible (404) to a
-  // non-entitled buyer. Args carry provider IDENTIFIERS only — never a key — so the prompt stays
-  // secrets-safe by construction like the tools it narrates.
+  // setup_ai_config: the guided walkthrough that ties the four coach tools together. Args carry
+  // provider IDENTIFIERS only — never a key — so the prompt stays secrets-safe by construction like
+  // the tools it narrates.
   server.registerPrompt({
     name: "setup_ai_config",
-    requiredEntitlement,
     description:
       "Guided walkthrough: inspect env, propose a validated forge.config, verify keys, then write it.",
     version: "1.0.0",

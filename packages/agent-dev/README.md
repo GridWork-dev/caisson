@@ -2,7 +2,7 @@
 
 The Agentic-Dev edition — a governed agent/skill/rule schema, a lifecycle state machine, local
 hybrid memory, a sandboxed tool-exec gate, and a multi-harness emitter, composed into one
-buyer-facing surface. Author agents/skills/rules once in a typed Caisson schema and get a governed
+import. Author agents/skills/rules once in a typed Caisson schema and get a governed
 lifecycle, local memory, and per-harness config emit (`.claude/`, Codex `AGENTS.md`, Cursor rules).
 
 ## Install
@@ -11,7 +11,7 @@ lifecycle, local memory, and per-harness config emit (`.claude/`, Codex `AGENTS.
 bun add @caisson/agent-dev
 ```
 
-Commercial edition — requires a Caisson license key at runtime.
+Apache-2.0. No license key, no private registry.
 
 ## Use
 

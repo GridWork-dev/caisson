@@ -2,7 +2,7 @@
   "name": "@caisson/ai-kit",
   "version": "0.6.5",
   "description": "AI Production Kit edition: metered inference, streaming, and embeddings composing prompt-registry + ai-meter + guardrails + ai-config behind Vercel AI SDK v7.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -12,8 +12,8 @@
     }
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",

@@ -2,7 +2,7 @@
   "name": "@caisson/local-store",
   "version": "1.1.2",
   "description": "Local hybrid retrieval base: sqlite-vec (vec0 FLOAT[N]) + FTS5 + Reciprocal-Rank-Fusion (RRF_K=60) merge with an always-available FTS5 path, degrading to FTS-only on a missing/failed vec leg; file-per-tenant isolation floor. Embedding is an injected seam — no vendor SDK, no LLM call.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -18,8 +18,8 @@
     "./ui": "./src/ui/index.ts"
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json && tscn -p tsconfig.ui.json",

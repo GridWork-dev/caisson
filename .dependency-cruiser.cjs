@@ -2,8 +2,8 @@
  * dependency-cruiser — the GRAPH layer of the boundary gate (ADR-0022). Complements, not
  * duplicates, the other two layers:
  *   - ESLint `no-restricted-imports` (tooling/eslint-config/boundaries.js) = fast static signal.
- *   - @caisson/standards-gate (Bun) = the SPDX/license authority (AGPL boundary, manifest agreement,
- *     edition↔edition) — graph tools read SPDX poorly.
+ *   - @caisson/standards-gate (Bun) = the SPDX/license authority (AGPL boundary, manifest agreement)
+ *     — graph tools read SPDX poorly.
  *   - THIS = the real module graph: catches dynamic `import()` + `require()` + TRANSITIVE reach
  *     that static ESLint misses, and the base→edition direction.
  *

@@ -1,14 +1,12 @@
 import type { IconName } from "@caisson/ui/components";
 
-// The Apache-2.0 open Base substrate — the SINGLE list every surface that names it reads from
-// (ADR-0094 open-core). The binding truth is the SPDX `license` field in each package's
-// package.json (`Apache-2.0` for these, `LicenseRef-Caisson-Commercial` for everything else);
-// the /docs/base page is the human summary this mirrors.
+// The base substrate — the SINGLE list every surface that names it reads from. Every package is
+// Apache-2.0; this list is the foundation layer the rest compose onto, and the /docs/base page is
+// the human summary this mirrors.
 //
 // Why this file exists: two prose lists (the plans and modules pages) had drifted `credits` INTO
-// the free base and dropped `rate-limit` OUT of it. `credits` is a paid commercial module — naming
-// it as free-Apache is a real misrepresentation. One const kills that drift class, and
-// `base-substrate.test.ts` fails if any commercial SKU ever re-enters this list.
+// the base and dropped `rate-limit` OUT of it. One const kills that drift class, and
+// `base-substrate.test.ts` fails if the prose or the capability tiles drift from it.
 
 /** The 13 substrate packages — the runtime/base half of the open set. */
 export const BASE_SUBSTRATE_PACKAGES = [
@@ -28,13 +26,9 @@ export const BASE_SUBSTRATE_PACKAGES = [
 ] as const;
 
 /** The generator tooling — called out separately in prose ("…and the generator tooling: …"). */
-export const BASE_GENERATOR_TOOLING = [
-  "cli",
-  "migrate",
-  "license-verify",
-] as const;
+export const BASE_GENERATOR_TOOLING = ["cli", "migrate"] as const;
 
-/** All 16 Apache-2.0 base packages, substrate then tooling. */
+/** All 15 base packages, substrate then tooling. */
 export const BASE_PACKAGES = [
   ...BASE_SUBSTRATE_PACKAGES,
   ...BASE_GENERATOR_TOOLING,
@@ -45,7 +39,7 @@ export function baseSubstrateList(): string {
   return BASE_SUBSTRATE_PACKAGES.join(", ");
 }
 
-/** Bare comma list of the generator tooling ("cli, migrate, license-verify"). */
+/** Bare comma list of the generator tooling ("cli, migrate"). */
 export function baseToolingList(): string {
   return BASE_GENERATOR_TOOLING.join(", ");
 }
@@ -90,7 +84,7 @@ export const BASE_CAPABILITIES: readonly BaseCapability[] = [
   {
     icon: "server",
     title: "AI config and a governed MCP server",
-    body: "Provider-agnostic AI configuration and a Model Context Protocol server that treats agents as principals: timing-safe Bearer auth, tools invisible outside the caller's entitlements, a per-account rate limit on every dispatch. Most kits ship an MCP server now — the question is what it lets an agent do. The design-system contracts an agent reasons over — the component manifest, its typed reader, the contrast and static-usage checkers — are open source too, in @caisson/ds-manifest.",
+    body: "Provider-agnostic AI configuration and a Model Context Protocol server that treats agents as principals: timing-safe Bearer auth on every session, a per-account rate limit on every dispatch. Most kits ship an MCP server now — the question is what it lets an agent do. The design-system contracts an agent reasons over — the component manifest, its typed reader, the contrast and static-usage checkers — are open source too, in @caisson/ds-manifest.",
     packages: ["ai-config", "mcp-server", "ds-manifest"],
   },
   {
@@ -101,8 +95,8 @@ export const BASE_CAPABILITIES: readonly BaseCapability[] = [
   },
   {
     icon: "terminal",
-    title: "The generator, migrations, and license verify",
-    body: "Scaffold the whole base in one command, run migrations, and verify licenses offline. The create-caisson tooling ships open — you own the generator, not just the output.",
-    packages: ["cli", "migrate", "license-verify"],
+    title: "The generator and migrations",
+    body: "Scaffold the whole base in one command and run migrations. The create-caisson tooling ships open — you own the generator, not just the output.",
+    packages: ["cli", "migrate"],
   },
 ];

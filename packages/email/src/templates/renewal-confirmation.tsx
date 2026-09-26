@@ -2,7 +2,7 @@
 // RENEWAL_BOOK line extends an existing entitlement's updates window rather than granting
 // anything, so it never fires the purchase-confirmation email (gated on grantedEntitlements).
 // Sent once per webhook renewal, next to (never instead of) the purchase-confirmation email on a
-// mixed cart (services/license/src/app.ts's post-commit block — v1 accepts both firing). Same
+// mixed cart (the host's post-commit webhook block — v1 accepts both firing). Same
 // bounded prop set + voice as purchase-confirmation: buyer name, provider order id, the renewed
 // line(s) with their new updates-window end date, the charged total (integer minor units, ADR-0007),
 // and the dashboard link.

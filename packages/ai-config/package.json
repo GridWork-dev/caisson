@@ -1,7 +1,7 @@
 {
   "name": "@caisson/ai-config",
   "version": "0.3.10",
-  "description": "Provider-agnostic AI config resolver (OpenAI, Anthropic, Google, OpenRouter, local, Bedrock, Azure OpenAI, Ollama, Groq, Mistral, Together) + buyer settings file.",
+  "description": "Provider-agnostic AI config resolver (OpenAI, Anthropic, Google, OpenRouter, local, Bedrock, Azure OpenAI, Ollama, Groq, Mistral, Together) + the app settings file.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {

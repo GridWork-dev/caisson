@@ -5,7 +5,7 @@ rules:
     message: >-
       Use fetchWithTimeout(url, init, { timeoutMs }) — never a raw fetch() — for every
       outbound call. The native AbortSignal.timeout() is forbidden on Bun; see
-      packages/kernel/src/fetch.ts. (identity/security.md, CLAUDE.md coding standards.)
+      packages/kernel/src/fetch.ts. (CLAUDE.md coding standards.)
     metadata:
       category: security
       references:

@@ -26,6 +26,7 @@ function pkg(over: Partial<Pkg> & Pick<Pkg, "name" | "license">): Pkg {
     workspaceDeps: [],
     manifestPath: null,
     hasCode: true,
+    private: false,
     ...over,
   };
 }

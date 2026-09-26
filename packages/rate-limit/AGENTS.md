@@ -27,7 +27,7 @@ Two independent limiters for two different trust levels:
 | `checkRateLimit`             | Lazily provision + atomically consume one token from an account's bucket.        |
 | `setAccountRateLimit`        | Set a per-account override of the bucket parameters.                             |
 | `createRateLimitHook`        | Build the `(accountId) => Promise<void>` hook the MCP server awaits.             |
-| `createRateLimitedMcpServer` | Build the buyer MCP with that hook installed by default.                         |
+| `createRateLimitedMcpServer` | Build the MCP server with that hook installed by default.                        |
 
 ## Invariants
 

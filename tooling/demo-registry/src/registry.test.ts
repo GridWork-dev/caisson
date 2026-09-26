@@ -13,7 +13,7 @@ describe("CATALOG_ENTRIES", () => {
   test("covers the base kit, ui-pro, and per-package tiers", () => {
     expect(entriesByTier("apache-base").length).toBeGreaterThanOrEqual(30);
     expect(entriesByTier("ui-pro").length).toBe(11);
-    expect(entriesByTier("per-package-ui").length).toBe(6);
+    expect(entriesByTier("per-package-ui").length).toBe(5);
   });
 
   test("listPackages enumerates every owning package once", () => {

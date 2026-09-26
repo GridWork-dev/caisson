@@ -1,10 +1,10 @@
 # @caisson/ai-config — agent usage note
 
-Provides the provider-agnostic AI config resolver and the buyer `forge.config` settings contract (ADR-0011).
+Provides the provider-agnostic AI config resolver and the app `forge.config` settings contract (ADR-0011).
 
 ## Key surface
 
-- `parseAiSettings(input)` — parses + validates the buyer's `forge.config.json` AI block (`z.object().strict()`; unknown provider fields are rejected).
+- `parseAiSettings(input)` — parses + validates the app's `forge.config.json` AI block (`z.object().strict()`; unknown provider fields are rejected).
 - `resolveProvider(settings, lane?)` — resolves a named lane (default `settings.defaultLane`) to its provider/model binding; throws `NotFoundError` for a missing lane.
 - Types: `AiSettings` (the full settings shape), `ProviderConfig` (one lane's binding).
 - Supported providers: `openai`, `anthropic`, `google`, `openrouter`, `local`, `bedrock` (AWS), `azure-openai`, `ollama`, `groq`, `mistral`, `together`.
@@ -14,4 +14,4 @@ Provides the provider-agnostic AI config resolver and the buyer `forge.config` s
 
 ## Scope
 
-AI provider config resolution and the buyer settings file only. Actual model calls belong in `@caisson/ai-kit`.
+AI provider config resolution and the app settings file only. Actual model calls belong in `@caisson/ai-kit`.

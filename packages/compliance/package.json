@@ -1,8 +1,8 @@
 {
   "name": "@caisson/compliance",
   "version": "1.0.4",
-  "description": "Compliance edition: tenant-scoped field crypto, a WORM audit chain, own-authored SOC2-TSC and HIPAA control packs, and a deterministic, signed control-to-evidence-pack generator.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "description": "Compliance evidence kit: tenant-scoped field crypto, a WORM audit chain, own-authored SOC2-TSC and HIPAA control packs, and a deterministic, signed control-to-evidence-pack generator.",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -12,8 +12,8 @@
     }
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
@@ -21,14 +21,12 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/alerting": "workspace:*",
     "@caisson/audit-worm": "workspace:*",
     "@caisson/compliance-core": "workspace:*",
     "@caisson/field-crypto": "workspace:*",
     "@caisson/frameworks-pack": "workspace:*",
     "@caisson/kernel": "workspace:*",
     "@caisson/migrate": "workspace:*",
-    "@caisson/retention-runner": "workspace:*",
     "@caisson/signing-primitive": "workspace:*",
     "@caisson/tenancy-rls": "workspace:*",
     "zod": "catalog:"

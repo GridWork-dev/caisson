@@ -2,7 +2,7 @@
   "name": "@caisson/audit-worm",
   "version": "2.2.4",
   "description": "Write-once (WORM) artifact store with an S3 Object-Lock backend, a SHA-256 append-only audit chain with a trusted WORM anchor, and an append-only locked-version database with a derived current version.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "files": [
     "dist",
     "src/ui"
@@ -17,8 +17,8 @@
     "./ui": "./src/ui/index.ts"
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json && tscn -p tsconfig.ui.json",

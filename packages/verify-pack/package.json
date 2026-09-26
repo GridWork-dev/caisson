@@ -1,9 +1,8 @@
 {
   "name": "@caisson/verify-pack",
   "version": "0.2.4",
-  "private": true,
   "description": "Out-of-band verifier for Caisson audit evidence packs: validates the signed complete-file manifest, pack seal, receipt chain, and per-row anchor signatures without trusting executable code from the pack.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "bin": {
     "verify-pack": "./dist/cli.js"
   },
@@ -19,6 +18,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     }
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",

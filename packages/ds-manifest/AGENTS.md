@@ -34,5 +34,5 @@ build-time generator without any of those needing to depend on each other.
 ## Scope
 
 This package owns the shared shape, generated artifact, and pure checks. Generation from
-`@caisson/ui` source lives in the kit's build-time script; authorization remains the buyer MCP's
-entitlement-gate concern.
+`@caisson/ui` source lives in the kit's build-time script; authorization remains the MCP server's
+Bearer-gate concern.

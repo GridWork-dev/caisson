@@ -1,6 +1,6 @@
 # AGENTS — @caisson/ai-kit
 
-Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or a buyer's app
+Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or an app
 must know to run language and embedding features through the metered gateway. The AI Production Kit
 exposes four entry points—`infer`, `inferStream`, `embed`, and `embedMany`—through the same enforced
 reserve-before-provider-call chokepoint (ADR-0059/0213).
@@ -94,7 +94,7 @@ prompt-registry render and no guardrails (an embed input feeds a vector index, n
 turn — guardrails-on-embed is explicitly out of scope). `opts.resolveModel` is an
 `EmbeddingModelResolver`; production wires `buildEmbeddingRegistryResolver(settings,
 defaultProviders(settings))`. The reservation carries no `maxOutputTokens` — the resulting phantom
-output-token estimate always refunds in full at reconcile, so a buyer is billed for input tokens only.
+output-token estimate always refunds in full at reconcile, so the caller is charged for input tokens only.
 Missing, malformed, or ledger-unsafe provider usage falls back to the deterministic input-only
 estimate; an unsafe deterministic estimate fails before reserve or provider execution.
 
@@ -109,7 +109,7 @@ aborted call still settles via the existing refund path, never leaking the reser
 
 ## Out of scope
 
-No per-tenant encrypted BYOK for embeddings pricing (the embed price-book row / a flat bulk-embed SKU
+No per-tenant encrypted BYOK for embeddings pricing (the embed price-book row / a flat bulk-embed rate
 is cross-package money, deferred — see ADR-0213's open question); no input/output guardrails on embed
 values; no live provider/model/network call in CI (the model is a port — test-doubled, `live/`
 excepted).

@@ -1,14 +1,14 @@
 # @caisson/billing-orchestration — agent usage note
 
-Commercial billing orchestration: the checkout drivers, the provider→`DomainBillingEvent` parsers, and
-the dual-layer webhook idempotency. Signature verification is NOT here — it stays open in
+Billing orchestration for your app: the checkout drivers, the provider→`DomainBillingEvent` parsers, and
+the dual-layer webhook idempotency. Signature verification is NOT here — it lives in
 `@caisson/billing` (`verifyStripeWebhook`, `verifyPaddleWebhook`, `verifyLemonSqueezyWebhook`,
 `verifyPolarWebhook`), which this package composes.
 
 ## Key surface
 
-- `createStripeBilling` / `createPaddleBilling` (the live MoR) / `createLemonSqueezyBilling` /
-  `createPolarBilling` return a `BillingProvider` (the open port): `verifyAndParse` (open verifier +
+- `createStripeBilling` / `createPaddleBilling` / `createLemonSqueezyBilling` /
+  `createPolarBilling` return a `BillingProvider` (the port): `verifyAndParse` (the verifier +
   local parser) + `createCheckout` (REST checkout creation via `fetchWithTimeout`).
 - `parseStripeEvent` / `parsePaddleEvent` / `parseLemonSqueezyEvent` / `parsePolarEvent` map a verified
   provider payload onto the ONE `DomainBillingEvent` union — no provider-specific type escapes.

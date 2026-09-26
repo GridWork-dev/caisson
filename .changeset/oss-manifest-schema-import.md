@@ -1,0 +1,49 @@
+---
+"@caisson/access-review": patch
+"@caisson/agent-dev": patch
+"@caisson/agent-kernel": patch
+"@caisson/agent-runner": patch
+"@caisson/agent-trajectory": patch
+"@caisson/ai-config": patch
+"@caisson/ai-evals": patch
+"@caisson/ai-kit": patch
+"@caisson/ai-meter": patch
+"@caisson/alerting": patch
+"@caisson/artifact-render": patch
+"@caisson/audit-worm": patch
+"@caisson/auth": patch
+"@caisson/billing-orchestration": patch
+"@caisson/billing": patch
+"@caisson/compliance-core": patch
+"@caisson/compliance": patch
+"@caisson/credits": patch
+"@caisson/ds-manifest": patch
+"@caisson/email": patch
+"@caisson/field-crypto": patch
+"@caisson/frameworks-pack": patch
+"@caisson/guardrails": patch
+"@caisson/jobs": patch
+"@caisson/kernel": patch
+"@caisson/local-inference": patch
+"@caisson/local-privacy": patch
+"@caisson/local-store": patch
+"@caisson/local-sync": patch
+"@caisson/mcp-server": patch
+"@caisson/migrate": patch
+"@caisson/observability": patch
+"@caisson/org-controls": patch
+"@caisson/oscal-spine": patch
+"@caisson/prompt-registry": patch
+"@caisson/rate-limit": patch
+"@caisson/retention-runner": patch
+"@caisson/risk-register": patch
+"@caisson/signing-primitive": patch
+"@caisson/tenancy-rls": patch
+"@caisson/tool-exec": patch
+"@caisson/trust-page": patch
+"@caisson/ui": patch
+"@caisson/ui-pro": patch
+"@caisson/verify-pack": patch
+---
+
+Each package's `manifest.ts` now imports `defineModule` from the sibling `registry-schema` package instead of a monorepo-only directory, so the file resolves wherever `@caisson/registry-schema` is installed next to it.

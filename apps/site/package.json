@@ -2,7 +2,7 @@
   "name": "@caisson/site",
   "version": "0.4.1",
   "private": true,
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3030",

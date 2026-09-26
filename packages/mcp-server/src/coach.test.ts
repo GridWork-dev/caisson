@@ -1,4 +1,4 @@
-// Proves (ADR-0076 + ADR-0011) that the setup coach is entitlement-gated, secrets-safe, and
+// Proves (ADR-0076 + ADR-0011) that the setup coach is opt-in, secrets-safe, and
 // approval-gated. The cardinal invariant under test — a secret VALUE can neither enter a tool nor
 // appear in any tool output — is asserted directly, not assumed.
 import { describe, expect, test } from "bun:test";
@@ -40,14 +40,12 @@ function recordingWriter() {
 
 const TOKENS = [
   {
-    token: "tok_acct_a_000000000000",
+    token: "tok_acct_a_000000000000000000000000",
     accountId: "acct_a",
-    entitlements: ["compliance", "auth"],
   },
   {
-    token: "tok_acct_b_111111111111",
+    token: "tok_acct_b_111111111111111111111111",
     accountId: "acct_b",
-    entitlements: ["ai-kit"],
   },
 ];
 
@@ -75,32 +73,26 @@ const PROPOSE = {
   ],
 };
 
-describe("setup coach — wiring + entitlement gating (ADR-0076)", () => {
+describe("setup coach — wiring (ADR-0076)", () => {
   const server = makeServer();
-  const nonEntitled = server.authenticate("tok_acct_a_000000000000");
-  const entitled = server.authenticate("tok_acct_b_111111111111");
 
-  test("coach tools are registered through the seam and visible to an ai-kit buyer", () => {
-    const names = server.listTools(entitled).map((reg) => reg.name);
-    expect(names).toEqual(
-      expect.arrayContaining([
-        "inspect_env",
-        "propose_ai_config",
-        "write_forge_config",
-        "validate_setup",
-      ]),
-    );
-  });
-
-  test("coach tools are invisible (404, not 403) to a non-entitled buyer", async () => {
-    const names = server.listTools(nonEntitled).map((reg) => reg.name);
-    expect(names).not.toContain("inspect_env");
-    expect(names).not.toContain("write_forge_config");
-    await expect(
-      server.handleToolCall(nonEntitled, "inspect_env", {
-        names: ["ANTHROPIC_API_KEY"],
-      }),
-    ).rejects.toBeInstanceOf(NotFoundError);
+  test("coach tools are registered through the seam and visible to every authenticated caller", () => {
+    for (const token of [
+      "tok_acct_a_000000000000000000000000",
+      "tok_acct_b_111111111111111111111111",
+    ]) {
+      const names = server
+        .listTools(server.authenticate(token))
+        .map((reg) => reg.name);
+      expect(names).toEqual(
+        expect.arrayContaining([
+          "inspect_env",
+          "propose_ai_config",
+          "write_forge_config",
+          "validate_setup",
+        ]),
+      );
+    }
   });
 
   test("no coach is registered when the option is omitted (fail-closed)", async () => {
@@ -109,7 +101,7 @@ describe("setup coach — wiring + entitlement gating (ADR-0076)", () => {
       index: INDEX,
       onGenerate: async () => ({ generationId: "g" }),
     });
-    const s = bare.authenticate("tok_acct_b_111111111111");
+    const s = bare.authenticate("tok_acct_b_111111111111111111111111");
     expect(bare.listTools(s).map((reg) => reg.name)).not.toContain(
       "inspect_env",
     );
@@ -117,36 +109,12 @@ describe("setup coach — wiring + entitlement gating (ADR-0076)", () => {
       bare.handleToolCall(s, "propose_ai_config", PROPOSE),
     ).rejects.toBeInstanceOf(NotFoundError);
   });
-
-  test("a custom requiredEntitlement gates the tools differently", async () => {
-    const customWriter = recordingWriter();
-    const s = createMcpServer({
-      tokens: [
-        {
-          token: "tok_acct_c_222222222222",
-          accountId: "acct_c",
-          entitlements: ["agent-dev"],
-        },
-      ],
-      index: INDEX,
-      onGenerate: async () => ({ generationId: "g" }),
-      coach: {
-        env: envWith([]),
-        writer: customWriter.port,
-        requiredEntitlement: "agent-dev",
-      },
-    });
-    const session = s.authenticate("tok_acct_c_222222222222");
-    expect(s.listTools(session).map((reg) => reg.name)).toContain(
-      "inspect_env",
-    );
-  });
 });
 
 describe("inspect_env — presence only, never values", () => {
   const env = envWith(["ANTHROPIC_API_KEY"]);
   const server = makeServer({ env });
-  const session = server.authenticate("tok_acct_b_111111111111");
+  const session = server.authenticate("tok_acct_b_111111111111111111111111");
 
   test("reports set/unset per NAME without exposing a value", async () => {
     const out = (await server.handleToolCall(session, "inspect_env", {
@@ -181,7 +149,7 @@ describe("inspect_env — presence only, never values", () => {
 
 describe("propose_ai_config — validated config + key NAMES", () => {
   const server = makeServer();
-  const session = server.authenticate("tok_acct_b_111111111111");
+  const session = server.authenticate("tok_acct_b_111111111111111111111111");
 
   test("derives default key NAMES per provider and validates the config", async () => {
     const out = (await server.handleToolCall(
@@ -253,7 +221,7 @@ describe("write_forge_config — approval-gated, secrets-safe", () => {
   test("without approval: preview only, writer never invoked (fail-closed)", async () => {
     const writer = recordingWriter();
     const server = makeServer({ writer: writer.port });
-    const session = server.authenticate("tok_acct_b_111111111111");
+    const session = server.authenticate("tok_acct_b_111111111111111111111111");
     const out = (await server.handleToolCall(session, "write_forge_config", {
       settings,
     })) as CoachWriteResult;
@@ -264,7 +232,7 @@ describe("write_forge_config — approval-gated, secrets-safe", () => {
   test("with approval: persists NAMES + .env.example — never a secret value", async () => {
     const writer = recordingWriter();
     const server = makeServer({ writer: writer.port });
-    const session = server.authenticate("tok_acct_b_111111111111");
+    const session = server.authenticate("tok_acct_b_111111111111111111111111");
     const out = (await server.handleToolCall(session, "write_forge_config", {
       settings,
       approve: true,
@@ -284,7 +252,7 @@ describe("write_forge_config — approval-gated, secrets-safe", () => {
 
   test("rejects a key value smuggled as an unknown field (strict)", async () => {
     const server = makeServer();
-    const session = server.authenticate("tok_acct_b_111111111111");
+    const session = server.authenticate("tok_acct_b_111111111111111111111111");
     await expect(
       server.handleToolCall(session, "write_forge_config", {
         settings,
@@ -309,7 +277,7 @@ describe("validate_setup — fail-closed verdict", () => {
 
   test("valid when every referenced key NAME is present", async () => {
     const server = makeServer({ env: envWith(["OPENAI_API_KEY"]) });
-    const session = server.authenticate("tok_acct_b_111111111111");
+    const session = server.authenticate("tok_acct_b_111111111111111111111111");
     const out = (await server.handleToolCall(session, "validate_setup", {
       settings,
     })) as { valid: boolean; checked: string[]; missing: string[] };
@@ -322,7 +290,7 @@ describe("validate_setup — fail-closed verdict", () => {
 
   test("invalid (fail-closed) when a key NAME is unset", async () => {
     const server = makeServer({ env: envWith([]) });
-    const session = server.authenticate("tok_acct_b_111111111111");
+    const session = server.authenticate("tok_acct_b_111111111111111111111111");
     const out = (await server.handleToolCall(session, "validate_setup", {
       settings,
     })) as { valid: boolean; missing: string[] };
@@ -331,27 +299,23 @@ describe("validate_setup — fail-closed verdict", () => {
   });
 });
 
-describe("setup_ai_config prompt — entitlement-gated + arg validation", () => {
+describe("setup_ai_config prompt — wiring + arg validation", () => {
   const server = makeServer();
-  const entitled = server.authenticate("tok_acct_b_111111111111");
-  const nonEntitled = server.authenticate("tok_acct_a_000000000000");
+  const caller = server.authenticate("tok_acct_b_111111111111111111111111");
 
-  test("visible to an ai-kit buyer, invisible (404) to a non-entitled buyer", async () => {
-    expect(server.listPrompts(entitled).map((p) => p.name)).toContain(
-      "setup_ai_config",
-    );
-    expect(server.listPrompts(nonEntitled).map((p) => p.name)).not.toContain(
-      "setup_ai_config",
-    );
-    await expect(
-      server.getPrompt(nonEntitled, "setup_ai_config", {
-        providers: "anthropic",
-      }),
-    ).rejects.toBeInstanceOf(NotFoundError);
+  test("visible to every authenticated caller once the coach is wired", () => {
+    for (const token of [
+      "tok_acct_a_000000000000000000000000",
+      "tok_acct_b_111111111111111111111111",
+    ]) {
+      expect(
+        server.listPrompts(server.authenticate(token)).map((p) => p.name),
+      ).toContain("setup_ai_config");
+    }
   });
 
   test("narrates the four coach tools with the derived key NAMES — never a value", async () => {
-    const out = await server.getPrompt(entitled, "setup_ai_config", {
+    const out = await server.getPrompt(caller, "setup_ai_config", {
       providers: "anthropic,openai",
       default_provider: "openai",
     });
@@ -367,7 +331,7 @@ describe("setup_ai_config prompt — entitlement-gated + arg validation", () => 
 
   test("rejects a malformed provider id", async () => {
     await expect(
-      server.getPrompt(entitled, "setup_ai_config", {
+      server.getPrompt(caller, "setup_ai_config", {
         providers: "anthropic,not a provider!",
       }),
     ).rejects.toBeInstanceOf(ValidationError);
@@ -375,7 +339,7 @@ describe("setup_ai_config prompt — entitlement-gated + arg validation", () => 
 
   test("rejects a default_provider that names no listed provider", async () => {
     await expect(
-      server.getPrompt(entitled, "setup_ai_config", {
+      server.getPrompt(caller, "setup_ai_config", {
         providers: "anthropic",
         default_provider: "openai",
       }),
@@ -384,7 +348,7 @@ describe("setup_ai_config prompt — entitlement-gated + arg validation", () => 
 
   test("rejects an empty providers list", async () => {
     await expect(
-      server.getPrompt(entitled, "setup_ai_config", { providers: " , " }),
+      server.getPrompt(caller, "setup_ai_config", { providers: " , " }),
     ).rejects.toBeInstanceOf(ValidationError);
   });
 });

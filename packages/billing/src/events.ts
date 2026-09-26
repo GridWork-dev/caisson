@@ -117,7 +117,7 @@ export const DomainBillingEventSchema = z.discriminatedUnion("type", [
     amountTotal: z.number().int().nonnegative(),
     currency: z.string(),
     // ADR-0089 enrichment — still P1 parse-only (no provider type escapes the package): just enough for
-    // the services/license cycle->grant mapper to resolve WHICH plan + WHICH cycle, and to key the
+    // a host's cycle->grant mapper to resolve WHICH plan + WHICH cycle, and to key the
     // allotment idempotently on the invoice id. `subscriptionId`/`priceId` are "" for a non-subscription
     // invoice; the mapper gates on `billingReason` so a non-cycle invoice grants nothing regardless.
     subscriptionId: z.string(),

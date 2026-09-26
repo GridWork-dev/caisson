@@ -1,6 +1,6 @@
 # @caisson/oscal-spine
 
-Commercial OSCAL export and reference-catalog module for Caisson. It owns the deterministic
+The OSCAL export and reference-catalog module for Caisson (Apache-2.0). It owns the deterministic
 assessment-plan, assessment-results, POA&M, catalog, XML, and ISO 27001 SoA surfaces together with
 the pinned NIST SP 800-53 rev5 catalog and its own-authored OLIR relationship mapping.
 

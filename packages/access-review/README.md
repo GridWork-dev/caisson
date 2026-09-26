@@ -4,8 +4,7 @@ Audit-prep access-review campaigns — a reviewer attests, per user, that access
 appropriate, and every decision is WORM-logged so an auditor can prove the review actually
 happened. ADR-0371 (module lock).
 
-**SKU posture:** SELLABLE at $199 — a standalone catalog entry and a member of the Compliance
-and Everything bundles.
+Apache-2.0. Install it on its own, or alongside the rest of the compliance modules.
 
 ## What it gives you
 

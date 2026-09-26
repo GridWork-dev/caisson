@@ -97,12 +97,10 @@ export interface PgBossStoppable {
 }
 
 /**
- * Job-failure alerting seam. Kept dependency-free of `@caisson/alerting` on purpose:
- * this package is OPEN Apache-2.0 Base and must never depend "up" on a commercial package
- * (ADR-0094/0097 open↔commercial boundary — `standards-gate`'s `checkOpenCommercialBoundary`
- * enforces it). A caller with a commercial license (a service under `services/`) implements this
- * tiny structural port using the real `@caisson/alerting` pipeline; absent = today's behavior,
- * no alert, every existing `createPgBossJobQueue` call keeps compiling.
+ * Job-failure alerting seam. Kept dependency-free of `@caisson/alerting` on purpose: this base
+ * package never depends "up" on a higher-level one. A host implements this tiny structural port
+ * using the real `@caisson/alerting` pipeline; absent = today's behavior, no alert, every existing
+ * `createPgBossJobQueue` call keeps compiling.
  */
 export interface JobAlertingDeps {
   /** Called AFTER a `work()` task handler throws, BEFORE the re-throw. Must never itself throw —

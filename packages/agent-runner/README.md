@@ -48,5 +48,4 @@ provider. `src/leak-guard.test.ts` attacks it with a polluted parent env, assert
 env key set, and proves the contract end-to-end through a real spawn whose stub CLI dumps its own
 env into the transcript. Keep it green; do not weaken it (ADR-0186 §4).
 
-Commercial `LicenseRef-Caisson-Commercial`; Agentic-Dev edition member — sold via the edition fold
-only, no standalone SKU (ADR-0186 F1/F5).
+License: Apache-2.0.

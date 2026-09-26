@@ -1,8 +1,8 @@
 # @caisson/prompt-registry
 
 Append-only versioned prompts with `name@version` / `name@alias` addressing and an injection-safe
-templating boundary. A base **primitive** (paid, `LicenseRef-Caisson-Commercial`) of the AI
-Production Kit edition (ADR-0061). Built on `@caisson/kernel` (versioning + errors) and
+templating boundary. A base **primitive** (Apache-2.0) of the AI
+Production Kit (ADR-0061). Built on `@caisson/kernel` (versioning + errors) and
 `@caisson/tenancy-rls` (FORCE-RLS); never depends "up" on an edition (ADR-0003).
 
 ## What it gives you

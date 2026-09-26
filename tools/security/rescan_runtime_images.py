@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 import re
+import sys
 
 from image_scan_policy import scan_image
 from rescan_base_images import census
@@ -36,7 +37,10 @@ def main() -> int:
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
     if args.matrix:
-        print(json.dumps(runtime_targets(root)))
+        matrix = runtime_targets(root)
+        print(json.dumps(matrix))
+        dockerfiles = len({t["dockerfile"] for t in matrix["include"]})
+        print(f"runtime images: {dockerfiles} Dockerfiles, {len(matrix['include'])} targets", file=sys.stderr)
         return 0
     if not args.image or args.output is None:
         parser.error("--image and --output are required for runtime scans")

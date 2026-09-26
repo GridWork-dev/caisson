@@ -38,5 +38,5 @@ if (!result.ok) {
 }
 ```
 
-Commercial package. Verification only: no signing, exporting, publishing, mutation, fetch, or
+Apache-2.0. Verification only: no signing, exporting, publishing, mutation, fetch, or
 execution of pack-supplied code.

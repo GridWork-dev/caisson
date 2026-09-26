@@ -18,10 +18,7 @@ export type {
   PromptMessage,
   PromptResult,
 } from "./server.ts";
-export {
-  registerCompliancePrompts,
-  DEFAULT_COMPLIANCE_ENTITLEMENT,
-} from "./compliance-prompts.ts";
+export { registerCompliancePrompts } from "./compliance-prompts.ts";
 export type {
   CompliancePromptOptions,
   CompliancePromptRegistrar,
@@ -42,8 +39,6 @@ export {
   listComponents,
   describeComponent,
   getTokens,
-  DEFAULT_DOCTOR_ENTITLEMENT,
-  DEFAULT_PRO_ENTITLEMENT,
 } from "./manifest-tools.ts";
 export type {
   ManifestToolsOptions,
@@ -61,5 +56,5 @@ export type {
   HttpMcpHandler,
   HttpListenOptions,
 } from "./http.ts";
-export { registerRunTools, DEFAULT_RUN_ENTITLEMENT } from "./run-tools.ts";
+export { registerRunTools } from "./run-tools.ts";
 export type { RunToolsOptions, RunToolRegistrar } from "./run-tools.ts";

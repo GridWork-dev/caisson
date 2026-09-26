@@ -27,6 +27,6 @@ import {
   schema-validated canonical body that `generateEvidencePack` itself composes. Every name on
   `./browser` is also on `.`.
 
-Commercial module. Consumes `@caisson/kernel`, the framework catalogs in `@caisson/frameworks-pack`,
+Apache-2.0. Consumes `@caisson/kernel`, the framework catalogs in `@caisson/frameworks-pack`,
 `@caisson/field-crypto`, and `@caisson/risk-register` (the generalized model the EU-AI-Act
-risk-register collector runs on) — down-only, composed by the Compliance edition, never the reverse.
+risk-register collector runs on) — down-only, composed by `@caisson/compliance`, never the reverse.

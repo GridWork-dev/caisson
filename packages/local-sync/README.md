@@ -3,7 +3,7 @@
 The Local-first edition's sync engine: an in-house, application-layer changeset log (`bun:sqlite`
 exposes no `sqlite3session_*` API, so this is the app-layer analog), a hybrid-logical-clock LWW
 merge, and tombstone persistence with horizon GC — converging any number of per-tenant replicas
-onto one canonical local store. A base primitive (paid, `LicenseRef-Caisson-Commercial`).
+onto one canonical local store. A base primitive (Apache-2.0).
 
 ## What it gives you
 
@@ -52,4 +52,4 @@ const converged = reconcileReplicas([changeset]); // [{ table: "notes", pk: "n1"
 truth table (including order-independence and delete-wins-no-resurrection), the HLC total order,
 tombstone GC, and a full multi-replica convergence integration test.
 
-License: `LicenseRef-Caisson-Commercial`.
+License: Apache-2.0.

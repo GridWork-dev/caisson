@@ -1,7 +1,7 @@
 # @caisson/migrate — agent contract
 
 The base migration **assembler + runner** (ADR-0070/0090). One assembler, one runner, owned here;
-`@caisson/cli` and the commercial Compliance bundle (`@caisson/compliance`) import them — never
+`@caisson/cli` and `@caisson/compliance` import them — never
 copy them (a re-introduced `assemble`/`readPackageMigrations` copy outside this package violates
 the owned-once contract).
 

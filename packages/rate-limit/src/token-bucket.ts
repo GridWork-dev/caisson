@@ -1,6 +1,6 @@
 // src/token-bucket.ts — the shared in-memory per-IP token-bucket limiter mechanics, extracted out
-// of two near-identical service-local copies (services/docs and services/license each carried their
-// own TokenBucketLimiter/clientIp with only the bucket names and env-var prefixes differing). Every
+// of two near-identical service-local copies (each carried its own TokenBucketLimiter/clientIp
+// with only the bucket names and env-var prefixes differing). Every
 // consuming service still owns its OWN bucket-name union + env-driven config loader (that shape is
 // genuinely per-service); only the shared charge/prune mechanics and the client-IP derivation move
 // here, generic over the caller's bucket-name type `B`.

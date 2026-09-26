@@ -1,9 +1,0 @@
-{
-  "extends": "@caisson/tsconfig/base.json",
-  "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": ".",
-    "resolveJsonModule": true
-  },
-  "include": ["schema", "scripts"]
-}

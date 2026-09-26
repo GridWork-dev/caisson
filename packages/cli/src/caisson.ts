@@ -1,7 +1,7 @@
 // The second `caisson` bin (ADR-0345 Fork F). Agent-facing companion to `create-caisson`:
 //   caisson describe [name] --json         — free, no auth; reads the committed base manifest.
-//   caisson doctor  [dir] [--json]         — the static verify doctor; a thin client of the buyer
-//                                             MCP `check_usage` tool (the licensed verify increment).
+//   caisson doctor  [dir] [--json]         — the static verify doctor; a thin client of the local
+//                                             MCP `check_usage` tool.
 //   caisson run start <prompt>             — open a governed agent run (ADR-0360 S5); a thin client
 //                                             of the buyer MCP `run_start` tool (ADR-0362).
 //   caisson run approve|deny|status        — the agent-runtime approval seam (ADR-0360 U-2); direct
@@ -19,13 +19,13 @@ caisson — agent-facing companion to create-caisson
 Usage:
   caisson describe --json           Print the full @caisson/ui component manifest as JSON
   caisson describe <name> --json    Print one component's metadata as JSON (case-insensitive)
-  caisson doctor [dir] [--json]     Verify buyer usage of the kit (licensed; via the buyer MCP)
+  caisson doctor [dir] [--json]     Verify usage of the kit (via your local MCP server)
   caisson run ...                   Start/approve/deny/status for a governed agent run (see 'caisson run --help')
   caisson --help                    Show this help
 
-describe reads the committed Apache-base manifest — no Caisson account required. doctor and
-'run start' are thin clients of your local @caisson/mcp-server (set CAISSON_MCP_COMMAND), each
-entitlement-gated on its own slug. 'run approve/deny/status' talk DIRECTLY to your Postgres
+describe reads the committed base manifest — no account required. doctor and 'run start' are thin
+clients of your local @caisson/mcp-server (set CAISSON_MCP_COMMAND), authenticated by that
+server's own Bearer token. 'run approve/deny/status' talk DIRECTLY to your Postgres
 (DATABASE_URL/CAISSON_ACCOUNT_ID) — see 'caisson run --help'.
 `;
 

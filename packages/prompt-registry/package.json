@@ -2,7 +2,7 @@
   "name": "@caisson/prompt-registry",
   "version": "1.1.2",
   "description": "Append-only versioned prompts + name@version / name@alias addressing + a mutable alias pointer + injection-safe templating.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -18,8 +18,8 @@
     "./ui": "./src/ui/index.ts"
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json && tscn -p tsconfig.ui.json",

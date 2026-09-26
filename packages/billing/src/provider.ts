@@ -59,7 +59,7 @@ export interface PaddleConfig {
    * Optional non-fatal-anomaly signal, threaded through to `parsePaddleEvent`: fired
    * when a partial-refund adjustment's `items[]` carries a malformed or idless entry that gets
    * skipped. `console.log` is banned in product code, so a production caller wires this to its own
-   * telemetry/log surface (services/license wires `process.stderr.write`). Unset means the skip
+   * telemetry/log surface (for example `process.stderr.write`). Unset means the skip
    * stays silent, as before this config existed.
    */
   onWarn?: (message: string) => void;

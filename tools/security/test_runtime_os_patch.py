@@ -4,11 +4,11 @@ from pathlib import Path
 import re
 import unittest
 
+from rescan_base_images import census
+
 
 ROOT = Path(__file__).resolve().parents[2]
-TARGETS = {
-    "services/license/Dockerfile": ["migrate", "runtime"],
-}
+TARGETS = {}
 BUN = "oven/bun:1.4.2-slim@sha256:cb3bbbb08e13a4a2ff400f24c7a2a1d5efa83f6ef8544d52d95a519631e2fc61"
 UPGRADE = "RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && rm -rf /var/lib/apt/lists/*"
 
@@ -27,6 +27,10 @@ def stages(text):
 
 
 class RuntimePatchTests(unittest.TestCase):
+    def test_targets_are_exactly_the_tracked_runtime_dockerfiles(self):
+        # Pins TARGETS to the census so an empty TARGETS means "no runtime image", not "unchecked".
+        self.assertEqual(set(TARGETS), set(census(ROOT)["dockerfiles"]))
+
     def test_all_runtime_and_migration_targets_are_patched(self):
         for name, targets in TARGETS.items():
             with self.subTest(dockerfile=name):

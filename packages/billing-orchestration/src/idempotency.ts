@@ -3,8 +3,8 @@
 // The credit ledger is ALREADY idempotent (ADR-0007/0024: `credit_event`'s UNIQUE (source_event_id,
 // event_type) index + `ON CONFLICT DO NOTHING` + `FOR UPDATE` clawback) — a re-delivered webhook can
 // never double-grant credits. That is the INNER layer. What it can't cover is a NON-DB side-effect
-// that fires OUTSIDE the ledger write: the post-commit Discord role push (ADR-0203, fired detached in
-// services/license) re-fires on every provider re-delivery, and a future email receipt would too.
+// that fires OUTSIDE the ledger write: a post-commit notification push (fired detached by the host)
+// re-fires on every provider re-delivery, and an email receipt would too.
 //
 // This adds the OUTER + PER-SIDE-EFFECT layers, both over one tiny claim table:
 //   - processEvent(tx, sourceEventId, fn): claim the whole event once. A fresh delivery runs `fn`

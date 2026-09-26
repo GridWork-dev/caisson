@@ -29,16 +29,6 @@ const IGNORE_GLOBS: readonly string[] = [
   "outputs/**",
   // changesets pipeline scratch, consumed + deleted on release — no standing content
   ".changeset/**",
-  // registry root loose files: README/CHANGELOG/SCHEMA shadow the already-covered
-  // registry/{worker,scripts,schema} service domains; index/ledger/tarballs are CI-generated data
-  // (the domain module's existing "loose index/ledger" carve-out, extended to its siblings); the
-  // rest is build config for the registry workspace root
-  "registry/*.md",
-  "registry/index.json",
-  "registry/ledger.jsonl",
-  "registry/tarballs.json",
-  "registry/package.json",
-  "registry/tsconfig.json",
   // root build/lint config + lockfile — no buyer- or audit-relevant content
   "package.json",
   "tsconfig.json",

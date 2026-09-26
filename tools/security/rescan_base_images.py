@@ -45,6 +45,9 @@ def git(root: Path, *args: str) -> str:
 
 def census(root: Path, ref: str | None = None) -> dict:
     tracked = git(root, "ls-tree", "-rz", "--name-only", ref) if ref else git(root, "ls-files", "-z")
+    if not tracked.strip("\0"):
+        # No tracked files at all means the census could not see the tree, not that it is clean.
+        raise ValueError("no tracked files; refusing an empty scan")
     paths = sorted(
         path for path in tracked.split("\0") if path
         and (Path(path).name == "Dockerfile" or Path(path).name.startswith("Dockerfile."))
@@ -57,8 +60,11 @@ def census(root: Path, ref: str | None = None) -> dict:
             raise ValueError(f"{path}: Dockerfile escapes checkout")
         text = git(root, "show", f"{ref}:{path}") if ref else resolved.read_text()
         records.extend(from_images(text, path))
-    if not records:
-        raise ValueError("no external base images found; refusing an empty scan")
+    # Zero Dockerfiles is a legitimate, reported state (the tree ships no runtime image); callers
+    # print the count so the zero is visible rather than silent. Dockerfiles that yield no external
+    # base are not: that is a census that could not see what it was pointed at.
+    if paths and not records:
+        raise ValueError(f"{len(paths)} Dockerfile(s) but no external base images; refusing an empty scan")
     return {
         "source": git(root, "rev-parse", ref or "HEAD").strip(),
         "dockerfiles": paths,

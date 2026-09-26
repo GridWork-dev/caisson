@@ -98,7 +98,7 @@ describe("event mapping", () => {
   });
 
   test("a PARTIAL charge.refunded maps with fullyRefunded=false (mapper no-ops downstream)", () => {
-    // Stripe leaves `refunded` false on a partial refund; the services/license mapper must not revoke
+    // Stripe leaves `refunded` false on a partial refund; a downstream mapper must not revoke
     // all access or claw the whole grant (ADR-0113 W1).
     const event = {
       id: "evt_partial",

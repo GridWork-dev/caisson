@@ -1,7 +1,7 @@
 # @caisson/migrate
 
 The base migration **assembler + runner** (ADR-0070/0090). Owned once, here; `@caisson/cli` and
-the commercial Compliance bundle (`@caisson/compliance`) import it.
+`@caisson/compliance` import it.
 
 A composed Caisson app is ONE database with ONE migration history. Each package in the dependency
 closure ships forward-only `migrations/NNNN_*.sql`; this package reads them, merges them via the

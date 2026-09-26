@@ -33,6 +33,6 @@ Every entry can point at any shipped framework pack's canonical controls, reusin
 register can also be exported as a `risk-treatment-plan` artifact — a canonical, byte-stable
 summary of every entry's current treatment state — via `buildRiskTreatmentPlan`.
 
-Commercial module. Consumes `@caisson/kernel`, `@caisson/frameworks-pack`'s crosswalk shape, and
+Apache-2.0. Consumes `@caisson/kernel`, `@caisson/frameworks-pack`'s crosswalk shape, and
 `@caisson/audit-worm`'s chain primitive — down-only, composed by the compliance evidence engine,
 never the reverse.

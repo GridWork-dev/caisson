@@ -1,64 +1,51 @@
 # @caisson/cli — create-caisson
 
-The generator that composes a tailored repo from the versioned registry.
+The generator that composes a tailored repo from the versioned module catalog.
 
 ## Usage
 
 ```
-bunx @caisson-sh/cli@latest --name my-app --edition compliance --out ./my-app
+bunx @caisson-sh/cli@latest my-app --module @caisson/kernel@0.4.2 --out ./my-app
 ```
 
-`--edition <e>` alone auto-selects the bundle's current modules — no need to list them. Add one or
-more `--module <id@version>` only to override that set:
-
-```
-bunx @caisson-sh/cli@latest --name my-app --edition compliance --module @caisson/kernel@0.4.2 --out ./my-app
-```
+Pass one `--module <id@version>` per module you want. Run it with no flags in a terminal and it
+prompts for the project name and modules instead. Every module installs from the public npm
+registry; the generated repo needs no token and no registry configuration.
 
 (`npx create-caisson@latest ...` also works as a secondary install path.)
 
-Run `bunx @caisson-sh/cli@latest --help` for the full flag list (`--dry-run`, `--sample <id>`, etc.).
+Run `bunx @caisson-sh/cli@latest --help` for the full flag list (`--deploy`, `--framework`,
+`--dry-run`, `--out`).
 
-## Current scope
-
-The **allowlist gate**, the **codegen debit-before-spend seam**, the **idempotency contract**, and
-the **disk materialization** are all shipped and tested. The buyer-MCP generation path is not part
-of this package yet.
+## What it ships
 
 - **`generate(index, raw)`** — Zod-`.strict()` selection → validate **every** module id + version
-  against the registry allowlist (`assertKnownModule` / `assertKnownVersion`) **before any path or
+  against the registry catalog (`assertKnownModule` / `assertKnownVersion`) **before any path or
   subprocess** → materialize a deterministic workspace skeleton (golden-fixtured). An unknown id or
   version throws before the engine runs.
-- **`runGeneration(tx, deps, raw, meter)`** — the gated flow inside `withTenant`: validate → **debit
-  before spend** (`meterGeneration` → `credits.debit`, `eventType: "codegen_debit"`) → write (the
-  generation-write seam). A short balance returns **402 with nothing written**; a retry with the same
-  `idempotencyKey` debits once.
 - **`createFileSetWriter`** — writes the generated file set to disk atomically (temp dir + rename),
   rejecting any path that would escape the target directory.
-- **`create-caisson` CLI** — `--name <slug> --edition <e> [--module <id@version> …]`; arg-parse, the
-  same allowlist gate, then disk materialization via `createFileSetWriter`. `<e>` is one of the six
-  bundle ids (`compliance`, `ai-production`, `local-first`, `agentic-dev`, `provenance`,
-  `everything`) or a legacy edition id (`ai-kit`, `local-ai`, `agent-dev`) — legacy ids resolve to
-  their bundle forever (ADR-0257). `--edition` alone auto-expands to the bundle's current member
-  modules (each pinned at the registry `.latest`); `--module` overrides the auto-selection.
+- **`create-caisson` CLI** — `<name> [--module <id@version> …]` plus the optional `--deploy` and
+  `--framework` overlays; arg-parse, the same catalog gate, then disk materialization via
+  `createFileSetWriter`.
 
-## Agent-facing commands (the `caisson` bin, ADR-0345)
+## Agent-facing commands (the `caisson` bin)
 
 A second bin, `caisson`, ships alongside `create-caisson` for a coding agent adopting `@caisson/ui`:
 
 ```
-caisson describe --json           # the full component manifest — no Caisson account required
+caisson describe --json           # the full component manifest — no account required
 caisson describe <name> --json    # one component's props/variants/tokens (case-insensitive)
-caisson doctor [dir] [--json]     # verify usage against a licensed buyer MCP (entitlement-gated)
+caisson doctor [dir] [--json]     # verify usage through your local MCP server
 ```
 
-`describe` reads the committed Apache-base manifest directly (same data as the discovery MCP —
-see `@caisson/mcp-server`'s README for the no-auth stdio config). `doctor` is a **thin client**: it
-collects your source and calls the buyer MCP's `check_usage` tool over stdio
-(`CAISSON_MCP_COMMAND` / `CAISSON_MCP_ARGS`) — the doctor logic itself runs entitlement-gated on
-your already-credentialed `@caisson/mcp-server`, not locally.
+`describe` reads the committed base manifest directly (same data as the discovery MCP — see
+`@caisson/mcp-server`'s README for the no-auth stdio config). `doctor` is a **thin client**: it
+collects your source and calls the MCP server's `check_usage` tool over stdio
+(`CAISSON_MCP_COMMAND` / `CAISSON_MCP_ARGS`) — the doctor logic itself runs on your
+already-credentialed `@caisson/mcp-server`, not locally.
 
-## Engine seam (ADR-0048)
+## Engine seam
 
 The default engine is a deterministic in-repo template copy + typed token/JSON-merge (no network) —
 the generated file SET for a fixed selection is the golden fixture. A ts-morph wiring pass can slot
@@ -66,6 +53,5 @@ in later behind the same `GeneratorEngine` interface.
 
 ## Tests
 
-`bun test packages/cli/src` — `generate.test.ts` (allowlist gate throws before the engine; the
-generated file set golden) + `meter.integration.test.ts` on PGlite inside `withTenant`
-(debit-before-write; 402 aborts with nothing written; same-key retry debits once).
+`bun test packages/cli/src` — `generate.test.ts` (the catalog gate throws before the engine; the
+generated file set golden) plus the argv, wizard and writer suites.

@@ -26,7 +26,7 @@ const config: NextConfig = {
   // @caisson/ui-pro is the same raw-.tsx-plus-co-located-.css delivery — the /ui showcase renders it.
   // @caisson/demo-registry (CAISSON-35, the /ui showcase's data source) is the same raw-source
   // delivery, and its module-scope CATALOG_ENTRIES unconditionally combines all three entry files
-  // — including the six per-package `./ui` surfaces — so every package below needs to resolve
+  // — including the five per-package `./ui` surfaces — so every package below needs to resolve
   // through this list too.
   transpilePackages: [
     "@caisson/ui",
@@ -34,7 +34,6 @@ const config: NextConfig = {
     "@caisson/ui-pro",
     "@caisson/demo-registry",
     "@caisson/audit-worm",
-    "@caisson/license-issue",
     "@caisson/local-store",
     "@caisson/prompt-registry",
     "@caisson/ai-meter",
