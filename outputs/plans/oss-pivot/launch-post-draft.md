@@ -10,11 +10,10 @@ published on public npm under `@caisson-sh/*`. The source lives at
 ## What changed
 
 We built Caisson as a commercial product: a licensed base plus paid module bundles, a checkout
-flow, an entitlement-gated private registry, a buyer dashboard, the works. That machinery ran
-for a while, but no buyer ever came through it, and keeping a license issuer, a hosted registry,
-and an admin control plane alive cost more than the product earned. Rather than let the code rot
-behind a paywall nobody was paying into, we relicensed the entire repository Apache-2.0, deleted
-the sales machinery, and moved the source to the open. There is no checkout, no license key, no
+flow, an entitlement-gated private registry, a customer dashboard, the works. Sales never took
+off, and a license issuer, a hosted registry and an admin control plane were most of what it
+cost to run. The code is more useful in the open than behind a paywall, so we relicensed the
+entire repository Apache-2.0, deleted the sales machinery, and moved the source to the open. There is no checkout, no license key, no
 private registry, and no pricing page. Every package installs the same way any other npm package
 does.
 

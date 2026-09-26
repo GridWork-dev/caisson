@@ -201,6 +201,25 @@ No design options: L10 keeps the current design.
    on home and one docs page; `curl -I` on the preview shows HSTS, `nosniff` and
    `X-Frame-Options`; a responsive srcdoc sweep of every route at 360/768/1280.
 
+**W3 as shipped (2026-09-26):**
+
+- **#500** (copy and docs reframe, Plausible removed) also fixed three bugs that caisson.sh has
+  today:
+  - the docs code tokens stayed on the light palette for unpinned dark-OS visitors (1.04:1
+    contrast);
+  - three module pages scrolled sideways at 360px;
+  - the hashed chunks were served uncacheable.
+- **The follow-up PR adds Cloudflare Web Analytics.** It is a hostname-gated manual snippet:
+  Cloudflare accepts reports from caisson.sh alone, so it starts counting at the W5 DNS cutover.
+  The PR also carries the CSP origins, the privacy-policy update and the P1-002 flake fix.
+- **Measured:**
+  - a11y is 1.0 on home and docs;
+  - the responsive sweep (Playwright, 91 routes × 3 widths) reads zero overflow;
+  - srcdoc is blind on a Next App Router page, so the sweep uses real viewports instead;
+  - perf on the workers.dev deployment is 0.93 home and 0.92 docs.
+- **Operator ruling 2026-09-26:** the JS-weight ("hydration diet") work that would close the gap
+  to 0.95 runs after launch; it is not a launch gate.
+
 ## W4 — Teardown and revocation (main thread; external side effects)
 
 Every batch is pre-approved (L12); the **[OP confirms]** marks below are satisfied. Order
@@ -238,11 +257,30 @@ through wrangler and the API.
 7. Verify: every row in `RECEIPTS.md` carries proof; the platform inventory from step 1, re-run,
    shows only the kept rows.
 
-**Hold (2026-09-26):** the GCP/Neon teardown runs through gridwork-infra (#73 lifts protection,
-#74 deletes), but main's plans there carry other lanes' drift: the production plan also strips
-the studio site's out-of-IaC env and scaling, the nonproduction plan unpins the gridwork-dev
-site's revision, and edge #71 is unapplied. The applies wait for the operator to reconcile that
-drift or accept it. The workload-identity bindings that trust this repo must be gone before W5.
+**GCP/Neon teardown sequence (operator ruling 2026-09-26T18:01Z, made in the lab session).** This
+supersedes the earlier drift hold. The teardown runs through gridwork-infra: #73 lifts
+protection, #74 deletes. Everything goes through `apply.yml`, never a targeted apply, because a
+targeted apply skips the plan-at-HEAD guard. The caisson lane drives, and the operator
+dispatches each apply in Manual after reading its plan.
+
+0. Neon dumps: the `caisson-production` and `caisson-nonproduction` databases were dumped
+   2026-09-25 (0 tables each; archive `db-dumps`). A live re-check on 2026-09-26 confirmed
+   `user_tables=0` on every branch.
+1. dev-profile deletes its guarded GCP objects and merges #80. **Done 18:05Z.**
+2. Merge #73. **Done 18:18Z at `5c913fd4`.**
+3. Apply each stack once, from main's plan run at that commit, in this order: nonproduction,
+   production, shared, neon (`neon-apply.yml`), edge.
+   - Each plan may show only #80's gridwork-dev-site removal, #73's protection flips,
+     studio-site env/scaling, and edge #71. Anything else stops the sequence.
+   - The expected lists are written before each dispatch.
+   - After the edge apply, `curl https://gridwork.dev/` must return 200; a 503 means the origin
+     secret binding dropped. Then notify dev-profile.
+4. Rebase #74 onto main: #80's deleted `gridwork-dev.gwstg.dev` edge lines stay deleted.
+   Re-plan, confirm the destroy counts and that caisson.sh apex routing is untouched (W5 owns
+   it), re-run the Neon check, and apply in the same stack order. Then notify DulyMark, whose
+   removal PR waits on it.
+
+The workload-identity bindings that trust this repo must be gone before W5.
 
 ## W5 — Flip day (one operator-gated sitting, main thread, in this order)
 
@@ -287,14 +325,21 @@ github` for every package against `release.yml` (one 2FA window covers ~50); the
     trusted publisher.
 11. **DNS cutover:** attach `caisson.sh` + `www` to the site Worker as custom domains → verify
     200 + headers on both → delete the Railway site service and the Railway project → delete the
-    old apex/www records from terraform state or the dashboard.
-12. **Exit checks:** SPEC criteria 1–6.
+    old apex/www records from terraform state or the dashboard. Web Analytics starts counting
+    here: its loader runs only on the caisson.sh hostname.
+12. **Site identity:** once the repo is public and the packages resolve for a logged-out
+    visitor, set `SAME_AS` in `apps/site/lib/jsonld.ts` to `https://github.com/GridWork-dev/caisson`
+    and `https://www.npmjs.com/org/caisson-sh`, and update `lib/jsonld.test.ts`. Verify each URL
+    returns 200 logged out. A sameAs entry that 404s for a crawler is a broken identity claim,
+    which is why this waits for the flip.
+13. **Exit checks:** SPEC criteria 1–6.
 
 ## W6 — Soak (~7 days)
 
-1. Clean-room: a fresh container with no checkout and no `~/.gridwork`; `bunx
-create-caisson@latest` → the generated app's install, build and test pass. Run for each module
-   family.
+1. Clean-room: in a fresh container with no checkout and no `~/.gridwork`, run
+   `bunx --package @caisson-sh/cli create-caisson` (the cli's bins are `caisson` and
+   `create-caisson`; no bin named `cli`). The generated app's install, build and test must pass.
+   Run it for each module family.
 2. Awesome-list PRs (awesome-typescript, awesome-nodejs, and a compliance/self-hosted list), one
    plain line each.
 3. Fix first-contact papercuts through normal PRs and changesets.
