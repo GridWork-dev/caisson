@@ -1,8 +1,8 @@
 // live/prod-routes.live.test.ts — the LIVE production route-render proof for caisson.sh.
 //
 // Required env: CAISSON_E2E_CF_CLIENT_ID + CAISSON_E2E_CF_CLIENT_SECRET — the Cloudflare Access
-// service token that bypasses the pre-launch site gate (ADR-0082, `infra/terraform/access.tf`
-// `e2e_prober`) without weakening it: every request below carries `CF-Access-Client-Id` /
+// service token that bypasses the pre-launch site gate (ADR-0082, the `e2e_prober` token) without
+// weakening it: every request below carries `CF-Access-Client-Id` /
 // `CF-Access-Client-Secret`, Service Auth (`decision = "non_identity"`), never a human bypass.
 // Absent either var, this file self-skips entirely (never fails CI — it never runs there;
 // `test:live` is its own turbo task, excluded from `check`/`test`).

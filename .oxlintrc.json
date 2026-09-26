@@ -107,7 +107,6 @@
     "**/.pytest_cache/**",
     "**/*.d.ts",
     "outputs/**",
-    "infra/**",
     "**/*.cjs",
     // Deliberate negative-test fixtures exist to VIOLATE the rules they test; they are exercised
     // by the canary + boundary tests that invoke the linter directly, never by the repo-wide run.
