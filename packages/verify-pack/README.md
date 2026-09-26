@@ -4,24 +4,17 @@ Out-of-band verification for Caisson audit evidence packs. It validates the exac
 manifest before checking receipt-chain links, per-length WORM anchors, and Ed25519 signatures. A pack
 contains no executable verifier and cannot substitute the program that judges it.
 
-## Current availability
-
-This package has **not been published to a package registry**. It remains `private: true` in this
-repository until the operator-gated first publish. The intended post-publish command therefore does
-not resolve publicly today:
+## Usage
 
 ```sh
 export CAISSON_VERIFY_PACK_KEY_SHA256="<independently obtained 64-hex fingerprint>"
-npx @caisson-sh/verify-pack ./pack
+bunx @caisson-sh/verify-pack ./pack.json
 ```
 
-Until that publish occurs, use an independently trusted checkout of this repository:
+From a checkout of this repository you trust, the same CLI runs as
+`bun run packages/verify-pack/src/cli.ts ./pack.json`.
 
-```sh
-bun run packages/verify-pack/src/cli.ts ./pack
-```
-
-`./pack` is the logical evidence-pack JSON exported by Caisson. Verification is local and makes no
+`./pack.json` is the logical evidence-pack JSON exported by Caisson. Verification is local and makes no
 network calls. The fingerprint must come from a separately trusted issuer channel, never from the
 pack itself; verification refuses PASS when it is absent or does not match.
 

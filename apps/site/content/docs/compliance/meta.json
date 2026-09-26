@@ -2,10 +2,16 @@
   "title": "Compliance",
   "pages": [
     "index",
+    "compliance",
     "compliance-core",
     "frameworks-pack",
     "oscal-spine",
     "retention-runner",
-    "alerting"
+    "alerting",
+    "access-review",
+    "risk-register",
+    "trust-page",
+    "artifact-render",
+    "verify-pack"
   ]
 }

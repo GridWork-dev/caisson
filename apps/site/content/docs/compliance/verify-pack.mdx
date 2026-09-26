@@ -1,0 +1,82 @@
+---
+title: verify-pack
+description: The out-of-band verifier for a Caisson audit evidence pack — validates the signed file manifest, the pack seal, the receipt chain, and every per-row anchor signature, without trusting executable code from inside the pack.
+---
+
+`@caisson-sh/verify-pack` is Caisson's out-of-band evidence-pack verifier.
+[Verifying an exported audit pack](/docs/compliance#verifying-an-exported-audit-pack) covers the
+model it implements: a pack deliberately contains no executable verifier, and verification needs
+one input the pack cannot supply — the issuer's Ed25519 key fingerprint, obtained through a
+separately trusted channel.
+
+## What it does
+
+- **Validates the exact signed manifest before anything else.** `verifyEvidencePack` first checks
+  the pack's `files` set against its `manifest.files` (name + SHA-256) and the manifest's own
+  digest; a mismatch or malformed envelope returns `ok: false` before any receipt is even read.
+- **Never trusts a key read from inside the pack.** The caller supplies
+  `expectedPublicKeySha256` — the issuer's Ed25519 public-key fingerprint, obtained
+  independently. The pack's own `anchorAuth.publicKeySpkiBase64` fingerprint is compared against
+  it with `crypto.timingSafeEqual`; verification refuses to proceed on any mismatch.
+- **Verifies the pack seal.** The pack's detached Ed25519 seal over its canonical manifest bytes
+  is checked against the trusted key.
+- **Replays the receipt chain.** For every row in `receipts.json`: `seq`/`prevHash` sequencing,
+  the per-row link recompute, the anchor-equality check, and the anchor signature (via
+  `@caisson-sh/kernel/audit-verify`'s `verifyEntryAgainstAnchor`) — a redacted row expects
+  `linkRecompute: "na"`, an unredacted row expects `"pass"`.
+- **Bounded, local, and side-effect-free.** Input is capped at `MAX_PACK_INPUT_BYTES` (32 MiB);
+  every JSON value is walked with bounded depth/node/text limits before it's trusted. No network
+  call.
+
+## Install
+
+Run the CLI from the package registry, or add the package for programmatic use:
+
+```sh
+export CAISSON_VERIFY_PACK_KEY_SHA256="<independently obtained 64-hex fingerprint>"
+bunx @caisson-sh/verify-pack ./pack.json
+```
+
+```bash
+bun add @caisson-sh/verify-pack
+```
+
+The verifier has to come from a source you trust independently of the pack: the registry, or your
+own checkout of the repository (`bun run packages/verify-pack/src/cli.ts ./pack.json`).
+[Verifying an exported audit pack](/docs/compliance#verifying-an-exported-audit-pack) covers why a
+program travelling inside the pack it judges can't establish its own integrity.
+
+`./pack.json` is the logical evidence-pack JSON exported by Caisson. On a verified pack the CLI
+prints one `row N: link=… anchor-equality=… signature=… -> PASS` line per receipt followed by a
+`PASS —` summary; on any failure it prints one `FAIL — <reason>` line per problem and exits `1`. A
+missing pack path or fingerprint prints a `usage:` line to stderr and exits `2`.
+
+## Quickstart (programmatic)
+
+```ts
+import { verifyEvidencePack } from "@caisson-sh/verify-pack";
+
+const result = await verifyEvidencePack(JSON.parse(packJson), {
+  expectedPublicKeySha256: trustedIssuerFingerprint,
+});
+
+if (!result.ok) {
+  throw new Error(result.errors.join("; "));
+}
+
+result.rows; // one { seq, linkRecompute, anchorEquality, signature } per receipt
+```
+
+<Callout type="info" title="No candidate-key trust">
+  A check that reads the candidate key from the pack itself proves nothing. `verifyEvidencePack`
+  refuses `ok: true` when `expectedPublicKeySha256` is missing or does not match the key inside
+  the pack — the fingerprint must reach the caller through a channel the pack cannot influence.
+</Callout>
+
+## Composes with
+
+`@caisson-sh/verify-pack` depends only on `@caisson-sh/kernel`, whose
+`@caisson-sh/kernel/evidence` and `@caisson-sh/kernel/audit-verify` entry points build the
+canonical manifest bytes and recompute each receipt's link and anchor signature — the same
+primitives an evidence pack's issuer used to produce it. It performs no signing, exporting,
+publishing, mutation, fetch, or execution of pack-supplied code.

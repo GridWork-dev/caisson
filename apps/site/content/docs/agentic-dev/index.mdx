@@ -10,6 +10,9 @@ default-deny gate. The kernel governs the loop, it does not hand the agent the k
 
 ## What's in the family
 
+- **[agent-dev](/docs/agentic-dev/agent-dev)**: the edition composition — one
+  `createAgentDevEdition()` factory wiring agent-kernel, local hybrid memory, the tool-exec
+  gate, and a curated agent-runner slice behind the multi-harness emitter.
 - **[agent-kernel](/docs/agentic-dev/agent-kernel)**: the engine-neutral base: a Zod schema for
   agent/skill/rule artifacts, a seven-act lifecycle FSM (spec through ship), allow/deny/mutate
   governance guards, a hooks dispatcher, and an opt-in tamper-evident audit chain.
@@ -19,6 +22,9 @@ default-deny gate. The kernel governs the loop, it does not hand the agent the k
 - **[tool-exec](/docs/agentic-dev/tool-exec)**: the governed tool-call primitive: a default-deny
   command allowlist, Zod-strict argv validation, and `execFile` arg-arrays only, an agent never
   reaches a shell.
+- **[agent-trajectory](/docs/agentic-dev/agent-trajectory)**: the engine-neutral trajectory
+  contract — an append-only, replayable event log every governed run records into, with
+  digest-ref payload discipline and deterministic replay.
 - **[local-store](/docs/local-first/local-store)**: the hybrid vector + full-text local memory
   an agent recalls over, shared with the Local-first family.
 

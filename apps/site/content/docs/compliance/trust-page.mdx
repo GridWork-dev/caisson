@@ -1,0 +1,82 @@
+---
+title: trust-page
+description: The trust-page generator — a self-contained static HTML + JSON page built from an evidence pack and its crosswalk rollup through allowlist-based redaction, hostable anywhere to publish a compliance posture.
+---
+
+`@caisson-sh/trust-page` is Caisson's trust-page generator: given an evidence-pack manifest,
+`generateTrustPage` returns a self-contained static HTML page and a machine-readable JSON file you
+host anywhere, with no auth, sign-off, hosted comments, or NDA-gating ever scaffolded in.
+
+## What it does
+
+- **Allowlist-based redaction, binding.** Every fact `generateTrustPage` could ever show is
+  flattened by `flattenManifestFacts` into a dot-namespaced record; only the keys present in the
+  caller's `allowlist` reach either output. A field absent from the allowlist never renders — no
+  exceptions.
+- **A minimal default allowlist.** `DEFAULT_TRUST_PAGE_ALLOWLIST` ships aggregate posture only:
+  `framework.title`, `framework.version`, `summary.posture`, and the three `summary.*` control
+  counts. No tenant id, no
+  chain-anchor hash, no per-control detail, no crosswalk-rollup table unless the caller opts in.
+- **An explicit opt-in for the crosswalk-rollup table.** Adding the sentinel key
+  `CROSSWALK_ROLLUP_ROWS_KEY` to the allowlist renders one citation row per crosswalk cell
+  (framework, reference, claim, evidence pointer) — Caisson's own product-mapping content, never
+  tenant-private data.
+- **A readiness-language gate on every rendered string.** Every allowlisted fact and every
+  citation row's `control`/`claim`/`justification` passes `assertReadinessLanguage` before either
+  output is built, so the page can't ship a "compliant"/"certified"/"verified" claim even if the
+  underlying pack's own copy somehow slipped one past its own gate.
+- **Two independent, self-contained outputs.** Neither the HTML nor the JSON fetches the other at
+  runtime.
+
+## Install
+
+```bash
+bun add @caisson-sh/trust-page
+```
+
+## Quickstart
+
+```ts
+import { generateTrustPage } from "@caisson-sh/trust-page";
+
+const page = generateTrustPage(pack.manifest);
+
+page.html; // a self-contained static HTML page — write it to disk / host it as-is
+page.json; // a JSON string, { facts, crosswalk } — the same allowlisted data, machine-readable
+```
+
+## Widening the allowlist
+
+```ts
+import { generateTrustPage, CROSSWALK_ROLLUP_ROWS_KEY } from "@caisson-sh/trust-page";
+
+const page = generateTrustPage(pack.manifest, {
+  allowlist: [
+    "framework.title",
+    "framework.version",
+    "summary.posture",
+    "summary.totalControls",
+    "summary.controlsReady",
+    "summary.controlsWithGaps",
+    "chainAnchor.tipHash",
+    CROSSWALK_ROLLUP_ROWS_KEY,
+  ],
+});
+```
+
+`flattenManifestFacts` also exposes per-control facts (`controls.0.controlId`, `controls.0.title`,
+`controls.0.readiness`, …) for a caller that wants a finer-grained page; each is opt-in the same
+way. Opting into `CROSSWALK_ROLLUP_ROWS_KEY` also exposes each rolled-up cell's internal Caisson
+canonical control id(s) through the rendered row's `evidencePointer` field in the JSON output.
+
+<Callout type="info" title="Never a certification claim">
+  A trust page shows the posture an evidence pack already carries. It never asserts that an
+  organization is compliant or certified — the readiness-language gate refuses to render a claim
+  word, whatever the underlying evidence says.
+</Callout>
+
+## Composes with
+
+`@caisson-sh/trust-page` depends on `@caisson-sh/artifact-render` for the redaction and
+citation-row primitives and `@caisson-sh/compliance-core` for the `EvidencePackManifest` shape it
+renders, down-only. It is a member of the Compliance family.

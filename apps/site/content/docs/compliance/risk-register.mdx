@@ -1,0 +1,108 @@
+---
+title: risk-register
+description: A framework-agnostic risk register — likelihood x impact scoring with a computed, never freeform, residual; operator overrides recorded as a chained exception; crosswalk pointers into any shipped framework pack; and a risk-treatment-plan evidence artifact.
+---
+
+`@caisson-sh/risk-register` is Caisson's framework-agnostic risk register: every entry is rated on
+a likelihood/impact scale, and the residual risk score is always the computed product of that
+rating — there is no field for writing a residual by hand, so a register can never carry a number
+nobody can explain.
+
+## What it does
+
+- **A computed, type-branded residual.** `computeResidual(likelihood, impact)` is the only
+  function that can produce a `Residual` (1–25); its return type carries a phantom brand a plain
+  number literal cannot satisfy, so `defineRiskEntry` rejects a caller-supplied residual before any
+  validator even runs.
+- **Chained operator overrides, never a silent edit.** `recordResidualOverride` appends a
+  `risk.residual-overridden` record — who asserted it, why, when, and the computed value it
+  supersedes — to the tenant's `@caisson-sh/audit-worm` chain; `RiskEntry.residual` itself never
+  changes.
+- **Crosswalk reuse, not reinvention.** Every entry's `crosswalk` field is
+  `@caisson-sh/frameworks-pack`'s own `CrosswalkReference` shape, so a risk can point at any
+  shipped framework pack's canonical controls the same way a control points at an external
+  framework.
+- **A risk-treatment-plan evidence artifact.** `buildRiskTreatmentPlan` folds a register snapshot
+  and its resolved overrides into one canonical, byte-stable `RiskTreatmentPlan`: every row's
+  `effectiveResidual` is derived (the override's when one governs, else the computed value), and
+  the summary counts (`totalRisks`, `overriddenCount`, `unmitigatedCount`) are re-checked against
+  the rows, never asserted independently.
+
+## Install
+
+```bash
+bun add @caisson-sh/risk-register
+```
+
+## Quickstart
+
+```ts
+import { defineRiskEntry } from "@caisson-sh/risk-register";
+
+const entry = defineRiskEntry({
+  riskId: "R-14",
+  subject: "default model lane",
+  likelihood: "possible",
+  impact: "major",
+  treatmentPlan:
+    "Rate-limited with a human-review fallback on repeated failures.",
+  owner: "safety@example.com",
+  evidenceDigest, // SHA-256 hex digest of the evidence the scoring rests on
+  crosswalk: [],
+});
+
+entry.residual; // computed from likelihood x impact — never supplied by the caller
+```
+
+`likelihood` is one of `rare` / `unlikely` / `possible` / `likely` / `almost-certain`; `impact` is
+one of `negligible` / `minor` / `moderate` / `major` / `severe`. The residual is their ordinal
+product (1–25).
+
+## Recording an override
+
+```ts
+import { recordResidualOverride } from "@caisson-sh/risk-register";
+
+const { record } = await recordResidualOverride({
+  chain, // an AuditChainStore (or a Pick<AuditChainStore, "append">)
+  accountId,
+  riskId: entry.riskId,
+  computed: entry.residual,
+  overrideLikelihood: "almost-certain",
+  overrideImpact: "major",
+  who: "ciso@example.com",
+  why: "Escalating: this model lane also handles regulated PII, treat as higher likelihood.",
+  now: new Date(),
+});
+
+record.computed; // the value being overridden, carried forward untouched
+record.override; // computeResidual(overrideLikelihood, overrideImpact)
+```
+
+The chain append is the exception record, not a description of one filed elsewhere: if it throws,
+the whole call throws — an override the chain cannot prove is no override at all.
+
+## Building a risk-treatment-plan artifact
+
+```ts
+import { buildRiskTreatmentPlan } from "@caisson-sh/risk-register";
+
+const { plan, canonicalPlan } = buildRiskTreatmentPlan({
+  tenantId,
+  risks: [entry],
+  overridesByRiskId: new Map([[entry.riskId, record]]),
+});
+
+plan.summary.posture;
+// "1 risk on register; 1 of 1 carry a recorded treatment plan; 1 residual carry an operator override."
+```
+
+Rows are sorted by `riskId` so input order never changes the output bytes; `effectiveResidual` is
+re-derived from each entry's own `likelihood`/`impact`, never trusted off a carried field, so a
+tampered entry can't smuggle a forged residual into a compliance artifact.
+
+## Composes with
+
+`@caisson-sh/risk-register` depends on `@caisson-sh/audit-worm` for the override's chain anchor and
+`@caisson-sh/frameworks-pack` for the crosswalk shape, down-only. It is a member of the Compliance
+family.

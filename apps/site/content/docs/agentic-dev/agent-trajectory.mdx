@@ -1,0 +1,118 @@
+---
+title: agent-trajectory
+description: The engine-neutral trajectory contract — an append-only, replayable event log for agent runs, with digest-ref payload discipline, usage honesty, deterministic replay, and Claude/Codex usage adapters.
+---
+
+`@caisson-sh/agent-trajectory` is the trajectory contract: one append-only, replayable event
+schema every governed agent run records into — `run → step → model call → tool proposal →
+approval → tool result → checkpoint`. It is the observation substrate the `ai-kit` gateway and
+governed agent loop record into; the log itself never calls a model or executes a tool.
+
+## What it does
+
+- **An eleven-kind, `.strict()` event envelope.** `TrajectoryEvent` is a Zod
+  `discriminatedUnion` on `kind` — `run.started`, `run.finished`, `step.started`,
+  `step.finished`, `model.call`, `model.usage`, `tool.proposed`, `tool.approved`, `tool.denied`,
+  `tool.result`, `checkpoint`. Every envelope carries `eventId`, `runId`, `seq`, `version`
+  (`TRAJECTORY_VERSION`), `occurredAt`, and a payload shaped by its `kind`; an unknown envelope
+  or payload key is a `ValidationError`.
+- **Sensitive bodies never inline.** Prompt text, tool argument/result bodies, and checkpoint
+  state travel only as a `DigestRef` — `{ digest: <sha256-hex>, byteLength, encRef? }` — a
+  content-address and size, never the raw content or key material.
+- **Append-only, idempotent, gap-free.** `seq` is a monotonic 0-based integer per run.
+  `append()` is idempotent on `(runId, seq)` for a byte-identical retry; a different event at an
+  already-recorded seq, or a seq beyond the next expected slot, throws `ConflictError`.
+- **Usage honesty (`billingStatus`).** Every `model.usage` event declares how much to trust its
+  numbers: `metered` (the ledger's own settled integers), `priced` (a pricebook-computed cost
+  statement, never ledger-settled), `estimated` (real adapter-extracted counts, not
+  price-normalized), or `unsupported` (no validated usage contract). The schema enforces the
+  invariant: `credits > 0` is only legal on `metered`/`priced`.
+- **Deterministic replay.** `project(events)` folds a log to its canonical `RunProjection` —
+  status, step tree, per-`billingStatus` usage totals, checkpoints — sorted by `seq` first, so
+  the same events yield a byte-identical projection regardless of arrival order.
+  `projectToolCalls(events)` is a sibling fold: one entry per `toolCallId`, with its proposal,
+  approval/denial, and result.
+- **Two entry points.** `.` is the full, node-capable surface (everything below, plus the two
+  Postgres-backed stores). `./browser` is the browser-safe subset — the schema, the in-memory
+  store, the run-state port, both projections, and the Claude-transcript adapter — importable
+  inside a client bundle; every name on `./browser` is also on `.`.
+
+## Install
+
+```bash
+bun add @caisson-sh/agent-trajectory
+```
+
+## Quickstart
+
+```ts
+import { createMemoryTrajectoryStore, project } from "@caisson-sh/agent-trajectory";
+
+const store = createMemoryTrajectoryStore();
+
+await store.append({
+  eventId: crypto.randomUUID(),
+  runId,
+  seq: 0,
+  version: 1,
+  occurredAt: new Date().toISOString(),
+  kind: "run.started",
+  payload: { agentId: "support-agent" },
+});
+
+const events = await store.read(runId);
+const view = project(events);
+// view.status / view.steps / view.usageTotals / view.checkpoints
+```
+
+`createMemoryTrajectoryStore()` is for tests and single-process runs. `createPgTrajectoryStore(tx,
+accountId)` is the Postgres-backed implementation with the same append-only contract, tenant-RLS
+scoped; apply its migration (`src/migrations/0001_trajectory_event.sql`) before using it. See
+[Governed agent loop](/docs/ai-production/governed-agent-loop) for the full wiring alongside
+`ai-kit`'s `runToolLoop`.
+
+## Adapters: turning a transcript into usage events
+
+`parseClaudeTranscript(jsonl, { runId })` reads Claude Code JSONL transcript lines (main and
+subagent turns alike) and emits one `model.usage` event per usage-bearing assistant turn, with
+real token counts and the model id, `billingStatus: "estimated"`. A malformed line — invalid
+JSON, or a turn with no usage — is skipped and counted in `linesSkipped`, never thrown.
+
+The `./usage` subpath adds a sibling Codex adapter and the price-normalization pass that upgrades
+`estimated` events to `priced`:
+
+```ts
+import { parseCodexRollout, priceUsage } from "@caisson-sh/agent-trajectory/usage";
+
+const { events, unsupported } = parseCodexRollout(rolloutJsonl, { runId });
+// unsupported: true means the rollout carried no usage data at all — treat it as
+// unsupported, not zero usage.
+
+const priced = priceUsage(events); // estimated -> priced wherever the model resolves
+// to a BUNDLED_PRICE_BOOK row through resolveModelAlias(); everything else passes through
+// unchanged. Never guesses: an unaliased or unpriced model stays `estimated`.
+```
+
+`resolveModelAlias(provider, model)` is the one bridge between a reported, dated model id (e.g.
+`claude-sonnet-4-5-20250514`) and `@caisson-sh/ai-meter`'s stable price-book rows — an unaliased
+model resolves to `null`, never a nearest-match guess.
+
+## Run state: the parked/approved/denied sibling
+
+`RunStateStore` (`park`/`approve`/`deny`/`claimResume`/`finish`/`read`) is the durable, mutable
+sibling of the append-only log — where a run's paused-awaiting-approval status and its resumable
+snapshot live. `createMemoryRunStateStore()` is the in-memory implementation;
+`createPgRunStateStore(tx, accountId, crypto)` is the Postgres-backed one, encrypted at rest
+(`crypto` is a `FieldCryptoContext`, from `@caisson-sh/field-crypto`), with its own two migrations (`0002_agent_run_state.sql`,
+`0003_agent_run_state_parked_state_encrypted.sql`). Every transition is a compare-and-swap and
+every decision (`approve`/`deny`) is idempotent on a repeat of the same call — see [Governed agent
+loop](/docs/ai-production/governed-agent-loop) for the tool-approval flow this port backs.
+
+## Composing with the base
+
+`agent-trajectory` depends on `@caisson-sh/ai-meter` (the price book `priceUsage` reuses
+verbatim), `@caisson-sh/field-crypto` and `@caisson-sh/tenancy-rls` (the Postgres stores'
+encryption and RLS scoping), and `@caisson-sh/kernel` (`ConflictError`, `NotFoundError`,
+`parseStrict`). `@caisson-sh/ai-kit`'s gateway and governed agent loop are its principal
+producers; `@caisson-sh/ai-evals` reads `projectToolCalls()`'s shape for trajectory-quality
+scoring.
