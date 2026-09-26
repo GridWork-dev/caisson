@@ -1,4 +1,11 @@
 {
   "title": "Agentic-Dev",
-  "pages": ["index", "agent-kernel", "agent-runner", "tool-exec"]
+  "pages": [
+    "index",
+    "agent-dev",
+    "agent-kernel",
+    "agent-runner",
+    "tool-exec",
+    "agent-trajectory"
+  ]
 }

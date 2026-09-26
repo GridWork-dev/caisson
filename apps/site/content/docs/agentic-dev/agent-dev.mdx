@@ -1,0 +1,116 @@
+---
+title: agent-dev
+description: The Agentic-Dev edition — the governed agent kernel, local hybrid memory, a sandboxed tool-exec gate, and a curated agent-runner slice, composed behind one createAgentDevEdition() factory plus a multi-harness emitter.
+---
+
+`@caisson-sh/agent-dev` is the Agentic-Dev edition: one import that composes the governed,
+engine-neutral agent kernel, local hybrid memory, the sandboxed tool-exec gate, and a curated
+slice of the agent-runner primitive behind a single `createAgentDevEdition()` factory, plus the
+multi-harness emitter that turns a typed agent/skill/rule set into `.claude/`, the universal
+`AGENTS.md`, and per-tool Cursor/Devin/Copilot/Cline bundles.
+
+## What it does
+
+- **One import, the composed base seams.** `agent-kernel` (schema/FSM/governance/hooks/
+  audit-chain), `local-store` (hybrid vector+FTS memory), and `tool-exec` (the sandboxed exec
+  gate) are re-exported in full; a curated slice of `agent-runner` — `createAgentRunner`,
+  `buildEngineEnv`, `CLAUDE_CLI_PROFILE`, and the run/report types — rides along under this one
+  edition home. Composition is down-only: no vendor SDK, no LLM call, no harness assumption.
+- **`createAgentDevEdition()` wires them into one governed object.** It validates the artifact
+  set's reference integrity first — a ghost cross-ref throws before it ever reaches the emitter
+  or the lifecycle — then opens the (optionally tamper-evident) lifecycle over a host-supplied
+  store, opens local memory, and constructs the tool-exec gate.
+- **Per-tenant memory isolation is physical.** Pass `tenant: { root, tenantId }` and the edition
+  opens memory at `tenantDbPath(root, tenantId)` — the resolved file path is the isolation
+  boundary, not a query filter. Resolution is fail-closed: a malformed tenant id throws before
+  any file opens. `tenant` and `memoryPath` are mutually exclusive.
+- **Curated default content, or your own.** Omit `artifacts` and the edition governs and emits
+  `CAISSON_DEFAULT_ARTIFACTS` — a trusted set whose scripts always emit. Supply your own
+  `Artifact[]` and script content only emits when you also pass `allowScripts: true`.
+- **`render()` is pure, `emit()` writes.** `render(hooks?, opts?)` returns the multi-harness
+  bundle with no side effect; `emit(targetRoot, hooks?, opts?)` writes it to disk and returns
+  both the paths written and the bundle's fidelity warnings, so a caller can't skip a `render()`
+  and strand them.
+- **Holds no credential, makes no network call.** The kernel, memory, and emitter never call an
+  LLM. `agent-runner`'s `spawn()`, reachable from this same import, takes a per-call provider
+  credential the edition itself never resolves or holds.
+
+## Install
+
+```bash
+bun add @caisson-sh/agent-dev
+```
+
+## Quickstart
+
+```ts
+import { z } from "zod";
+import { createAgentDevEdition } from "@caisson-sh/agent-dev";
+
+const edition = createAgentDevEdition({
+  store: myAuditLifecycleStore, // host-supplied AuditLifecycleStore
+  memoryDim: 3, // local hybrid-memory vector width
+  tenant: { root: "/var/lib/caisson/tenants", tenantId: "acme" },
+  toolExec: {
+    allowlist: [
+      {
+        name: "git-status",
+        command: "/usr/bin/git",
+        argsSchema: z.array(z.string()).max(1).default(["status"]),
+      },
+    ],
+  },
+});
+
+// Render the curated artifact set into every supported harness shape — pure, no disk write.
+const bundle = edition.render();
+
+// Or write it straight to disk (fail-closed guarded write); warnings surface fidelity gaps.
+const { written, warnings } = edition.emit("./out");
+
+// The bundled tool-exec gate — default-deny until a command is registered, as above.
+await edition.toolExec.run("git-status", ["status"]);
+
+edition.close();
+```
+
+## Options
+
+`AgentDevEditionOptions`:
+
+- `store`: required. The tamper-evident lifecycle persistence seam (an `AuditLifecycleStore`)
+  — the host supplies it.
+- `audited?`: opt into the tamper-evident lifecycle. Defaults to `false` (FSM-validate only).
+- `memoryDim`: required. Fixes the local memory's `vec0` table width at open.
+- `tenant?`: `{ root, tenantId }` — the file-per-tenant physical isolation floor. Mutually
+  exclusive with `memoryPath`.
+- `memoryPath?`: an explicit memory DB path for a single-tenant setup or tests; omit both
+  `tenant` and `memoryPath` for an in-memory store.
+- `artifacts?`: the artifact set to govern and emit. Defaults to `CAISSON_DEFAULT_ARTIFACTS`.
+- `toolExec?`: a `ToolExecConfig` for the bundled gate. Omit for a fail-closed default-deny
+  gate (empty allowlist) that refuses every call until you register commands.
+- `now?`: a deterministic clock seam for the audited lifecycle (tests inject a fixed clock).
+
+`edition.emit()`'s guarded write throws `EmitSecurityError` — `path-escape`, `secret-leak`, or
+`duplicate-path` — before anything lands on disk, rather than writing a file outside the target
+root or a bundle carrying a stray credential.
+
+## Curated default content
+
+`CAISSON_DEFAULT_ARTIFACTS` is the stable-ordered concatenation of `CAISSON_RULES`, then
+`CAISSON_SKILLS`, then `CAISSON_AGENTS` — each individually importable for a caller that wants
+to extend rather than replace the set. This is the trusted set: its script-carrying skills
+always emit under `<skill-dir>/scripts/`, regardless of `allowScripts`.
+
+## Composing with the base
+
+`agent-dev` also re-exports `parseAiSettings`/`resolveProvider` from `@caisson-sh/ai-config` (the
+provider-agnostic embedder-lane seam for memory embeddings) and `fetchWithTimeout`/
+`canonicalize`/`chainEntry`/`anchorChain`/`verifyChain`/`CaissonError` from
+`@caisson-sh/kernel/node` — the audit-chain primitives the tamper-evident lifecycle records
+into, re-surfaced so a caller verifies a governed record from this one edition surface. See
+[agent-kernel](/docs/agentic-dev/agent-kernel) for the schema/FSM/governance layer,
+[agent-runner](/docs/agentic-dev/agent-runner) for the sandboxed spawn primitive this edition
+folds in, and [tool-exec](/docs/agentic-dev/tool-exec) for the gate's own allowlist/argv
+contract. Local hybrid memory is shared with the Local-first family's
+[local-store](/docs/local-first/local-store).

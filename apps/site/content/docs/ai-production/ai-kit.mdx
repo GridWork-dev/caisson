@@ -1,0 +1,155 @@
+---
+title: ai-kit
+description: The AI Production Kit — one metered gateway for language inference, streaming, and embeddings, enforcing reserve-before-provider-call accounting behind Vercel AI SDK v7.
+---
+
+`@caisson-sh/ai-kit` is the AI Production Kit: the metered inference gateway with four public
+entry points — `infer`, `inferStream`, `embed`, and `embedMany` — that all enforce the same
+reserve-before-provider-call accounting. It composes `@caisson-sh/prompt-registry`,
+`@caisson-sh/ai-meter`, `@caisson-sh/guardrails`, and `@caisson-sh/ai-config` behind Vercel AI SDK
+v7, so cost control, reproducible prompts, and fail-closed content safety come from calling one
+function rather than from remembering to wire four of them yourself.
+
+## What it does
+
+- **One fixed, fail-closed pipeline.** `resolve → render → input-guard → reserve (cap/credit
+  check) → provider call → record usage → output-guard → reconcile`. `embed`/`embedMany` run the
+  shorter `resolve → reserve → provider call → record usage → reconcile` — no prompt-registry
+  render, no guardrails, because an embed input feeds a vector index, not a moderated chat turn.
+- **Reserve happens before the provider is ever called.** A short wallet throws
+  `InsufficientCreditsError` (402); an open spend breaker throws `SpendCapError` (402). In both
+  cases nothing is charged and the model is never reached. `reconcile()` then trues the charge to
+  the provider's actual usage.
+- **The model is injected, never imported directly.** `opts.resolveModel` is a `ModelResolver`
+  (or `EmbeddingModelResolver` for embeddings) — production wires `buildRegistryResolver`/
+  `buildEmbeddingRegistryResolver` over `defaultProviders`; tests inject a mock model. This
+  package is the only one in the graph that may import `ai` / `@ai-sdk/*`.
+- **Idempotent on `callId`.** Omit it for a fresh uuid, or pass the same `callId` on a retry to
+  settle exactly once. A failed provider call refunds the reservation.
+- **Guardrails are fail-closed.** A moderator outage or timeout blocks (`GuardrailError` 422)
+  unless the policy explicitly sets `failOpen`. PII is redacted on the input leg before the
+  provider sees it, and restored on the output leg in `tokenize` mode.
+- **Composition, never a fork.** The edition imports base primitives only — it never imports
+  another edition.
+
+## Install
+
+```bash
+bun add @caisson-sh/ai-kit
+```
+
+## Quickstart
+
+```ts
+import { infer, buildRegistryResolver, defaultProviders } from "@caisson-sh/ai-kit";
+import { localModerator } from "@caisson-sh/guardrails";
+
+const res = await infer(
+  "chat", // an ai-config lane (provider + model)
+  { promptRef: "support@prod", vars: { question } }, // or { messages: [...] }
+  {
+    tx,
+    accountId,
+    settings,
+    resolveModel: buildRegistryResolver(settings, defaultProviders(settings)),
+    guard: {
+      policy: { policyName: "default", moderator: localModerator([]) },
+      runtime: { tenantId: accountId, sink: eventSink },
+    },
+  },
+);
+
+// res: { text, messages, promptVersionId, usage, reserved, reconciled, callId }
+```
+
+## Streaming
+
+`inferStream()` accepts the same lane/input/options contract as `infer()` and returns a
+gateway-owned `textStream` plus a `settled` promise. The gateway starts the provider pump
+eagerly, so the reservation reconciles exactly once whether the caller drains the stream to its
+end, stops early, aborts via `opts.abortSignal`, or never iterates at all.
+
+```ts
+import { inferStream } from "@caisson-sh/ai-kit";
+
+const stream = await inferStream("chat", { messages }, opts);
+
+for await (const delta of stream.textStream) {
+  process.stdout.write(delta);
+}
+
+const settled = await stream.settled;
+// settled.text / settled.usage / settled.reconciled / settled.abandoned
+```
+
+`settled.abandoned` is `true` when the stream ended before the model's own finish — the consumer
+stopped early, the signal fired, or the provider stream errored — in which case `text`/`usage`
+are estimates over the partial output, not the provider's report.
+
+## Metered embeddings
+
+`embed()`/`embedMany()` join the same reserve-before/reconcile-after chokepoint for a
+RAG/semantic-search surface:
+
+```ts
+import { embed, embedMany, buildEmbeddingRegistryResolver, defaultProviders } from "@caisson-sh/ai-kit";
+
+const resolveModel = buildEmbeddingRegistryResolver(settings, defaultProviders(settings));
+
+const one = await embed("embeddings", "some text", { tx, accountId, settings, resolveModel });
+// one: { callId, embedding, usage, reserved, reconciled }
+
+const many = await embedMany("embeddings", ["a", "b"], { tx, accountId, settings, resolveModel });
+// many: { callId, embeddings, usage, reserved, reconciled }
+```
+
+The reservation carries no `maxOutputTokens` — an embedding call has no output-token concept, so
+the resulting phantom output-token estimate always refunds in full at reconcile: the caller is
+billed for input tokens only.
+
+## Structured output
+
+`structuredGenerate<T>(schema, lane, input, opts)` wraps `infer()` for a caller that wants a
+typed value back instead of raw model text. It parses `text` as JSON and validates it against a
+Zod schema, and throws a `StructuredGenerateError` — reason `"refusal"`, `"invalid_json"`, or
+`"schema_mismatch"` — instead of ever returning an empty or partial value.
+
+```ts
+import { z } from "zod";
+import { structuredGenerate } from "@caisson-sh/ai-kit";
+
+const Summary = z.object({ headline: z.string(), tags: z.array(z.string()) });
+
+const { value, raw } = await structuredGenerate(Summary, "chat", { messages }, opts);
+// value: Summary; raw: the underlying InferResult (usage, callId, reserved/reconciled)
+```
+
+## Bring-your-own-key (BYOK)
+
+A lane can resolve to the operator's own platform key (`keySource: "env"`, the default) or to a
+tenant's own encrypted provider key (`keySource: "tenant"`). `buildByokResolver({ settings,
+resolveTenantKey, ... })` builds a `ModelResolver` that serves both kinds of lane from one
+resolver, caching each built per-tenant provider client for a TTL (default 5 minutes) so a key
+rotation takes effect within it. `putTenantProviderKey`/`getTenantProviderKey` hold the tenant's
+key encrypted at rest behind tenant RLS; `laneKeySource(settings, lane)` reads which kind a lane
+is, for a caller that needs to branch its own billing logic on it.
+
+## Fetch deadline
+
+Every live provider factory (`providerFor`, `defaultProviders`) binds its outbound `fetch` to a
+`timeoutMs` deadline via `fetchWithTimeout` — `DEFAULT_PROVIDER_TIMEOUT_MS` is 60 seconds — so a
+hung live call aborts instead of blocking the process. `infer()` also forwards
+`opts.abortSignal` to the provider call, closing the same deadline floor on an explicit
+caller-side cancellation.
+
+## Composing with the base
+
+`ai-kit` composes `@caisson-sh/prompt-registry` (resolve + render), `@caisson-sh/ai-meter`
+(reserve/reconcile + caps/breaker), `@caisson-sh/guardrails` (moderation + PII), and
+`@caisson-sh/ai-config` (lane → provider) behind the one gateway chokepoint; it is the only
+package that imports a provider SDK directly. `runToolLoop`/`resumeToolLoop`, the governed
+per-step agent harness built on this same gateway plus `@caisson-sh/agent-trajectory`'s
+append-only log, are documented separately — see [Governed agent
+loop](/docs/ai-production/governed-agent-loop). See [ai-meter](/docs/ai-production/ai-meter) for
+the reserve/reconcile primitive and [guardrails](/docs/ai-production/guardrails) for the
+moderation/PII boundary this gateway enforces on every call.
