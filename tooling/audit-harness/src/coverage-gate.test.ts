@@ -55,23 +55,17 @@ const IGNORE_GLOBS: readonly string[] = [
   // source. Deploy-time metadata with no standing content — the committed value is never the
   // interesting one, and the mechanism's own audit lives in packages/kernel + tooling/scripts.
   ".caisson-revision",
-  // graphify's scan-scope list — keeps the code-graph indexer off the archived audit ledgers and
-  // the browser-audit dumps. Same class as the other ignore-dotfiles: a tool's scope config.
-  ".graphifyignore",
   // semgrep scan-scope config (tools/security stack) — a lint-tool ignore list, same class as the
   // other ignore-dotfiles; its own audit lives in the tools/security domain + the security playbook.
   ".semgrepignore",
   // scanner accept/config files (security-scan triage, ADR-0315): trivy's config + reasoned
   // CVE-accept ledger and the osv-scanner root config — same class as .semgrepignore; every accept
-  // entry carries its justification inline and the stack's audit lives in docs/security/
-  // tooling-playbook.md + the deterministic CI job.
+  // entry carries its justification inline and the stack's audit is the deterministic CI job.
   "trivy.yaml",
   ".trivyignore.yaml",
   "osv-scanner.toml",
   // repo/CI meta-config — mechanical, no secrets, not a product surface
   ".githooks/**",
-  ".gridwork/**",
-  ".greptile/**",
   ".github/CODEOWNERS",
   // open-source community files (ADR-0428): license text, contribution/conduct/security policy,
   // issue forms and the PR template — project governance prose, no product or audit surface
@@ -134,7 +128,7 @@ describe("coverage gate — complete, non-overlapping tree partition (ADR-0233)"
   });
 
   test("classifier spot-checks: the escaped tools/ + root-docs paths are now claimed; a genuinely new, un-ignored path stays unclaimed", () => {
-    // (a) tools/security — a tools/ subdir domain (shell scripts sourcing ~/.gridwork/caisson.env).
+    // (a) tools/security — a tools/ subdir domain (shell scripts).
     expect(domainForPath("tools/security/_common.sh", domains)?.id).toBe(
       "tools/security",
     );

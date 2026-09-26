@@ -98,12 +98,6 @@
 .item[data-area="tooling"] {
   --area: color-mix(in oklab, var(--cs-success) 55%, var(--cs-border));
 }
-.item[data-area="svc"] {
-  --area: color-mix(in oklab, var(--cs-warning) 55%, var(--cs-border));
-}
-.item[data-area="reg"] {
-  --area: var(--cs-border-strong);
-}
 
 .row {
   display: flex;

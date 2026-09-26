@@ -28,22 +28,3 @@ minimumReleaseAge = 604800
 #  instead of exempted; Renovate will re-propose them once they clear the window
 #  naturally. kysely 0.29.4 and vite 8.1.5 needed no exemption either — both had already
 #  aged past 7 days by the time this landed.)
-# Repo-level Socket.dev bunfig scanner (ADR-0341 item 3) — READY TO FLIP, NOT LIVE.
-# Distinct from the already-installed `socket-security` GitHub PR-check app
-# (docs/security/paid-tooling-roi.md), which stays wired regardless of this section.
-# Blocked on upstream bun issue #31028 (a scanner declared in devDependencies is dropped
-# by the --production hoist filter, so `bun install --frozen-lockfile --production` hard-fails
-# with "no packages were installed during security scanner installation"; fix PR #31031 is open,
-# unmerged). Live-reproduced on the exact pinned CI version, bun 1.3.14, 2026-07-19 — still
-# blocked. Tracked: docs/state/outstanding-work.md ("Repo-level Socket.dev bunfig scanner").
-#
-# To flip once #31028 ships fixed in a released bun (PR-check job only, per ADR-0341 — never
-# the deploy path, since a scanner here adds a live Socket-API network dependency to every
-# install and none of the five Railway Dockerfiles need it: all five already run
-# `bun install --frozen-lockfile` without `--production`):
-#   1. bun add -d @socketsecurity/bun-security-scanner
-#   2. uncomment the [install.security] table below
-#   3. (optional) export SOCKET_API_KEY for org-scoped policy instead of Socket's free public API
-#
-# [install.security]
-# scanner = "@socketsecurity/bun-security-scanner"

@@ -17,8 +17,7 @@ const REPO_ROOT = join(import.meta.dir, "..", "..", "..");
 
 /**
  * Surface class — two sub-axes: distribution (does a buyer get the source?) × audience (is the
- * output buyer-facing?). Read from `docs/state/public-surface.md` + package `license` fields, never
- * re-derived. Drives the sparse dimension-applicability matrix (./dimensions.ts).
+ * output buyer-facing?). Read from package `license` fields, never re-derived. Drives the sparse dimension-applicability matrix (./dimensions.ts).
  */
 export type SurfaceClass =
   | "oss-source" // Apache-2.0 public-mirror set — buyer + world get the source
@@ -140,8 +139,7 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
   }
 
   // tooling/* + infra/* + tools/* — internal-only by construction (never buyer-visible). tools/
-  // is the operator's own engineering scripts (e.g. tools/security, the pentest/scan stack that
-  // sources ~/.gridwork/caisson.env) — a first-class domain, not a silent escape from the old scan.
+  // holds the engineering scripts (e.g. tools/security, the scan stack) — a first-class domain, not a silent escape from the old scan.
   for (const container of ["tooling", "infra", "tools"] as const) {
     for (const name of readDirs(join(root, container))) {
       domains.push(unitDomain(container, name, "internal-only"));
@@ -221,10 +219,7 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
     class: "internal-only",
   });
 
-  // Root-level process docs — the sot-check docs-surface allowlist (root slimmed 2026-07-11:
-  // PRODUCT/DESIGN/plan/SUMMARY moved under docs/, AGENTS.md is a symlink to CLAUDE.md). The repo
-  // is private (the oss MIRROR ships its own README via the exporter, Fork D / the oss-mirror
-  // domain), so these are never buyer-visible — internal-only.
+  // Root-level contributor docs (AGENTS.md is a symlink to CLAUDE.md).
   domains.push({
     id: "root-docs",
     roots: ["README.md", "CLAUDE.md", "AGENTS.md"],
@@ -232,13 +227,12 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
     class: "internal-only",
   });
 
-  // Root-level policy inputs that alter agent worktree exposure or the design-token gate. These
-  // are audit-relevant configuration, not generic build/lint config, so keep them in the derived
-  // partition instead of adding them to coverage-gate's reviewed ignore list.
+  // The design-token gate's root input. Audit-relevant configuration, not generic build/lint config,
+  // so it stays in the derived partition instead of coverage-gate's reviewed ignore list.
   domains.push({
     id: "root-config",
-    roots: ["orca.yaml", "tokens.config.json"],
-    globs: ["orca.yaml", "tokens.config.json"],
+    roots: ["tokens.config.json"],
+    globs: ["tokens.config.json"],
     class: "internal-only",
   });
 

@@ -1,29 +1,22 @@
 #!/usr/bin/env bash
 # Shared setup for the Caisson security-scan layer. Sourced by scan.sh / install.sh / the DAST +
-# harness scripts. Secrets are read from the env files at runtime and never persisted; all output
+# harness scripts. Secrets come from the environment and are never persisted; all output
 # SARIF/JSON lands OUT of the repo tree.
 set -euo pipefail
 export PATH="$HOME/.local/bin:/usr/local/bin:$PATH"
 
-# Read a var from the operator env files without printing it. caisson.env source-chains from env.
+# Read a var from the environment by name, without printing it.
 env_get() {
-  local key="$1" f
-  for f in "$HOME/.gridwork/caisson.env" "$HOME/.gridwork/env"; do
-    [[ -r "$f" ]] || continue
-    local v
-    v=$(grep -E "^(export )?${key}=" "$f" | head -1 | sed -E "s/^(export )?${key}=//; s/^[\"']//; s/[\"']$//") || true
-    [[ -n "$v" ]] && { printf '%s' "$v"; return 0; }
-  done
-  return 0
+  printf '%s' "${!1:-}"
 }
 
 REPO="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
 # SARIF/JSON scan artifacts stay OUT of the repo tree.
-OUT_DIR="${SECURITY_OUT_DIR:-$HOME/lab/caisson-security-runs}"
+OUT_DIR="${SECURITY_OUT_DIR:-${TMPDIR:-/tmp}/caisson-security-runs}"
 mkdir -p "$OUT_DIR"
 
-# Semgrep on this box can hit an io_uring memory crash under parallelism; SEMGREP_JOBS=1 dodges
-# it. Harmless in the semgrep/semgrep CI Docker image (leave unset there).
+# Semgrep can hit an io_uring memory crash under parallelism on some hosts; SEMGREP_JOBS=1 dodges
+# it (CI sets it).
 SEMGREP_JOBS="${SEMGREP_JOBS:-}"
 
 have()   { command -v "$1" >/dev/null 2>&1; }

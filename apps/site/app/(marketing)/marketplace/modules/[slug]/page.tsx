@@ -54,8 +54,8 @@ export async function generateMetadata(props: Params): Promise<Metadata> {
 }
 
 /**
- * The stackCompat badge row (ADR-0263), authored from docs/state/compatibility-matrix.md
- * (2026-07-06 corrected snapshot) — every module page shares one "what this actually plugs into"
+ * The stackCompat badge row (ADR-0263), authored from the 2026-07-06
+ * compatibility snapshot — every module page shares one "what this actually plugs into"
  * row, since Postgres/RLS, billing, email, and jobs are base-level facts true for all of them.
  * Counts trued up at Kickoff-F integration (2026-07-06): 11 AI lanes after the groq/mistral/
  * together additions; 6 emitter targets after ADR-0264 (Claude Code, AGENTS.md universal base,

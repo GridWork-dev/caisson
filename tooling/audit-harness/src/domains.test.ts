@@ -83,7 +83,6 @@ describe("domainForPath — every path resolves to exactly one owner (longest-ro
   });
 
   test("audit-relevant root configuration resolves to the root-config domain", () => {
-    expect(domainForPath("orca.yaml", domains)?.id).toBe("root-config");
     expect(domainForPath("tokens.config.json", domains)?.id).toBe(
       "root-config",
     );
