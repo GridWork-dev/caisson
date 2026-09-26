@@ -296,6 +296,23 @@ Precondition: W1–W4 merged or complete; `main` CI green; zero open PRs; `RECEI
      record each pattern's pre-count.
    - Run `git filter-repo --invert-paths --paths-from-file strip-paths.txt --replace-text
 redactions.txt --replace-message msg-redactions.txt`.
+   - **Rehearsal outcome (2026-09-26):** a full rehearsal on a scratch clone passed every gate
+     with its mutation arm. The working files are in `~/.cache/caisson-archive/w5-rehearsal/`
+     (`strip-paths.txt`, `replace-text.txt`, `msg-redactions.txt`, `rewrite.sh`, `gates.sh`);
+     rebuild them only if a census count moves. Operator rulings from the rehearsal:
+     `replace-text.txt` carries the token-redaction line, and the same replacements plus the
+     session-link regex are applied to commit messages. First names in prose are scrubbed;
+     commit authorship is kept.
+   - **Strip-list additions (operator, 2026-09-26),** all as exact paths or directory prefixes,
+     each matching history and nothing on `main`: `infra/` (the caisson.sh zone Terraform and
+     the KMS/WORM/Discord provisioning scripts); `tools/security/mcp.json` and `orca.yaml`
+     (local tool config); the Railway ops files (`deploy-railway.yml`, the `railway-deploy` and
+     `railway-env-sync` scripts and tests, the six service `railway.toml` files and
+     `.changeset/site-railway-env-contract.md`); and `registry/worker/`. They stay:
+     `.mailmap` (only `@gridwork.dev` identities already in commit authorship),
+     `services/intel/.env.example` (a placeholder database URL), and the Railway ADRs and the
+     `create-caisson` Railway deploy template on `main`. Never use a `**/railway.toml` glob,
+     because it would strip the template.
 3. **Gates** (SPEC §Scrub step 3), each with its mutation arm. Any red stops the sitting.
 4. **GitHub cleanup:** delete workflow runs (paged loop until zero), caches, releases, tags,
    environments, secrets, variables, webhooks, deploy keys, and non-`main` branches. **Keep**
