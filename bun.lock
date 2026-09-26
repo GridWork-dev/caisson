@@ -1163,6 +1163,7 @@
         "zod": "catalog:",
       },
       "devDependencies": {
+        "@caisson/testing": "workspace:*",
         "@caisson/tsconfig": "workspace:*",
         "typescript": "catalog:",
       },
