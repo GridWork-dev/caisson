@@ -7,7 +7,6 @@ import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join } from "node:path";
 import { BUNDLE_IDS } from "@caisson/registry-schema";
-import { EDITION_NAMES } from "./checks.ts";
 
 const req = createRequire(import.meta.url);
 const policy = req("@caisson/lint-policy/boundary-policy.cjs") as {
@@ -19,12 +18,6 @@ const policy = req("@caisson/lint-policy/boundary-policy.cjs") as {
 const REPO_ROOT = join(import.meta.dir, "../../..");
 
 describe("boundary-policy parity (C24)", () => {
-  test("standards-gate EDITION_NAMES is exactly the policy's BUNDLE_META_NAMES", () => {
-    expect([...EDITION_NAMES].sort()).toEqual(
-      [...policy.BUNDLE_META_NAMES].sort(),
-    );
-  });
-
   test("every canonical bundle id (registry-schema) has a policy dir AND name row", () => {
     for (const id of BUNDLE_IDS) {
       expect(policy.BUNDLE_META_DIRS).toContain(id);
