@@ -1,0 +1,140 @@
+---
+title: ds-manifest
+description: The typed design-system component-manifest schema, its reader, and pure contrast and static-usage checks shared by the CLI, the MCP server, and the UI build-time generator.
+---
+
+`@caisson-sh/ds-manifest` is the shared data and analysis layer behind an agent-facing
+design-system surface: a strict component-manifest schema, a typed reader for the committed
+manifest, and a set of pure functions, none of them render anything or reach the network, that a
+CLI command, an MCP tool, and a build-time generator can all import instead of duplicating the
+same contract.
+
+## What it does
+
+- **A strict component-manifest schema.** `componentManifestSchema` validates a generated
+  manifest's shape, its `schemaVersion`, `generatedFor` package/version, and every component's
+  props, variants, token dependencies, and a11y notes, rejecting an unrecognized field at every
+  level.
+- **A typed reader for the committed manifest.** `loadBaseManifest` reads and validates the
+  manifest bundled with the package, so a caller never receives an unchecked shape.
+- **A pure WCAG contrast checker.** `checkContrast` runs the same fg/bg and functional/code token
+  pairs the design kit's own CI gate asserts, against a theme object the caller passes in.
+- **A pure static usage doctor.** `checkUsage` scans an adopter's source files, and optionally
+  their custom themes, for the mechanical mistakes an agent makes without reading the docs: a
+  hallucinated import, a stale kit version, a hard-coded color, an invalid variant value, missing
+  aria wiring, and a contrast regression.
+
+## Install
+
+```bash
+bun add @caisson-sh/ds-manifest
+```
+
+## Quickstart
+
+```ts
+import { loadBaseManifest, checkUsage } from "@caisson-sh/ds-manifest";
+
+const manifest = loadBaseManifest();
+
+const findings = checkUsage(manifest, {
+  files: [{ path: "src/Button.tsx", contents: sourceCode }],
+});
+
+for (const f of findings) {
+  console.error(`${f.severity} [${f.rule}] ${f.file}: ${f.message}`);
+}
+```
+
+## Component manifest
+
+```ts
+function parseComponentManifest(input: unknown): ComponentManifest;
+
+interface ComponentManifest {
+  schemaVersion: number;
+  generatedFor: { pkg: string; version: string };
+  components: Component[];
+}
+
+interface Component {
+  name: string;
+  summary: string;
+  props: ComponentProp[];
+  variants: Record<string, string[]>;
+  tokenDeps: string[];
+  a11yNotes: string[];
+  recipeRules: string[];
+  hasDataStar: boolean;
+}
+```
+
+`parseComponentManifest` throws on any shape mismatch, including an unrecognized field at any
+level. `loadBaseManifest` calls it over the manifest bundled with the package, so a caller gets
+back an already-validated `ComponentManifest`.
+
+## Contrast checking
+
+```ts
+function checkContrast(
+  theme: ContrastTheme,
+  fn: ContrastFunctional,
+  mode: string,
+  code?: ContrastCode,
+): ContrastViolation[];
+
+function renderedContrastRatio(fg: string, bg: string): number;
+
+interface ContrastViolation {
+  mode: string;
+  fg: string;
+  bg: string;
+  ratio: number;
+  min: number;
+  use: string;
+}
+```
+
+`theme` and `fn` are plain records keyed the same way the design kit's own semantic theme and
+functional tokens are (`ContrastThemeKey`, `FunctionalKey`); `code` is optional and, when passed,
+also checks the syntax-highlighting tokens (`ContrastCode`, keyed by `CodeTokenKey`). Nothing here
+depends on the UI package at runtime, any theme shaped this way, including a customized one, can
+be checked. An empty result means the palette passes every pair.
+
+## Usage doctor
+
+```ts
+function checkUsage(manifest: ComponentManifest, usage: unknown): Finding[];
+
+interface Finding {
+  rule: string;
+  severity: "error" | "warning";
+  file: string;
+  loc?: { line: number };
+  message: string;
+}
+```
+
+`usage` is untrusted and validated `.strict()` internally against `files: DoctorFile[]` (each
+`{ path, contents }`) and an optional `themes` array. Each rule fires under its own `rule` id:
+
+| Rule                        | Severity | Fires on                                                                             |
+| --------------------------- | -------- | ------------------------------------------------------------------------------------- |
+| `unknown-component`         | error    | An imported name from the UI package that isn't present in the manifest.             |
+| `version-skew`              | warning  | A `package.json` UI dependency pinned to a different version than the manifest was generated for. |
+| `raw-color-literal`         | warning  | A hex or `oklch()` color literal instead of a `--cs-*` token.                        |
+| `token-override`            | warning  | A `--cs-*` token assigned outside the theme API.                                     |
+| `invalid-variant`           | error    | A `data-*` attribute value not in that prop's manifest variant set.                  |
+| `missing-aria-describedby`  | error    | `aria-invalid` set truthy with no `aria-describedby`.                                |
+| `contrast`                  | error    | A supplied theme fails `checkContrast`.                                              |
+
+## Related
+
+<Cards>
+  <Card title="UI" href="/docs/base/ui">
+    The component barrel the committed manifest is generated from.
+  </Card>
+  <Card title="create-caisson" href="/docs/cli/create-caisson">
+    One of the surfaces the manifest and its usage doctor are built to run behind.
+  </Card>
+</Cards>

@@ -1,6 +1,6 @@
 ---
 title: Base substrate
-description: The sixteen Apache-2.0 packages every module family sits on — kernel, auth, tenancy RLS, UI tokens, billing, jobs, email, AI config, the MCP server, registry-schema, observability, rate-limit, ds-manifest, and the generator tooling (cli, migrate, license-verify) — plus three modules that extend the base without joining a family.
+description: The fifteen packages every module family sits on — kernel, auth, tenancy RLS, UI tokens, billing, jobs, email, AI config, the MCP server, registry-schema, observability, rate-limit, ds-manifest, and the generator tooling (cli, migrate) — plus three modules that extend the base without joining a family.
 ---
 
 The **Base substrate** is the floor every Caisson module family composes on. It is Apache-2.0 and
@@ -27,21 +27,22 @@ never forks.
 - **[jobs](/docs/base/jobs)**: a Trigger.dev job port with test drivers; billing and credit
   side-effects are enqueued, not inline.
 - **[email](/docs/base/email)**: a Resend email port with a test driver.
-- **`registry-schema`**: the open module-manifest and index schema plus the allowlist helpers —
-  the contract the generator's catalog-index builder implements.
-- **`observability`**: a vendor-neutral OpenTelemetry bootstrap; env-gated NodeSDK with an
-  OTLP/HTTP exporter.
-- **`rate-limit`**: token-bucket rate limiting with per-key and global ceilings and an injectable
-  clock.
-- **`ds-manifest`**: the design-system contracts an agent reasons over — the component-manifest
-  schema, its typed reader, and the pure contrast and static-usage checkers.
+- **[registry-schema](/docs/base/registry-schema)**: the open module-manifest and index schema
+  plus the allowlist helpers — the contract the generator's catalog-index builder implements.
+- **[observability](/docs/base/observability)**: a vendor-neutral OpenTelemetry bootstrap;
+  env-gated NodeSDK with an OTLP/HTTP exporter.
+- **[rate-limit](/docs/base/rate-limit)**: token-bucket rate limiting with per-key and global
+  ceilings and an injectable clock.
+- **[ds-manifest](/docs/base/ds-manifest)**: the design-system contracts an agent reasons over —
+  the component-manifest schema, its typed reader, and the pure contrast and static-usage
+  checkers.
 
-The generator and its tooling, `create-caisson`, the CLI, `@caisson-sh/migrate`, and
-`license-verify`: are part of the same open set; start at
+The generator tooling, the `create-caisson` CLI and
+[`@caisson-sh/migrate`](/docs/base/migrate), completes the base; start at
 [create-caisson](/docs/cli/create-caisson).
 
-That is the whole open set: **sixteen** Apache-2.0 packages, thirteen substrate plus three
-generator tooling.
+That is the base: **fifteen** packages, thirteen substrate plus two generator tooling. Like every
+package in the repository, each one is Apache-2.0.
 
 ## Three more base-adjacent modules
 
