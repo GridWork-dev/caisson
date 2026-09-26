@@ -15,12 +15,8 @@ import {
   type IconName,
 } from "@/components";
 import { buildMetadata } from "@/lib/metadata";
-import { contentSecurityPolicy } from "@/lib/security-headers";
-import {
-  ADMIN_SECURITY_POSTURE,
-  SECURITY_FAQ,
-  SECURITY_META_DESCRIPTION,
-} from "@/lib/security-copy";
+import { CONTENT_SECURITY_POLICY } from "@/lib/security-headers";
+import { SECURITY_FAQ, SECURITY_META_DESCRIPTION } from "@/lib/security-copy";
 import {
   breadcrumb,
   faqPage,
@@ -81,12 +77,13 @@ const SITE_POSTURE: ReadonlyArray<{
 }> = [
   {
     icon: "server",
-    title: "Dynamic app, minimal surface",
-    body: "caisson.sh runs as a Next.js standalone Node server on Railway, backed by Postgres for the buyer dashboard, billing, and checkout. Marketing and docs pages still render statically at build time; only the dashboard, checkout, and forms are dynamic, and every authed route runs the same fail-closed tenant isolation the product ships, no secrets in the client bundle.",
+    title: "Static site, no origin",
+    body: "caisson.sh is a static export served from Cloudflare's edge. Every page and the search index are prebuilt files: no origin server, no database, no sign-in, and no secrets anywhere in the build.",
   },
   {
     icon: "shield",
-    ...ADMIN_SECURITY_POSTURE,
+    title: "Nothing to submit",
+    body: "There are no forms and no API routes that accept input. Search runs entirely in your browser over a prebuilt index, so a query never leaves the page.",
   },
   {
     icon: "gauge",
@@ -99,11 +96,6 @@ const SITE_POSTURE: ReadonlyArray<{
     body: "Analytics run through Plausible, no cookies, no cross-site identifiers, no consent banner because there is nothing to consent to. Fonts ship from our own origin via next/font, so font-src stays locked to 'self' with no third-party font CDN in the trust surface.",
   },
   {
-    icon: "key",
-    title: "Validated forms endpoint",
-    body: "The ask-AI and waitlist routes both validate input with Zod .strict() (unknown fields rejected) and gate on a Cloudflare Turnstile token before any request reaches the model or the mailing list. makeTurnstileVerifier fails closed on the ask route; the waitlist route also drops bots via a honeypot field.",
-  },
-  {
     icon: "file-check",
     title: "Responsible disclosure",
     body: "A machine-readable policy lives at /.well-known/security.txt (RFC 9116). Report anything you find to security@caisson.sh, we read it.",
@@ -112,13 +104,13 @@ const SITE_POSTURE: ReadonlyArray<{
 
 // A real, visible FAQ — drives the precise-scope honesty law (ADR-0080 §3). FAQPage JSON-LD is
 // emitted only because these questions render on the page.
-// GENERATED from the policy this app actually sends, never hand-written. A displayed `curl`
+// GENERATED from the policy this site actually sends, never hand-written. A displayed `curl`
 // transcript is a claim about live behaviour under ADR-0080, and hand-maintaining this block is
-// exactly how it drifted from the real header twice — first missing the PostHog origins, then
-// missing ADR-0400's `frame-src 'self'`. Composing it from the builder makes that class of drift
-// impossible. One directive per line for readability; the real header is a single line.
+// exactly how it drifted from the real header twice. The builder is pinned to public/_headers by
+// lib/security-headers.test.ts, so the page and the header cannot drift. One directive per line
+// for readability; the real header is a single line.
 const SHIPPED_CSP = `$ curl -sI https://caisson.sh | grep -i '^content-security-policy'
-content-security-policy: ${contentSecurityPolicy("'none'").split("; ").join(";\n  ")}`;
+content-security-policy: ${CONTENT_SECURITY_POLICY.split("; ").join(";\n  ")}`;
 
 export default function SecurityPage() {
   const jsonLd = [
@@ -222,7 +214,7 @@ content-security-policy: default-src 'self'; …`}
         {/* ===== This site's posture ===== */}
         <Section
           title="How caisson.sh itself is secured."
-          lede="A dynamic app widens the attack surface, we keep it deliberately scoped and document exactly what ships."
+          lede="A static site keeps the attack surface small, and we document exactly what ships."
         >
           <FeatureGrid cols={3}>
             {SITE_POSTURE.map((p) => (
@@ -277,15 +269,9 @@ content-security-policy: default-src 'self'; …`}
                 nonce under the App Router, so those inline tags cannot be hash-
                 or nonce-gated without breaking hydration. Beyond{" "}
                 <code className="mono">&apos;self&apos;</code> the policy allows
-                exactly three third parties, each scoped to the surface that
-                uses it: Plausible for cookieless analytics, Paddle (
-                <code className="mono">cdn.paddle.com</code> for the checkout
-                script, <code className="mono">*.paddle.com</code> for its
-                overlay iframe and API), and Cloudflare Turnstile (
-                <code className="mono">challenges.cloudflare.com</code>) for the
-                invisible bot check on the Ask-AI assistant. Nothing wider.
-                Tightening the inline residual to per-script hashes is a tracked
-                follow-up, not a shipped claim.
+                exactly one third party: Plausible, for cookieless analytics.
+                Nothing wider. Tightening the inline residual to per-script
+                hashes is a tracked follow-up, not a shipped claim.
               </p>
             </Card>
           </div>
