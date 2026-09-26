@@ -8,7 +8,7 @@
 // typed error WITHOUT the response body (the same no-body-leak rule `@caisson-sh/email`'s drivers follow) — then CATCHES that
 // itself so one channel failing never aborts the others (per-channel isolation). `deliverAll` adds
 // a second isolation layer on top, so isolation holds even for a channel that doesn't self-catch.
-// Buyer-supplied destination URLs (webhook/Slack/Telegram) pass an SSRF guard (`assertSafeUrl`) at
+// Caller-supplied destination URLs (webhook/Slack/Telegram) pass an SSRF guard (`assertSafeUrl`) at
 // BOTH seams — the Zod config schema and the fetch call — mirroring the ai-kit provider baseUrl guard.
 import { createHmac } from "node:crypto";
 import {
@@ -48,7 +48,7 @@ export function createEmailChannel(emailer: Emailer): AlertChannel {
   };
 }
 
-/** An https URL to a public host — the SSRF-guarded string type used for every buyer-supplied
+/** An https URL to a public host — the SSRF-guarded string type used for every caller-supplied
  * destination. Runs the kernel {@link assertSafePublicUrl} LITERAL guard at the schema boundary (sync,
  * no DNS); the resolve-time re-check (DNS-rebinding defense) runs at each fetch seam
  * via {@link assertSafePublicUrlResolved} — one shared policy source (@caisson-sh/kernel/ssrf). */
@@ -200,7 +200,7 @@ export function createTelegramChannel(config: TelegramConfig): AlertChannel {
     name: "telegram",
     async deliver(event: AlertEvent): Promise<DeliveryResult> {
       try {
-        // `botApiUrl` is buyer-supplied config (not a constant api.telegram.org base), so it needs
+        // `botApiUrl` is caller-supplied config (not a constant api.telegram.org base), so it needs
         // the same SSRF guard; resolve-check the base before composing the sendMessage path.
         await assertSafePublicUrlResolved(config.botApiUrl);
         const url = `${config.botApiUrl.replace(/\/+$/, "")}/sendMessage`;

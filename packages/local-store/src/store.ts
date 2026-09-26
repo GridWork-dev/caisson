@@ -15,7 +15,7 @@ import { fuseByRrf } from "./rrf.ts";
  * `bun:sqlite` `loadExtension(sqlite-vec)` throws "does not support dynamic extension loading".
  * `Database.setCustomSQLite` points bun:sqlite at a build that allows it; it is process-global and
  * MUST run before any `new Database()`, so we apply it once, lazily, on the first open. Homebrew's
- * sqlite (a buyer/CI prerequisite on macOS) supports extensions. No-op on Linux — Bun's bundled
+ * sqlite (an adopter/CI prerequisite on macOS) supports extensions. No-op on Linux — Bun's bundled
  * SQLite already allows extension loading (ADR-0067). If no extension-capable SQLite is found, the
  * original clear `loadExtension` error still surfaces (fail-closed, never silent).
  */

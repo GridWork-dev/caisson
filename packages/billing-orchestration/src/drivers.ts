@@ -160,14 +160,14 @@ export function createPaddleBilling(config: PaddleConfig): BillingProvider {
     async createDiscount(input) {
       // Mint an affiliate discount code via Paddle Billing's POST /discounts (ADR-0315). Same REST
       // shape as createCheckout above (paddleApiBase + Bearer + fetchWithTimeout). The program
-      // parameters are FIXED (10% buyer-facing, operator-locked): `type: "percentage"` with
+      // parameters are FIXED (10% customer-facing, operator-locked): `type: "percentage"` with
       // `amount: "10"` (percentage amount, 0.01–100 per Paddle's API), `enabled_for_checkout: true`
-      // so buyers can redeem it, and `recur: true` so it applies across a subscription's billing
+      // so customers can redeem it, and `recur: true` so it applies across a subscription's billing
       // periods (not just the first). `usage_limit: null` = unlimited redemptions (an affiliate code
       // is shared, not single-use). The response's `data.id` is the `dsc_…` join key the webhook
       // mapper later reads off `transaction.completed.discount_id`.
       const baseUrl = paddleApiBase(config.env);
-      // amount "10" = the operator-LOCKED 10% buyer-facing discount (ADR-0315). Fixed program
+      // amount "10" = the operator-LOCKED 10% customer-facing discount (ADR-0315). Fixed program
       // parameter, not a per-mint input — this package cannot depend "up" on the host that owns
       // the discount program (ADR-0003), so the locked value is inlined.
       const body = {

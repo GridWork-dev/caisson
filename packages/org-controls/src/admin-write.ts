@@ -1,10 +1,10 @@
 // The cross-tenant admin-WRITE RLS layer (ADR-0220), carved out of the open @caisson-sh/tenancy-rls into
-// this commercial package (ADR-0257 §1.3, resolving the ADR-0249 G6 ambiguity: all six exports move).
+// this package (ADR-0257 §1.3, resolving the ADR-0249 G6 ambiguity: all six exports move).
 //
 // An operator control plane must CHANGE state across tenants (comp a grant, correct a wallet) — the
-// exact inverse of the buyer `app` role's fail-closed tenant isolation. Reads use a dedicated
+// exact inverse of the adopter `app` role's fail-closed tenant isolation. Reads use a dedicated
 // SELECT-only `admin` role elsewhere in the stack; this is its WRITE twin, DB-separated on purpose:
-// admin writes NEVER run as the buyer `app` role, so a bug in the buyer runtime can never reach
+// admin writes NEVER run as the adopter `app` role, so a bug in the adopter runtime can never reach
 // cross-tenant write privilege and vice-versa. RLS stays the single mechanism — a second, ROLE-SCOPED
 // permissive policy (`TO admin_write USING/CHECK (true)`) lets only this role write any tenant's row;
 // `app`'s `TO app` isolation is unchanged (a `TO admin_write` policy never matches the `app` role). The

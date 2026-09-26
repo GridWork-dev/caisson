@@ -6,9 +6,9 @@
 // MCP-over-stdio carries no per-request headers, so there is no protocol-level slot for a Bearer on
 // every call the way an HTTP-shaped `mcpQuery` host does. The idiomatic mapping
 // (mirrors how stdio MCP clients configure one server process per credential, e.g. an env var in the
-// client's server config) is: ONE stdio CONNECTION == ONE buyer session. `bearer` is authenticated
+// client's server config) is: ONE stdio CONNECTION == ONE client session. `bearer` is authenticated
 // ONCE, before the transport is ever constructed — an invalid token throws `AuthnError` synchronously
-// and no `Server`/transport is built, so every tool the buyer could have reached is gated shut, not
+// and no `Server`/transport is built, so every tool the client could have reached is gated shut, not
 // merely the first call. `listTools`/`handleToolCall` (incl. the ADR-0112 rate-limit hook, already
 // awaited inside `handleToolCall`) are then driven verbatim per request — this file adds no new
 // authorization logic, it only marshals JSON-RPC tool list/call requests onto the existing seam.
@@ -45,7 +45,7 @@ import { createMcpServer, type McpServerOptions } from "./server.ts";
 const SERVER_VERSION = "0.1.0";
 
 /** Wiring input: the existing transport-agnostic port plus the ONE bearer this stdio connection
- *  authenticates as (see file header — one process, one buyer session). */
+ *  authenticates as (see file header — one process, one client session). */
 export interface StdioServerDeps {
   readonly mcp: McpServerOptions;
   readonly bearer: string;
@@ -58,7 +58,7 @@ export interface StdioServerDeps {
 const PERMISSIVE_INPUT_SCHEMA = { type: "object" as const };
 
 /**
- * Build (but do not connect) the `@modelcontextprotocol/sdk` `Server`, bound to the buyer-MCP core
+ * Build (but do not connect) the `@modelcontextprotocol/sdk` `Server`, bound to the MCP core
  * via `deps.mcp`. Authenticates `deps.bearer` FIRST — fail-closed before any transport exists. Takes
  * the low-level `Server` (not the newer `McpServer` convenience wrapper) because the tool set is
  * registered at runtime through the seam (ADR-0076), read once at connect time from
@@ -76,7 +76,7 @@ export function createStdioMcpServer(deps: StdioServerDeps): Server {
     capabilities: { tools: {}, resources: {}, prompts: {} },
   };
   const server = new Server(
-    { name: "caisson-buyer-mcp", version: SERVER_VERSION },
+    { name: "caisson-mcp", version: SERVER_VERSION },
     options,
   );
 

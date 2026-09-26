@@ -1,8 +1,8 @@
-// The revoke/refund buyer-facing notice (G27, buyer-lifecycle audit 2026-07-07): fired post-commit
+// The revoke/refund customer-facing notice (G27, customer-lifecycle audit 2026-07-07): fired post-commit
 // from the SAME seam as the purchase/renewal confirmations (the host's webhook handler)
 // whenever a subscription cancel or a refund actually revoked an active grant. Before this
 // template, `subscription.canceled`/`refund.completed` returned NO_EFFECT and fired nothing — a
-// buyer found entitlements silently gone on their next dashboard visit. One bounded prop set, no
+// customer found entitlements silently gone on their next dashboard visit. One bounded prop set, no
 // entitlement listing (the mapper surfaces only "something was revoked", not which ids — the
 // dashboard is the detailed source of truth).
 import { EmailBody, EmailButton, EmailLayout } from "./layout.tsx";
@@ -10,11 +10,11 @@ import { EmailBody, EmailButton, EmailLayout } from "./layout.tsx";
 export type AccessRevokedReason = "subscription_canceled" | "refund";
 
 export interface AccessRevokedData {
-  /** The buyer's display name, or their email when no name is on file. */
+  /** The customer's display name, or their email when no name is on file. */
   buyerName: string;
   /** What triggered this notice — selects the copy. */
   reason: AccessRevokedReason;
-  /** The buyer dashboard — the current, authoritative entitlement list. */
+  /** The customer dashboard — the current, authoritative entitlement list. */
   dashboardUrl: string;
 }
 

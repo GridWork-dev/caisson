@@ -23,7 +23,7 @@ import { z } from "zod";
  * the threat model already accounts for:
  *
  * - `model-fetch`     — the first-run model download host (the ONNX backend). Hash-pinned, and
- *                       air-gap buyers pre-seed the cache so even this host is never contacted.
+ *                       air-gap adopters pre-seed the cache so even this host is never contacted.
  * - `rented-backend`  — the opt-in metered hosted-inference host (the rented backend seam).
  *                       Off by default; reachable only when the deployer explicitly allowlists it.
  */

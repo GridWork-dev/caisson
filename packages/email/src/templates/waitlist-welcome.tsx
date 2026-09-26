@@ -1,6 +1,6 @@
 // The early-access waitlist welcome — a growth email, migrated into the shared template registry
 // from a standalone plain-HTML builder so every email in the product previews and sends through one
-// pile. `email` is buyer-supplied and reaches the rendered output ONLY as JSX text content, which
+// pile. `email` is caller-supplied and reaches the rendered output ONLY as JSX text content, which
 // React escapes automatically — no hand-rolled HTML-entity escaping needed (the templates around it
 // carry the same guarantee).
 import { EmailBody, EmailButton, EmailLayout } from "./layout.tsx";

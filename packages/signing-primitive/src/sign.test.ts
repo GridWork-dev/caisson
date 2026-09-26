@@ -37,8 +37,8 @@ interface EvidencePackManifestFixture extends SignableManifest {
   readonly [key: string]: unknown;
 }
 
-// A FIXED per-tenant test key (32-byte seed) — deterministic, and DISTINCT from any Caisson
-// license-issuer key (ADR-0056 trust model). Its derived public key is pinned below.
+// A FIXED per-tenant test key (32-byte seed) — deterministic, and DISTINCT from any other Caisson
+// signing key (ADR-0056 trust model). Its derived public key is pinned below.
 const TENANT_SEED = Uint8Array.from(Buffer.from("42".repeat(32), "hex"));
 const TENANT_KEY_ID = "tenant-acme-prod/evidence-signing/v1";
 const TENANT_PUBLIC_KEY =

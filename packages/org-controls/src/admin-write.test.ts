@@ -1,9 +1,9 @@
 // The security proof for the cross-tenant admin WRITE seam (ADR-0220, Fork AM-2 = B), moved here with
 // the seam it tests (ADR-0257 §1.3). The `admin_write` role can INSERT/UPDATE any tenant's row, while
-// the buyer `app` role stays fail-closed tenant-isolated — DB-level separation, not app convention. If
+// the adopter `app` role stays fail-closed tenant-isolated — DB-level separation, not app convention. If
 // the `TO admin_write` scoping ever regressed into `app`, the "app cannot cross tenants" assertions
 // below fail. `buildTenantPolicySql` + `withTenant` are the still-open @caisson-sh/tenancy-rls floor; the
-// admin-write builders + `withAdminWrite` are the commercial carve under test (./admin-write.ts).
+// admin-write builders + `withAdminWrite` are the carve under test (./admin-write.ts).
 import { test, expect } from "bun:test";
 import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import {

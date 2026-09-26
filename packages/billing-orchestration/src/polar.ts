@@ -1,9 +1,9 @@
-// Polar billing driver + event mapper (ADR-0175) — a buyer-facing Merchant-of-Record `BillingProvider`
+// Polar billing driver + event mapper (ADR-0175) — a customer-facing Merchant-of-Record `BillingProvider`
 // driver. Polar->domain event mapping + REST checkout creation. The raw-body Standard Webhooks signature
 // verifier (`verifyPolarWebhook`) stays OPEN in @caisson-sh/billing (uniform rule: signature-verify open
-// for all four providers); this commercial file composes it (ADR-0249 G3). NO new dependency —
+// for all four providers); this file composes it (ADR-0249 G3). NO new dependency —
 // hand-rolled over Polar's REST API, mirroring the Stripe/Paddle drivers' no-SDK posture. Dormant: only
-// constructed when the buyer supplies credentials. Platform MoR stays Paddle (ADR-0116).
+// constructed when the adopter supplies credentials. Platform MoR stays Paddle (ADR-0116).
 import { z } from "zod";
 import { readIdString, readInt, readString } from "./event-readers.ts";
 import {
@@ -141,7 +141,7 @@ export function parsePolarEvent(event: PolarEvent): DomainBillingEvent | null {
 function requireConfigValue(name: string, value: string): void {
   if (value.length === 0) {
     throw new ConfigError(
-      `createPolarBilling requires \`${name}\` (fail-closed — the driver is dormant until the buyer supplies credentials)`,
+      `createPolarBilling requires \`${name}\` (fail-closed — the driver is dormant until the adopter supplies credentials)`,
     );
   }
 }

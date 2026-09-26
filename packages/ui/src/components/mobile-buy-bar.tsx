@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import "./mobile-buy-bar.css";
 
 export interface MobileBuyBarProps {
-  /** The item being purchased (e.g. a module or edition name) — the same label the full purchase card shows. */
+  /** The item being purchased (e.g. a module or bundle name) — the same label the full purchase card shows. */
   label: string;
   /** An already-formatted price string (e.g. "$149"), matching the full purchase card's own formatter. */
   price: string;

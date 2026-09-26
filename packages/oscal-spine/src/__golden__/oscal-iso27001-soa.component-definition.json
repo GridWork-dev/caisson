@@ -176,7 +176,7 @@
               {
                 "uuid": "00000000-0000-4000-8000-000000000008",
                 "control-id": "A.9.99",
-                "description": "No Caisson crosswalk row maps this control to a shipped technical mechanism; applicability is not resolved by this generator and remains the buyer's own ISMS scoping decision.",
+                "description": "No Caisson crosswalk row maps this control to a shipped technical mechanism; applicability is not resolved by this generator and remains the adopter's own ISMS scoping decision.",
                 "props": [
                   {
                     "name": "caisson-soa-applicability",

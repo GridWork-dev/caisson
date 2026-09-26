@@ -19,7 +19,7 @@ function validInput(): Record<string, unknown> {
   return {
     operatorId: "support-operator-7",
     targetAccountId: TARGET,
-    reason: "Investigating a buyer-reported ticket.",
+    reason: "Investigating a customer-reported ticket.",
     ttlMs: 15 * 60 * 1000,
   };
 }
@@ -94,7 +94,7 @@ describe("beginImpersonation — validation precedes all I/O", () => {
       beginImpersonation(deps, {
         operatorId: "support-operator-7",
         targetAccountId: TARGET,
-        reason: "Investigating a buyer-reported ticket.",
+        reason: "Investigating a customer-reported ticket.",
         ttlMs: 0, // fail-closed: strictly positive TTLs only
       }),
     ).rejects.toBeInstanceOf(ValidationError);

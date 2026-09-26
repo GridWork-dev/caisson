@@ -176,7 +176,7 @@ export function evaluateFtc4P(copy: string): Ftc4PResult {
 }
 
 /**
- * Wrap `evaluateFtc4P` as a `Moderator` (category `"custom"`) — a buyer opts it into `guardOutput`
+ * Wrap `evaluateFtc4P` as a `Moderator` (category `"custom"`) — an adopter opts it into `guardOutput`
  * with zero `guard.ts` change (this evaluator scores static copy, not a request/response leg).
  * `threshold` sets the minimum acceptable per-dimension score in ADDITION to `evaluateFtc4P`'s own
  * `flagged` verdict (block-severity findings or any dimension already under 0.5).

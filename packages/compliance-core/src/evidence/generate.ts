@@ -50,7 +50,7 @@ export interface GenerateEvidencePackInput extends AssembleEvidenceManifestInput
    * Optionally, the newest external-anchor receipt for this tenant (SPEC external-anchoring §6). It
    * is attached DETACHED — an extra archive entry + an envelope grade tag — NEVER a field in the
    * canonical body (the receipt carries a non-deterministic TSA token; hashing it would break
-   * byte-stability). Absence is NOT an unresolved-evidence gap: anchoring is buyer-optional, so a
+   * byte-stability). Absence is NOT an unresolved-evidence gap: anchoring is adopter-optional, so a
    * pack still generates normally with no external-anchor entry.
    */
   readonly externalAnchor?: ExternalAnchorAttachment;

@@ -14,11 +14,11 @@ import { NotFoundError, parseStrict, strictObject } from "@caisson-sh/kernel";
  *     credential chain resolve them);
  *   • `azure-openai` addresses a DEPLOYMENT via `model` and needs `apiVersion` + `baseUrl` (the Azure
  *     resource endpoint);
- *   • `ollama` is OpenAI-API-compatible — it rides the same transport as `local`, the buyer names its
+ *   • `ollama` is OpenAI-API-compatible — it rides the same transport as `local`, the adopter names its
  *     `baseUrl`.
  *   • `groq` / `mistral` / `together` (ADR-0171 board lock 2026-07-06) are OpenAI-API-compatible
  *     hosted vendors, each with a hardcoded default `baseUrl` (overridable, like `openrouter`'s) —
- *     unlike `local`/`ollama` they need no buyer-supplied host.
+ *     unlike `local`/`ollama` they need no caller-supplied host.
  * As with every lane, this package only carries env-var NAMES, never a key value.
  */
 const ProviderConfigSchema = strictObject({
@@ -96,7 +96,7 @@ const ProviderConfigSchema = strictObject({
   }
 });
 
-/** Buyer `forge.config` surface: a default lane + capability→provider map. */
+/** Adopter `forge.config` surface: a default lane + capability→provider map. */
 const AiSettingsSchema = strictObject({
   defaultLane: z.string().min(1),
   lanes: z.record(z.string(), ProviderConfigSchema),
@@ -105,7 +105,7 @@ const AiSettingsSchema = strictObject({
 export type ProviderConfig = z.infer<typeof ProviderConfigSchema>;
 export type AiSettings = z.infer<typeof AiSettingsSchema>;
 
-/** Parse + validate buyer settings; rejects unknown keys (ADR-0002). */
+/** Parse + validate adopter settings; rejects unknown keys (ADR-0002). */
 export function parseAiSettings(input: unknown): AiSettings {
   return parseStrict(AiSettingsSchema, input);
 }

@@ -20,7 +20,7 @@
 //     purpose-bound — fail-closed-to-offline, never a silent hosted fallback.
 //   - Model integrity — the model is FIRST-RUN-FETCHED + cached (NOT shipped in the tarball — see
 //     `.npmignore`) and every pinned file is SHA-256 hash-verified before it reaches the runtime;
-//     a mismatch fails closed. Air-gap buyers pre-seed the cache and run with `offline: true`
+//     a mismatch fails closed. Air-gap adopters pre-seed the cache and run with `offline: true`
 //     (`allowRemoteModels=false` + `local_files_only`) for literally zero egress.
 //
 // The file is framework-free (ADR-0044): it imports no model SDK statically and opens no socket at

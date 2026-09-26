@@ -1,7 +1,7 @@
 // The hooks dispatcher (ADR-0065/0066). Engine-neutral: handlers observe — and may govern —
 // lifecycle act transitions at `${'before'|'after'}:${act}` points. The dispatcher NEVER runs an
 // engine and NEVER rewrites the FSM adjacency; it folds handler outcomes through the unified
-// `HookResult` shape and is hardened for buyer loops:
+// `HookResult` shape and is hardened for adopter loops:
 //   - FAIL-OPEN on infra failure: a handler that THROWS, and a DOWN/slow sink, never block the loop
 //     and never veto — they are isolated, the loop continues (an observer crash is not a policy).
 //   - FAIL-CLOSED on an EXPLICIT veto: a handler that returns `deny(reason)` short-circuits dispatch
@@ -228,7 +228,7 @@ const defaultRunner: CommandRunner = (command, args, timeoutMs, env) =>
  * no interpolation, no secret reachable in argv). The handler ignores the `HookContext` entirely —
  * by construction no context value can flow into the command — so it OBSERVES: exit 0 → `allow`
  * (returns nothing), a non-zero exit or spawn failure throws, which the dispatcher isolates
- * (fail-open) — a failing external command never vetoes the buyer's loop.
+ * (fail-open) — a failing external command never vetoes the adopter's loop.
  */
 export function commandHandler<C = unknown>(
   spec: CommandHookSpec,

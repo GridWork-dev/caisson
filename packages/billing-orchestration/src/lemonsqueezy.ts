@@ -1,9 +1,9 @@
-// LemonSqueezy billing driver + event mapper (ADR-0175) — a buyer-facing Merchant-of-Record
+// LemonSqueezy billing driver + event mapper (ADR-0175) — a customer-facing Merchant-of-Record
 // `BillingProvider` driver. LemonSqueezy->domain event mapping + REST checkout creation. The raw-body
 // HMAC signature verifier (`verifyLemonSqueezyWebhook`) stays OPEN in @caisson-sh/billing (uniform rule:
-// signature-verify open for all four providers); this commercial file composes it (ADR-0249 G3). NO new
+// signature-verify open for all four providers); this file composes it (ADR-0249 G3). NO new
 // dependency — hand-rolled over LemonSqueezy's plain REST API, mirroring the Stripe/Paddle drivers'
-// no-SDK posture. Dormant: only constructed when the buyer supplies credentials (call-site env-gating,
+// no-SDK posture. Dormant: only constructed when the adopter supplies credentials (call-site env-gating,
 // same discipline as every other driver) — the platform MoR stays Paddle (ADR-0116).
 import { z } from "zod";
 import { readIdString, readString } from "./event-readers.ts";
@@ -170,7 +170,7 @@ export function parseLemonSqueezyEvent(
 function requireConfigValue(name: string, value: string): void {
   if (value.length === 0) {
     throw new ConfigError(
-      `createLemonSqueezyBilling requires \`${name}\` (fail-closed — the driver is dormant until the buyer supplies credentials)`,
+      `createLemonSqueezyBilling requires \`${name}\` (fail-closed — the driver is dormant until the adopter supplies credentials)`,
     );
   }
 }

@@ -19,7 +19,7 @@
 // returning, so the approval never silently executes with no actor on file.
 //
 // Transport (PLAN-gate decision, SPEC §4 / PLAN task 5): a direct service/DB call, never an MCP
-// round-trip — `caisson run approve|deny` is operator-side tooling against the buyer's own
+// round-trip — `caisson run approve|deny` is operator-side tooling against the adopter's own
 // deployment. This module is the service the CLI verbs call into (directly, in-process) OR that a
 // hosted admin surface calls into — never itself a network transport. The `caisson run` CLI path
 // (`packages/cli/src/run.ts`) is fully atomic instead (its raw SQL runs inside ONE transaction,

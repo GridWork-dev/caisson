@@ -16,7 +16,7 @@
 // async would break every existing caller, so this module adds `timestampCountersignsSignatureAsync`
 // alongside it (the `hashChainLinkAsync` precedent in @caisson-sh/kernel) rather than changing it.
 //
-// EVERY name here is re-exported by sign.ts, so the `.` barrel is unchanged for buyers, and the
+// EVERY name here is re-exported by sign.ts, so the `.` barrel is unchanged for adopters, and the
 // `./browser` entry is a strict SUBSET of it (pinned by browser-safety.test.ts).
 import * as ed from "@noble/ed25519";
 import {
@@ -39,7 +39,7 @@ export interface SignableManifest {
  * The signature schemes this surface produces. `ed25519` is the base-tier evidence-pack scheme (pure
  * EdDSA over the full message). `ed25519ph` is the external-anchoring prehash variant (RFC-8032 §5.1,
  * SHA-512 prehash) required by Rekor v2 `hashedrekord` — pure Ed25519 is rejected there (it re-hashes
- * the message it is only given the digest of). A buyer-KMS asymmetric scheme would extend this behind
+ * the message it is only given the digest of). A caller-KMS asymmetric scheme would extend this behind
  * the port.
  */
 export type SignatureAlgorithm = "ed25519" | "ed25519ph";

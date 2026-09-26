@@ -1,7 +1,7 @@
 // ADR-0162 — the BYOK-aware `ModelResolver`. An env-pointer lane (the default) resolves exactly
 // as before, through the boot-time provider registry (`buildRegistryResolver`). A per-tenant lane
 // (`keySource: "tenant"`) instead pulls the caller's own decrypted key via the injected
-// `resolveTenantKey` port and builds a provider for it (`providerFor(cfg, key)`), so one buyer's
+// `resolveTenantKey` port and builds a provider for it (`providerFor(cfg, key)`), so one adopter's
 // tenants can each bring their own provider account. The port hides the encrypted store + `withTenant`
 // + field-crypto behind one function the HOST wires per deployment — this file never touches a DB or a
 // crypto context, keeping the gateway package DB-free.

@@ -14,7 +14,7 @@ function session(
   return {
     id: "1f2e3d4c-5b6a-4798-8899-aabbccddeeff",
     operatorId: "support-operator-7",
-    reason: "Investigating a buyer-reported ticket.",
+    reason: "Investigating a customer-reported ticket.",
     startedAt: "2026-06-27T12:00:00.000Z",
     expiresAt: "2026-06-27T12:15:00.000Z",
     endedAt: "2026-06-27T12:05:00.000Z",

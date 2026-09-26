@@ -16,7 +16,7 @@
 //
 //        // Swap the test/no-op sink for the real append-only/integer/idempotent
 //        // debit. The credits package is NOT a dependency of this edition — only the SHAPE ships
-//        // here; the live debit is wired by the buyer's billing integration:
+//        // here; the live debit is wired by the adopter's billing integration:
 //        //
 //        //   import { debit } from "@caisson-sh/credits";
 //        //   meter: async (record) => {
@@ -98,7 +98,7 @@ export interface RentedTransport {
 
 /**
  * The metered-call sink: every rented call hands it one {@link UsageMetering} record before the
- * result is returned. The buyer's billing integration wires the live `credits.debit` here (see the file header); the
+ * result is returned. The adopter's billing integration wires the live `credits.debit` here (see the file header); the
  * edition ships only the shape. If the sink throws, the call fails — a paid call that cannot be
  * recorded must not silently succeed (fail-closed).
  */
@@ -112,7 +112,7 @@ export interface RentedBackendConfig {
   guard: EgressGuard;
   /** The wire-call transport (the live transport is un-exercised in CI; tests inject a double). */
   transport: RentedTransport;
-  /** The metered-call sink — one record per call. The buyer's billing integration wires `credits.debit` here. */
+  /** The metered-call sink — one record per call. The adopter's billing integration wires `credits.debit` here. */
   meter: MeterSink;
   /** Per-tenant id stamped on each metered record (local-first: one backend instance per tenant). */
   tenantId: string;
@@ -216,7 +216,7 @@ export class RentedInferenceBackend implements InferenceBackend {
 
   /**
    * Build + validate one metered record and hand it to the sink. The record is the canonical
-   * append-only/integer/idempotent ledger shape (`UsageMetering`); the buyer's billing integration
+   * append-only/integer/idempotent ledger shape (`UsageMetering`); the adopter's billing integration
    * swaps the sink for the live `credits.debit` (see the file header). `idempotencyKey` is fresh per call so a replay
    * of the SAME key never double-charges.
    */

@@ -91,7 +91,7 @@ export const crosswalkRollupCellSchema = strictObject({
   status: controlStatusSchema,
   /** Mechanically-chosen claim language (ADR-0333 Fork E) — never editorial. */
   claim: claimSchema,
-  /** Where the buyer looks for the evidence backing this cell (the contributing canonical control ids). */
+  /** Where the reader looks for the evidence backing this cell (the contributing canonical control ids). */
   evidencePointers: z.array(z.string()).min(1),
   /**
    * Attached when a contributing reference cites an OLIR seed (NIST's own subjective/incomplete
@@ -119,7 +119,7 @@ export const crosswalkRollupSchema = strictObject({
 export type CrosswalkRollup = z.infer<typeof crosswalkRollupSchema>;
 
 /**
- * Framework label -> regime id, for the labels that have a buyer-facing regime crosswalk today
+ * Framework label -> regime id, for the labels that have a customer-facing regime crosswalk today
  * (`@caisson-sh/frameworks-pack` `regimes.ts`). Only SOC2-TSC and ISO-27001 are mapped in v1;
  * HIPAA-Security and EU-AI-Act have no regime crosswalk, so their cells always default `maps-to`
  * (correct — Fork E condition (c) has no row to satisfy). The ISO-27001 entry matters only if a
@@ -168,7 +168,7 @@ export interface ComputeCrosswalkRollupInput {
   /** Per-canonical-control-id coverage status for THIS run. A control absent from the map was not
    *  evidenced this run and contributes no cell. */
   readonly controlStatuses: ReadonlyMap<string, ControlStatus>;
-  /** The buyer-facing regime crosswalks (soc2/pci-dss/gdpr) — the Fork E condition (c) reference. */
+  /** The customer-facing regime crosswalks (soc2/pci-dss/gdpr) — the Fork E condition (c) reference. */
   readonly regimeCrosswalks: readonly RegimeCrosswalk[];
 }
 

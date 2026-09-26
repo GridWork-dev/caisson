@@ -1,7 +1,7 @@
 // Billing webhook Route Handler — a STUB wired against the open `BillingProvider` PORT
 // (@caisson-sh/billing, ADR-0017): `verifyAndParse` turns a raw provider payload into the
 // provider-agnostic `DomainBillingEvent`. The port's concrete driver factories (Stripe/Paddle/
-// LemonSqueezy/Polar) are the commercial `@caisson-sh/billing-orchestration` package — swap
+// LemonSqueezy/Polar) are the `@caisson-sh/billing-orchestration` package — swap
 // `getBillingProvider()` for one of those (or your own port implementation, using the open raw
 // verifiers `verifyStripeWebhook`/`verifyPaddleWebhook`/… also exported from `@caisson-sh/billing`).
 import type { NextRequest } from "next/server";

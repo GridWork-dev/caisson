@@ -1,4 +1,4 @@
-// ADR-0162 — the per-tenant encrypted BYOK provider-key store. A buyer's tenant supplies its OWN
+// ADR-0162 — the per-tenant encrypted BYOK provider-key store. An adopter's tenant supplies its OWN
 // provider API key; this store holds it ENCRYPTED AT REST (field-crypto envelope) behind FORCE RLS, so
 // a DB dump leaks no usable key and a cross-tenant read is refused twice over (RLS + the crypto AAD,
 // which binds `tenantId`). It composes two shipped primitives and adds no new crypto:

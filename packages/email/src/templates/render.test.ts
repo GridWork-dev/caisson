@@ -295,7 +295,7 @@ describe("renderEmailTemplate", () => {
   });
 
   // Guards the security-floor fix an earlier standalone-HTML version of these two templates
-  // needed (a buyer-supplied email reaching raw HTML unescaped): react-email/JSX auto-escapes
+  // needed (a caller-supplied email reaching raw HTML unescaped): react-email/JSX auto-escapes
   // every text child, so a script-shaped email must render as inert text, never live markup.
   test("waitlist-welcome + nurture-follow-up: a script-shaped email never renders unescaped", async () => {
     const maliciousEmail = "<script>alert(1)</script>@evil.com";

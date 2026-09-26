@@ -14,7 +14,7 @@ export type HookDecision = "allow" | "deny" | "mutate";
  *   - `allow`        — the transition / hook point proceeds unchanged.
  *   - `deny(reason)` — the transition / hook point is vetoed (fail-closed); `reason` is policy text.
  *   - `mutate(ctx)`  — proceed, but `ctx` replaces the governance context every downstream step sees.
- * Generic over the buyer's context `C`. `reason` is buyer policy text — never a secret or a value.
+ * Generic over the adopter's context `C`. `reason` is adopter policy text — never a secret or a value.
  */
 export type HookResult<C> =
   | { readonly decision: "allow" }

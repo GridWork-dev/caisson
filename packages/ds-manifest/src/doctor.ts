@@ -1,11 +1,11 @@
 /**
- * The static usage doctor — pure, deterministic, no renderer. Given a buyer's source files and the
+ * The static usage doctor — pure, deterministic, no renderer. Given an adopter's source files and the
  * committed component manifest, it reports the mechanical mistakes a coding agent makes when it
  * adopts the kit without a human reading docs: a hallucinated component import, a stale kit version,
  * a hard-coded colour instead of a token, an invalid `data-*` variant value, a hand-rolled control
- * that skips the aria-wiring `FormField` does for free, and — when the buyer hands over their
+ * that skips the aria-wiring `FormField` does for free, and — when the adopter hands over their
  * customised theme — a WCAG contrast regression (reusing the kit's own contrast gate, `contrast.ts`,
- * never a second copy of it). Every check is text/AST-free regex analysis over untrusted buyer
+ * never a second copy of it). Every check is text/AST-free regex analysis over untrusted adopter
  * input: no exec, no fs, no network — so the same function is safe to run behind an MCP tool.
  */
 import { z } from "zod";
@@ -22,14 +22,14 @@ export interface Finding {
   /** Stable machine id of the rule that fired (e.g. `"unknown-component"`). */
   rule: string;
   severity: Severity;
-  /** The buyer file the finding is anchored to. */
+  /** The adopter file the finding is anchored to. */
   file: string;
   /** 1-indexed line, when the finding points at a specific spot. */
   loc?: { line: number };
   message: string;
 }
 
-// Untrusted buyer input — bounded + `.strict()` so a check behind an MCP tool cannot be used to
+// Untrusted adopter input — bounded + `.strict()` so a check behind an MCP tool cannot be used to
 // smuggle an unknown field or an unbounded payload (repo security floor). The manifest and token
 // objects are NOT here: they are trusted, caller-supplied (already schema-validated on the way in).
 const doctorFileSchema = z
@@ -53,7 +53,7 @@ const doctorThemeSchema = z
 export const doctorUsageSchema = z
   .object({
     files: z.array(doctorFileSchema).max(500),
-    /** The buyer's customised themes, when they want the contrast gate run over their palette. */
+    /** The adopter's customised themes, when they want the contrast gate run over their palette. */
     themes: z.array(doctorThemeSchema).max(50).optional(),
   })
   .strict();
@@ -111,7 +111,7 @@ function checkImports(
 const PKG_UI_DEP_RE = /"@caisson-sh\/ui"\s*:\s*"([^"]+)"/;
 const SEMVER_RE = /(\d+\.\d+\.\d+)/;
 
-// A buyer package.json pinning a different `@caisson-sh/ui` than the manifest was generated for — the
+// An adopter package.json pinning a different `@caisson-sh/ui` than the manifest was generated for — the
 // manifest they are being checked against may not describe the version they actually installed.
 function checkVersionSkew(
   file: DoctorFile,
@@ -134,7 +134,7 @@ function checkVersionSkew(
 }
 
 // A hard-coded colour (hex or oklch literal) instead of a `--cs-*` token. ponytail: flags every
-// colour literal in every file — a buyer theme-definition file legitimately holds colour literals,
+// colour literal in every file — an adopter theme-definition file legitimately holds colour literals,
 // so this is a warning, and the contrast gate (below), not this check, is what validates a theme.
 const COLOR_LITERAL_RE =
   /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})\b|oklch\s*\(/g;
@@ -251,7 +251,7 @@ function buildVariantMap(
 }
 
 /**
- * Run every static check over the buyer's files (and optional themes) against `manifest`. Returns
+ * Run every static check over the adopter's files (and optional themes) against `manifest`. Returns
  * every finding, deterministically ordered (per-file in source order, checks in a fixed sequence);
  * an empty array means the usage is clean. `usage` is untrusted and validated `.strict()` here.
  */

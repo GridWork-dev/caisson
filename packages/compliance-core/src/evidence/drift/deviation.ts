@@ -1,7 +1,7 @@
 // src/evidence/drift/deviation.ts — accepted-deviation state for the drift monitor (ADR-0371, SPEC
 // item 4).
 //
-// A typed, first-class record: a buyer accepts a KNOWN gap for one control, naming who accepted it,
+// A typed, first-class record: an adopter accepts a KNOWN gap for one control, naming who accepted it,
 // why, and when it expires. Flag-never-guess (the binding `collector.ts` already enforces, extended
 // here): the deviation NEVER flips a flagged evidence item to pass — the generated pack and the
 // snapshot still show the gap honestly. It only suppresses the drift-regression ALERT, and only for

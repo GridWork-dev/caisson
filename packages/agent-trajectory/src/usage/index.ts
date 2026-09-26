@@ -1,6 +1,6 @@
 // @caisson-sh/agent-trajectory/usage — the AR-3 usage-adapter surface (ADR-0360 U-4, folded in from
 // the retired @caisson-sh/agent-usage package by ADR-0402): price normalization + the Codex rollout
-// adapter, composing with the package's own Claude adapter so a buyer gets one surface for "turn a
+// adapter, composing with the package's own Claude adapter so an adopter gets one surface for "turn a
 // real transcript into priced trajectory events" regardless of engine:
 // `priceUsage(parseClaudeTranscript(jsonl, opts).events)` and
 // `priceUsage(parseCodexRollout(jsonl, opts).events)` are the same one-line composition.

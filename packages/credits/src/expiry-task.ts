@@ -53,7 +53,7 @@ export interface ExpiryNoticeTaskDeps {
   emailer: ExpiryNoticeEmailer | null;
   /** Resolve an account's notification address; null → skip (no address, no send). */
   recipientFor: (accountId: string) => Promise<string | null>;
-  /** The email CTA link — the buyer credits dashboard. */
+  /** The email CTA link — the customer credits dashboard. */
   dashboardUrl: string;
   /** Notice window in days (default 30, ADR-0252 Decision 6b). */
   withinDays?: number;

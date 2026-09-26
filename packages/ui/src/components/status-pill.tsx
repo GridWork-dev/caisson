@@ -3,7 +3,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 
 import "./status-pill.css";
 
-/** Entitlement / license lifecycle states (the credit-ledger + license-issuer domain). */
+/** Entitlement / license lifecycle states (the credit-ledger + licensing domain). */
 export type EntitlementStatus = "active" | "expired" | "revoked" | "pending";
 
 const DEFAULT_LABEL: Record<EntitlementStatus, string> = {
@@ -22,7 +22,7 @@ export interface StatusPillProps extends HTMLAttributes<HTMLSpanElement> {
 
 /**
  * StatusPill — entitlement/license status pill (active / expired / revoked / pending).
- * Sibling to `StatusChip` (the generic glyph+label pill) but scoped to the buyer
+ * Sibling to `StatusChip` (the generic glyph+label pill) but scoped to the adopter
  * dashboard's entitlement domain, so callers get a typed `status` instead of a free
  * `tone`. Never colour-alone: a status dot plus the always-present text label carry
  * the meaning together.

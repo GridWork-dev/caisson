@@ -1,10 +1,10 @@
 // The owner-gated multi-user membership surface (ADR-0176), carved out of the open @caisson-sh/auth into
-// this commercial package (ADR-0257 §1.3). Only the MANAGE half moves: listing an account's members,
+// this package (ADR-0257 §1.3). Only the MANAGE half moves: listing an account's members,
 // an owner adding a seat, and the owner-only authz gate. The login-critical session-resolution half
 // (`resolveUserAccounts` / `ensurePersonalAccount` / `selectActiveAccount`) STAYS in open @caisson-sh/auth
-// — it runs on every buyer login (apps/site getSession), so it must never sit behind the org-controls
+// — it runs on every login (apps/site getSession), so it must never sit behind the org-controls
 // entitlement. `AccountMembership` + `Role` are re-used from @caisson-sh/auth (their canonical home);
-// this package composes DOWN onto the open auth + tenancy-rls substrates (commercial → open, allowed).
+// this package composes DOWN onto the open auth + tenancy-rls substrates (down-only, allowed).
 import { ValidationError } from "@caisson-sh/kernel";
 import { withTenant, type Transactor } from "@caisson-sh/tenancy-rls";
 import type { AccountMembership, Role } from "@caisson-sh/auth";

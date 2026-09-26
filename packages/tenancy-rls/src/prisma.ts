@@ -1,13 +1,13 @@
 // Prisma bridge (ADR-0266 — ORM adapter family). Same pattern as drizzle.ts: a structurally
 // typed facade over Prisma Client's raw-query surface, backed by the UNMODIFIED `TenantExecutor`
-// port (rls.ts:21) inside `withTenant`. Zero runtime dependency on `@prisma/client` — a buyer's
+// port (rls.ts:21) inside `withTenant`. Zero runtime dependency on `@prisma/client` — an adopter's
 // call sites written against `prisma.$queryRawUnsafe(sql, ...params)` /
 // `prisma.$executeRawUnsafe(sql, ...params)` port over to `createPrismaBridge(tx)` with a rename,
 // not a rewrite.
 //
 // Multi-statement tenant work: Prisma's real interactive `$transaction(async (tx) => { ... })`
 // is NOT reproduced here — `withTenant`'s own callback already IS the transaction boundary
-// (rls.ts:88-105), so a buyer moving multi-statement code just nests it directly inside
+// (rls.ts:88-105), so an adopter moving multi-statement code just nests it directly inside
 // `withTenant`'s callback (wrapping `tx` once with `createPrismaBridge`), never calling a second,
 // nested transaction API. See the README for the worked recipe.
 import type { TenantExecutor } from "./rls.ts";

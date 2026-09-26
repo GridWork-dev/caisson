@@ -11,7 +11,7 @@
 // rounds up over the meter's `DEFAULT_OUTPUT_TOKENS` phantom output budget (the same estimator
 // `infer()` uses). The ACTUAL usage this file reconciles against always carries `outputTokens: 0`,
 // so that phantom leg refunds in full at reconcile regardless of the price book's `outputPerMTok`
-// rate for the model — a buyer is billed for input tokens only, exactly what an embedding call
+// rate for the model — the caller is billed for input tokens only, exactly what an embedding call
 // consumes. Price key stays `provider/model`: an embedding model is just another `PriceBook` row: no
 // `PriceBookEntry` schema change (a dedicated flat-rate embedding SKU, distinct from per-token
 // pricing, is a separate cross-package pricing decision, deferred for now).
@@ -196,7 +196,7 @@ export async function embed(
 /**
  * Run one metered batch-embedding call through the gateway — the `embedMany()` counterpart of
  * `embed()`. Same chokepoint contract, one reservation/reconcile pair over the whole batch (not one
- * per value): the meter never sizes credits or `usage_event` rows finer than the call the buyer made.
+ * per value): the meter never sizes credits or `usage_event` rows finer than the call the caller made.
  */
 export async function embedMany(
   lane: string,

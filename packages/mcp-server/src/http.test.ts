@@ -2,7 +2,7 @@
 // but drives a REAL loopback `node:http.Server` (via `runHttpServer`) with a real
 // `@modelcontextprotocol/sdk` `Client` over `StreamableHTTPClientTransport` (a real socket, real
 // JSON-RPC framing, real HTTP status codes) instead of the in-memory pipe stdio uses — this is the
-// genuinely new surface (network-reachable, one process serving N buyers) the ADR calls out.
+// genuinely new surface (network-reachable, one process serving N clients) the ADR calls out.
 // Loopback only: no real external egress. The host (`onGenerate`) stays an in-memory fixture,
 // mirroring the rest of this DB-free package.
 import { createServer, type Server as NodeHttpServer } from "node:http";
