@@ -20,8 +20,6 @@ export {
 } from "./templates/index.ts";
 export { EMAIL_SAMPLE_DATA } from "./sample-data.ts";
 export type {
-  AbandonedCheckoutData,
-  AbandonedCheckoutLine,
   CreditsExpiringData,
   EmailTemplateData,
   EmailTemplateId,
