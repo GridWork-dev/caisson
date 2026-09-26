@@ -1,0 +1,167 @@
+---
+title: compliance
+description: Caisson's compliance evidence kit — composes the framework catalogs, the evidence engine, per-tenant signing, OSCAL bundling, tenant-crypto composition, a support-impersonation audit trail, and a regulatory-exemption posture worksheet.
+---
+
+`@caisson-sh/compliance` is Caisson's compliance evidence kit: a composition package, never a
+fork, of the base modules underneath it. It re-exports the framework catalogs, the evidence
+engine, and the per-tenant signer, then adds the pieces only a composed edition needs: an OSCAL
+bundle assembler, the crypto-nested-inside-RLS transaction wiring, cross-package migration
+assembly, a support-impersonation audit kernel, operational telemetry, and a regulatory-exemption
+posture worksheet convention.
+
+## What it composes
+
+- **Re-exports `@caisson-sh/frameworks-pack`, `@caisson-sh/compliance-core`, and
+  `@caisson-sh/signing-primitive`.** Every control-model builder, framework pack, evidence
+  collector, `generateEvidencePack`, and `signEvidencePack` is importable directly from
+  `@caisson-sh/compliance`.
+- **`assembleOscalEvidenceBundle`**: authors a per-framework OSCAL Assessment Plan, hashes its
+  canonical bytes, builds the Assessment Results (SAR) with the AP `rlink` rewritten to a relative
+  in-bundle path plus a SHA-256 binding, builds the POA&M, and signs the manifest — returning a
+  relative-path-to-bytes file map a caller writes to disk or a WORM store.
+- **`withTenantCrypto`**: runs a callback inside a transaction that is both tenant-RLS-scoped
+  (`withTenant`) and field-crypto-scoped (`withFieldCryptoContext`) to the same account id, so an
+  encrypted-column read or write can never happen outside a bound tenant scope.
+- **`assembleComplianceMigrations`**: declares the Compliance edition's migration-contributing
+  package set (`field-crypto` → `audit-worm` → `compliance`) and delegates the disk read and
+  topological merge to `@caisson-sh/migrate`, producing one ordered, checksum-ledgered migration
+  sequence.
+- **A support-impersonation kernel** (`beginImpersonation` / `recordImpersonatedAction` /
+  `endImpersonation` / `withImpersonation`): a fail-closed, time-bounded session that appends a
+  dual operator-identity / acting-as-tenant record pair to the target tenant's own audit chain for
+  every lifecycle step.
+- **Operational telemetry** (`emitEvidenceGenerated` / `emitErasureCryptoShred`): mirrors
+  evidence-pack generation and crypto-shred erasure through the base `EventSink` port — opaque ids
+  and posture counts only, never the evidentiary record itself.
+- **A regulatory-exemption posture worksheet** (`defineExemptionWorksheet`): a typed convention
+  for mapping a legal exemption's own test elements to checkable LLM-output rules, with a fixed
+  `NOT_LEGAL_ADVICE` disclaimer and an optional human sign-off.
+
+## Install
+
+```bash
+bun add @caisson-sh/compliance
+```
+
+## Quickstart
+
+```ts
+import { generateEvidencePack, signEvidencePack, withTenantCrypto } from "@caisson-sh/compliance";
+
+// framework is the pack's { id, title, version }. controls and chainAnchor come from running the
+// evidence collectors against your tenant; crosswalkRollup comes from computeCrosswalkRollup.
+const pack = generateEvidencePack({
+  tenantId,
+  framework,
+  chainAnchor,
+  controls,
+  crosswalkRollup,
+  now: new Date(),
+});
+const signature = await signEvidencePack(signer, pack.manifest);
+
+// Tenant writes to encrypted fields run inside the crypto + RLS boundary together.
+await withTenantCrypto(db, accountId, keyProvider, async (tx) => {
+  /* ... */
+});
+```
+
+## OSCAL signed evidence bundle
+
+```ts
+import { assembleOscalEvidenceBundle } from "@caisson-sh/compliance";
+
+const bundle = await assembleOscalEvidenceBundle(pack.manifest, signer, {
+  now: new Date(),
+});
+
+// bundle.files                — "./assessment-plan/<framework>.json", "./sar.json", "./poam.json",
+//                                "./manifest.json", "./manifest.sig" -> exact UTF-8 bytes to write
+// bundle.assessmentPlanHref   — the relative AP path the SAR `rlink.href` points at
+// bundle.assessmentPlanSha256 — SHA-256 of the canonicalized AP bytes, matching the SAR's rlink.hashes[0]
+```
+
+The bundle is deterministic given one injected `now`/`newId` seam fed to the AP, SAR, and POA&M in
+a fixed order; the only side-effecting step is the Ed25519 signature, reused unchanged from
+`signEvidencePack`. Nothing here writes to disk or a network — the caller decides where
+`bundle.files` lands.
+
+## Support impersonation
+
+```ts
+import {
+  beginImpersonation,
+  withImpersonation,
+  endImpersonation,
+} from "@caisson-sh/compliance";
+
+const session = await beginImpersonation(deps, {
+  operatorId,
+  targetAccountId,
+  reason: "Investigating a billing discrepancy per ticket #4821",
+  ttlMs: 60 * 60 * 1000, // must be <= MAX_IMPERSONATION_TTL_MS (8h, one support shift)
+});
+
+await withImpersonation(deps, session, async (tx) => {
+  /* runs inside the target's ordinary withTenant(targetAccountId) scope — RLS still gates everything */
+});
+
+await endImpersonation(deps, session);
+```
+
+`beginImpersonation`'s input is a Zod `.strict()` boundary: `reason` must be at least 8 characters
+and `ttlMs` must be positive and at or under `MAX_IMPERSONATION_TTL_MS`. Every lifecycle step
+(begin, a recorded action via `recordImpersonatedAction`, and end) appends a linked
+operator-identity and acting-as-tenant record pair to the target tenant's chain;
+`findDualRecordSeqs` scans a loaded chain for one session's whole dual trail so a torn append is
+detectable rather than silent.
+
+## Migration assembly
+
+```ts
+import { assembleComplianceMigrations } from "@caisson-sh/compliance";
+
+const assembly = assembleComplianceMigrations();
+```
+
+`complianceMigrationPackages` returns the same contributing set as kernel `PackageMigrations`, if
+you need the pre-merge, per-package view.
+
+## Regulatory-exemption posture worksheet
+
+```ts
+import { defineExemptionWorksheet, NOT_LEGAL_ADVICE } from "@caisson-sh/compliance";
+
+const worksheet = defineExemptionWorksheet({
+  id: "ftc-endorsement-disclosure",
+  title: "FTC Endorsement Guides — material connection disclosure",
+  exemption: "16 CFR Part 255 (FTC Endorsement Guides) …",
+  jurisdiction: "US — FTC",
+  disclaimer: NOT_LEGAL_ADVICE,
+  rules: [
+    {
+      legalTestElement: "A material connection must be disclosed.",
+      outputRule: "Any AI-drafted endorsement MUST include a disclosure string.",
+      enforcement: "automated-guardrail",
+    },
+  ],
+});
+```
+
+This is deliberately not a rules engine or a CI gate — it is a typed shape a compliance or legal
+team fills in by hand, with a schema-enforced disclaimer so no worksheet can omit or soften it.
+`ftcEndorsementDisclosureWorksheet` ships as a generic, intentionally-unsigned illustration of the
+shape.
+
+<Callout type="info" title="Not a compliance certification">
+  The compliance evidence kit ships the technical controls a framework points at. It does not make
+  an organization compliant; that determination is your organization's and its auditor's to make.
+</Callout>
+
+## Composes with
+
+`@caisson-sh/compliance` is down-only, never a fork: `@caisson-sh/audit-worm`,
+`@caisson-sh/field-crypto`, `@caisson-sh/tenancy-rls`, `@caisson-sh/migrate`, and
+`@caisson-sh/kernel` sit beneath it, alongside the `frameworks-pack` / `compliance-core` /
+`signing-primitive` trio it re-exports. The rest of the Compliance family composes onto it.

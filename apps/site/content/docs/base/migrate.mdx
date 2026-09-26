@@ -1,0 +1,125 @@
+---
+title: migrate
+description: The base migration assembler and runner, merges every selected package's forward-only SQL into one renumbered sequence and applies it through an injected, DB-agnostic runner port.
+---
+
+`@caisson-sh/migrate` is the base migration assembler and runner: it reads each selected
+package's on-disk `migrations/NNNN_*.sql`, merges them through the kernel's pure algorithm into
+one globally renumbered sequence under a single `schema_version` checksum ledger, emits that as a
+generated app's file set, and applies it forward-only through an injected runner port. Owned once,
+here, so the CLI and the composed editions import it rather than copy it.
+
+## What it does
+
+- **Reads** each selected package's forward-only migrations off disk (`readPackageMigrations`).
+- **Merges** them via `@caisson-sh/kernel`'s pure `assembleMigrations`, topologically ordered by
+  the package dependency graph, renumbered into one global `NNNN_*.sql` sequence, with one
+  `schema_version` checksum computed over the merged set (`assembleSelected`).
+- **Emits** the result as a generated app's file set: one renumbered SQL file per migration plus
+  one ledger file (`emitMigrationFileSet`). Pure and path-sorted, so a re-run is byte-identical.
+- **Applies** the sequence forward-only and idempotently through an injected `MigrationApplier`
+  port (`runMigrations`), the only DB-touching seam. Tests inject an in-memory double, so no live
+  database runs in CI; a node-postgres implementation ships as a subpath export.
+
+## Install
+
+```bash
+bun add @caisson-sh/migrate
+```
+
+A live-Postgres `MigrationApplier` needs the optional peer `pg`:
+
+```bash
+bun add @caisson-sh/migrate pg
+```
+
+## Quickstart
+
+```ts
+import { assembleSelected, emitMigrationFileSet } from "@caisson-sh/migrate";
+
+const assembly = assembleSelected([
+  { slug: "kernel", dir: "packages/kernel", dependsOn: [] },
+  { slug: "auth", dir: "packages/auth", dependsOn: ["kernel"] },
+]);
+
+const files = emitMigrationFileSet(assembly);
+// files: [{ path: "migrations/0001_....sql", content: "..." }, ..., { path: "migrations/schema_version.json", content: "..." }]
+```
+
+## Assembling
+
+```ts
+interface SelectedPackage {
+  slug: string;
+  dir: string; // its migrations/NNNN_*.sql live under here
+  dependsOn: string[]; // other SELECTED slugs this one depends on
+}
+
+function readPackageMigrations(pkg: SelectedPackage): PackageMigrations;
+function assembleSelected(packages: readonly SelectedPackage[]): MigrationAssembly;
+function emitMigrationFileSet(assembly: MigrationAssembly): EmittedFileSet;
+
+interface EmittedFile {
+  path: string;
+  content: string;
+}
+type EmittedFileSet = readonly EmittedFile[];
+```
+
+Only `NNNN_*.sql` entries under `<dir>/migrations/` are read; a package with no `migrations/`
+directory legitimately contributes none. `PackageMigrations` and `MigrationAssembly` are
+[`@caisson-sh/kernel`](/docs/base/kernel)'s types, this package is the IO half, the kernel owns
+the pure merge algorithm. `emitMigrationFileSet` returns a path-sorted set: one
+`migrations/NNNN_*.sql` per merged migration, plus one `migrations/schema_version.json` ledger
+carrying the assembly's `schemaVersion` and `ledger`.
+
+## Applying
+
+```ts
+interface MigrationApplier {
+  applied(): Promise<readonly AppliedMigration[]>;
+  apply(migration: MergedMigration): Promise<void>;
+}
+
+interface AppliedMigration {
+  version: number;
+  checksum: string;
+}
+
+function runMigrations(
+  assembly: MigrationAssembly,
+  applier: MigrationApplier,
+): Promise<MigrationRunResult>;
+
+interface MigrationRunResult {
+  applied: readonly number[]; // ordinals applied by THIS run
+  skipped: readonly number[]; // ordinals already recorded before this run
+  schemaVersion: string;
+}
+```
+
+`runMigrations` is forward-only and idempotent: an already-recorded version is skipped, so a
+re-run applies nothing new. If a recorded version's checksum no longer matches the assembled one,
+a shipped migration's bytes were edited, it fails closed and throws, rather than silently
+re-applying or skipping the drift.
+
+```ts
+// from "@caisson-sh/migrate/pg"
+function pgMigrationApplier(pool: Pool): MigrationApplier;
+```
+
+A node-postgres `MigrationApplier`. The pool is injected, the caller owns its lifecycle and
+`DATABASE_URL`, and the `schema_version` ledger table is created lazily on first use; each
+`apply` runs the migration SQL and records its ledger row in one transaction.
+
+## Related
+
+<Cards>
+  <Card title="Kernel" href="/docs/base/kernel">
+    Owns the pure `assembleMigrations` merge algorithm this package wraps with IO.
+  </Card>
+  <Card title="create-caisson" href="/docs/cli/create-caisson">
+    Composes this package's assembler and runner into a generated app.
+  </Card>
+</Cards>

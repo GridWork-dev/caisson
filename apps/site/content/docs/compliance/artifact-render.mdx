@@ -1,0 +1,68 @@
+---
+title: artifact-render
+description: The shared render primitive for public-facing compliance artifacts — a readiness-language claim filter, allowlist-based field redaction, and citation-row rendering.
+---
+
+`@caisson-sh/artifact-render` is the shared render seam every public-facing compliance artifact
+in Caisson renders through: a readiness-language claim filter, allowlist-based field redaction, and a
+validated citation-row shape. It exists so the ISO 27001 SoA generator and the trust-page generator
+share one legal-gate and one redaction implementation rather than each deriving their
+own.
+
+## What it does
+
+- **A readiness-language claim filter.** `READINESS_LANGUAGE_BANNED_WORDS_RE` bans the
+  case-insensitive, word-bounded claim words `compliant`, `certified`, and `verified`.
+  `isReadinessLanguage` is the pure predicate; `assertReadinessLanguage` throws a redaction-safe
+  `ValidationError` at a construction boundary, naming the offending field but never echoing the
+  text itself.
+- **Allowlist-based field redaction — the opposite posture from a denylist.**
+  `redactToAllowlist(facts, allowlist)` returns a new record containing only the keys present in
+  both; a key in the allowlist the facts don't carry is simply absent, no error. Deterministic key
+  order follows the allowlist, not the source object's own enumeration.
+- **A validated citation-row constructor.** `renderCitationRow` builds a `CitationRow` (`control`,
+  `claim`, `justification`, optional `evidencePointer`), gating `control`, `claim`, and
+  `justification` through the readiness-language filter — every free-text-ish field, not only the
+  prose one. `citationRowToJson` converts a row to a plain `JsonValue` for embedding in an OSCAL
+  prop, an evidence-pack archive entry, or a rendered artifact.
+
+## Install
+
+```bash
+bun add @caisson-sh/artifact-render
+```
+
+## Quickstart
+
+```ts
+import {
+  redactToAllowlist,
+  renderCitationRow,
+  citationRowToJson,
+  assertReadinessLanguage,
+} from "@caisson-sh/artifact-render";
+
+const redacted = redactToAllowlist(
+  { "framework.title": "SOC 2 — Trust Services Criteria", tenantId: "acme" },
+  ["framework.title"],
+);
+// { "framework.title": "SOC 2 — Trust Services Criteria" } — tenantId never rendered
+
+const row = renderCitationRow({
+  control: "A.5.15",
+  claim: "applicable",
+  justification: "Logical access control is enforced at the data tier.",
+  evidencePointer: "ACCESS-CONTROL.LOGICAL",
+});
+
+citationRowToJson(row);
+```
+
+`assertReadinessLanguage(text, field)` is the same gate `renderCitationRow` calls internally —
+reach for it directly when rendering a free-text field this package doesn't already wrap.
+
+## Composes with
+
+`@caisson-sh/artifact-render` depends only on `@caisson-sh/kernel`. `@caisson-sh/oscal-spine`'s ISO
+27001 SoA export and `@caisson-sh/trust-page`'s generator both render through it, so a claim-word
+regression or a redaction bug is fixed once, in one place, for every consumer.

@@ -1,0 +1,115 @@
+---
+title: observability
+description: A vendor-neutral OpenTelemetry bootstrap, an env-gated NodeSDK with an OTLP/HTTP exporter, HTTP/fetch/pg auto-instrumentation, and span-attribute scrubbing, inert until an endpoint is configured.
+---
+
+`@caisson-sh/observability` is Caisson's OpenTelemetry bootstrap: `initObservability` boots a
+`NodeSDK` pointed at any OTLP/HTTP-compatible backend, with HTTP, fetch, and Postgres
+auto-instrumentation, and every span's attributes scrubbed before export. It does nothing at all
+until an OTLP endpoint is configured.
+
+## What it does
+
+- **Env-gated boot.** `initObservability` starts nothing, no global module patching, no network
+  call, unless `OTEL_EXPORTER_OTLP_ENDPOINT` (or an explicit `opts.endpoint`) is set. Call it
+  unconditionally at boot; it's a no-op in an environment with no endpoint configured.
+- **HTTP + fetch + Postgres auto-instrumentation**, plus an OTLP/HTTP logs pipeline fed by a
+  `process.stdout`/`process.stderr` write bridge, so existing `stderr.write` logging reaches the
+  same backend as traces with no call-site changes.
+- **Span-attribute scrubbing**, applied to every span before it leaves the process: a key-based
+  deny-list drops anything shaped like a secret or PII, and a value-level backstop redacts a raw
+  `Authorization: Bearer …` string under an unsuspecting key.
+- **A manual request-span helper** (`withRequestSpan`) for Bun's own `Bun.serve` handlers, which
+  bypass the Node-level auto-instrumentation above.
+
+## Install
+
+```bash
+bun add @caisson-sh/observability
+```
+
+## Quickstart
+
+```ts
+import { initObservability, shutdownObservability } from "@caisson-sh/observability";
+
+// No-op unless OTEL_EXPORTER_OTLP_ENDPOINT is set; idempotent if called twice.
+const handle = initObservability();
+
+// ... on process shutdown
+await shutdownObservability();
+```
+
+## Configuration
+
+```ts
+interface InitObservabilityOptions {
+  endpoint?: string; // defaults to OTEL_EXPORTER_OTLP_ENDPOINT
+  serviceName?: string; // defaults to OTEL_SERVICE_NAME, then "caisson"
+  headers?: Record<string, string>; // extra OTLP export headers, never logged
+  timeoutMs?: number; // per-export timeout, default 10s
+  exporter?: SpanExporter; // injectable — tests stub this
+  logExporter?: LogRecordExporter; // same test seam, for the logs pipeline
+  instrumentations?: Instrumentation[]; // defaults to HTTP + fetch (undici) + pg
+}
+
+interface ObservabilityHandle {
+  readonly active: boolean; // false when no endpoint was configured
+}
+```
+
+Neither `endpoint` nor `OTEL_EXPORTER_OTLP_ENDPOINT` set means `initObservability` returns
+`{ active: false }` and starts nothing. A second call while already active returns the existing
+handle rather than double-booting.
+
+## Request spans on Bun
+
+```ts
+function withRequestSpan(
+  handler: (req: Request) => Promise<Response>,
+  routeTemplate?: string,
+): (req: Request) => Promise<Response>;
+```
+
+```ts
+import { withRequestSpan } from "@caisson-sh/observability";
+
+const handler = withRequestSpan(
+  async (req) => new Response("ok"),
+  "/users/:id", // optional route template — keeps the span name low-cardinality
+);
+```
+
+`Bun.serve`, Bun's own `fetch`, and Bun SQL bypass the HTTP/undici/pg auto-instrumentation
+`initObservability` boots, so a Bun handler emits zero spans without this wrap. It records one
+server span per call (`http.method`, `http.route`, `http.status_code`), marks the span an error on
+a `>= 500` response or a thrown exception, and always re-throws. `/health` requests are skipped,
+no span, no noise. Without a `routeTemplate`, the raw request path is scrubbed (`scrubPath`)
+before it's ever used as a span name or attribute.
+
+## Attribute scrubbing
+
+```ts
+function scrubAttributes(attributes: Record<string, unknown>): void; // mutates in place
+function isSensitiveAttributeKey(key: string): boolean;
+function scrubPath(path: string): string; // "/users/abc-123" -> "/users/:id"
+
+class ScrubbingSpanProcessor implements SpanProcessor {
+  constructor(next: SpanProcessor);
+}
+```
+
+`ScrubbingSpanProcessor` wraps another `SpanProcessor` and scrubs every span's attributes at
+`onEnd`, before it reaches the wrapped processor, the mechanism `initObservability` installs by
+default. `scrubPath` replaces a UUID, email, numeric id, or long opaque token path segment with
+`:id`, leaving static route segments alone. This scrubbing is deliberately separate from
+`@caisson-sh/kernel`'s `redactEvent`: that redacts the `OpsEvent` operational-event stream; this
+mutates a span's flat `attributes` record, and the two paths never share a write path.
+
+## Related
+
+<Cards>
+  <Card title="Kernel" href="/docs/base/kernel">
+    A separate event stream (`OpsEvent` / `redactEvent`) from the spans this package scrubs.
+  </Card>
+</Cards>

@@ -24,6 +24,10 @@ budget returns `402`, never an unbounded charge.
 
 ## What's in the family
 
+- **[ai-kit](/docs/ai-production/ai-kit)**: the metered inference gateway — `infer`,
+  `inferStream`, `embed`, and `embedMany`, all behind the same reserve-before-provider-call
+  chokepoint, composing prompt-registry, ai-meter, guardrails and ai-config behind Vercel AI
+  SDK v7.
 - **[ai-meter](/docs/ai-production/ai-meter)**: Postgres-atomic reserve/reconcile token
   metering, per-tenant spend caps, and a circuit breaker. Integer credits only, no floats.
 - **[ai-evals](/docs/ai-production/ai-evals)**: a regression gate for prompt and model changes:

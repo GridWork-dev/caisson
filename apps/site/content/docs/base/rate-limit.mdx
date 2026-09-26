@@ -1,0 +1,161 @@
+---
+title: rate-limit
+description: Shared abuse-throttle primitives, an in-memory per-IP token bucket for unauthenticated surfaces, and a Postgres-backed per-account token bucket for authenticated ones.
+---
+
+`@caisson-sh/rate-limit` is Caisson's shared abuse-throttle package: an in-memory per-IP token
+bucket for surfaces with no signed-in caller, and a Postgres-backed per-account token bucket, RLS
+scoped, for surfaces that do. Either composes independently; nothing here is a full auth boundary
+on its own.
+
+## What it does
+
+- **A per-IP token-bucket limiter** (`TokenBucketLimiter`) for unauthenticated surfaces, a public
+  webhook receiver, an unauth scrape endpoint, keyed on the client IP from the `X-Real-IP` header,
+  with a header-independent global ceiling backstopping a spoofed or collapsed identity.
+- **A Postgres-backed per-account token bucket** (`checkRateLimit` / `setAccountRateLimit`) for
+  authenticated surfaces, so one adopter can't exhaust shared capacity. The refill-then-consume is
+  one atomic conditional `UPDATE`, no read-then-write race between two concurrent callers.
+- **A drop-in hook for the MCP server's rate-limit port** (`createRateLimitHook` /
+  `createRateLimitedMcpServer`): denies with a typed `RateLimitError` on a genuine deny, and fails
+  open (allow + alert) on a store error, a rate limit is an abuse throttle, never an auth boundary.
+
+## Install
+
+```bash
+bun add @caisson-sh/rate-limit
+```
+
+## Quickstart
+
+```ts
+import { TokenBucketLimiter, clientIp } from "@caisson-sh/rate-limit";
+
+const limiter = new TokenBucketLimiter({
+  perIp: { webhook: { capacity: 20, windowMs: 60_000 } },
+  global: { webhook: { capacity: 500, windowMs: 60_000 } },
+  maxEntries: 10_000,
+});
+
+export async function handler(req: Request): Promise<Response> {
+  const decision = limiter.check("webhook", clientIp(req));
+  if (!decision.allowed) {
+    return new Response("Too Many Requests", {
+      status: 429,
+      headers: { "Retry-After": String(decision.retryAfterSec) },
+    });
+  }
+  // ...
+}
+```
+
+## Per-IP limiter
+
+```ts
+class TokenBucketLimiter<B extends string> implements RateLimiter<B> {
+  constructor(config: TokenBucketLimiterConfig<B>, now?: () => number);
+  check(bucket: B, ip: string): RateDecision;
+  checkGlobal(bucket: B): RateDecision;
+}
+
+interface TokenBucketLimiterConfig<B extends string> {
+  perIp: Record<B, BucketConfig>;
+  global: Record<B, BucketConfig>;
+  maxEntries: number; // hard cap on tracked (bucket, ip) entries before prune evicts
+}
+
+interface BucketConfig {
+  capacity: number; // burst capacity per window
+  windowMs: number; // window length; tokens reset to capacity when it elapses
+}
+
+interface RateDecision {
+  allowed: boolean;
+  retryAfterSec: number; // meaningful only when allowed is false
+}
+
+function clientIp(req: Request): string;
+```
+
+`check` charges the per-`(bucket, ip)` bucket; `checkGlobal` charges one shared key per bucket
+regardless of caller identity, the ceiling that holds even if `clientIp` collapses every caller
+onto `"unknown"`. `clientIp` reads only `X-Real-IP` and returns `"unknown"` when it's absent, so
+those requests are still collectively throttled rather than each minting a fresh bucket. The
+header is a trustworthy key only when your edge proxy overwrites it with the connecting IP and the
+app can't be reached around that proxy (Railway's edge works this way); other forwarded-for
+headers are client-appendable and are never read. This is an in-memory,
+single-instance limiter; a multi-replica deployment needs a shared store.
+
+## Per-account limiter (Postgres)
+
+```ts
+const DEFAULT_RATE_LIMIT: RateLimitConfig; // 120 capacity, refilling 120 every 60s
+const RATE_LIMIT_SCHEMA_SQL: string; // the rate_limit table DDL + tenant RLS policy
+
+interface RateLimitConfig {
+  capacity: number;
+  refillAmount: number;
+  refillIntervalMs: number;
+}
+
+function checkRateLimit(
+  tx: TenantExecutor,
+  accountId: string,
+  now: number,
+  config?: RateLimitConfig,
+): Promise<RateLimitDecision>;
+
+function setAccountRateLimit(
+  tx: TenantExecutor,
+  accountId: string,
+  config: RateLimitConfig,
+  now: number,
+): Promise<void>;
+
+interface RateLimitDecision {
+  allowed: boolean;
+  remaining: number; // tokens left after this consume; 0 on a deny
+  retryAfterMs: number; // > 0 only on a deny
+}
+```
+
+Both must run inside [`withTenant`](/docs/base/tenancy-rls): RLS scopes every statement to the
+bound account, and the policy's `WITH CHECK` refuses a write targeting another tenant.
+`checkRateLimit` lazily provisions a full bucket on an account's first call (`config` seeds only
+that first row; it never mutates an already-provisioned one, override a live account with
+`setAccountRateLimit` instead), then refills-and-consumes in one conditional `UPDATE` so two
+racing consumes on a single token resolve to exactly one winner.
+
+## MCP server hook
+
+```ts
+function createRateLimitHook(deps: RateLimitHookDeps): (accountId: string) => Promise<void>;
+
+function createRateLimitedMcpServer(
+  options: McpServerOptions,
+  deps: RateLimitHookDeps,
+): McpServer;
+
+interface RateLimitHookDeps {
+  db: Transactor;
+  onStoreError?: (err: unknown, accountId: string) => void;
+  config?: RateLimitConfig; // applied only when an account's row is first provisioned
+  now?: () => number;
+}
+```
+
+The built hook resolves to allow, throws `RateLimitError` (HTTP 429, with a retry-after) on a
+genuine deny, and fails **open**, resolves and calls `onStoreError`, on any store error, so an
+infrastructure fault never locks an adopter out. `createRateLimitedMcpServer` wires it into
+[`@caisson-sh/mcp-server`](/docs/base/mcp-server)'s own `checkRateLimit` option in one call.
+
+## Related
+
+<Cards>
+  <Card title="MCP server" href="/docs/base/mcp-server">
+    Declares the `checkRateLimit` port every tool dispatch awaits.
+  </Card>
+  <Card title="Tenancy (RLS)" href="/docs/base/tenancy-rls">
+    The per-account store runs inside `withTenant`, fail-closed on a missing tenant.
+  </Card>
+</Cards>

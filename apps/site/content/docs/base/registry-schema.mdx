@@ -1,0 +1,133 @@
+---
+title: registry-schema
+description: The open registry contract, the module-manifest schema, the built catalog index schema, and the closed feature-tag registry the generator and the MCP server validate against.
+---
+
+`@caisson-sh/registry-schema` is the open, dependency-light contract for Caisson's module
+registry: the shape of a module's manifest, the shape of the built catalog index, and the closed
+set of metered feature tags an edition can register into. It depends on nothing but `zod` and the
+Node filesystem module, and reaches no network and no credential.
+
+## What it does
+
+- **A module-manifest schema.** `defineModule` validates and defaults a module's declaration, its
+  id, semver version, an SPDX license from a curated allowlist, its `@caisson-sh/*` dependency
+  ids, a description, and a stability tier, rejecting an unrecognized field.
+- **A registry-index schema.** `loadRegistryIndex` / `loadRegistryIndexFromFile` parse the built
+  catalog: every module, every published version, and the manifest and provenance record for
+  each. `assertKnownModule` / `assertKnownVersion` throw on an id or version not in the catalog,
+  checked before it ever reaches a path or a subprocess argument.
+- **A closed feature-tag registry.** `FeatureTagSchema` / `assertRegisteredFeatureTag` validate
+  that a metered action's tag is one that has actually been registered, so a typo can't silently
+  mint a new metered action.
+
+## Install
+
+```bash
+bun add @caisson-sh/registry-schema
+```
+
+## Quickstart
+
+```ts
+import {
+  assertKnownVersion,
+  defineModule,
+  loadRegistryIndexFromFile,
+} from "@caisson-sh/registry-schema";
+
+const manifest = defineModule({
+  id: "@caisson-sh/example",
+  version: "1.0.0",
+  license: "Apache-2.0",
+  description: "An example module.",
+});
+
+const index = loadRegistryIndexFromFile("registry/index.json");
+assertKnownVersion(index, "@caisson-sh/kernel", "0.7.0");
+```
+
+## Module manifest
+
+```ts
+function defineModule(m: ModuleManifestInput): ModuleManifest;
+
+interface ModuleManifest {
+  id: string; // "@caisson-sh/<slug>"
+  version: string; // semver
+  license: "Apache-2.0"; // from SPDX_LICENSES
+  dependencies: string[]; // other module ids; defaults to []
+  description: string;
+  stability: "alpha" | "beta" | "stable"; // defaults to "alpha"
+}
+
+const STABILITY: readonly ["alpha", "beta", "stable"];
+const SPDX_LICENSES: readonly ["Apache-2.0"];
+```
+
+`defineModule` accepts the authoring shape (`ModuleManifestInput`, where `dependencies` and
+`stability` are optional since Zod defaults them) and returns the fully-defaulted, validated
+manifest. `package.json` stays the source of truth for the fields npm and changesets read; the
+standards gate asserts the two agree on id, version, license, and dependencies.
+
+## Registry index
+
+```ts
+function loadRegistryIndex(raw: unknown): RegistryIndex;
+function loadRegistryIndexFromFile(path: string): RegistryIndex;
+function moduleAllowlist(index: RegistryIndex): Set<string>;
+function assertKnownModule(index: RegistryIndex, id: string): asserts id is ModuleId;
+function assertKnownVersion(index: RegistryIndex, id: string, version: string): void;
+
+interface RegistryIndex {
+  schemaVersion: 1;
+  modules: RegistryModuleEntry[];
+}
+
+interface RegistryModuleEntry {
+  id: string;
+  latest: string; // semver
+  versions: RegistryVersion[]; // at least one
+}
+
+interface RegistryVersion {
+  version: string;
+  manifest: ModuleManifest;
+  publishedAt?: string; // ISO 8601
+  gateAttestation?: string; // "<ci-run-id>@<commit-sha>" — provenance, not access control
+}
+```
+
+`loadRegistryIndexFromFile` is the one sanctioned read path: parse-or-throw, so a malformed or
+tampered catalog file raises rather than yielding a half-typed object. `assertKnownModule`
+re-checks the `@caisson-sh/<slug>` shape as defense in depth, never trust the index shape alone,
+before checking catalog membership; `assertKnownVersion` additionally requires that exact version
+among the module's `versions`. Both throw a plain `Error`, synchronously, before any generation
+work starts.
+
+## Feature tags
+
+```ts
+type FeatureTag = (typeof REGISTERED_FEATURE_TAGS)[number];
+
+const REGISTERED_FEATURE_TAGS: readonly FeatureTag[];
+const FeatureTagSchema: ZodEnum<readonly FeatureTag[]>; // z.enum(REGISTERED_FEATURE_TAGS)
+function assertRegisteredFeatureTag(tag: unknown): asserts tag is FeatureTag;
+```
+
+`FeatureTagSchema` is a closed Zod enum over `REGISTERED_FEATURE_TAGS`, only a registered tag
+parses; anything else, a typo or an unregistered action, is rejected. `assertRegisteredFeatureTag`
+throws a plain `Error` on a rejection; the base credits boundary maps that to a typed
+`ValidationError` (HTTP 400). A new metered action registers its tag here in the same change that
+meters it, never by depending on an edition.
+
+## Related
+
+<Cards>
+  <Card title="create-caisson" href="/docs/cli/create-caisson">
+    The CLI's catalog and its module-selection allowlist are built on this contract.
+  </Card>
+  <Card title="MCP server" href="/docs/base/mcp-server">
+    The `generate` tool checks a selection against this same `RegistryIndex`.
+  </Card>
+</Cards>
