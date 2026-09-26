@@ -61,7 +61,10 @@ def census(root: Path, ref: str | None = None) -> dict:
         text = git(root, "show", f"{ref}:{path}") if ref else resolved.read_text()
         records.extend(from_images(text, path))
     # Zero Dockerfiles is a legitimate, reported state (the tree ships no runtime image); callers
-    # print the count so the zero is visible rather than silent.
+    # print the count so the zero is visible rather than silent. Dockerfiles that yield no external
+    # base are not: that is a census that could not see what it was pointed at.
+    if paths and not records:
+        raise ValueError(f"{len(paths)} Dockerfile(s) but no external base images; refusing an empty scan")
     return {
         "source": git(root, "rev-parse", ref or "HEAD").strip(),
         "dockerfiles": paths,

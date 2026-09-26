@@ -52,6 +52,14 @@ class RescanTests(unittest.TestCase):
             self.assertEqual(report["dockerfiles"], [])
             self.assertEqual(report["images"], [])
 
+    def test_census_refuses_dockerfiles_that_yield_no_external_base(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "Dockerfile").write_text("FROM scratch\n")
+            with patch.object(rescan, "git", side_effect=["Dockerfile\0", "deadbeef\n"]):
+                with self.assertRaisesRegex(ValueError, "no external base images"):
+                    rescan.census(root)
+
     def test_raw_base_findings_report_and_operational_errors_continue(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)
