@@ -2,7 +2,7 @@
   "name": "@caisson/agent-dev",
   "version": "0.6.10",
   "description": "Agentic-Dev edition: the composition of the governed engine-neutral agent kernel + local hybrid memory + a thin multi-harness emitter. Composes base seams down-only — no vendor SDK, no LLM call, no harness substrate.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -12,8 +12,8 @@
     }
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",

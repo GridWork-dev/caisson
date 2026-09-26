@@ -197,13 +197,8 @@ describe("HELP text", () => {
 
   test("points installs at public npm and names no license token or retired flag", () => {
     expect(HELP).toContain("public npm registry");
-    for (const retired of [
-      "CAISSON_LICENSE_TOKEN",
-      "NODE_AUTH_TOKEN",
-      "--edition",
-      "--sample",
-      "--demo",
-    ]) {
+    expect(HELP).not.toMatch(/_TOKEN\b/);
+    for (const retired of ["license key", "--edition", "--sample", "--demo"]) {
       expect(HELP).not.toContain(retired);
     }
   });

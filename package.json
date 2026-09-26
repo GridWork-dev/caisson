@@ -1,7 +1,7 @@
 {
   "name": "caisson",
   "private": true,
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "workspaces": {
     "packages": [
       "tooling/*",

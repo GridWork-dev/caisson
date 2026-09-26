@@ -40,4 +40,4 @@ function Header() {
 `bun test packages/brand/src` — every glyph in `brandGlyphs` renders and its key set matches
 `@caisson/ui`'s `RegisteredIconName` contract exactly (no missing or stray key).
 
-License: `LicenseRef-Caisson-Commercial`.
+License: Apache-2.0.

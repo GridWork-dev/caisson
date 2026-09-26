@@ -2,7 +2,7 @@
   "name": "@caisson/tool-exec",
   "version": "0.4.0",
   "description": "Governed tool-call / sandboxed-exec primitive for Agentic-Dev: default-deny allowlist + Zod-strict argument schemas + execFile arg-arrays only (no shell) + structured argument provenance.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -17,8 +17,8 @@
     }
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",

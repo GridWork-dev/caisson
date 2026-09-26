@@ -2,7 +2,7 @@
   "name": "@caisson/credits",
   "version": "0.6.3",
   "description": "Integer credit wallet with an append-only ledger, debit-before-spend (HTTP 402), and idempotent credit grants.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -17,8 +17,8 @@
     }
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",

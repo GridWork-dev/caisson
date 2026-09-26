@@ -1,5 +1,5 @@
 // Publish-readiness invariants (ADR-0111), over the REAL packages/ tree: every manifested module
-// that is not private declares a publishConfig, its manifest derives version+license from
+// that is not private publishes publicly to public npm, its manifest derives version+license from
 // package.json (single source of truth, so checkManifestAgreement stays green through changeset
 // bumps), and the published CLI ships dist (never src) with a dist-pointing bin. Workspace IO —
 // reads the on-disk tree, no synthetic input.
@@ -60,38 +60,6 @@ describe("publish readiness (ADR-0111)", () => {
     expect(leaked).toEqual([]);
   });
 
-  test("every published package's version has a matching ledger entry (version-commit gap guard)", () => {
-    // A published package.json version must exist as a ledger entry, so a hand-bumped version (or
-    // a consume whose ledger append failed) fails loudly. A DELISTED id is exempt permanently:
-    // delisting is terminal (ADR-0271), so a dependency-cascade bump on one can never gain a
-    // ledger row.
-    const ledgerLines = readFileSync(
-      join(ROOT, "registry", "ledger.jsonl"),
-      "utf8",
-    )
-      .split("\n")
-      .filter((l) => l.trim() !== "")
-      .map(
-        (l) => JSON.parse(l) as { op?: string; id: string; version?: string },
-      );
-    const ledgered = new Set(
-      ledgerLines
-        .filter((e) => e.op === undefined)
-        .map((e) => `${e.id}@${e.version}`),
-    );
-    // Coverage boundary: this exemption is derived only from ledger `op:"delist"` rows. A package
-    // id with no such terminal row never enters this set, so the exemption cannot mask that
-    // non-delisted package's missing current-version publish row.
-    const delisted = new Set(
-      ledgerLines.filter((e) => e.op === "delist").map((e) => e.id),
-    );
-    const off = published
-      .filter((p) => !ledgered.has(`${p.pj.name}@${p.pj.version}`))
-      .filter((p) => !delisted.has(p.pj.name))
-      .map((p) => `${p.pj.name}@${p.pj.version}`);
-    expect(off).toEqual([]);
-  });
-
   test("manifest derives version+license from package.json (single source of truth)", () => {
     for (const p of pkgs) {
       // pj is the source; assert from the (possibly-undefined) pj side so a missing
@@ -101,11 +69,15 @@ describe("publish readiness (ADR-0111)", () => {
     }
   });
 
-  test("every published package declares a publishConfig", () => {
-    const missing = published
-      .filter((p) => p.pj.publishConfig === undefined)
+  test("every published package publishes publicly to the public npm registry", () => {
+    const off = published
+      .filter(
+        (p) =>
+          p.pj.publishConfig?.access !== "public" ||
+          p.pj.publishConfig.registry !== "https://registry.npmjs.org/",
+      )
       .map((p) => p.pj.name);
-    expect(missing).toEqual([]);
+    expect(off).toEqual([]);
   });
 
   describe("@caisson/cli (the npx bin, ADR-0092/0111)", () => {

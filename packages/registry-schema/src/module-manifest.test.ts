@@ -48,7 +48,6 @@ describe("module manifest", () => {
   test("the retired selling fields are unknown keys (strict)", () => {
     for (const extra of [
       { tier: "oss" },
-      { priceCents: null },
       { editions: [] },
       { members: {} },
       { kind: "base" },
@@ -65,13 +64,18 @@ describe("module manifest", () => {
     ).toThrow();
   });
 
-  test("a license off the SPDX allowlist (AGPL, a free string) is rejected", () => {
-    for (const license of ["AGPL-3.0-only", "Apache 2.0", "MIT"]) {
+  test("Apache-2.0 is the only license; anything else (AGPL, the retired commercial id) is rejected", () => {
+    expect([...SPDX_LICENSES]).toEqual(["Apache-2.0"]);
+    for (const license of [
+      "AGPL-3.0-only",
+      "Apache 2.0",
+      "MIT",
+      "LicenseRef-Proprietary",
+    ]) {
       expect(() =>
         // @ts-expect-error — off-allowlist SPDX, proving the runtime enum rejects it.
         defineModule({ ...kernel, license }),
       ).toThrow();
     }
-    expect(SPDX_LICENSES).not.toContain("AGPL-3.0-only");
   });
 });

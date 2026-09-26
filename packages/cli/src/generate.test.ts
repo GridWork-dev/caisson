@@ -89,7 +89,7 @@ describe("generate — allowlist gate (ADR-0021/0048)", () => {
       const { files } = generate(INDEX, sel);
       expect(files.some((f) => f.path === ".npmrc")).toBe(false);
       for (const f of files) {
-        expect(f.content).not.toContain("CAISSON_LICENSE_TOKEN");
+        expect(f.content).not.toMatch(/LICENSE_TOKEN/);
         expect(f.content).not.toContain("registry.caisson.sh");
       }
     }

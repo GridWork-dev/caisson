@@ -3,7 +3,7 @@
   "version": "0.0.26",
   "private": true,
   "description": "The CI-built module catalog: the ledger, the index builder (ADR-0021/0047), and a re-export of the @caisson/registry-schema contract.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {

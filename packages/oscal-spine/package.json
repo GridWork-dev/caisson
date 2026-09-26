@@ -2,7 +2,7 @@
   "name": "@caisson/oscal-spine",
   "version": "0.2.2",
   "description": "The complete Caisson OSCAL surface: deterministic assessment-plan, assessment-results, POA&M, catalog, XML, and ISO 27001 SoA exports plus the pinned NIST 800-53 catalog and OLIR relationship mapping.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -17,8 +17,8 @@
     }
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",

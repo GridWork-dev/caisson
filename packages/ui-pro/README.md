@@ -4,8 +4,7 @@ The premium component tier for Caisson applications. It layers advanced data-ops
 and compliance surfaces on the open `@caisson/ui` design-system floor — the
 components a free kit paywalls, plus domain-composed operations views.
 
-This is commercial software (`LicenseRef-Caisson-Commercial`) and requires a
-valid Caisson entitlement to install from the registry. It builds on the open
+Licensed Apache-2.0. It builds on the open
 Apache-2.0 `@caisson/ui` base and adds nothing you cannot theme through the same
 token contract.
 

@@ -2,7 +2,7 @@
   "name": "@caisson/billing-orchestration",
   "version": "0.4.2",
   "description": "Commercial billing orchestration: Stripe/Paddle/LemonSqueezy/Polar checkout drivers + provider->DomainBillingEvent parsers + dual-layer webhook idempotency. Raw-body signature verification stays open in @caisson/billing.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -17,8 +17,8 @@
     }
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",

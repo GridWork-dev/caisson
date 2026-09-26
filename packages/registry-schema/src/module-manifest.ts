@@ -9,14 +9,11 @@ import { z } from "zod";
 export const STABILITY = ["alpha", "beta", "stable"] as const;
 
 /**
- * Curated SPDX allowlist (a free string lets "Apache 2.0"/"MITT"/"Proprietary" through). No
- * AGPL/copyleft license is on it, so the standards gate's AGPL boundary stays a dormant tripwire.
- * Extend deliberately.
+ * Curated SPDX allowlist (a free string lets "Apache 2.0"/"MITT"/"Proprietary" through). Every
+ * module ships Apache-2.0; no AGPL/copyleft license is on the list, so the standards gate's AGPL
+ * boundary stays a dormant tripwire. Extend deliberately.
  */
-export const SPDX_LICENSES = [
-  "LicenseRef-Caisson-Commercial",
-  "Apache-2.0",
-] as const;
+export const SPDX_LICENSES = ["Apache-2.0"] as const;
 
 const semver = z
   .string()

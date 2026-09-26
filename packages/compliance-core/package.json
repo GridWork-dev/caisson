@@ -2,7 +2,7 @@
   "name": "@caisson/compliance-core",
   "version": "0.7.2",
   "description": "The compliance evidence engine: typed collectors and a deterministic canonical evidence-pack format and generator with flag-never-guess blocking, with the complete @caisson/oscal-spine surface re-exported for compatibility.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -17,8 +17,8 @@
     }
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",

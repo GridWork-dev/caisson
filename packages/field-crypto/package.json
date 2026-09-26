@@ -2,7 +2,7 @@
   "name": "@caisson/field-crypto",
   "version": "1.1.2",
   "description": "Per-tenant authenticated field encryption: HKDF key derivation, AES-256-GCM, a versioned envelope, a Drizzle column type, and a pluggable FieldKeyProvider with a KMS seam.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -17,8 +17,8 @@
     }
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",

@@ -12,7 +12,7 @@
           "manifest": {
             "id": "@caisson/auth",
             "version": "0.1.0",
-            "license": "LicenseRef-Caisson-Commercial",
+            "license": "Apache-2.0",
             "dependencies": ["@caisson/kernel"],
             "description": "Authentication (sessions/JWT), provider-agnostic.",
             "stability": "alpha"
@@ -31,7 +31,7 @@
           "manifest": {
             "id": "@caisson/local-ai",
             "version": "0.1.0",
-            "license": "LicenseRef-Caisson-Commercial",
+            "license": "Apache-2.0",
             "dependencies": ["@caisson/kernel", "@caisson/ai-config"],
             "description": "Local-first AI kit: compute seam + privacy gate + sqlite-vec ANN.",
             "stability": "alpha"

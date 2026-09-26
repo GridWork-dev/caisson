@@ -5,7 +5,7 @@ append-only audit chain anchored into WORM, and an append-only locked-version DB
 current. A paid `primitive` (ADR-0020) that composes the `@caisson/kernel` integrity algebra over
 `@caisson/tenancy-rls` tenant scoping — down-only, never depending on an edition (ADR-0003).
 
-- **Kind / tier:** primitive · paid · `LicenseRef-Caisson-Commercial`
+- **License:** Apache-2.0
 
 ## Install
 
