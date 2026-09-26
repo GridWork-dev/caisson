@@ -1,7 +1,7 @@
 {
   "name": "@caisson/mcp-server",
   "version": "0.6.11",
-  "description": "Auth-gated buyer MCP: timing-safe Bearer, entitlement-scoped reads, allowlist+credit-gated generate.",
+  "description": "MCP server for the Caisson module catalog: timing-safe Bearer auth, catalog read tools, catalog-validated project generation, and opt-in design-system, setup-coach, compliance-prompt and agent-run tools.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {

@@ -2,7 +2,7 @@
 
 The **AI Production Kit** edition (ADR-0059/0213): one metered gateway with four public entry points—
 `infer`, `inferStream`, `embed`, and `embedMany`—that enforce reserve-before-provider-call accounting.
-It composes the four base primitives behind Vercel AI SDK v7, so a buyer's shipped app gets cost
+It composes the four base primitives behind Vercel AI SDK v7, so a shipped app gets cost
 control, reproducible prompts, fail-closed content safety, and a quality gate **by construction**,
 not by discipline.
 
@@ -38,7 +38,7 @@ reconcile exactly once.
 
 `embed()`/`embedMany()` join `infer()`/`inferStream()` through the SAME reserve-before/
 reconcile-after chokepoint — a shorter pipeline (`resolve → reserve → provider call → record usage →
-reconcile`, no prompt-registry render, no guardrails) for a buyer-facing RAG/semantic-search surface.
+reconcile`, no prompt-registry render, no guardrails) for a user-facing RAG/semantic-search surface.
 Every live provider factory also binds its outbound `fetch` to a `timeoutMs` deadline
 (`fetchWithTimeout`, default 60s), and `infer()` forwards an `abortSignal` to `generateText` — closing
 the repo-wide fetch-deadline floor on the live provider transport. See `AGENTS.md` for usage.

@@ -18,7 +18,7 @@ model` price book and debits the wallet BEFORE the provider is ever called — a
   crossing a hard cap trips a circuit breaker so every subsequent call fails closed until an
   operator resets it.
 - **A bundled, overridable price book.** Ships default per-million-token rates for common
-  provider/model pairs; a buyer can override the whole book or the credit denomination.
+  provider/model pairs; an app can override the whole book or the credit denomination.
 - **Idempotent by construction.** Both `reserve()` and `reconcile()` key off the caller's `callId`
   — a retried call settles exactly once instead of double-charging.
 - **A pre-call dedup gate.** `checkDedupGate()` flags a prompt that's near-identical to one already

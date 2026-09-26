@@ -1,6 +1,6 @@
 # @caisson/oscal-spine — agent contract
 
-This commercial package owns Caisson's complete OSCAL export surface and the pinned NIST SP 800-53
+This package owns Caisson's complete OSCAL export surface and the pinned NIST SP 800-53
 reference axis.
 
 ## Invariants

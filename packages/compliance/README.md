@@ -47,7 +47,7 @@ await withTenantCrypto(db, accountId, keyProvider, async (tx) => {
 - **Evidence engine** — declarative collectors (`rlsForceCollector` / `chainVerifyCollector` /
   `wormRetentionCollector`) → the typed canonical pack format → `generateEvidencePack` (deterministic,
   byte-stable, flag-never-guess) → `signEvidencePack` (per-tenant detached Ed25519) → an OSCAL export
-  step a buyer opts into separately.
+  step you opt into separately.
 - **Composition + assembly** — `withTenantCrypto` (crypto nested inside the RLS scope, fail-closed) +
   `assembleComplianceMigrations` (ordered, checksum-ledgered cross-package migrations).
 - **Operational telemetry** — `emitEvidenceGenerated` / `emitErasureCryptoShred` through the base

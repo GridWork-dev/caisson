@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   checkManifestAgreement,
+  checkNoSalesCopy,
   checkOpenLicense,
   checkRlsEquivalence,
   checkShippedProse,
@@ -231,6 +232,64 @@ describe("checkOpenLicense", () => {
     const published = pkgs.filter((p) => !p.private);
     expect(published.length).toBeGreaterThan(40);
     expect(checkOpenLicense(pkgs)).toEqual([]);
+  });
+});
+
+describe("checkNoSalesCopy", () => {
+  let root: string;
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), "standards-gate-sales-"));
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  /** A published package dir with the given description and optional README body. */
+  function listed(name: string, description: string, readme?: string): Pkg {
+    const dir = join(root, name);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "package.json"),
+      JSON.stringify({ name: `@caisson/${name}`, description }),
+    );
+    if (readme !== undefined) writeFileSync(join(dir, "README.md"), readme);
+    return pkg({ name: `@caisson/${name}`, dir, license: APACHE });
+  }
+
+  test("a plain description and README pass; `$1` inside code is a placeholder, not a price", () => {
+    const readme =
+      "# Rls\n\nTenant isolation.\n\n```ts\ndb.query(`SELECT 1 WHERE id = $1`);\n```\n\nUses `$1`/`$2` placeholders.\n";
+    expect(
+      checkNoSalesCopy([listed("ok", "Tenant isolation over RLS.", readme)]),
+    ).toEqual([]);
+  });
+
+  test("'commercial' in a description, and a price or 'Commercial' in README prose, are errors", () => {
+    const f = checkNoSalesCopy([
+      listed("desc", "Commercial billing orchestration."),
+      listed("price", "Access reviews.", "Sellable at $199 on its own.\n"),
+      listed("tier", "Signing.", "Commercial module. Sits on the kernel.\n"),
+    ]);
+    expect(f.map((x) => [x.pkg, x.rule])).toEqual([
+      ["@caisson/desc", "no-sales-copy"],
+      ["@caisson/price", "no-sales-copy"],
+      ["@caisson/tier", "no-sales-copy"],
+    ]);
+    expect(f[1]?.message).toContain("$1");
+    expect(f[2]?.message).toContain("README.md");
+  });
+
+  test("a private package is out of scope", () => {
+    const p = { ...listed("brand", "Commercial glyphs, $5."), private: true };
+    expect(checkNoSalesCopy([p])).toEqual([]);
+  });
+
+  test("the committed tree is clean, and the check really walked the published set", () => {
+    const pkgs = readWorkspace(findRoot(import.meta.dir));
+    expect(pkgs.filter((p) => !p.private).length).toBeGreaterThan(40);
+    expect(checkNoSalesCopy(pkgs)).toEqual([]);
   });
 });
 

@@ -21,7 +21,7 @@ Production Kit must know to wire and gate evals correctly.
   fails closed: an eval that regresses, misses its `threshold`, lacks a baseline entry, or shrank its
   dataset fails. The baseline is rewritten ONLY through `BLESS` (the same discipline as
   `@caisson/testing` `matchGolden`). This runs as a DISTINCT turbo `eval` task in the monorepo —
-  **never** a required CI job inside a generated buyer repo.
+  **never** a required CI job inside a generated repo.
 - **Two entry points.** `.` is the full node-capable surface; `./browser` is the browser-safe
   subset — the gate's rules only (`baseline-compare.ts` + `wilsonLowerBound`), no file I/O. Those
   rules have exactly ONE implementation: `baseline.ts` is the load/save transport around them. A

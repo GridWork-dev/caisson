@@ -277,6 +277,53 @@ export function checkOpenLicense(pkgs: Pkg[]): Finding[] {
   return findings;
 }
 
+/** Sales framing a published package's description or README may not carry: a paid tier, a price. */
+const SALES_COPY: readonly RegExp[] = [/\bcommercial\b/i, /\$\d/];
+
+/** Drop fenced blocks and inline code spans — a `$1` there is a SQL placeholder, not a price. */
+function stripMarkdownCode(md: string): string {
+  return md.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
+}
+
+/**
+ * Nothing is sold: every published (non-private) package's package.json `description` and prose
+ * README must describe what the package does, never a commercial tier or a dollar price.
+ */
+export function checkNoSalesCopy(pkgs: Pkg[]): Finding[] {
+  const findings: Finding[] = [];
+  for (const p of pkgs) {
+    if (p.private) continue;
+    const texts: { where: string; text: string }[] = [];
+    const pjPath = join(p.dir, "package.json");
+    if (existsSync(pjPath)) {
+      const { description } = JSON.parse(readFileSync(pjPath, "utf8")) as {
+        description?: unknown;
+      };
+      if (typeof description === "string")
+        texts.push({ where: "package.json description", text: description });
+    }
+    const readme = join(p.dir, "README.md");
+    if (existsSync(readme))
+      texts.push({
+        where: "README.md",
+        text: stripMarkdownCode(readFileSync(readme, "utf8")),
+      });
+    for (const { where, text } of texts) {
+      const hit = SALES_COPY.map((re) => re.exec(text)?.[0]).find(
+        (m) => m !== undefined,
+      );
+      if (hit !== undefined)
+        findings.push({
+          severity: "error",
+          rule: "no-sales-copy",
+          pkg: p.name,
+          message: `${where} says "${hit}" — every package is ${OPEN_LICENSE} and nothing is sold; describe what the package does.`,
+        });
+    }
+  }
+  return findings;
+}
+
 /**
  * manifest↔package.json agreement (ADR-0020/0021). Loads each manifest.ts (needs zod, so it is
  * best-effort: if the import fails — e.g. deps not installed — it WARNs rather than passing

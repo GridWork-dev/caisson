@@ -1,12 +1,12 @@
 # AGENTS — @caisson/agent-dev
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or a downstream
-buyer must know to wire the Agentic-Dev **edition** correctly.
+consumer must know to wire the Agentic-Dev **edition** correctly.
 
 ## What this is
 
 `@caisson/agent-dev` is `kind: edition` — a **composition**, never a primitive. It binds three shipped
-base seams into ONE buyer-facing surface so a buyer authors agents/skills/rules **once in one typed
+base seams into ONE import so an app authors agents/skills/rules **once in one typed
 Caisson schema** and gets a governed lifecycle, local hybrid memory, and per-harness config emit:
 
 - **Governed engine-neutral kernel** — `@caisson/agent-kernel`: the agent/skill/rule schema +
@@ -19,7 +19,7 @@ Caisson schema** and gets a governed lifecycle, local hybrid memory, and per-har
 - **Thin multi-harness emitter** — `./emitter.ts`: renders one schema into `.claude/` (Claude Code),
   `AGENTS.md` (Codex), and Cursor rules.
 - **Governed sandboxed tool-exec gate** — `@caisson/tool-exec`: a default-deny allowlist + execFile
-  arg-arrays (never a shell), wired live on the composed edition so a buyer gets the exec gate from
+  arg-arrays (never a shell), wired live on the composed edition so an app gets the exec gate from
   this one import home.
 
 ## Invariants (do not violate)

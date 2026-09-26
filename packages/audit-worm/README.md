@@ -2,7 +2,7 @@
 
 The Compliance edition's evidentiary primitive: a write-once (WORM) artifact store, a SHA-256
 append-only audit chain anchored into WORM, and an append-only locked-version DB with a derived
-current. A paid `primitive` (ADR-0020) that composes the `@caisson/kernel` integrity algebra over
+current. A `primitive` (ADR-0020) that composes the `@caisson/kernel` integrity algebra over
 `@caisson/tenancy-rls` tenant scoping — down-only, never depending on an edition (ADR-0003).
 
 - **License:** Apache-2.0

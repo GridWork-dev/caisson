@@ -1,6 +1,6 @@
 # @caisson/ai-config
 
-Provider-agnostic AI config resolver: parses a buyer's `forge.config` settings file and
+Provider-agnostic AI config resolver: parses an app's `forge.config` settings file and
 resolves a named lane (OpenAI, Anthropic, Google, OpenRouter, local, AWS Bedrock, Azure
 OpenAI, Ollama, Groq, Mistral, Together) to a provider/model binding. No provider is ever
 hardcoded — swapping providers is a config change, not a code change — and this package
@@ -21,7 +21,7 @@ const lane = resolveProvider(settings); // resolves settings.defaultLane
 ## Groq / Mistral / Together lanes
 
 Each rides an OpenAI-compatible transport with a hardcoded default `baseUrl` (override it
-only to point at a gateway/proxy) — no buyer-supplied host required, unlike `local`/`ollama`:
+only to point at a gateway/proxy) — no caller-supplied host required, unlike `local`/`ollama`:
 
 ```json
 {
