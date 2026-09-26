@@ -99,9 +99,12 @@ export default function PrivacyPage() {
 
         <h3 style={prose.h3}>Analytics</h3>
         <p style={prose.paragraph}>
-          We do not run any analytics on caisson.sh today. If we add a
-          privacy-respecting analytics tool later, we will update this policy
-          first.
+          We use Cloudflare Web Analytics to count page views and measure how
+          fast pages load. It sets no cookies, uses no local or session storage,
+          and does not fingerprint you or follow you across sites. A small
+          script from static.cloudflareinsights.com sends one measurement per
+          page view to Cloudflare, and we see only aggregate figures (visits,
+          pages, referrers, countries, load times), never an individual visitor.
         </p>
       </Section>
 
@@ -109,8 +112,9 @@ export default function PrivacyPage() {
       <Section id="why-we-collect-it" title="Why we collect it" band="tint">
         <p style={prose.paragraph}>
           We collect no personal data by default. Cloudflare&apos;s request
-          metadata exists only to route and secure the site. If you write to us,
-          we use your email address to answer your message.
+          metadata exists only to route and secure the site, and the aggregate
+          analytics tell us which pages people read and how fast they load. If
+          you write to us, we use your email address to answer your message.
         </p>
       </Section>
 
@@ -132,6 +136,11 @@ export default function PrivacyPage() {
             securely. No alternative exists that does not involve a CDN.
           </li>
           <li style={prose.li}>
+            <strong>Aggregate analytics: legitimate interest.</strong> Knowing
+            which pages are read and how fast they load lets us maintain the
+            docs. It uses no cookies and builds no profile of you.
+          </li>
+          <li style={prose.li}>
             <strong>Email correspondence: legitimate interest.</strong> You
             initiate contact and provide your address so we can reply; we use it
             for no other purpose.
@@ -144,8 +153,8 @@ export default function PrivacyPage() {
         <p style={prose.paragraph}>
           We keep email correspondence as long as needed to resolve your
           question or report and to maintain a reasonable business record, then
-          delete it on request. Cloudflare retains request-level logs under its
-          own logging policy; we do not hold a separate copy.
+          delete it on request. Cloudflare retains request-level logs and Web
+          Analytics data under its own policies; we do not hold a separate copy.
         </p>
       </Section>
 
