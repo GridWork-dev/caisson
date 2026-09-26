@@ -64,7 +64,6 @@ jobs:
             eval:
               - 'packages/**'
               - 'apps/**'
-              - 'services/intel/**'
               - '.github/actions/setup-bun/**'
               - '.github/workflows/quality.yml'
             ui:
@@ -94,8 +93,9 @@ jobs:
   # and baseline; gating their merges on OUR regression baseline is wrong. The eval task ships in the
   # library for the buyer to opt into, but it is not one of the required buyer-repo CI checks.
   #
-  # NOT a required check → safe to path-skip on PRs when packages/**, apps/**, and services/intel/**
-  # are untouched; always runs on main pushes.
+  # NOT a required check → safe to path-skip on PRs when packages/** and apps/** are untouched;
+  # always runs on main pushes. (oss-pivot PR2: services/intel and its credentialed live-model
+  # intel-eval job — main-push-only, real OpenRouter calls — are retired with the service.)
   eval:
     needs: changes
     if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.eval == 'true') }}
@@ -105,28 +105,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-bun
       - run: bun install --frozen-lockfile
-      - name: deterministic eval gate (BLESS unset — intel live lane excluded)
-        run: bunx turbo run eval --no-daemon --filter='!@caisson/service-intel'
-
-  # CAISSON-102: raw watcher cassettes still replay deterministically, but brief composition and the
-  # actionability judge are live OpenRouter calls. Credential-bearing work stays GitHub-hosted and
-  # MAIN-PUSH-ONLY: PR-controlled code never receives the provider key. Once a green-only cassette
-  # set is armed, a missing/invalid model response fails closed (never replays a verdict).
-  intel-eval:
-    needs: changes
-    if: ${{ !cancelled() && github.event_name != 'pull_request' }}
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
-    timeout-minutes: 20
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: ./.github/actions/setup-bun
-      - run: bun install --frozen-lockfile
-      - name: intel replay + live brief quality gate (BLESS unset)
-        env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-        run: bun run --cwd services/intel eval
+      - name: deterministic eval gate (BLESS unset)
+        run: bunx turbo run eval --no-daemon
 
   # tokens.css is GENERATED from the @caisson/ui TS token objects (ADR-0101 design-quality gate #1).
   # This job proves the committed sheet is a byte-identical rebuild: editing a token without running

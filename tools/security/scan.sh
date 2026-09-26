@@ -4,8 +4,8 @@
 #   tools/security/scan.sh [--layer ci|deep|all] [--target URL] [--strict-digests]
 #
 # ci   (default) — deterministic, runs against the repo: semgrep (custom floor rules +
-#                  p/security-audit), ruff flake8-bandit (support-bot), trivy, osv-scanner,
-#                  trufflehog (verified-only), Dockerfile digest gate.
+#                  p/security-audit), trivy, osv-scanner, trufflehog (verified-only),
+#                  Dockerfile digest gate.
 # deep           — DAST against a live/local --target: nuclei + ZAP (+ schemathesis note).
 # all            — both.
 #
@@ -45,12 +45,6 @@ sast_semgrep() {
     semgrep scan "${cfg[@]}" --metrics=off --error \
     ${SEMGREP_JOBS:+-j "$SEMGREP_JOBS"} \
     --sarif --output "$OUT_DIR/semgrep.sarif" . && ok "semgrep clean" || { RC=1; warn "semgrep findings → $OUT_DIR/semgrep.sarif"; }
-}
-
-sast_python() {
-  have ruff || { skip "ruff (support-bot python SAST)"; return; }
-  hr "SAST · ruff flake8-bandit (services/support-bot)"
-  ( cd services/support-bot && ruff check --select S src ) && ok "ruff-S clean" || RC=1
 }
 
 sca_trivy() {
@@ -144,9 +138,9 @@ dast_layer() {
 }
 
 case "$LAYER" in
-  ci)   sast_semgrep; sast_python; sca_trivy; sca_osv; secrets_trufflehog; supply_digests;;
+  ci)   sast_semgrep; sca_trivy; sca_osv; secrets_trufflehog; supply_digests;;
   deep) dast_layer;;
-  all)  sast_semgrep; sast_python; sca_trivy; sca_osv; secrets_trufflehog; supply_digests; dast_layer;;
+  all)  sast_semgrep; sca_trivy; sca_osv; secrets_trufflehog; supply_digests; dast_layer;;
   *) warn "unknown --layer: $LAYER (want ci|deep|all)"; exit 2;;
 esac
 
