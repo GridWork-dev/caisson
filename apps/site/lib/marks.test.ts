@@ -3,11 +3,11 @@
 import { describe, expect, test } from "bun:test";
 
 import { moduleMark } from "./marks";
-import { MODULE_PRICES } from "./pricing";
+import { MODULES } from "./catalog";
 
 describe("catalog module marks", () => {
   test("every sellable module resolves to a non-fallback mark", () => {
-    const fallbackIds = MODULE_PRICES.filter(
+    const fallbackIds = MODULES.filter(
       ({ id }) => moduleMark(id) === "boxes",
     ).map(({ id }) => id);
     expect(fallbackIds).toEqual([]);

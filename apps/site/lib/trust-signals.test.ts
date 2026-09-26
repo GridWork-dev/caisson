@@ -16,7 +16,7 @@ describe("truthfulSignals", () => {
       "docs-depth",
     ]);
     expect(signals.map((s) => s.href)).toEqual([
-      "/legal/license",
+      "/docs/base",
       "/updates",
       "/docs",
     ]);

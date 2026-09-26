@@ -8,22 +8,17 @@ import {
   entryByViewId,
   MODULE_ENTRIES,
   PLATFORM,
-  PRICE_BANDS,
   primaryCategory,
 } from "./marketplace-surface";
-import { BUNDLE_PRICES, MODULE_PRICES } from "./pricing";
+import { BUNDLES, MODULES } from "./catalog";
 
 describe("marketplace surface entries", () => {
   test("ALL_ENTRIES is every bundle + every module, bundles first", () => {
-    expect(BUNDLE_ENTRIES.length).toBe(BUNDLE_PRICES.length);
-    expect(MODULE_ENTRIES.length).toBe(MODULE_PRICES.length);
-    expect(ALL_ENTRIES.length).toBe(
-      BUNDLE_PRICES.length + MODULE_PRICES.length,
-    );
+    expect(BUNDLE_ENTRIES.length).toBe(BUNDLES.length);
+    expect(MODULE_ENTRIES.length).toBe(MODULES.length);
+    expect(ALL_ENTRIES.length).toBe(BUNDLES.length + MODULES.length);
     expect(
-      ALL_ENTRIES.slice(0, BUNDLE_PRICES.length).every(
-        (e) => e.kind === "bundle",
-      ),
+      ALL_ENTRIES.slice(0, BUNDLES.length).every((e) => e.kind === "bundle"),
     ).toBe(true);
   });
 
@@ -36,11 +31,20 @@ describe("marketplace surface entries", () => {
     expect(entryByViewId("module:does-not-exist")).toBeUndefined();
   });
 
-  test("every entry lands in exactly one price band (the bands partition the range)", () => {
+  test("demoHref points at the entry's own poke in the static /demos zone (a family borrows its hero's)", () => {
     for (const e of ALL_ENTRIES) {
-      const hits = PRICE_BANDS.filter((b) => b.test(e.amount));
-      expect(hits.length).toBe(1);
+      const poke = mediaSlides(e.kind, e.id).find(
+        (s) => s.kind === "poke",
+      )?.poke;
+      expect(e.demoHref).toBe(poke ? `/demos/embed/${poke}` : null);
     }
+    // Non-vacuous: every module but ui-pro has a demo, and the compliance family borrows field-crypto.
+    expect(MODULE_ENTRIES.filter((e) => e.demoHref !== null).length).toBe(
+      MODULES.length - 1,
+    );
+    expect(entryByViewId("bundle:compliance")?.demoHref).toBe(
+      "/demos/embed/field-crypto",
+    );
   });
 
   test("categories: Everything has none; a persona bundle is its own; a platform module is Platform", () => {
@@ -72,7 +76,7 @@ describe("marketplace surface entries", () => {
 
 describe("media manifest", () => {
   test("every sellable module except ui-pro carries an interactive proof", () => {
-    for (const module of MODULE_PRICES) {
+    for (const module of MODULES) {
       const pokes = mediaSlides("module", module.id).filter(
         (slide) => slide.kind === "poke",
       );
@@ -211,7 +215,7 @@ describe("media manifest", () => {
   test("every bundle carries a real composition slide naming its own member modules", () => {
     // ADR-0378 post-migration: every bundle has its strata sheet at slide 0; the composition
     // slide follows at slide 1.
-    for (const b of BUNDLE_PRICES) {
+    for (const b of BUNDLES) {
       const slides = mediaSlides("bundle", b.id);
       expect(slides[0]?.diagram).toBe(`schematic-${b.id}` as DiagramKey);
       expect(slides[1]?.compositionBundle).toBe(b.id);

@@ -4,17 +4,11 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CodeBlock, Faq, Icon, StatusChip } from "@/components";
-import { AddToCartButton } from "@/components/add-to-cart-button";
+import { EntryLinks } from "@/components/entry-links";
 import { MediaCarousel } from "@/components/media-carousel";
 import { bundleLabel, bundlePagePath } from "@/components/marketplace";
 import { TrialPath } from "@/components/trial-path";
 import { bundlePageRecord } from "@/lib/bundle-pages";
-import {
-  bundleCatalogItem,
-  moduleCatalogItem,
-  toCartItem,
-  type CatalogItem,
-} from "@/lib/catalog";
 import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
 import { mediaSlides, type MediaSlide } from "@/lib/media-manifest";
 import { MODULE_PAGES } from "@/lib/module-pages";
@@ -22,36 +16,20 @@ import { entryByViewId, type SurfaceEntry } from "@/lib/marketplace-surface";
 import { modulePostureGroup } from "@/lib/stack-fit";
 import { TruthfulSignals } from "@/components/truthful-signals";
 import type { TruthfulSignal } from "@/lib/trust-signals";
-import {
-  bundleModuleSubtotal,
-  bundlePriceById,
-  everythingSavings,
-  formatPrice,
-  formatUsd,
-  isBundleId,
-  moduleCatalogSubtotal,
-  MODULE_PRICES,
-  modulesByBundle,
-} from "@/lib/pricing";
+import { isBundleId, MODULES, modulesByBundle } from "@/lib/catalog";
 
-// Universal stack-compat badges — true of every sellable module (TypeScript source, a perpetual
-// one-time license, composed on the shared base). No per-module compat field exists, so these are
-// the honest shared facts, never a fabricated per-module claim (copy law ADR-0080).
-const STACK_COMPAT: readonly string[] = [
-  "TypeScript",
-  "One-time license",
-  "Composes on the base",
-];
+// Universal stack-compat badges — true of every module (TypeScript source, composed on the shared
+// base). No per-module compat field exists, so these are the honest shared facts, never a
+// fabricated per-module claim (copy law ADR-0080).
+const STACK_COMPAT: readonly string[] = ["TypeScript", "Composes on the base"];
 
 /** The normalized view model — the ONE shape the shared chrome renders, adapted from the two data
- *  shapes (a module's flat `amount` + depth record vs a bundle's `PriceAnchor` + members). */
+ *  shapes (a module's depth record vs a family's members). */
 interface ViewModel {
   entry: SurfaceEntry;
   mark: string;
   kindLabel: "Module" | "Bundle";
-  priceStr: string;
   slides: readonly MediaSlide[];
-  cartItem: CatalogItem | undefined;
   faq: readonly { question: string; answer: string }[];
   footer: { href: string; label: string } | null;
   /** Kind-specific metadata rendered ABOVE the media region (CAISSON-68: blurb + badges first,
@@ -81,24 +59,22 @@ function moduleViewModel(
   entry: SurfaceEntry,
   slides: readonly MediaSlide[],
 ): ViewModel {
-  const m = MODULE_PRICES.find((p) => p.id === entry.id);
+  const m = MODULES.find((p) => p.id === entry.id);
   const record = MODULE_PAGES.find((r) => r.slug === entry.id);
   const hasDetail = record !== undefined;
-  // The module's honest DB posture (from /stack-fit) shown at the point of purchase (ADR-0285 §2).
+  // The module's honest DB posture (ADR-0285 §2).
   const posture = modulePostureGroup(entry.id);
   return {
     entry,
     mark: moduleMark(entry.id),
     kindLabel: "Module",
-    priceStr: formatUsd(entry.amount),
     slides,
-    cartItem: moduleCatalogItem(entry.id),
     faq: record?.faq ?? [],
     footer: hasDetail
       ? { href: `/marketplace/modules/${entry.id}`, label: "Open full page →" }
       : null,
     badges: (
-      // DB posture (single-sourced from /stack-fit) + stack-compat + bundle-membership badges —
+      // DB posture (single-sourced from lib/stack-fit) + stack-compat + family-membership badges —
       // above the media region, so the module's identity reads before any artifact (CAISSON-68).
       <div className="cs-preview-badges">
         {posture ? (
@@ -113,7 +89,7 @@ function moduleViewModel(
         ))}
         {m && m.bundles.length === 0 ? (
           <span className="cs-muted" style={{ fontSize: "var(--cs-text-xs)" }}>
-            Sold standalone: not included in any bundle.
+            Standalone: not part of any module family.
           </span>
         ) : (
           m?.bundles.map((b) => (
@@ -165,24 +141,15 @@ function bundleViewModel(
   slides: readonly MediaSlide[],
   signals: readonly TruthfulSignal[],
 ): ViewModel {
-  const anchor = isBundleId(entry.id) ? bundlePriceById(entry.id) : undefined;
   const record = bundlePageRecord(entry.id);
   const isEverything = entry.id === "everything";
   const members = isBundleId(entry.id) ? modulesByBundle(entry.id) : [];
-  const memberSubtotal = isBundleId(entry.id)
-    ? bundleModuleSubtotal(entry.id)
-    : 0;
-  const saves = isEverything
-    ? everythingSavings()
-    : Math.max(0, memberSubtotal - entry.amount);
 
   return {
     entry,
     mark: isBundleId(entry.id) ? BUNDLE_MARKS[entry.id] : "bundle",
     kindLabel: "Bundle",
-    priceStr: anchor ? formatPrice(anchor) : formatUsd(entry.amount),
     slides,
-    cartItem: bundleCatalogItem(entry.id),
     faq: record?.faq ?? [],
     footer:
       isBundleId(entry.id) && !isEverything
@@ -195,30 +162,12 @@ function bundleViewModel(
       <>
         {record ? <p className="cs-preview-def">{record.definition}</p> : null}
 
-        {/* Pricing ladder — bundle price vs à-la-carte member sum (a real saving, never a
-            fabricated "was" price, ADR-0130). */}
-        <div className="cs-preview-ladder">
-          <span className="cs-num cs-preview-ladder-price">
-            {priceStrOf(entry, anchor)}
-          </span>
-          <span className="cs-tag">One-time · own the source</span>
-          {saves > 0 && (
-            <StatusChip
-              tone="accent"
-              dot
-              label={`Save ${formatUsd(saves)} vs à la carte`}
-            />
-          )}
-        </div>
-
         <TruthfulSignals signals={signals} />
 
         {isEverything ? (
           <p className="cs-muted cs-preview-def">
-            Every à-la-carte module totals {formatUsd(moduleCatalogSubtotal())}.
-            The Everything bundle is the whole commercial catalog (every bundle
-            and every module) for {priceStrOf(entry, anchor)}. One purchase, the
-            whole library.
+            Everything is the whole catalog: all {MODULES.length} modules across
+            every module family, composed onto one audited base.
           </p>
         ) : members.length > 0 ? (
           <ul className="cs-preview-members">
@@ -226,9 +175,6 @@ function bundleViewModel(
               <li key={m.id}>
                 <Icon name={moduleMark(m.id)} />
                 <span style={{ flex: 1 }}>{m.label}</span>
-                <span className="cs-num cs-preview-member-price">
-                  {formatUsd(m.amount)}
-                </span>
               </li>
             ))}
           </ul>
@@ -242,34 +188,29 @@ function bundleViewModel(
   };
 }
 
-function priceStrOf(
-  entry: SurfaceEntry,
-  anchor: ReturnType<typeof bundlePriceById>,
-): string {
-  return anchor ? formatPrice(anchor) : formatUsd(entry.amount);
-}
-
 /**
  * The unified card-viewer dialog (ADR-0285 §1) — ONE dialog serving both kinds over a discriminated
  * union `{kind, id}` (resolved from the kind-namespaced `viewId`). Merges the two near-identical
  * preview dialogs' chrome: native `<dialog>` + `showModal()` (focus trap, Escape-to-close,
- * focus-return), a fixed header, a scrolling body led by the media carousel, and a fixed buy footer.
- * The data-shape difference (a module's flat price + depth record vs a bundle's PriceAnchor +
+ * focus-return), a fixed header, a scrolling body led by the media carousel, and a fixed footer
+ * (docs · live demo · full page). The data-shape difference (a module's depth record vs a family's
  * members) is normalized in the adapter above; the chrome never forks.
  */
 export function PreviewDialog({
   viewId,
   onClose,
   signals,
+  docsHrefs,
 }: {
   viewId: string | null;
   onClose: () => void;
   signals: readonly TruthfulSignal[];
+  docsHrefs: Readonly<Record<string, string>>;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   // Memoized on viewId so vm (and vm.slides) keeps a stable identity across parent re-renders —
   // MediaCarousel resets its index on a new `slides` reference, so a fresh array every render
-  // would snap an open carousel back to slide 1 whenever cart/theme context re-renders the tree.
+  // would snap an open carousel back to slide 1 whenever theme context re-renders the tree.
   const liveVm = useMemo(() => {
     const entry = viewId ? entryByViewId(viewId) : undefined;
     return entry ? buildViewModel(entry, signals) : undefined;
@@ -397,22 +338,12 @@ export function PreviewDialog({
           margin: 0; padding-left: var(--cs-space-5); display: grid; gap: var(--cs-space-3);
           font-size: var(--cs-text-sm); line-height: var(--cs-leading-snug);
         }
-        .cs-preview-ladder {
-          display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--cs-space-3);
-        }
-        .cs-preview-ladder-price {
-          font-size: var(--cs-text-2xl); font-family: var(--cs-font-mono);
-          letter-spacing: var(--cs-tracking-tight);
-        }
         .cs-preview-members {
           margin: 0; padding: 0; list-style: none; display: grid; gap: var(--cs-space-2);
         }
         .cs-preview-members li {
           display: flex; align-items: baseline; gap: var(--cs-space-2);
           font-size: var(--cs-text-sm); line-height: var(--cs-leading-snug);
-        }
-        .cs-preview-member-price {
-          font-size: var(--cs-text-xs); color: var(--cs-fg-muted); white-space: nowrap;
         }
         @media (max-width: 48rem) {
           .cs-preview-dialog {
@@ -461,16 +392,6 @@ export function PreviewDialog({
                   </h2>
                   <StatusChip label={vm.kindLabel} />
                 </div>
-                <div
-                  className="cs-num"
-                  style={{
-                    marginTop: "var(--cs-space-2)",
-                    fontFamily: "var(--cs-font-mono)",
-                    fontSize: "var(--cs-text-lg)",
-                  }}
-                >
-                  {vm.priceStr}
-                </div>
               </div>
               <button
                 type="button"
@@ -493,15 +414,13 @@ export function PreviewDialog({
               {vm.body}
             </div>
 
-            {/* ===== Footer (fixed) — add to cart + open full page ===== */}
+            {/* ===== Footer (fixed) — docs + live demo + open full page ===== */}
             <div className="cs-preview-foot">
-              {vm.cartItem ? (
-                <AddToCartButton
-                  variant="primary"
-                  item={toCartItem(vm.cartItem)}
-                  onAdded={onClose}
-                />
-              ) : null}
+              <EntryLinks
+                label={vm.entry.label}
+                docsHref={docsHrefs[vm.entry.viewId]}
+                demoHref={vm.entry.demoHref}
+              />
               {vm.footer ? (
                 <Link
                   href={vm.footer.href}

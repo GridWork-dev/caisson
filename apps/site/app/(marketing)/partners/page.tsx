@@ -13,7 +13,7 @@ export const metadata = buildMetadata({
   path: "/partners",
 });
 
-// The quiet application surface (ADR-0273), mirroring /affiliates. The terms are LOCKED and
+// The quiet application surface (ADR-0273). The terms are LOCKED and
 // published (ADR-0297, stated on-page per the 2026-07-10 Kickoff-J picker): 5 partners · 40% off
 // the initial purchase · partner pricing reverts to list after 12 months on renewal/subscription
 // surfaces · case-study rights contingent on conversion. The cohort cap is a real term, not
@@ -208,8 +208,8 @@ export default function PartnersPage() {
           }}
         >
           <PartnersApplyButton>Apply by email</PartnersApplyButton>
-          <Button href="/stack-fit" variant="ghost">
-            Check the stack fit
+          <Button href="/docs/getting-started" variant="ghost">
+            Try it on your stack
           </Button>
         </div>
       </Section>

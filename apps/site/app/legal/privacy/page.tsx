@@ -6,7 +6,7 @@ import { LegalToc, type LegalTocItem } from "../toc";
 export const metadata = buildMetadata({
   title: "Privacy Policy",
   description:
-    "How Caisson collects and handles personal data on caisson.sh: product-update email, purchase account communications, cookieless analytics, and your rights under GDPR.",
+    "How Caisson handles personal data on caisson.sh: cookieless analytics, product-update email, and your rights under GDPR.",
   path: "/legal/privacy",
 });
 
@@ -32,7 +32,7 @@ export default function PrivacyPage() {
       {/* Page header */}
       <Section eyebrow="Legal" title="Privacy Policy" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
-          Last updated: 27 June 2026. Applies to caisson.sh and the Caisson
+          Last updated: 25 September 2026. Applies to caisson.sh and the Caisson
           software.
         </p>
       </Section>
@@ -64,19 +64,15 @@ export default function PrivacyPage() {
       <Section id="what-we-collect" title="What we collect">
         <h3 style={prose.h3}>Email address</h3>
         <p style={prose.paragraph}>
-          When you subscribe to product updates or complete a purchase on this
-          site, we collect your email address. That is the only piece of
-          personally identifying information we ask for at the point of sign-up.
-          Purchase checkout collects the additional information necessary to
-          process payment and deliver your license entitlement. Payment is
-          processed by Paddle, our merchant of record; we do not receive or
-          store your payment card details.
+          If you subscribed to product updates, we hold your email address. That
+          is the only piece of personally identifying information we have asked
+          for. The site itself has no forms and no sign-in.
         </p>
 
         <h3 style={prose.h3}>Cloudflare infrastructure metadata</h3>
         <p style={prose.paragraph}>
-          Caisson.sh is served by Railway, with Cloudflare in front as DNS and
-          reverse proxy. Cloudflare processes standard HTTP request metadata
+          Caisson.sh is served as static files from Cloudflare&apos;s edge
+          network. Cloudflare processes standard HTTP request metadata
           (originating IP address, user-agent, referring URL) for the purposes
           of routing, security filtering, and DDoS protection. This processing
           is governed by{" "}
@@ -105,31 +101,18 @@ export default function PrivacyPage() {
           browser family). No consent banner is required for this analytics
           implementation.
         </p>
-
-        <h3 style={prose.h3}>Ask-AI questions</h3>
-        <p style={prose.paragraph}>
-          Questions submitted to the on-site Ask-AI widget are stored to improve
-          the product and its documentation. The stored record is the question
-          text, the date, and whether it was answered: never your IP address,
-          account identity, or the generated answer. The widget carries the same
-          notice where you type: do not include secrets or personal data in a
-          question. Stored questions are hard-deleted after 90 days.
-        </p>
       </Section>
 
       {/* Why we collect it */}
       <Section id="why-we-collect-it" title="Why we collect it" band="tint">
-        <h3 style={prose.h3}>
-          Email: product updates and account communications
-        </h3>
+        <h3 style={prose.h3}>Email: product updates</h3>
         <p style={prose.paragraph}>
           We collect your email address to send you product-update notifications
-          (new releases, changelog highlights, product news) and to deliver
-          essential account communications such as purchase confirmations,
-          license entitlements, and support correspondence. We will not send
-          marketing email unrelated to Caisson, sell your address, or share it
-          with third parties except as required to operate these communications
-          (Resend, see Data location, below).
+          (new releases, changelog highlights, product news) and to answer
+          support correspondence. We will not send marketing email unrelated to
+          Caisson, sell your address, or share it with third parties except as
+          required to operate these communications (Resend, see Data location,
+          below).
         </p>
 
         <h3 style={prose.h3}>Analytics: aggregate site improvement</h3>
@@ -156,11 +139,6 @@ export default function PrivacyPage() {
             been told at the point of submission that signing up means
             occasional product email. You may withdraw consent at any time by
             requesting deletion of your address (see Your rights, below).
-          </li>
-          <li style={prose.li}>
-            <strong>Email address (purchase / account): contract.</strong>{" "}
-            Processing is necessary to perform the contract of sale, deliver
-            your license entitlement, and respond to support requests.
           </li>
           <li style={prose.li}>
             <strong>
@@ -196,12 +174,6 @@ export default function PrivacyPage() {
           </li>
         </ul>
         <p style={prose.paragraph}>
-          Purchase and account email addresses are retained for as long as
-          required to fulfill the contract and comply with applicable tax and
-          legal obligations, which may exceed the subscription retention period
-          above.
-        </p>
-        <p style={prose.paragraph}>
           Plausible retains aggregate analytics data per their own retention
           policy. Because no PII is collected by Plausible, no individual
           retention period applies on our end.
@@ -210,24 +182,6 @@ export default function PrivacyPage() {
 
       {/* Data location */}
       <Section id="where-your-data-lives" title="Where your data lives">
-        <h3 style={prose.h3}>Payment and order data: Paddle</h3>
-        <p style={prose.paragraph}>
-          Purchases are processed by Paddle, acting as merchant of record and
-          reseller. Paddle collects the billing and payment information
-          necessary to complete your order, calculate and remit applicable sales
-          tax and VAT, and issue your order receipt; we do not receive or store
-          your payment card details. Paddle&apos;s handling of this data
-          (including which Paddle entity processes your order) is governed by{" "}
-          <a
-            href="https://www.paddle.com/legal/privacy"
-            rel="noreferrer"
-            className="cs-link"
-          >
-            Paddle&apos;s own privacy policy
-          </a>
-          .
-        </p>
-
         <h3 style={prose.h3}>Email: Resend</h3>
         <p style={prose.paragraph}>
           Email addresses are stored and managed by{" "}
@@ -240,12 +194,12 @@ export default function PrivacyPage() {
           if you require a DPA.
         </p>
 
-        <h3 style={prose.h3}>Site: Railway + Cloudflare</h3>
+        <h3 style={prose.h3}>Site: Cloudflare</h3>
         <p style={prose.paragraph}>
-          Caisson.sh is served by Railway. Cloudflare remains in front as DNS
-          and reverse proxy across Cloudflare&apos;s global edge network.
-          Cloudflare is certified under the EU-US Data Privacy Framework. Their
-          data processing terms apply to request metadata processed at the edge.
+          Caisson.sh is served as static files across Cloudflare&apos;s global
+          edge network. Cloudflare is certified under the EU-US Data Privacy
+          Framework. Their data processing terms apply to request metadata
+          processed at the edge.
         </p>
 
         <h3 style={prose.h3}>Analytics: Plausible</h3>

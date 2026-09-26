@@ -9,14 +9,6 @@ import {
 import { moduleMark } from "@/lib/marks";
 import { hasModulePage } from "@/lib/module-pages";
 import {
-  bundlePrice,
-  formatUsd,
-  moduleAmount,
-  MODULE_PRICES,
-  planPrice,
-  priceById,
-} from "@/lib/pricing";
-import {
   Button,
   Card,
   Faq,
@@ -30,11 +22,9 @@ import {
   type IconName,
 } from "@/components";
 import { TrialPath } from "@/components/trial-path";
-import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaCarousel } from "@/components/media-carousel";
 import { mediaSlides } from "@/lib/media-manifest";
 import { requireBundlePage, spellCount } from "@/lib/bundle-pages";
-import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { TrackView } from "@/components/track-view";
 
 // Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts);
@@ -47,12 +37,8 @@ export const metadata = buildMetadata({
   path: "/ai-kit",
 });
 
-// Price from the canonical pricing table.
-const modulePrice = priceById("module");
-
-// Cart-ready CatalogItem for the peak-intent buy CTAs below (ADR-0192 single add-to-cart buy-verb).
-const _catalogItem = bundleCatalogItem("ai-production");
-const bundleCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
+// The gallery viewer for this bundle: its live demo, docs, and members in one place.
+const GALLERY_HREF = "/marketplace?view=bundle:ai-production";
 
 // FAQ items — answer-first (ADR-0080 §6); also rendered as faqPage JSON-LD. Read from the record.
 const FAQ_ITEMS = record.faq;
@@ -64,9 +50,8 @@ const BASE_MEMBER_ICON: Record<string, IconName> = {
   "ai-config": "gauge",
 };
 
-// The bundle's real composed packages — read from the shared bundle content record. Priced via a
-// StatusChip when a member is also sold standalone (`MODULE_PRICES`), linking to its module depth
-// page; ai-config is base substrate and renders unpriced.
+// The bundle's real composed packages — read from the shared bundle content record, linking to a
+// member's module depth page when one exists.
 const MEMBER_MODULES = record.members;
 
 function MemberModuleCard({
@@ -78,9 +63,7 @@ function MemberModuleCard({
   name: string;
   oneLiner: string;
 }) {
-  const price = MODULE_PRICES.find((m) => m.id === id);
-  // Linkable is gated on the depth page actually existing, not on price truthiness — a member can
-  // be priced (MODULE_PRICES) with no depth page yet, and a Link to it 404s (G5).
+  // Linkable is gated on the depth page actually existing — a Link to a missing one 404s (G5).
   const linkable = hasModulePage(id);
   const icon = BASE_MEMBER_ICON[id] ?? moduleMark(id);
   const card = (
@@ -98,11 +81,6 @@ function MemberModuleCard({
       <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
         {oneLiner}
       </p>
-      {price && (
-        <div style={{ marginTop: "var(--cs-space-4)" }}>
-          <StatusChip label={formatUsd(price.amount)} tone="muted" />
-        </div>
-      )}
     </Card>
   );
   return linkable ? (
@@ -144,7 +122,6 @@ export default function AiKitPage() {
     name: "Caisson AI-Production",
     description: record.metaDescription,
     url: "https://caisson.sh/ai-kit",
-    priceId: "ai-production",
   });
 
   const crumbNode = breadcrumb([
@@ -180,9 +157,9 @@ export default function AiKitPage() {
         lede={record.hero.lede}
         ctas={
           <>
-            {bundleCartItem && (
-              <AddToCartButton item={bundleCartItem} variant="primary" />
-            )}
+            <Button href={GALLERY_HREF} variant="primary">
+              Run the live demo
+            </Button>
             <Button href="/docs/ai-production" variant="ghost">
               Read the docs
             </Button>
@@ -268,30 +245,21 @@ export default function AiKitPage() {
         </Reveal>
       </Section>
 
-      {/* ===== Pricing ===== */}
-      <Section title="Own the code, or subscribe.">
+      {/* ===== How it ships ===== */}
+      <Section title="How it ships.">
         <Reveal>
-          <FeatureGrid cols={3}>
+          <FeatureGrid cols={2}>
             <Card accent>
-              <div className="cs-card-title">One-time license</div>
-              <p
-                className="cs-num"
-                style={{
-                  fontSize: "var(--cs-text-2xl)",
-                  marginTop: "var(--cs-space-2)",
-                }}
-              >
-                {bundlePrice("ai-production")}
-              </p>
+              <div className="cs-card-title">The whole gateway</div>
               <p
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
-                The gateway, all{" "}
+                The gateway and all{" "}
                 {spellCount(MEMBER_MODULES.length).toLowerCase()} composed
-                modules, and future patch releases, in your own repo as
-                TypeScript source. Scaffold it in with bunx
-                @caisson-sh/cli@latest, or add it to an existing Caisson base.
+                modules, in your own repo as TypeScript source. Scaffold it in
+                with bunx @caisson-sh/cli@latest, or add it to an existing
+                Caisson base.
               </p>
             </Card>
 
@@ -301,31 +269,9 @@ export default function AiKitPage() {
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-3)" }}
               >
-                The composed modules are also sold individually: prompt registry
-                from {formatUsd(moduleAmount("prompt-registry"))}, guardrails
-                from {formatUsd(moduleAmount("guardrails"))}, token metering
-                from {formatUsd(moduleAmount("ai-meter"))};
-                {modulePrice && modulePrice.amount !== null ? (
-                  <>
-                    {" "}
-                    the catalog floor is {modulePrice.from ? "from " : ""}
-                    <span className="cs-num">
-                      {formatUsd(modulePrice.amount)}
-                    </span>
-                  </>
-                ) : null}
-                .
-              </p>
-            </Card>
-
-            <Card>
-              <div className="cs-card-title">Developer plan</div>
-              <p
-                className="cs-muted"
-                style={{ marginTop: "var(--cs-space-3)" }}
-              >
-                {planPrice("developer")} adds credits, framework updates, and
-                private-registry pulls on top of any license you own.
+                The composed modules also work on their own: prompt registry,
+                guardrails, and token metering each compose onto the base
+                without the rest.
               </p>
             </Card>
           </FeatureGrid>
@@ -355,7 +301,7 @@ export default function AiKitPage() {
       <Reveal>
         <Section
           title="Prove fit in week one."
-          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
+          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <TrialPath />
@@ -372,8 +318,8 @@ export default function AiKitPage() {
           Ship the feature with the brakes on.
         </h2>
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
-          Scaffold a new project with the AI Production Kit included, or go
-          straight to pricing to add it to an existing Caisson base.
+          Scaffold a new project with the AI Production Kit included, or add it
+          to an existing Caisson base.
         </p>
         <Terminal
           label="terminal"
@@ -389,9 +335,9 @@ export default function AiKitPage() {
             flexWrap: "wrap",
           }}
         >
-          {bundleCartItem && (
-            <AddToCartButton item={bundleCartItem} variant="primary" />
-          )}
+          <Button href={GALLERY_HREF} variant="primary">
+            Run the live demo
+          </Button>
           <Button href="/docs/ai-production" variant="ghost">
             Read the docs
           </Button>

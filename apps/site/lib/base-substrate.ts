@@ -3,7 +3,7 @@ import type { IconName } from "@caisson/ui/components";
 // The Apache-2.0 open Base substrate — the SINGLE list every surface that names it reads from
 // (ADR-0094 open-core). The binding truth is the SPDX `license` field in each package's
 // package.json (`Apache-2.0` for these, `LicenseRef-Caisson-Commercial` for everything else);
-// the /legal/license page is the human summary this mirrors.
+// the /docs/base page is the human summary this mirrors.
 //
 // Why this file exists: two prose lists (the plans and modules pages) had drifted `credits` INTO
 // the free base and dropped `rate-limit` OUT of it. `credits` is a paid commercial module — naming

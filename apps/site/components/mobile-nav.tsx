@@ -8,8 +8,8 @@ import { Menu, X } from "lucide-react";
 import type { MobileNavProps } from "./mobile-drawer";
 
 // Mobile hamburger nav (V27, rebuilt for ADR-0312). This shell is deliberately tiny: just the toggle
-// button + route-close. The heavy drawer body (Dialog, better-auth session read, cart read, search
-// wiring, the accordion sections) lives in `mobile-drawer`, dynamically imported on idle or first
+// button + route-close. The heavy drawer body (Dialog, search wiring, the accordion sections)
+// lives in `mobile-drawer`, dynamically imported on idle or first
 // interaction so it leaves the critical hydration path on every marketing page (ADR-0310 A4 /
 // ADR-0312 §7). The toggle is display:none above 900px (global.css), so the drawer chunk never even
 // arms on desktop until the button exists — no layout shift either way (the button is always there;

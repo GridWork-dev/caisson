@@ -109,11 +109,7 @@ export const WRITING_PIECES: readonly WritingPiece[] = [
         },
       },
     ],
-    related: [
-      "/frameworks/eu-ai-act/article-50",
-      "/frameworks/eu-ai-act",
-      "/glossary/eu-ai-act-article-50",
-    ],
+    related: ["/frameworks/eu-ai-act/article-50", "/frameworks/eu-ai-act"],
   },
 ];
 

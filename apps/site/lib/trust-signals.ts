@@ -3,8 +3,8 @@ import { CHANGELOG_ENTRIES } from "@/lib/changelog";
 import { source } from "@/lib/source";
 import type { IconName } from "@caisson/ui/components";
 
-// The truthful-signals block (ADR-0374 lock 2, audit Q1) — three real, computed facts shown near
-// the money CTAs (the bundle popout + the marketplace page). Never a hand-typed number: every
+// The truthful-signals block (ADR-0374 lock 2, audit Q1) — three real, computed facts shown on
+// the gallery surfaces (the bundle popout + the marketplace page). Never a hand-typed number: every
 // label derives from the same data the rest of the site already renders, so this can't drift into
 // a fabricated claim (ADR-0082/0237 truth floor). One shared source so both consumers agree.
 
@@ -48,7 +48,7 @@ export function truthfulSignals(): readonly TruthfulSignal[] {
       key: "open-base",
       label: `Apache-2.0 base, ${BASE_PACKAGES.length} packages`,
       icon: "scale",
-      href: "/legal/license",
+      href: "/docs/base",
     },
     {
       key: "build-state",

@@ -21,7 +21,7 @@ export const metadata = buildMetadata({
 
 // The public surfaces the status page monitors — all live and unauthenticated.
 const MONITORED = [
-  "The website and buyer dashboard",
+  "The website",
   "The registry (module resolution)",
   "The license service",
   "The docs assistant",
@@ -44,11 +44,6 @@ const SECURITY_LINKS: readonly { href: string; label: string; note: string }[] =
       href: "/compliance",
       label: "Control coverage",
       note: "The technical controls the SOC 2 and HIPAA frameworks require, and the boundary between what Caisson ships and what stays your organization's responsibility.",
-    },
-    {
-      href: "/procurement",
-      label: "Security & procurement",
-      note: "Who you buy from, how Paddle handles invoicing as merchant of record, how to request documentation, and how to report a vulnerability.",
     },
   ];
 
@@ -176,7 +171,7 @@ export default function TrustPage() {
       <Section
         eyebrow="Subprocessors"
         title="Who processes what."
-        lede="Caisson the product runs inside your own infrastructure, and your application data stays there. The services below process data for the Caisson service itself — this website, checkout, email, support, monitoring, and inference — not your application data."
+        lede="Caisson the product runs inside your own infrastructure, and your application data stays there. The services below process data for the Caisson service itself — this website, email, support, monitoring, and inference — not your application data."
       >
         <div
           className="cs-matrix__frame"
@@ -249,8 +244,8 @@ export default function TrustPage() {
             flexWrap: "wrap",
           }}
         >
-          <Button href="/procurement" variant="primary">
-            Security &amp; procurement
+          <Button href="/security" variant="primary">
+            Security posture
           </Button>
           <Button href="/evidence" variant="ghost">
             The evidence pack

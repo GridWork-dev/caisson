@@ -1,8 +1,6 @@
 import type { MetadataRoute } from "next";
 
 import { source } from "@/lib/source";
-import { COMPARISONS } from "@/lib/comparisons";
-import { GLOSSARY_TERMS } from "@/lib/glossary";
 import { MODULE_PAGES } from "@/lib/module-pages";
 import { MARKETING_ROUTES } from "@/lib/routes";
 import { WRITING_PIECES, writingLastModified } from "@/lib/writing";
@@ -36,28 +34,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
-  // Glossary spokes derive from GLOSSARY_TERMS the same way docs derive from Fumadocs' source —
-  // the bulk program never touches the hand-curated MARKETING_ROUTES list (glossary SPEC §IA).
-  const glossary: MetadataRoute.Sitemap = GLOSSARY_TERMS.map((term) => ({
-    url: `${BASE}/glossary/${term.slug}`,
-    lastModified: BUILT_AT,
-    changeFrequency: "weekly" as const,
-    priority: 0.6,
-  }));
-
-  // Module depth pages derive from MODULE_PAGES (ADR-0237 F2) — the same spoke pattern as the
-  // glossary: a record IS the page, so the sitemap can never list a module the catalog dropped.
+  // Module depth pages derive from MODULE_PAGES (ADR-0237 F2): a record IS the page, so the
+  // sitemap can never list a module the catalog dropped.
   const modules: MetadataRoute.Sitemap = MODULE_PAGES.map((record) => ({
     url: `${BASE}/marketplace/modules/${record.slug}`,
-    lastModified: BUILT_AT,
-    changeFrequency: "weekly" as const,
-    priority: 0.7,
-  }));
-
-  // "Caisson vs X" comparison spokes derive from COMPARISONS the same way glossary/modules do — the
-  // /compare hub is a MARKETING_ROUTES entry (emitted above); the spokes never touch that list.
-  const comparisons: MetadataRoute.Sitemap = COMPARISONS.map((c) => ({
-    url: `${BASE}/compare/${c.slug}`,
     lastModified: BUILT_AT,
     changeFrequency: "weekly" as const,
     priority: 0.7,
@@ -72,12 +52,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [
-    ...marketing,
-    ...docs,
-    ...glossary,
-    ...modules,
-    ...comparisons,
-    ...writing,
-  ];
+  return [...marketing, ...docs, ...modules, ...writing];
 }

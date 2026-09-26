@@ -14,11 +14,9 @@ import {
   type IconName,
 } from "@/components";
 import { TrialPath } from "@/components/trial-path";
-import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaCarousel } from "@/components/media-carousel";
 import { mediaSlides } from "@/lib/media-manifest";
 import { requireBundlePage, spellCount } from "@/lib/bundle-pages";
-import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import {
   breadcrumb,
   faqPage,
@@ -28,14 +26,6 @@ import {
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import { moduleMark } from "@/lib/marks";
 import { hasModulePage } from "@/lib/module-pages";
-import {
-  bundlePrice,
-  bundlePriceById,
-  formatPrice,
-  formatUsd,
-  MODULE_PRICES,
-  priceById,
-} from "@/lib/pricing";
 import { TrackView } from "@/components/track-view";
 
 // Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts);
@@ -48,15 +38,8 @@ export const metadata = buildMetadata({
   path: "/agentic-dev",
 });
 
-// Cart-ready CatalogItem for the peak-intent buy CTAs below (ADR-0192 single add-to-cart buy-verb).
-const _catalogItem = bundleCatalogItem("agentic-dev");
-const bundleCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
-
-// Prices for the licensing cards below — always derived from the pricing lib, never hardcoded.
-const agentKernelModule = MODULE_PRICES.find((m) => m.id === "agent-kernel");
-const agentRunnerModule = MODULE_PRICES.find((m) => m.id === "agent-runner");
-const developerPrice = priceById("developer");
-const everythingAnchor = bundlePriceById("everything");
+// The gallery viewer for this bundle: its live demo, docs, and members in one place.
+const GALLERY_HREF = "/marketplace?view=bundle:agentic-dev";
 
 /* ---------- Inside the agent-kernel package ---------- */
 const PIECES = [
@@ -90,7 +73,7 @@ const BASE_MEMBER_ICON: Record<string, IconName> = {
 };
 
 // The bundle's real composed packages — read from the shared bundle content record. Priced via a
-// StatusChip when a member is also sold standalone (`MODULE_PRICES`); linked to its module depth
+// StatusChip when a member is also sold standalone (`MODULES`); linked to its module depth
 // page only when one exists — tool-exec is priced but has no depth page yet, so it renders its
 // price chip but stays non-interactive and unlinked (G5).
 const MEMBER_MODULES = record.members;
@@ -104,9 +87,7 @@ function MemberModuleCard({
   name: string;
   oneLiner: string;
 }) {
-  const price = MODULE_PRICES.find((m) => m.id === id);
-  // Linkable is gated on the depth page actually existing, not on price truthiness — a member can
-  // be priced (MODULE_PRICES) with no depth page yet, and a Link to it 404s (G5).
+  // Linkable is gated on the depth page actually existing — a Link to a missing one 404s (G5).
   const linkable = hasModulePage(id);
   const icon = BASE_MEMBER_ICON[id] ?? moduleMark(id);
   const card = (
@@ -124,11 +105,6 @@ function MemberModuleCard({
       <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
         {oneLiner}
       </p>
-      {price && (
-        <div style={{ marginTop: "var(--cs-space-4)" }}>
-          <StatusChip label={formatUsd(price.amount)} tone="muted" />
-        </div>
-      )}
     </Card>
   );
   return linkable ? (
@@ -229,7 +205,6 @@ export default function AgenticDevPage() {
     name: "Caisson Agentic-Dev",
     description: record.metaDescription,
     url: `${SITE_URL}/agentic-dev`,
-    priceId: "agentic-dev",
   });
 
   const bcLd = breadcrumb([
@@ -265,21 +240,15 @@ export default function AgenticDevPage() {
         lede={record.hero.lede}
         ctas={
           <>
-            {bundleCartItem && (
-              <AddToCartButton item={bundleCartItem} variant="primary" />
-            )}
+            <Button href={GALLERY_HREF} variant="primary">
+              Run the live demo
+            </Button>
             <Button href="/docs/agentic-dev" variant="ghost">
               Read the docs
             </Button>
           </>
         }
-        credentials={
-          <StatusChip
-            tone="accent"
-            label={`Own the source · ${bundlePrice("agentic-dev")}`}
-            dot
-          />
-        }
+        credentials={<StatusChip tone="accent" label="Own the source" dot />}
         artifact={AgentDeclaration}
       />
 
@@ -464,23 +433,22 @@ export default function AgenticDevPage() {
         </Section>
       </Reveal>
 
-      {/* ===== Licensing ===== */}
+      {/* ===== How it composes ===== */}
       <Reveal>
         <Section
           title="A composition of the same base."
-          lede="Agentic-Dev is a composition of the same open Caisson base every bundle shares, not a fork. Buy it outright, take a piece à la carte, or subscribe for credits and updates."
+          lede="Agentic-Dev is a composition of the same open Caisson base every bundle shares, not a fork. Take the whole family, or a single piece."
           band="tint"
         >
-          <FeatureGrid cols={3}>
+          <FeatureGrid cols={2}>
             <Card>
-              <p className="cs-card-title">One-time</p>
+              <p className="cs-card-title">The whole family</p>
               <p
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-2)" }}
               >
-                Buy the bundle outright for {bundlePrice("agentic-dev")} and own
-                the source, all four composed pieces, kernel through the agent
-                runner.
+                All four composed pieces in your own repo as source, kernel
+                through the agent runner.
               </p>
             </Card>
             <Card>
@@ -489,30 +457,7 @@ export default function AgenticDevPage() {
                 className="cs-muted"
                 style={{ marginTop: "var(--cs-space-2)" }}
               >
-                Take just the kernel
-                {agentKernelModule
-                  ? ` (${formatUsd(agentKernelModule.amount)})`
-                  : ""}{" "}
-                or just the runner
-                {agentRunnerModule
-                  ? ` (${formatUsd(agentRunnerModule.amount)})`
-                  : ""}{" "}
-                à la carte onto your Caisson base.
-              </p>
-            </Card>
-            <Card>
-              <p className="cs-card-title">Developer plan</p>
-              <p
-                className="cs-muted"
-                style={{ marginTop: "var(--cs-space-2)" }}
-              >
-                {developerPrice ? formatPrice(developerPrice) : "Subscription"}{" "}
-                adds credits, framework updates, and private-registry pulls
-                across whatever you&apos;ve bought. The Everything bundle
-                {everythingAnchor
-                  ? ` (${formatPrice(everythingAnchor)})`
-                  : ""}{" "}
-                covers the whole catalog and the base in one purchase.
+                Take just the kernel or just the runner onto your Caisson base.
               </p>
             </Card>
           </FeatureGrid>
@@ -530,7 +475,7 @@ export default function AgenticDevPage() {
       <Reveal>
         <Section
           title="Prove fit in week one."
-          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
+          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <TrialPath />
@@ -542,9 +487,9 @@ export default function AgenticDevPage() {
       <Section id="get-started">
         <h2 className="cs-section-title">Ship governed agents.</h2>
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
-          Buy the bundle outright and own the source, or take the kernel or the
-          runner à la carte onto your existing Caisson base. Scaffold a project
-          and put a governed agent to work.
+          Take the whole family, or the kernel or the runner on its own onto
+          your existing Caisson base. Scaffold a project and put a governed
+          agent to work.
         </p>
         <div
           style={{
@@ -553,9 +498,9 @@ export default function AgenticDevPage() {
             flexWrap: "wrap",
           }}
         >
-          {bundleCartItem && (
-            <AddToCartButton item={bundleCartItem} variant="primary" />
-          )}
+          <Button href={GALLERY_HREF} variant="primary">
+            Run the live demo
+          </Button>
           <Button href="/docs/agentic-dev" variant="ghost">
             Read the docs
           </Button>

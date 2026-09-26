@@ -2,13 +2,12 @@ import { test, expect, describe } from "bun:test";
 
 import { GET } from "./route";
 import { BASE_PACKAGES } from "@/lib/base-substrate";
-import { COMPARISONS } from "@/lib/comparisons";
 import { WRITING_PIECES } from "@/lib/writing";
 
 // llms.txt is the surface an answer engine quotes verbatim, so a claim here propagates further
 // than the same claim in marketing copy. These pin the two things that must stay true: the
-// licensing split matches the package SOT, and nothing here promises a checkout that a visitor
-// outside the Caisson team cannot actually reach (/cart is behind Cloudflare Access).
+// licensing line matches the package SOT, and nothing here points at a purchase path or a route
+// the static site no longer serves.
 
 const body = await (await GET()).text();
 
@@ -18,10 +17,9 @@ describe("llms.txt", () => {
     expect(body.startsWith("# Caisson")).toBeTrue();
   });
 
-  test("states the open-core split with the count from the package SOT", () => {
+  test("states the base licensing with the count from the package SOT", () => {
     expect(body).toContain(`${BASE_PACKAGES.length}-package Base substrate`);
     expect(body).toContain("Apache-2.0");
-    expect(body).toContain("commercial");
     for (const pkg of BASE_PACKAGES) expect(body).toContain(`@caisson/${pkg}`);
   });
 
@@ -34,12 +32,11 @@ describe("llms.txt", () => {
     expect(body).not.toContain("GridWork Digital");
   });
 
-  test("links the docs and the licensing pages", () => {
+  test("links the docs and the marketplace", () => {
     for (const path of [
       "(/docs)",
       "(/docs/getting-started)",
-      "(/legal/license)",
-      "(/docs/licensing)",
+      "(/marketplace)",
     ]) {
       expect(body).toContain(path);
     }
@@ -63,20 +60,10 @@ describe("llms.txt", () => {
     }
   });
 
-  test("every comparison and writing page is listed under its own heading", () => {
+  test("every writing page is listed under its own heading", () => {
     // Set equality against the data, not a count: a count passes while one entry silently drops
-    // out. These are the two route families the file omitted entirely.
-    expect(body).toContain("## Comparisons");
+    // out.
     expect(body).toContain("## Writing");
-    for (const c of COMPARISONS) {
-      expect({
-        slug: c.slug,
-        linked: body.includes(`(/compare/${c.slug})`),
-      }).toEqual({
-        slug: c.slug,
-        linked: true,
-      });
-    }
     for (const p of WRITING_PIECES) {
       expect({
         slug: p.slug,
@@ -86,8 +73,7 @@ describe("llms.txt", () => {
         linked: true,
       });
     }
-    // Non-vacuous: the loops above pass trivially if either catalog is empty.
-    expect(COMPARISONS.length).toBeGreaterThan(0);
+    // Non-vacuous: the loop above passes trivially if the catalog is empty.
     expect(WRITING_PIECES.length).toBeGreaterThan(0);
   });
 
@@ -114,17 +100,24 @@ describe("llms.txt", () => {
     }
   });
 
-  test("promises no purchase path the site cannot honour today", () => {
-    // Checkout is team-gated, so any phrasing that reads as "you can buy this right now" is a
-    // claim the site cannot back. The honest statement must be present instead.
-    for (const overclaim of [
-      "check out in a single purchase",
+  test("points at no purchase path and no retired route", () => {
+    for (const retired of [
       "buy now",
-      "start your free trial",
-      "sign up free",
+      "(/cart",
+      "(/dashboard",
+      "(/compare",
+      "(/glossary",
+      "(/legal/license",
+      "(/marketplace/plans",
     ]) {
-      expect(body.toLowerCase()).not.toContain(overclaim);
+      expect({
+        retired,
+        present: body.toLowerCase().includes(retired),
+      }).toEqual({
+        retired,
+        present: false,
+      });
     }
-    expect(body).toContain("no public self-serve purchase path today");
+    expect(body.match(/\$\d[\d,]*/g)).toBeNull();
   });
 });

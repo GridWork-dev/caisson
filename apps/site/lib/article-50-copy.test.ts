@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { fileURLToPath } from "node:url";
 
-import { GLOSSARY_TERMS } from "./glossary";
 import {
   ARTICLE_50_PRIMARY_SOURCES,
   ARTICLE_50_VERIFIED_ON,
@@ -18,14 +17,7 @@ const WRITING_PATH = "/writing/eu-ai-act-article-50-august-december-2026";
 async function liveCopy(): Promise<readonly string[]> {
   const articlePage = await Bun.file(ARTICLE_PAGE).text();
   const frameworkPage = await Bun.file(FRAMEWORK_PAGE).text();
-  const glossary = GLOSSARY_TERMS.find(
-    (term) => term.slug === "eu-ai-act-article-50",
-  );
-
-  expect(glossary).toBeDefined();
-  return [articlePage, frameworkPage, JSON.stringify(glossary)].map((copy) =>
-    copy.replace(/\s+/gu, " "),
-  );
+  return [articlePage, frameworkPage].map((copy) => copy.replace(/\s+/gu, " "));
 }
 
 describe("Article 50 primary-source regrounding", () => {
@@ -77,7 +69,7 @@ describe("Article 50 primary-source regrounding", () => {
     });
   });
 
-  test("all three live surfaces carry the narrow adopted December transition", async () => {
+  test("both live surfaces carry the narrow adopted December transition", async () => {
     for (const copy of await liveCopy()) {
       expect(copy).toContain("December 2, 2026");
       expect(copy).toContain("placed on the market before");
@@ -98,7 +90,7 @@ describe("Article 50 primary-source regrounding", () => {
     expect(articlePage).not.toContain("GPAI providers");
   });
 
-  test("all three live surfaces state the pre-existing-content boundary", async () => {
+  test("both live surfaces state the pre-existing-content boundary", async () => {
     for (const copy of await liveCopy()) {
       expect(copy).toContain("do not require retroactive");
       expect(copy).toContain("generated or manipulated before August 2, 2026");

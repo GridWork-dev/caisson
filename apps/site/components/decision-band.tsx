@@ -1,15 +1,14 @@
 // Decision band (ADR-0378 lock 5) — replaces the deleted StackBuilderLazy calculator section on
 // the homepage. Three persona path cards, each deep-linking straight to the marketplace viewer for
-// its bundle (never adding to the cart from here — zero cart chrome on the homepage), plus a ghost
-// link to the honest stack-fit adapter matrix. Server component: every link is a real navigation,
-// no client state.
+// its bundle, plus a ghost link to the getting-started guide. Server component: every link is a
+// real navigation, no client state.
 //
-// Prices, labels, and icons all read from the pricing SOT + the shared marketplace helpers (never
-// hand-typed), so a reprice or relabel can't drift this band from the catalog.
+// Module counts, labels, and icons all read from the catalog + the shared marketplace helpers
+// (never hand-typed), so a relabel can't drift this band from the catalog.
 import Link from "next/link";
 
 import { Icon } from "@/components";
-import { bundlePrice, type BundleId } from "@/lib/pricing";
+import { modulesByBundle, type BundleId } from "@/lib/catalog";
 
 import { BUNDLE_ICON, bundleLabel } from "./marketplace";
 import styles from "./decision-band.module.css";
@@ -43,14 +42,14 @@ export function DecisionBand() {
             <span className={styles.persona}>{p.persona}</span>
             <span className={styles.bundleName}>{bundleLabel(p.bundle)}</span>
             <span className={`cs-num ${styles.price}`}>
-              {bundlePrice(p.bundle)}
+              {modulesByBundle(p.bundle).length} modules
             </span>
           </Link>
         ))}
       </div>
       <p className={styles.fit}>
-        <Link href="/stack-fit" className="cs-link">
-          Does it fit your stack?
+        <Link href="/docs/getting-started" className="cs-link">
+          Try it on your stack
         </Link>
       </p>
     </div>

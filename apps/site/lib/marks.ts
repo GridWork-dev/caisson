@@ -3,7 +3,7 @@
 // field-crypto and audit-worm predate the F6 set under their original bespoke names.
 import type { IconName } from "@caisson/ui/components";
 
-import type { BundleId } from "./pricing";
+import type { BundleId } from "./catalog";
 
 export const MODULE_MARKS: Record<string, IconName> = {
   "field-crypto": "field-crypto",

@@ -21,17 +21,11 @@ $ bun install
 export interface TrialPathProps {
   /** Compact form for the module/bundle pop-out dialogs (tighter, no code block). */
   compact?: boolean;
-  /** Drop the "Does it fit my stack?" CTA - set on /stack-fit itself, where that link would
-   *  point back at the page it's already on (visual-audit id 4b81e9b67e1aebe9). */
-  hideStackFitLink?: boolean;
 }
 
-/** The trial-path strip: scaffold the audited base and deploy it on your own stack before you
- *  commit. `compact` renders the dialog-sized form; the default renders the full page form. */
-export function TrialPath({
-  compact = false,
-  hideStackFitLink = false,
-}: TrialPathProps) {
+/** The trial-path strip: scaffold the audited base and deploy it on your own stack.
+ *  `compact` renders the dialog-sized form; the default renders the full page form. */
+export function TrialPath({ compact = false }: TrialPathProps) {
   if (compact) {
     return (
       <div
@@ -58,7 +52,7 @@ export function TrialPath({
           Scaffold the audited base with{" "}
           <code className="mono">bunx @caisson-sh/cli@latest my-app</code>, then
           deploy from the Railway, Fly, or Vercel template the generator emits —
-          running on your own stack, with source you own, before you commit.
+          running on your own stack, with source you own.
         </p>
         <Button
           href="/docs/cli/create-caisson"
@@ -76,23 +70,17 @@ export function TrialPath({
       style={{ display: "grid", gap: "var(--cs-space-5)", maxWidth: "44rem" }}
     >
       <p className="cs-muted" style={{ maxWidth: "60ch" }}>
-        The deadliest question in a build-vs-buy call is whether it fits the
-        stack you already run. Answer it with code, not a sales call: scaffold
-        the audited base in one command and deploy from the template the
-        generator emits for your host. You own the source from the first line,
-        so a week-one spike is a real evaluation on your own infrastructure —
-        not a demo that disappears.
+        The first question is whether it fits the stack you already run. Answer
+        it with code: scaffold the audited base in one command and deploy from
+        the template the generator emits for your host. You own the source from
+        the first line, so a week-one spike is a real evaluation on your own
+        infrastructure — not a demo that disappears.
       </p>
       <CodeBlock frame label="scaffold and deploy" code={SCAFFOLD_CODE} />
       <div className="cs-cta-row">
         <Button href="/docs/cli/create-caisson" variant="primary">
           How the generator works
         </Button>
-        {!hideStackFitLink && (
-          <Button href="/stack-fit" variant="ghost">
-            Does it fit my stack?
-          </Button>
-        )}
       </div>
     </div>
   );

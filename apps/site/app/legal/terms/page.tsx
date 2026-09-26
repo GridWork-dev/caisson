@@ -1,7 +1,4 @@
-import Link from "next/link";
-
 import { buildMetadata } from "@/lib/metadata";
-import { PADDLE_MOR_DISCLOSURE } from "@/lib/legal";
 import { Card, Section } from "@/components";
 import { prose } from "../prose";
 import { LegalToc, type LegalTocItem } from "../toc";
@@ -9,7 +6,7 @@ import { LegalToc, type LegalTocItem } from "../toc";
 export const metadata = buildMetadata({
   title: "Terms of Use",
   description:
-    "Terms governing use of caisson.sh and purchase of Caisson software licenses. Caisson Software LLC, governed by the laws of Georgia, USA.",
+    "Terms governing use of caisson.sh. Caisson Software LLC, governed by the laws of Georgia, USA.",
   path: "/legal/terms",
 });
 
@@ -21,10 +18,7 @@ const TOC: readonly LegalTocItem[] = [
   },
   { id: "acceptable-use", label: "Acceptable use" },
   { id: "intellectual-property", label: "Intellectual property" },
-  {
-    id: "payment-processing-and-third-party-services",
-    label: "Payment processing and third-party services",
-  },
+  { id: "third-party-services", label: "Third-party services" },
   { id: "disclaimer-of-warranties", label: "Disclaimer of warranties" },
   { id: "limitation-of-liability", label: "Limitation of liability" },
   { id: "governing-law-and-disputes", label: "Governing law and disputes" },
@@ -40,8 +34,7 @@ export default function TermsPage() {
       {/* Page header */}
       <Section eyebrow="Legal" title="Terms of Use" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
-          Last updated: 3 July 2026. Governs use of caisson.sh and purchase of
-          Caisson software.
+          Last updated: 25 September 2026. Governs use of caisson.sh.
         </p>
       </Section>
 
@@ -61,14 +54,10 @@ export default function TermsPage() {
             Pending final legal review
           </p>
           <p style={{ marginTop: "var(--cs-space-3)", ...prose.paragraph }}>
-            These terms govern your use of the Caisson site and products. They
-            are being finalized with legal counsel and may be updated. The
-            controlling document for any purchase is the Commercial License
-            Agreement (&ldquo;EULA&rdquo;), available at{" "}
-            <Link href="/legal/eula" className="cs-link">
-              caisson.sh/legal/eula
-            </Link>{" "}
-            and provided at checkout.
+            These terms govern your use of the Caisson site. They are being
+            finalized with legal counsel and may be updated. Your rights to use
+            Caisson software are defined by the license that ships with each
+            package.
           </p>
         </Card>
       </Section>
@@ -76,22 +65,14 @@ export default function TermsPage() {
       {/* Acceptance */}
       <Section id="acceptance-of-terms" title="Acceptance of terms">
         <p style={prose.paragraph}>
-          By accessing caisson.sh, purchasing a Caisson software license, or
-          subscribing to product updates, you agree to be bound by these Terms
-          of Use. If you do not agree, do not use the site or purchase a
-          license.
+          By accessing caisson.sh, you agree to be bound by these Terms of Use.
+          If you do not agree, do not use the site.
         </p>
         <p style={prose.paragraph}>
           These Terms apply to the marketing and documentation site at
-          caisson.sh and to product-update communications we send you. Your
-          rights to use Caisson software are defined exclusively by the
-          Commercial License Agreement (
-          <a href="/legal/license" className="cs-link">
-            see License
-          </a>
-          ) and the purchase record or entitlement you receive at checkout.
-          Where these Terms and the Commercial License Agreement conflict, the
-          Commercial License Agreement controls.
+          caisson.sh. Your rights to use Caisson software are defined
+          exclusively by the license that ships with each package. Where these
+          Terms and a package license conflict, the package license controls.
         </p>
       </Section>
 
@@ -101,34 +82,12 @@ export default function TermsPage() {
         title="The site and software licenses"
         band="tint"
       >
-        <h3 style={prose.h3}>Commercial product</h3>
-        <p style={prose.paragraph}>
-          Caisson is a commercially available software library. Prices shown on
-          the site are the current listed prices for each bundle and module. A
-          purchase grants you a{" "}
-          <a href="/legal/license" className="cs-link">
-            LicenseRef-Caisson-Commercial
-          </a>{" "}
-          license: buy once, build unlimited products; you may not resell or
-          redistribute the Caisson source or compiled output as a standalone
-          library.
-        </p>
-
         <h3 style={prose.h3}>Documentation and site content</h3>
         <p style={prose.paragraph}>
           Product descriptions, code examples, and documentation on caisson.sh
           are provided for informational purposes. While we keep them accurate,
-          feature availability and pricing may change between versions. The
-          installed package is the authoritative source of truth for a given
-          release.
-        </p>
-
-        <h3 style={prose.h3}>Product-update communications</h3>
-        <p style={prose.paragraph}>
-          If you subscribe to product updates on the site, we will send you
-          occasional emails about new releases, changelog highlights, and
-          product news. You may unsubscribe at any time using the link in any
-          email we send.
+          feature availability may change between versions. The installed
+          package is the authoritative source of truth for a given release.
         </p>
       </Section>
 
@@ -143,10 +102,6 @@ export default function TermsPage() {
             services without our written permission.
           </li>
           <li style={prose.li}>
-            Submit false or misleading contact information to any form on the
-            site.
-          </li>
-          <li style={prose.li}>
             Circumvent or interfere with any security, authentication, or access
             control mechanism on the site.
           </li>
@@ -154,14 +109,10 @@ export default function TermsPage() {
             Use the site in any way that violates applicable law or the rights
             of third parties.
           </li>
-          <li style={prose.li}>
-            Transmit spam, malware, or any harmful code through any submission
-            form on the site.
-          </li>
         </ul>
         <p style={prose.paragraph}>
-          We reserve the right to cancel licenses and block access to the site
-          for conduct that violates these terms.
+          We reserve the right to block access to the site for conduct that
+          violates these terms.
         </p>
       </Section>
 
@@ -187,93 +138,18 @@ export default function TermsPage() {
           LLC. Use in public materials requires written permission.
         </p>
         <p style={prose.paragraph}>
-          Rights to use Caisson software are governed exclusively by the
-          Commercial License Agreement, not by these Terms.
+          Rights to use Caisson software are governed exclusively by the license
+          that ships with each package, not by these Terms.
         </p>
       </Section>
 
-      {/* Payment processing, MoR, refunds, third-party services */}
-      <Section
-        id="payment-processing-and-third-party-services"
-        title="Payment processing and third-party services"
-      >
-        <h3 style={prose.h3}>
-          Payment processing: Paddle (Merchant of Record)
-        </h3>
+      {/* Third-party services */}
+      <Section id="third-party-services" title="Third-party services">
         <p style={prose.paragraph}>
-          {PADDLE_MOR_DISCLOSURE} Paddle provides all customer service inquiries
-          and handles returns.
-        </p>
-        <p style={prose.paragraph}>
-          You purchase a Caisson license from Paddle, and Paddle collects
-          payment, calculates and remits applicable sales tax and VAT, and
-          issues your order receipt. The Caisson software itself remains
-          licensed to you by Caisson Software LLC under the{" "}
-          <a href="/legal/eula" className="cs-link">
-            Commercial License Agreement
-          </a>
-          . Paddle&apos;s own buyer terms (including which Paddle entity is the
-          seller for your order) are available at{" "}
-          <a
-            href="https://www.paddle.com/legal/buyer-terms"
-            rel="noreferrer"
-            className="cs-link"
-          >
-            paddle.com/legal/buyer-terms
-          </a>{" "}
-          and are presented to you as part of checkout.
-        </p>
-
-        <h3 style={prose.h3}>Refund policy</h3>
-        <p style={prose.paragraph}>
-          Every Caisson purchase comes with a 14-day money-back guarantee.
-          Request a refund within 14 days of your purchase, for any reason, and
-          you receive a full refund. The guarantee is unconditional: it applies
-          whether or not you have downloaded, installed, or used the Software,
-          and to every buyer regardless of location or of whether you buy as a
-          consumer or a business.
-        </p>
-        <p style={prose.paragraph}>
-          Paddle is the Merchant of Record and executes every refund: an
-          approved refund is returned to your original payment method, where
-          possible, within 14 days of approval. To request a refund, contact us
-          at{" "}
-          <a href="mailto:support@caisson.sh" className="cs-link">
-            support@caisson.sh
-          </a>{" "}
-          with your order number, or contact Paddle directly through{" "}
-          <a href="https://paddle.net" rel="noreferrer" className="cs-link">
-            paddle.net
-          </a>
-          .
-        </p>
-        <p style={prose.paragraph}>
-          An approved refund revokes the license entitlement granted by the
-          refunded purchase and removes any unused credits it granted; access
-          already exercised and credits already spent are not affected. If a
-          single order covered more than one bundle or module, tell us which
-          item you are refunding: individual line items can be refunded on their
-          own.
-        </p>
-
-        <h3 style={prose.h3}>Buyer support</h3>
-        <p style={prose.paragraph}>
-          For questions about your order, license, or a refund request that
-          Paddle&apos;s own support cannot resolve, contact Caisson Software LLC
-          at{" "}
-          <a href="mailto:support@caisson.sh" className="cs-link">
-            support@caisson.sh
-          </a>
-          .
-        </p>
-
-        <h3 style={prose.h3}>Other third-party services</h3>
-        <p style={prose.paragraph}>
-          The site also uses third-party infrastructure services including
-          Cloudflare (CDN and edge delivery), Resend (transactional email), and
-          Plausible Analytics (cookieless, PII-free analytics). Your use of this
-          site involves processing governed by those providers&apos; terms to
-          the extent described in our{" "}
+          The site uses third-party infrastructure services: Cloudflare (hosting
+          and edge delivery) and Plausible Analytics (cookieless, PII-free
+          analytics). Your use of this site involves processing governed by
+          those providers&apos; terms to the extent described in our{" "}
           <a href="/legal/privacy" className="cs-link">
             Privacy Policy
           </a>
@@ -335,8 +211,8 @@ export default function TermsPage() {
           >
             Caisson Software LLC&apos;s total liability to you for claims
             arising from your use of this site shall not exceed one hundred US
-            dollars (USD $100). Liability arising from the use of Caisson
-            Software is governed by the Commercial License Agreement.
+            dollars (USD 100). Liability arising from the use of Caisson
+            software is governed by the license that ships with it.
           </p>
         </Card>
       </Section>
@@ -367,11 +243,9 @@ export default function TermsPage() {
       <Section id="changes-to-these-terms" title="Changes to these terms">
         <p style={prose.paragraph}>
           We may update these Terms at any time. Material changes will be posted
-          on this page with an updated &ldquo;Last updated&rdquo; date. If you
-          are a Caisson license holder or product-updates subscriber, we will
-          notify you by email before a material change takes effect. Continued
-          use of the site after notice constitutes acceptance of the updated
-          Terms.
+          on this page with an updated &ldquo;Last updated&rdquo; date.
+          Continued use of the site after notice constitutes acceptance of the
+          updated Terms.
         </p>
       </Section>
 

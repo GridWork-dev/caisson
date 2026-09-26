@@ -9,13 +9,6 @@ description: Install the base, wire a tenant, and run the standards gate.
 - **Postgres** (Neon over HTTP is the reference host; the data layer is swappable).
 - A Postgres database you can run migrations against.
 
-## Get your license key
-
-A license is issued automatically the first time you complete a purchase, find it at
-[`/dashboard/license`](/dashboard/license): one offline-verifiable Ed25519 token per major
-version, with a copy-token button. Verify it anytime, offline, with `verifyLicense()` from
-`@caisson/license-verify`: no network call required.
-
 ## Install
 
 ```bash
@@ -43,10 +36,10 @@ bun install
 
 **Licensed install:** every other generated project ships a `.npmrc` pointing `@caisson:registry`
 at `registry.caisson.sh` with the auth token read from `CAISSON_LICENSE_TOKEN`: export your
-dashboard license key under that name before `bun install`.
+registry token under that name before `bun install`.
 
 ```bash
-export CAISSON_LICENSE_TOKEN=<the token from /dashboard/license>
+export CAISSON_LICENSE_TOKEN=<your registry token>
 bun install
 ```
 
@@ -155,7 +148,7 @@ bunx @caisson-sh/cli@latest --name my-app --edition compliance --module <id@vers
 
 Repeat `--module` per module. `--help` prints the flag reference, not the live catalog, an agent
 (or you) gets the current registry ids and exact versions from the MCP server's `list_modules`/
-`describe_module` tools (below), or from your dashboard. No extra wiring beyond the
+`describe_module` tools (below). No extra wiring beyond the
 `CAISSON_LICENSE_TOKEN` you already export for `bun install`.
 
 ### Wire the MCP server (tool-native)
