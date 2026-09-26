@@ -83,6 +83,16 @@ const IGNORE_GLOBS: readonly string[] = [
   ".gridwork/**",
   ".greptile/**",
   ".github/CODEOWNERS",
+  // open-source community files (ADR-0428): license text, contribution/conduct/security policy,
+  // issue forms and the PR template — project governance prose, no product or audit surface
+  "LICENSE",
+  "NOTICE",
+  ".mailmap",
+  "CONTRIBUTING.md",
+  "CODE_OF_CONDUCT.md",
+  "SECURITY.md",
+  ".github/ISSUE_TEMPLATE/**",
+  ".github/pull_request_template.md",
 ];
 
 function isIgnored(path: string): boolean {
