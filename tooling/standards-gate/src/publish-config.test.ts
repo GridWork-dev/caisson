@@ -181,9 +181,9 @@ describe("publish-readiness flip (ADR-0111)", () => {
     test("files ships dist + runtime assets and NEVER leaks src", () => {
       const files = cli?.pj.files ?? [];
       expect(files).toContain("dist");
-      // The generator reads templates/ + migrations-bundle/ at runtime via import.meta.url.
+      // The generator reads templates/ + registry-index.json at runtime via import.meta.url.
       expect(files).toContain("templates");
-      expect(files).toContain("migrations-bundle");
+      expect(files).toContain("registry-index.json");
       // No entry ships source.
       expect(files.some((f) => f === "src" || f.startsWith("src/"))).toBe(
         false,

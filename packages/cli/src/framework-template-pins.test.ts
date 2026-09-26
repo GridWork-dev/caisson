@@ -1,6 +1,6 @@
-// Loud-staleness guard for the framework/next generator template's @caisson/* pins — the same
-// contract sample-templates.test.ts pins for the eu-ai-act sample (W1 sandbox finding L-C4): the
-// version-pr consume bumps workspace packages, then refreshes the generator template pins.
+// Loud-staleness guard for the framework/next generator template's @caisson/* pins (W1 sandbox
+// finding L-C4): the version-pr consume bumps workspace packages, then refreshes the generator
+// template pins.
 // Without that refresh a hardcoded pin silently drifts until a generated project's `bun install`
 // fails on an unsatisfiable range. Reading real workspace versions makes an omitted or broken
 // refresh fail THIS test in the same change that bumps the package.

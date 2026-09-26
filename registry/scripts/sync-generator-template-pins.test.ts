@@ -12,7 +12,6 @@ import { syncGeneratorTemplatePins } from "./sync-generator-template-pins";
 
 const roots: string[] = [];
 const NEXT = "packages/cli/templates/framework/next/package.json";
-const SAMPLE = "packages/cli/templates/eu-ai-act-sample/package.json";
 function write(root: string, path: string, value: unknown): void {
   mkdirSync(dirname(join(root, path)), { recursive: true });
   writeFileSync(join(root, path), `${JSON.stringify(value, null, 2)}\n`);
@@ -29,10 +28,6 @@ function fixture(): string {
     },
     devDependencies: { typescript: "^6.0.0" },
   });
-  write(root, SAMPLE, {
-    name: "{{projectName}}",
-    dependencies: { "@caisson/kernel": "^1.0.0" },
-  });
   write(root, "packages/kernel/package.json", {
     name: "@caisson/kernel",
     version: "2.3.4",
@@ -48,9 +43,9 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true });
 });
 
-test("derives both templates' pins, preserving unrelated manifest fields", () => {
+test("derives the template's pins, preserving unrelated manifest fields", () => {
   const root = fixture();
-  expect(syncGeneratorTemplatePins(root)).toEqual([NEXT, SAMPLE]);
+  expect(syncGeneratorTemplatePins(root)).toEqual([NEXT]);
   expect(JSON.parse(readFileSync(join(root, NEXT), "utf8"))).toEqual({
     scripts: { build: "next build" },
     dependencies: {
@@ -60,22 +55,14 @@ test("derives both templates' pins, preserving unrelated manifest fields", () =>
     },
     devDependencies: { typescript: "^6.0.0" },
   });
-  expect(JSON.parse(readFileSync(join(root, SAMPLE), "utf8"))).toEqual({
-    name: "{{projectName}}",
-    dependencies: { "@caisson/kernel": "^2.3.4" },
-  });
-  const before = [NEXT, SAMPLE].map((path) =>
-    readFileSync(join(root, path), "utf8"),
-  );
+  const before = readFileSync(join(root, NEXT), "utf8");
   expect(syncGeneratorTemplatePins(root)).toEqual([]);
-  expect(
-    [NEXT, SAMPLE].map((path) => readFileSync(join(root, path), "utf8")),
-  ).toEqual(before);
+  expect(readFileSync(join(root, NEXT), "utf8")).toBe(before);
 });
 
-test("validates the second template before writing the first", () => {
+test("a missing workspace fails without writing the template", () => {
   const root = fixture();
-  write(root, SAMPLE, { dependencies: { "@caisson/missing": "^1.0.0" } });
+  write(root, NEXT, { dependencies: { "@caisson/missing": "^1.0.0" } });
   const before = readFileSync(join(root, NEXT), "utf8");
   expect(() => syncGeneratorTemplatePins(root)).toThrow();
   expect(readFileSync(join(root, NEXT), "utf8")).toBe(before);
@@ -100,10 +87,10 @@ test("rejects a workspace with the wrong identity or version", () => {
 test("rejects dependency traversal and a template with no workspace pins", () => {
   const root = fixture();
   // Deliberately hostile fixture: no dependency name may escape packages/.
-  write(root, SAMPLE, { dependencies: { "@caisson/../../outside": "^1.0.0" } });
+  write(root, NEXT, { dependencies: { "@caisson/../../outside": "^1.0.0" } });
   expect(() => syncGeneratorTemplatePins(root)).toThrow(
     "Invalid workspace dependency",
   );
-  write(root, SAMPLE, { dependencies: { next: "^16.0.0" } });
+  write(root, NEXT, { dependencies: { next: "^16.0.0" } });
   expect(() => syncGeneratorTemplatePins(root)).toThrow("No workspace pins");
 });

@@ -11,11 +11,9 @@
 // fork (P5-deferred). This smoke therefore asserts shebang + `node --check` (load-validity), not a
 // full run; the bin WIRING is what publish-readiness owns.
 //
-// Also asserts at the PACK LAYER (WR-01): npm/bun unconditionally strip a file literally named
-// `.npmrc` from a published tarball regardless of `files` config — every other assertion for this
-// file (generation-plan tests in cli.test.ts/generate.test.ts/demo.test.ts) reads the SOURCE
-// template tree directly and would stay green even if the packed tarball silently dropped it. The
-// real regression only shows up in what `bun pm pack` actually ships, so it is asserted here.
+// Also asserts at the PACK LAYER: the generation-plan tests read the SOURCE template tree directly
+// and would stay green even if the packed tarball silently dropped a runtime asset. The real
+// regression only shows up in what `bun pm pack` actually ships, so it is asserted here.
 import { describe, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -59,7 +57,7 @@ describe("create-caisson npx bin smoke (ADR-0092/0111)", () => {
   );
 
   test.skipIf(!built)(
-    "the packed tarball ships templates/base/npmrc — never a literal .npmrc (WR-01)",
+    "the packed tarball ships the base template + bundled catalog, and no registry .npmrc",
     () => {
       const output = execFileSync("bun", ["pm", "pack", "--dry-run"], {
         cwd: PKG_ROOT,
@@ -69,10 +67,10 @@ describe("create-caisson npx bin smoke (ADR-0092/0111)", () => {
         .split("\n")
         .filter((line) => line.startsWith("packed "))
         .map((line) => line.replace(/^packed\s+\S+\s+/, ""));
-      expect(packedPaths).toContain("templates/base/npmrc");
-      // A regression guard: if the template source is ever renamed back to a literal `.npmrc`,
-      // npm/bun's packer silently drops it and this line would go missing from the tarball too.
-      expect(packedPaths).not.toContain("templates/base/.npmrc");
+      expect(packedPaths).toContain("templates/base/package.json");
+      expect(packedPaths).toContain("registry-index.json");
+      // Modules install from public npm, so no registry-scope npmrc ships in any form.
+      expect(packedPaths.some((p) => /(^|\/)\.?npmrc$/.test(p))).toBe(false);
     },
   );
 });

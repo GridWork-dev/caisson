@@ -2,16 +2,13 @@
 // from `cli.ts`, and only when `process.stdin.isTTY` is truthy AND at least one required
 // Selection field (projectName/modules) is missing from argv — a fully non-interactive
 // invocation must never reach this module (regression-locked by `cli.test.ts`, which spies the
-// import). Produces the SAME raw `{projectName?, edition?, modules, deployTarget?}` shape
-// `parseArgs` returns (`RawSelection`, seam.ts) — it feeds the identical
-// `generate()`/Zod-`.strict()`/allowlist path, never a second schema. No network calls anywhere
-// in this module (ADR-0093).
+// import). Produces the SAME raw `{projectName?, modules, deployTarget?}` shape `parseArgs`
+// returns (`RawSelection`, seam.ts) — it feeds the identical `generate()`/Zod-`.strict()`/
+// allowlist path, never a second schema. No network calls anywhere in this module (ADR-0093).
 import { cancel, isCancel, multiselect, select, text } from "@clack/prompts";
 import type { RegistryIndex } from "@caisson/registry-schema";
-import { expandEditionModules } from "./edition-expand.ts";
 import { DEPLOY_TARGETS, ProjectName } from "./seam.ts";
 import type { RawSelection } from "./seam.ts";
-import { SAMPLE_TEMPLATES } from "./sample-templates.ts";
 
 type ModuleChoice = { id: string; version: string };
 
@@ -33,7 +30,7 @@ function validateProjectName(value: string | undefined): string | undefined {
     : (result.error.issues[0]?.message ?? "invalid project name");
 }
 
-/** Multiselect options over the registry allowlist: module id + its manifest description (when
+/** Multiselect options over the registry catalog: module id + its manifest description (when
  *  the index carries one) as a hint; the selected version is always the entry's `latest`. */
 function moduleOptions(
   index: RegistryIndex,
@@ -55,84 +52,39 @@ function moduleOptions(
  *  are never re-prompted — only a missing projectName/modules gap-fills. */
 export interface WizardFlags {
   readonly projectName?: string;
-  readonly edition?: string;
   readonly modules: readonly ModuleChoice[];
   readonly deployTarget?: string;
-  /** ADR-0287 — flag-only, same as `edition`: never its own wizard question, carried through to
-   *  the final raw output untouched so it isn't dropped when a partial TTY invocation still
-   *  gap-fills the missing required fields. */
+  /** ADR-0287 — flag-only: never its own wizard question, carried through to the final raw
+   *  output untouched so it isn't dropped when a partial TTY invocation still gap-fills the
+   *  missing required fields. */
   readonly framework?: string;
-  /** true only when ZERO selection flags were passed at all — arms the licensed-vs-sample mode
-   *  question and the optional deploy step. A partial licensed invocation (e.g. `--edition` alone)
-   *  still gap-fills the missing required fields, but skips both of those. */
+  /** true only when ZERO selection flags were passed at all — arms the optional deploy step. A
+   *  partial invocation still gap-fills the missing required fields, but skips that step. */
   readonly pureRun: boolean;
 }
 
-export type WizardResult =
-  | { readonly kind: "sample"; readonly projectName: string }
-  | { readonly kind: "demo"; readonly projectName: string }
-  | { readonly kind: "licensed"; readonly raw: RawSelection };
-
 /**
- * Run the interactive first-run wizard. `pureRun` gates two things, both per ADR-0262/ADR-0268
- * (the mode question also gained the ADR-0274 §1 demo choice): the first "what to generate"
- * question (equal-weight, neither preselected), and the trailing optional "add deploy config?"
- * step. Everything else — the project-name text prompt and the module multiselect — fires
- * whenever the corresponding field is still missing, regardless of `pureRun`.
+ * Run the interactive first-run wizard. The project-name text prompt and the module multiselect
+ * fire whenever the corresponding field is still missing; `pureRun` additionally arms the trailing
+ * optional "add deploy config?" step (ADR-0268).
  */
 export async function runWizard(
   index: RegistryIndex,
   flags: WizardFlags,
-): Promise<WizardResult> {
-  if (flags.pureRun) {
-    const mode = ensure(
-      await select({
-        message: "What would you like to generate?",
-        options: [
-          { value: "licensed", label: "A licensed module/edition build" },
-          { value: "sample", label: "The free sample (no license needed)" },
-          {
-            value: "demo",
-            label:
-              "The full catalog, commercial modules as stubs (no license needed)",
-          },
-        ],
-      }),
-    );
-    if (mode === "sample" || mode === "demo") {
-      const projectName = ensure(
-        await text({ message: "Project name", validate: validateProjectName }),
-      );
-      return { kind: mode, projectName };
-    }
-  }
-
+): Promise<RawSelection> {
   const projectName =
     flags.projectName ??
     ensure(
       await text({ message: "Project name", validate: validateProjectName }),
     );
 
-  const options = moduleOptions(index);
-  // When `--edition <bundle>` is set but no `--module` was passed, pre-check the
-  // bundle's current members in the multiselect (the buyer can still add/remove; the full catalog
-  // stays listed). initialValues must be the SAME option-value objects clack renders (it matches by
-  // reference), so filter them out of `options` rather than re-deriving fresh objects.
-  const preselectedIds =
-    flags.edition !== undefined && flags.modules.length === 0
-      ? new Set(expandEditionModules(index, flags.edition).map((m) => m.id))
-      : new Set<string>();
-  const initialValues = options
-    .filter((o) => preselectedIds.has(o.value.id))
-    .map((o) => o.value);
   const modules =
     flags.modules.length > 0
       ? [...flags.modules]
       : ensure(
           await multiselect({
             message: "Select modules",
-            options,
-            ...(initialValues.length > 0 ? { initialValues } : {}),
+            options: moduleOptions(index),
             required: true,
           }),
         );
@@ -153,26 +105,9 @@ export async function runWizard(
   }
 
   return {
-    kind: "licensed",
-    raw: {
-      projectName,
-      ...(flags.edition !== undefined ? { edition: flags.edition } : {}),
-      modules,
-      ...(deployTarget !== undefined ? { deployTarget } : {}),
-      ...(flags.framework !== undefined ? { framework: flags.framework } : {}),
-    },
+    projectName,
+    modules,
+    ...(deployTarget !== undefined ? { deployTarget } : {}),
+    ...(flags.framework !== undefined ? { framework: flags.framework } : {}),
   };
 }
-
-/** Gap-fill for the `--sample` path: it carries no module selection, so this is the ENTIRE
- *  interactive surface for that mode — reused both when `--sample` was passed as a flag (only the
- *  name is missing) and when the pure-run mode question above resolves to "sample". */
-export async function promptSampleProjectName(): Promise<string> {
-  return ensure(
-    await text({ message: "Project name", validate: validateProjectName }),
-  );
-}
-
-/** The sample template id the pure-run wizard's "sample" branch materializes. Only one sample
- *  exists today (`sample-templates.ts`); a multi-sample picker is a later-ADR concern. */
-export const DEFAULT_SAMPLE_ID = SAMPLE_TEMPLATES[0];

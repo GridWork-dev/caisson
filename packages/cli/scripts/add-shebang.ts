@@ -1,8 +1,8 @@
 // Post-tsc shebang hook (ADR-0092/0111). `tsc` emits `dist/cli.js` WITHOUT a shebang, but the
 // published `create-caisson` bin (`./dist/cli.js`) must be directly executable by `npx`/`node` —
 // the OS exec path needs `#!/usr/bin/env node` on line 1. This build step prepends it after `tsc`
-// runs, mirroring the `bundle-migrations.ts` build-hook pattern (a deterministic, idempotent file
-// step resolved via `import.meta.url`, never cwd). Idempotent: a second run is a no-op, so a
+// runs, mirroring the `bundle-registry-index.ts` build-hook pattern (a deterministic, idempotent
+// file step resolved via `import.meta.url`, never cwd). Idempotent: a second run is a no-op, so a
 // repeated `bun run build` never stacks shebangs. A missing `dist/cli.js` is a hard error — the
 // hook must run AFTER `tsc -p tsconfig.json`, never against an unbuilt tree.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";

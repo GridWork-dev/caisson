@@ -1,5 +1,5 @@
-// Registry-index BUNDLER — mirrors `bundle-migrations.ts`'s pattern (ADR-0091): copies the
-// canonical `registry/index.json` into the CLI package root at build time,
+// Registry-index BUNDLER: copies the canonical `registry/index.json` into the CLI package root at
+// build time,
 // so a PUBLISHED install (which never sees the monorepo's `registry/` dir — 3 levels above
 // `packages/cli`, never bundled by `files`) still ships a usable snapshot. `resolveIndexPath()`
 // (`src/resolve-index-path.ts`) reads it back via `import.meta.url`, same depth from `src/cli.ts`

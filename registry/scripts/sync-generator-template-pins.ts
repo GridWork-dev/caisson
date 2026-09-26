@@ -1,12 +1,11 @@
 // The version PR runs this after Changesets and before packing. Only trusted local
-// workspace manifests supply versions; neither template carries its own version truth.
+// workspace manifests supply versions; no template carries its own version truth.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 
 const TEMPLATES = [
   "packages/cli/templates/framework/next/package.json",
-  "packages/cli/templates/eu-ai-act-sample/package.json",
 ] as const;
 const Template = z
   .object({
@@ -23,8 +22,8 @@ const Workspace = z
   .passthrough();
 
 export function syncGeneratorTemplatePins(root: string): string[] {
-  // Plan both files before writing: a missing/mismatched workspace cannot leave
-  // the first template partially refreshed while the second remains stale.
+  // Plan every file before writing: a missing/mismatched workspace cannot leave
+  // one template partially refreshed while another remains stale.
   const updates = TEMPLATES.map((relative) => {
     const path = join(root, relative);
     const original = readFileSync(path, "utf8");

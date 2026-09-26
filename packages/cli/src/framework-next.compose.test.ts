@@ -1,8 +1,7 @@
 // The ADR-0287 exit gate: the generated Next.js starter is not just golden-fixtured (generate.test.ts)
 // — it is actually written to disk and typechecked with `tsc --noEmit` against REAL Next/React/pg/
-// @caisson/* packages, mirroring the sample-templates.ts "actually run" exit gate (ADR-0095 W3,
-// the generator composition-test lineage). Same run-dir trick as sample-templates.test.ts: a
-// dir under `packages/cli/dist/` (gitignored) so Node/tsc module resolution walks UP to THIS
+// @caisson/* packages (the generator composition-test lineage). The run dir sits under
+// `packages/cli/dist/` (gitignored) so Node/tsc module resolution walks UP to THIS
 // package's own `node_modules` — which is why `next`/`react`/`react-dom`/`pg`/the seven
 // base-substrate `@caisson/*` packages this template wires are real `devDependencies` of
 // `@caisson/cli` (turbo's `test: { dependsOn: ["^build"] }` builds their `dist/` first).

@@ -7,7 +7,7 @@
 // Priority:
 //  1. `CAISSON_REGISTRY_INDEX` env override (CI / local dev overrides).
 //  2. The BUNDLED snapshot copied into the package root at build time
-//     (`scripts/bundle-registry-index.ts`, mirrors the `migrations-bundle/` pattern, ADR-0091) and
+//     (`scripts/bundle-registry-index.ts`) and
 //     shipped via `package.json` `files` — present in both a BUILT monorepo checkout and a real npm
 //     install, because `dist/cli.js` (published) and `src/cli.ts` (dev) sit at the same depth under
 //     the package root, so `../registry-index.json` resolves to the same place either way.

@@ -4,22 +4,19 @@
 //     MCP round-trip (S3 lock): operator-side tooling against a deployment the operator already has
 //     DB credentials for, so an MCP hop adds a network auth surface for zero gain.
 //   - `start` — a THIN MCP CLIENT (S5, the `doctor.ts` pattern): opening a governed run needs the
-//     full commercial-tier loop (models, metering, guardrails, agent-trajectory) that an OSS package
-//     can never import at runtime (open↔commercial boundary, below) — so, exactly like `caisson
-//     doctor`, it calls the buyer's own already-credentialed `@caisson/mcp-server` `run_start` tool
-//     over stdio and renders the result. The entitlement gate lives server-side (ADR-0362's
-//     dedicated slug); a denied caller sees the seam's invisible 404, surfaced here as a clear error.
+//     full agent loop (models, metering, guardrails, agent-trajectory) that the generator keeps out
+//     of its runtime dependency graph — so, exactly like `caisson doctor`, it calls the already-
+//     credentialed local `@caisson/mcp-server` `run_start` tool over stdio and renders the result.
+//     A server without the tool answers the seam's 404, surfaced here as a clear error.
 //
-// WHY RAW SQL FOR approve/deny/status, NOT @caisson/agent-trajectory (open↔commercial boundary,
-// ADR-0094/0097): `@caisson/cli` is OSS-tier (Apache-2.0); `@caisson/agent-trajectory` is
-// commercial. `checkOpenCommercialBoundary` (the standards gate) forbids an open package from
-// depending "up" on a commercial one at runtime. The CAS/append SQL below is therefore a
-// DELIBERATE, SMALL, hand-kept mirror of agent-trajectory's canonical `agent_run_state`/
-// `trajectory_event` shapes (`run-state.pg.ts`/`store.pg.ts`) — same table/column names, same CAS
-// semantics, same idempotency rule — covered by its own test suite so drift is caught, never
-// silent. `RESUME_TASK_NAME` mirrors `@caisson/ai-kit`'s `approval.ts` constant for the same
-// open↔commercial reason. `status`'s trajectory summary is the SAME kind of small hand-kept mirror
-// (never `project()`, never `parked_state` — see `readTrajectoryProjection` below).
+// WHY RAW SQL FOR approve/deny/status, NOT @caisson/agent-trajectory: the generator keeps the agent
+// runtime out of its dependency graph. The CAS/append SQL below is therefore a DELIBERATE, SMALL,
+// hand-kept mirror of agent-trajectory's canonical `agent_run_state`/`trajectory_event` shapes
+// (`run-state.pg.ts`/`store.pg.ts`) — same table/column names, same CAS semantics, same idempotency
+// rule — covered by its own test suite so drift is caught, never silent. `RESUME_TASK_NAME` mirrors
+// `@caisson/ai-kit`'s `approval.ts` constant for the same reason. `status`'s trajectory summary is
+// the SAME kind of small hand-kept mirror (never `project()`, never `parked_state` — see
+// `readTrajectoryProjection` below).
 //
 // SECURITY: Zod `.strict()` on the resolved config; `actor` is mandatory on approve/deny; an
 // unknown runId/toolCallId or a status mismatch fails closed (the CAS `UPDATE … WHERE …` finds zero
@@ -54,8 +51,8 @@ interface RunStateRow {
 }
 
 /** A minimal, hand-rolled trajectory summary (mirrors this file's own house style: a deliberate,
- *  small mirror of `@caisson/agent-trajectory`'s canonical logic, never an import of the commercial
- *  package — see the file header on the open↔commercial boundary). This is NOT the full
+ *  small mirror of `@caisson/agent-trajectory`'s canonical logic, never an import of that package
+ *  — see the file header). This is NOT the full
  *  `project()` fold (step tree, usage totals, checkpoints) — just the ONE field a `caisson run
  *  status` operator actually wants: has the LOOP itself declared the run running/completed/failed/
  *  cancelled, distinct from the run-state CAS's own parked/running/finished (the park mechanism,
@@ -334,10 +331,10 @@ export interface RunStartClientInput {
 }
 
 /**
- * Call the buyer MCP `run_start` tool over `transport` and return its result (opaque JSON — the
- * governed `ToolLoopResult` shape `@caisson/ai-kit`'s host wiring returns, unknown to this OSS
- * package by construction). A denied (unentitled/invisible) tool surfaces as the MCP `isError`
- * envelope — rethrown as a clear Error so the caller sees "not licensed", never a silent no-op.
+ * Call the MCP `run_start` tool over `transport` and return its result (opaque JSON — the governed
+ * `ToolLoopResult` shape `@caisson/ai-kit`'s host wiring returns, unknown to this package by
+ * construction). A missing tool surfaces as the MCP `isError` envelope — rethrown as a clear Error
+ * so the caller sees why, never a silent no-op.
  * Mirrors `doctor.ts`'s `runDoctorClient` exactly.
  */
 export async function runStartClient(
@@ -430,9 +427,9 @@ Usage:
   caisson run deny    <runId> <toolCallId> --actor <name> [--reason <text>]
   caisson run status  <runId>
 
-start is a THIN MCP CLIENT: it needs your licensed Caisson buyer MCP — set CAISSON_MCP_COMMAND
-(and optional CAISSON_MCP_ARGS) to your local @caisson/mcp-server command, entitlement-gated
-(ADR-0362). approve/deny/status read DATABASE_URL and CAISSON_ACCOUNT_ID from the environment —
+start is a THIN MCP CLIENT: it needs your local Caisson MCP server — set CAISSON_MCP_COMMAND
+(and optional CAISSON_MCP_ARGS) to your local @caisson/mcp-server command.
+approve/deny/status read DATABASE_URL and CAISSON_ACCOUNT_ID from the environment —
 direct DB access against your own deployment (no MCP round-trip). --actor is required on
 approve/deny.
 `;

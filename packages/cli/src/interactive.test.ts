@@ -1,4 +1,4 @@
-// `runWizard`/`promptSampleProjectName` branching (ADR-0262/ADR-0268). `cli.test.ts` locks the
+// `runWizard` branching (ADR-0262/ADR-0268). `cli.test.ts` locks the
 // arming rule (when this module is loaded at all) by injecting a fake `loadInteractive` — it
 // never exercises this module's OWN prompt-sequencing logic. These tests do, by stubbing
 // `@clack/prompts` (queue-driven fakes) so the real `runWizard` code runs against canned answers.
@@ -72,9 +72,9 @@ const INDEX = loadRegistryIndex({
 });
 
 describe("runWizard", () => {
-  test("pure run + licensed mode: prompts name, modules, deploy(none) — no deployTarget in raw", async () => {
+  test("pure run: prompts name, modules, deploy(none) — no deployTarget in raw", async () => {
     resetQueues();
-    selectQueue = ["licensed", "none"];
+    selectQueue = ["none"];
     textQueue = ["acme-app"];
     multiselectQueue = [[{ id: "@caisson/kernel", version: "0.3.0" }]];
 
@@ -82,13 +82,10 @@ describe("runWizard", () => {
     const result = await runWizard(INDEX, { modules: [], pureRun: true });
 
     expect(result).toEqual({
-      kind: "licensed",
-      raw: {
-        projectName: "acme-app",
-        modules: [{ id: "@caisson/kernel", version: "0.3.0" }],
-      },
+      projectName: "acme-app",
+      modules: [{ id: "@caisson/kernel", version: "0.3.0" }],
     });
-    expect(selectMock).toHaveBeenCalledTimes(2); // mode question + deploy step
+    expect(selectMock).toHaveBeenCalledTimes(1); // the deploy step only
     expect(textMock).toHaveBeenCalledTimes(1);
     expect(multiselectMock).toHaveBeenCalledTimes(1);
 
@@ -110,9 +107,9 @@ describe("runWizard", () => {
     ]);
   });
 
-  test("pure run + licensed mode + a chosen deploy target lands in raw.deployTarget", async () => {
+  test("pure run + a chosen deploy target lands in raw.deployTarget", async () => {
     resetQueues();
-    selectQueue = ["licensed", "railway"];
+    selectQueue = ["railway"];
     textQueue = ["acme-app"];
     multiselectQueue = [[{ id: "@caisson/kernel", version: "0.3.0" }]];
 
@@ -120,136 +117,9 @@ describe("runWizard", () => {
     const result = await runWizard(INDEX, { modules: [], pureRun: true });
 
     expect(result).toEqual({
-      kind: "licensed",
-      raw: {
-        projectName: "acme-app",
-        modules: [{ id: "@caisson/kernel", version: "0.3.0" }],
-        deployTarget: "railway",
-      },
-    });
-  });
-
-  test("pure run + sample mode: only prompts the project name — no modules/deploy question", async () => {
-    resetQueues();
-    selectQueue = ["sample"];
-    textQueue = ["sample-app"];
-
-    const { runWizard } = await import("./interactive.ts");
-    const result = await runWizard(INDEX, { modules: [], pureRun: true });
-
-    expect(result).toEqual({ kind: "sample", projectName: "sample-app" });
-    expect(selectMock).toHaveBeenCalledTimes(1); // the mode question only
-    expect(multiselectMock).not.toHaveBeenCalled();
-  });
-
-  test("pure run + demo mode: only prompts the project name — no modules/deploy question (ADR-0274)", async () => {
-    resetQueues();
-    selectQueue = ["demo"];
-    textQueue = ["demo-app"];
-
-    const { runWizard } = await import("./interactive.ts");
-    const result = await runWizard(INDEX, { modules: [], pureRun: true });
-
-    expect(result).toEqual({ kind: "demo", projectName: "demo-app" });
-    expect(selectMock).toHaveBeenCalledTimes(1); // the mode question only
-    expect(multiselectMock).not.toHaveBeenCalled();
-  });
-
-  test("a partial invocation (edition given) gap-fills name+modules WITHOUT the mode/deploy questions", async () => {
-    resetQueues();
-    textQueue = ["gapfilled-name"];
-    multiselectQueue = [[{ id: "@caisson/kernel", version: "0.3.0" }]];
-
-    const { runWizard } = await import("./interactive.ts");
-    const result = await runWizard(INDEX, {
-      edition: "compliance",
-      modules: [],
-      pureRun: false,
-    });
-
-    expect(result).toEqual({
-      kind: "licensed",
-      raw: {
-        projectName: "gapfilled-name",
-        edition: "compliance",
-        modules: [{ id: "@caisson/kernel", version: "0.3.0" }],
-      },
-    });
-    expect(selectMock).not.toHaveBeenCalled();
-  });
-
-  test("a partial edition invocation PRE-SELECTS the bundle's members in the multiselect (CAISSON-88)", async () => {
-    resetQueues();
-    // A local index where @caisson/audit-worm self-declares the compliance edition, so the bundle
-    // has a member to pre-select; @caisson/kernel is an unrelated base module (stays listed, unchecked).
-    const idx = loadRegistryIndex({
-      schemaVersion: 1,
-      modules: [
-        {
-          id: "@caisson/kernel",
-          latest: "0.3.0",
-          versions: [
-            {
-              version: "0.3.0",
-              manifest: manifest("@caisson/kernel", "the kernel module"),
-              publishedAt: "2026-06-27T00:00:00.000Z",
-              gateAttestation: "ci@x",
-            },
-          ],
-        },
-        {
-          id: "@caisson/audit-worm",
-          latest: "0.3.0",
-          versions: [
-            {
-              version: "0.3.0",
-              manifest: {
-                ...manifest("@caisson/audit-worm", "the WORM ledger"),
-                editions: ["compliance"],
-              },
-              publishedAt: "2026-06-27T00:00:00.000Z",
-              gateAttestation: "ci@x",
-            },
-          ],
-        },
-      ],
-    });
-    textQueue = ["gapfilled-name"];
-    multiselectQueue = [[{ id: "@caisson/audit-worm", version: "0.3.0" }]];
-
-    const { runWizard } = await import("./interactive.ts");
-    const result = await runWizard(idx, {
-      edition: "compliance",
-      modules: [],
-      pureRun: false,
-    });
-
-    const call = multiselectMock.mock.calls[0]?.[0] as {
-      options: { value: { id: string; version: string } }[];
-      initialValues?: { id: string; version: string }[];
-    };
-    // the FULL catalog stays listed (buyer can add/remove)…
-    expect(call.options.map((o) => o.value.id)).toEqual([
-      "@caisson/audit-worm",
-      "@caisson/kernel",
-    ]);
-    // …but the bundle's member is pre-checked, pinned at .latest…
-    expect(call.initialValues).toEqual([
-      { id: "@caisson/audit-worm", version: "0.3.0" },
-    ]);
-    // …as the SAME option-value object clack renders (it matches initialValues by reference).
-    const auditOption = call.options.find(
-      (o) => o.value.id === "@caisson/audit-worm",
-    );
-    expect(call.initialValues?.[0]).toBe(auditOption?.value);
-
-    expect(result).toEqual({
-      kind: "licensed",
-      raw: {
-        projectName: "gapfilled-name",
-        edition: "compliance",
-        modules: [{ id: "@caisson/audit-worm", version: "0.3.0" }],
-      },
+      projectName: "acme-app",
+      modules: [{ id: "@caisson/kernel", version: "0.3.0" }],
+      deployTarget: "railway",
     });
   });
 
@@ -266,12 +136,9 @@ describe("runWizard", () => {
     });
 
     expect(result).toEqual({
-      kind: "licensed",
-      raw: {
-        projectName: "gapfilled-name",
-        modules: [{ id: "@caisson/kernel", version: "0.3.0" }],
-        framework: "next",
-      },
+      projectName: "gapfilled-name",
+      modules: [{ id: "@caisson/kernel", version: "0.3.0" }],
+      framework: "next",
     });
     expect(selectMock).not.toHaveBeenCalled();
   });
@@ -288,29 +155,9 @@ describe("runWizard", () => {
     });
 
     expect(result).toEqual({
-      kind: "licensed",
-      raw: {
-        projectName: "already-set",
-        modules: [{ id: "@caisson/kernel", version: "0.3.0" }],
-      },
+      projectName: "already-set",
+      modules: [{ id: "@caisson/kernel", version: "0.3.0" }],
     });
     expect(textMock).not.toHaveBeenCalled();
-  });
-});
-
-describe("promptSampleProjectName", () => {
-  test("returns the prompted name", async () => {
-    resetQueues();
-    textQueue = ["sample-name"];
-    const { promptSampleProjectName } = await import("./interactive.ts");
-    expect(await promptSampleProjectName()).toBe("sample-name");
-  });
-});
-
-describe("DEFAULT_SAMPLE_ID", () => {
-  test("matches sample-templates.ts's allowlist (single sample today)", async () => {
-    const { DEFAULT_SAMPLE_ID } = await import("./interactive.ts");
-    const { SAMPLE_TEMPLATES } = await import("./sample-templates.ts");
-    expect(DEFAULT_SAMPLE_ID).toBe(SAMPLE_TEMPLATES[0]);
   });
 });
