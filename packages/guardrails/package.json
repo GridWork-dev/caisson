@@ -3,6 +3,11 @@
   "version": "0.5.1",
   "description": "Content-safety layer: swappable Moderator port (local | provider | custom) + TS-native PII engine (mask / hash / reversible-tokenize via field-crypto) behind a fail-closed input/output guard.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/guardrails"
+  },
   "type": "module",
   "exports": {
     ".": {

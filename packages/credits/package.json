@@ -3,6 +3,11 @@
   "version": "0.6.3",
   "description": "Integer credit wallet with an append-only ledger, debit-before-spend (HTTP 402), and idempotent credit grants.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/credits"
+  },
   "type": "module",
   "exports": {
     ".": {

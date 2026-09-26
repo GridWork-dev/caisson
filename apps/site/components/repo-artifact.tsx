@@ -16,7 +16,7 @@ import styles from "./repo-artifact.module.css";
 // selection, which is MORE
 // standard keyboard behaviour than the four individually-tabbable buttons this replaces.
 
-type Area = "app" | "pkg" | "tooling" | "svc" | "reg";
+type Area = "app" | "pkg" | "tooling";
 
 interface TreeNode {
   name: string;
@@ -113,8 +113,8 @@ const TREE: readonly TreeNode[] = [
     name: "apps",
     area: "app",
     children: [
-      { name: "site", area: "app", note: "marketing + docs + buyer dashboard" },
-      { name: "admin", area: "app", note: "the control-plane" },
+      { name: "site", area: "app", note: "marketing + docs, static" },
+      { name: "demos", area: "app", note: "the live module demos" },
     ],
   },
   {
@@ -158,22 +158,6 @@ const TREE: readonly TreeNode[] = [
         area: "tooling",
         note: "the one lint / tsconfig / test gate",
       },
-    ],
-  },
-  {
-    name: "services",
-    area: "svc",
-    children: [
-      { name: "license", area: "svc", note: "the license issuer + verifier" },
-      { name: "docs", area: "svc", note: "the docs RAG service" },
-    ],
-  },
-  {
-    name: "registry",
-    area: "reg",
-    children: [
-      { name: "index.json", area: "reg", note: "the signed module index" },
-      { name: "worker", area: "reg", note: "the edge entitlement filter" },
     ],
   },
 ];

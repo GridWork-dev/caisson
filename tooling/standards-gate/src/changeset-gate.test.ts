@@ -1,8 +1,8 @@
 // Changeset-presence gate wiring (ADR-0021/0111). Now that packages are public (0.1.0), a PR that
-// changes a publishable package without a changeset must fail CI, and the gate must be skipped on the
-// main branch (no base to diff; main is the merge target). The gate itself is `changeset status
+// changes a publishable package without a changeset must fail CI, and the gate runs on pull requests
+// only (a main push has no base to diff; main is the merge target). The gate itself is `changeset status
 // --since=origin/main` (exits 1 with changed packages but no changeset). This test pins the WIRING so
-// an accidental removal of the step — or the main-skip, or the fetch-depth needed to resolve
+// an accidental removal of the step — or the PR-only condition, or the fetch-depth needed to resolve
 // origin/main — is caught. Text-level assertions over the committed CI + changeset config.
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
@@ -16,9 +16,8 @@ describe("changeset-presence gate (ADR-0021/0111)", () => {
     expect(CI).toContain("changeset status --since=origin/main");
   });
 
-  test("the gate is skipped on the main branch", () => {
-    // The step carries a main-skip condition (it is a PR-only gate).
-    expect(CI).toMatch(/if:\s*github\.ref\s*!=\s*'refs\/heads\/main'/);
+  test("the gate runs on pull requests only (skipped on main pushes and dispatches)", () => {
+    expect(CI).toMatch(/if:\s*github\.event_name\s*==\s*'pull_request'/);
   });
 
   test("the standards-gate checkout fetches full history so origin/main resolves", () => {

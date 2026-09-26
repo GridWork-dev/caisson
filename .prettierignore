@@ -30,12 +30,6 @@ docs/session-logs/
 **/.venv/
 **/.pytest_cache/
 .claude/
-# Intaken legal/finance business documents are byte-faithful external artifacts (session Q,
-# ADR-0328 D3): the md is the source the counsel/CPA docx render from — prettier must not
-# reflow legal text (the md-reflow class flips list markers and breaks faithfulness).
-docs/business/legal/
-docs/business/finance/
-docs/business/caisson-internal-master-map.md
 # Vendored verbatim NIST SP 800-53 rev5 OSCAL catalog (oscal-spine SPEC binding requirement 1,
 # ADR-0363/0364) — hash-pinned to packages/oscal-spine/src/vendor/nist-catalog-pin.ts; prettier
 # must never reformat it, or the pinned SHA-256 drift-guard test breaks.

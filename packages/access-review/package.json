@@ -3,6 +3,11 @@
   "version": "0.3.5",
   "description": "Audit-prep access-review campaigns: a WORM-logged, per-reviewee attested approve/revoke decision record over an imported membership snapshot, opened on a jobs-riding cadence and closed on completion or deadline.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/access-review"
+  },
   "type": "module",
   "exports": {
     ".": {

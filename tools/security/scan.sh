@@ -1,33 +1,30 @@
 #!/usr/bin/env bash
 # Caisson security-scan driver.
 #
-#   tools/security/scan.sh [--layer ci|deep|all] [--target URL] [--strict-digests]
+#   tools/security/scan.sh [--layer ci|deep|all] [--target URL]
 #
 # ci   (default) — deterministic, runs against the repo: semgrep (custom floor rules +
-#                  p/security-audit), trivy, osv-scanner, trufflehog (verified-only),
-#                  Dockerfile digest gate.
+#                  p/security-audit), trivy, osv-scanner, trufflehog (verified-only).
 # deep           — DAST against a live/local --target: nuclei + ZAP (+ schemathesis note).
 # all            — both.
 #
-# The AI-pentest layer (ptai / HexStrike) is Claude-Code-driven, NOT run here — see
-# docs/security/tooling-playbook.md. Each tool self-skips if not installed (run install.sh).
+# Each tool self-skips if not installed (run install.sh).
 # Env: SEMGREP_PACKS (default "p/security-audit"; set "" for offline), SEMGREP_JOBS,
 # SECURITY_OUT_DIR (SARIF dir, default out-of-tree).
 #
 # semgrep-core opens an io_uring queue at startup, which needs locked memory. Where RLIMIT_MEMLOCK
-# is small (8 MB on <host>) it dies with "Cannot allocate memory io_uring_queue_init" and scans
+# is small (8 MB on some hosts) it dies with "Cannot allocate memory io_uring_queue_init" and scans
 # ZERO files. SEMGREP_JOBS=1 does NOT help — the allocation happens before any parallelism. So the
 # driver pins EIO_BACKEND=posix unless the caller overrides it; results are identical, only the IO
 # strategy differs. Without it a local run is not "clean", it is dead, and anything that reads the
 # JSON without checking the exit code reads a false green.
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_common.sh"
 
-LAYER=ci; TARGET=""; STRICT_DIGESTS=0
+LAYER=ci; TARGET=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --layer) LAYER="$2"; shift 2;;
     --target) TARGET="$2"; shift 2;;
-    --strict-digests) STRICT_DIGESTS=1; shift;;
     -h|--help) grep -E '^#( |$)' "$0" | sed 's/^# \?//'; exit 0;;
     *) warn "unknown arg: $1"; shift;;
   esac
@@ -119,17 +116,6 @@ secrets_trufflehog() {
   fi
 }
 
-supply_digests() {
-  hr "Supply-chain · Dockerfile digest pinning (K-03)"
-  if bash tools/security/check-docker-digests.sh; then
-    :
-  elif [[ $STRICT_DIGESTS -eq 1 ]]; then
-    RC=1
-  else
-    warn "digest pins not yet landed — ADVISORY (pass --strict-digests once Renovate pins merge)"
-  fi
-}
-
 dast_layer() {
   if [[ -z "$TARGET" ]]; then warn "--layer $LAYER needs --target <url> for DAST — skipping"; return; fi
   [[ -x tools/security/dast-nuclei.sh ]] && { bash tools/security/dast-nuclei.sh "$TARGET" || RC=1; }
@@ -138,9 +124,9 @@ dast_layer() {
 }
 
 case "$LAYER" in
-  ci)   sast_semgrep; sca_trivy; sca_osv; secrets_trufflehog; supply_digests;;
+  ci)   sast_semgrep; sca_trivy; sca_osv; secrets_trufflehog;;
   deep) dast_layer;;
-  all)  sast_semgrep; sca_trivy; sca_osv; secrets_trufflehog; supply_digests; dast_layer;;
+  all)  sast_semgrep; sca_trivy; sca_osv; secrets_trufflehog; dast_layer;;
   *) warn "unknown --layer: $LAYER (want ci|deep|all)"; exit 2;;
 esac
 

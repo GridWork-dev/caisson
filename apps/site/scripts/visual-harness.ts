@@ -511,7 +511,7 @@ async function main(): Promise<void> {
     const secret = process.env.CAISSON_E2E_CF_CLIENT_SECRET ?? "";
     if (id === "" || secret === "") {
       console.error(
-        "--prod needs CAISSON_E2E_CF_CLIENT_ID + CAISSON_E2E_CF_CLIENT_SECRET (source ~/.gridwork/caisson.env)",
+        "--prod needs CAISSON_E2E_CF_CLIENT_ID + CAISSON_E2E_CF_CLIENT_SECRET",
       );
       process.exitCode = 1;
       return;

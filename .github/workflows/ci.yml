@@ -1,122 +1,71 @@
 name: ci
+# Every pull request and every push to main. The final `ci` job is the one required status check:
+# it passes only when every job above it passed (or, for the two jobs gated by event, was skipped
+# by that gate). PGlite keeps the integration and golden-file tests hermetic, so nothing here needs
+# Docker, a database service, or a secret.
 on:
   push:
-    branches: [main, 'renovate/**']
+    branches: [main]
   pull_request:
-    # Explicit types (CAISSON-96): the GitHub defaults plus ready_for_review, so flipping a draft
-    # to ready fires a fresh full run — the draft guard below suppressed the runs while drafting.
-    types: [opened, synchronize, reopened, ready_for_review]
-
-# ADR-0016 required checks. PGlite makes the integration + golden-file checks hermetic, so they
-# run inside `test` on a stock runner (no Docker, no external service) rather than as separate
-# jobs. The conceptual six — build · lint · test(unit) · test(integration) · standards-gate ·
-# golden-file — map to the steps below; a Neon branch DB is the opt-in escape hatch via
-# TEST_DATABASE_URL, never the default.
-#
-# The 3 REQUIRED STATUS CHECKS here (branch protection matches the job NAME, not the
-# file) are standards-gate · check · oscal-conformance. They stay UNCONDITIONAL for
-# every non-draft trigger — no `paths:`, and the ONLY permitted `if:` is the draft guard
-# (CAISSON-96): a path-skipped required job never reports and the PR blocks forever, but a DRAFT
-# PR cannot merge anyway, and marking it ready_for_review (in the types list above) fires the full
-# run before merge is possible. (oss-pivot PR1: the ADR-0422 site/demos Docker build smoke is
-# retired — both apps are static exports with no container image.) Other jobs (eval · native-ext · token-drift) have
-# moved to quality.yml, where path-filtering and main-only gating are safe because those jobs are
-# not required checks. The full required set is therefore standards-gate · check ·
-# oscal-conformance (here) · deterministic (security-scan.yml); scripts/release-readiness.ts is the
-# list. (oss-pivot PR2: the commercial fleet's deploy-railway/publish/mirror-sync/release-train/
-# support-bot workflows and the required checks they carried are retired with the services they
-# deployed.)
-#
-# RUNNER LINEAGE: pure-compute gates moved to Blacksmith VM-per-job runners on 2026-07-11
-# (ADR-0326); credential-bearing publish/deploy-railway/mirror-sync/release-train jobs followed
-# on 2026-07-19 (ADR-0365, with deploy-railway retained there under ADR-0367).
-# The quality macOS leg left the self-hosted Mac mini for GitHub `macos-15` on 2026-07-30
-# (ADR-0395 decision 3), then moved to Blacksmith on 2026-08-01 after GitHub billing failures.
-# Estate R33/R257/R258 superseded that arrangement on 2026-09-10: the cockpit selected
-# Ubicloud through CI_RUNNER_LINUX for Linux, including credential-bearing jobs, and the
-# macOS leg returned to GitHub `macos-15`. Linux expressions retained `ubuntu-latest` as
-# their unset-variable fallback. Variables remain cockpit-owned. Posture doc: docs/operations.md.
+  # release.yml dispatches this on the version PR's branch: a PR opened with GITHUB_TOKEN gets no
+  # pull_request run of its own.
+  workflow_dispatch:
 
 concurrency:
-  # One in-flight run per PR / ref; a new push cancels the prior run so the limited fleet is not
-  # tied up on superseded commits.
-  group: "ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  group: "ci-${{ github.event.pull_request.number || github.ref }}"
   cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  # The standards gate (ADR-0021/0022) — the only registry ingress. Three layers, all block merge.
+  # The standards gate and the module-boundary checks (ADR-0021/0022).
   standards-gate:
-    # CAISSON-96 draft guard — the one permitted `if:` on a required check (header comment).
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          # Full history so the changeset-presence gate below can diff against origin/main
-          # (`changeset status --since=origin/main` resolves that ref from the fetched history).
+          # The changeset-presence step diffs against origin/main.
           fetch-depth: 0
-      # dependency-cruiser 18 requires node ^22||^24||>=26; the runner image ships Node 20
-      # and `bunx depcruise` executes through the system node shebang.
+          persist-credentials: false
+      # dependency-cruiser needs Node >= 22; the runner image ships Node 20.
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: 22
       - uses: ./.github/actions/setup-bun
       - run: bun install --frozen-lockfile
-      # Layer 1 — SPDX/license authority: AGPL workspace + down-only + declarations +
-      # checkExternalAgpl + checkManifestAgreement. Runs AFTER install: the gate's import graph
-      # (typescript, zod) resolves only from node_modules — the former pre-install pass leaned on
-      # Bun auto-install, which fails on `catalog:` deps in a clean checkout (2026-07-08 PR #179:
-      # deterministic ENOENT on fresh runners; historical greens were runner-state accidents).
-      - name: standards-gate (AGPL workspace + down-only + declarations + external-AGPL + manifest agreement)
+      - name: standards gate (licenses, down-only deps, declarations, manifest agreement)
         run: bun run tooling/standards-gate/src/cli.ts
-      # Layer 2 — fast static provider-SDK signal (root .oxlintrc.json, ADR-0408).
-      - name: oxlint import boundaries (provider-SDK, ADR-0011/0022)
+      - name: oxlint import boundaries (provider SDKs, ADR-0011/0022)
         run: bun run lint:repo
-      # The alpha-jsPlugins tripwire (ADR-0408). oxlint reports NOTHING when a JS plugin stops
-      # loading, so a green lint leg above does not prove caisson-slop or the storybook rules ran.
-      # This asserts three fixture files each still produce a finding; zero findings fails.
-      - name: lint canary (jsPlugins silent-failure tripwire)
+      # oxlint reports nothing when a JS plugin fails to load; three fixtures must each still
+      # produce a finding.
+      - name: lint canary
         run: bun run lint:canary
-      # Layer 3 — real module graph: dynamic/transitive provider reach + base↔edition direction.
       - name: dependency-cruiser graph boundaries (ADR-0022)
         run: bun tooling/standards-gate/src/dependency-graph-guard.ts
-      # Changeset-presence gate (ADR-0021/0111). Now that the packages are PUBLIC (0.1.0, ADR-0111),
-      # every PR that changes a publishable package must carry a changeset, or the release/version
-      # history drifts from the published versions. `changeset status --since=origin/main` exits 1
-      # when there are changed packages but no new changeset (changesets `checking-for-changesets`).
-      # SKIPPED on the main branch: main has no base to diff against and is the merge target, not a
-      # release-gated PR — the actual ledger append/publish lives in publish-and-index (main-only).
-      # ALSO skipped on release PRs (ADR-0208 republish): `changeset version` consumes the pending
-      # changeset files by design, so a PR that DELETES changesets relative to origin/main is a
-      # release PR — its package.json bumps are the consume output, not uncovered package changes.
-      # A deletion is loud in review, so this cannot be gamed silently.
-      - name: changeset presence (PR only — every package change needs a changeset)
-        if: github.ref != 'refs/heads/main'
+      # Every PR that changes a package carries a changeset. A PR that deletes changesets is the
+      # version PR consuming them, so the check does not apply there.
+      - name: changeset presence
+        if: github.event_name == 'pull_request'
         run: |
           if git diff --name-only --diff-filter=D origin/main...HEAD -- '.changeset/*.md' | grep -q .; then
-            echo "release PR (changesets consumed since origin/main) — presence gate skipped"
+            echo "version PR (changesets consumed) - presence check skipped"
             exit 0
           fi
           bunx changeset status --since=origin/main
 
   check:
-    # CAISSON-96 draft guard — the one permitted `if:` on a required check (header comment).
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
-    # The heaviest job (38-pkg turbo tree incl. 6 Next.js builds + many in-process PGlite instances);
-    # generous ceiling so a hung PGlite hook frees the runner rather than holding it to the 6h default.
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      # Warm turbo cache lands here (cache step below). turbo reads TURBO_CACHE_DIR, so a cache hit
-      # makes it skip unchanged tasks while still validating every task via input hashes (NOT
-      # --affected — that would skip validation of a required gate).
+      # turbo still hashes every task's inputs on a cache hit; it only skips unchanged work.
       TURBO_CACHE_DIR: .turbo
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-bun
       - name: cache turbo
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -125,65 +74,39 @@ jobs:
           key: ${{ runner.os }}-turbo-${{ github.sha }}
           restore-keys: ${{ runner.os }}-turbo-
       - run: bun install --frozen-lockfile
-      - name: format (oxfmt)
+      - name: format
         run: bun run format:check
-      - name: build · lint · typecheck · test (unit + PGlite integration + golden-file)
-        # `turbo build/lint/typecheck/test` + the standards gate (== `bun run check`, run inline so CI can cap
-        # concurrency). Golden fixtures are compared with BLESS unset, so any drift fails here.
-        # --concurrency=50%: the integrated tree is 38 packages incl. 6 Next.js builds + many in-process
-        # PGlite instances; at turbo's default fan-out they contend on the runner and a PGlite `beforeAll`
-        # can exceed its hook timeout. Halving peak concurrency removes the starvation (local `bun run
-        # check` stays full-speed). Tunable if the job runs long.
+      # `bun run check`, inline so CI can halve turbo's fan-out: the tree runs many in-process
+      # PGlite instances and several Next builds, which starve each other at full concurrency.
+      - name: build, lint, typecheck, test, standards gate
         run: bunx turbo run build lint typecheck test --no-daemon --concurrency=50% --continue=dependencies-successful && bun run gate
-      - name: public-surface + browser-audit skill guards (outside the workspace)
-        # The excerpt secret-scan + source-drift test is a load-bearing gate outside turbo. (oss-pivot
-        # PR1 retired the Paddle marker-map validator with the site price sheet it read; the /demo
-        # build transcript and its reader contract left with the `create-caisson --demo` flag.)
-        # `.agents/` is outside the root `workspaces` globs too, so the browser-audit skill's
-        # scripts have no turbo test task. They gained the reconciler that `tooling/browser-audit`
-        # used to own (its package was folded in), so they run here or they run nowhere.
-        # The `./` prefix is load-bearing: bun's discovery skips dot-directories, and a bare
-        # `.agents/...` arg is read as a name FILTER (matches nothing, exit 1) rather than a path.
-        #
-        # `tooling/scripts/` and `scripts/` have NO package.json, so the `tooling/*` workspace glob
-        # skips them and turbo never runs their tests — they are only covered by being named here.
-        # ADR-0414 named railway-deploy + release-readiness because it changed both. The remaining
-        # six (sot-check, dts-drift-check, tsgo-agreement, railway-env-sync, vault-parity-check,
-        # aeo-probe) plus scripts/gen-shadcn-registry are now named too, closing the gap that
-        # docs/state/outstanding-work.md tracked: 157 tests that ran in NO gate, including
-        # sot-check — the repo's own drift detector.
-        #
-        # The prior caution ("unproven leg on a required check reds main") was discharged by
-        # proving them first, not by overriding it. All seven were run with a SCRUBBED environment
-        # (`env -i`, no ~/.gridwork/env) and pass 157/157, so none is green only because ambient
-        # credentials supplied a value. None reaches the network or the live repo state:
-        # railway-deploy and railway-env-sync use injected exec doubles and source-text assertions,
-        # and sot-check builds SYNTHETIC throwaway git repos under mkdtempSync rather than reading
-        # this working tree — which is why its live-repo DRIFT output does not follow it into CI.
-        run: bun test tools/demo-excerpts scripts/gen-shadcn-registry.test.ts tooling/scripts/railway-deploy.test.ts tooling/scripts/sot-check.test.ts tooling/scripts/dts-drift-check.test.ts tooling/scripts/tsgo-agreement.test.ts tooling/scripts/railway-env-sync.test.ts tooling/scripts/vault-parity-check.test.ts tooling/scripts/aeo-probe.test.ts tooling/scripts/build-evidence-pack.test.ts tooling/scripts/sync-generator-template-pins.test.ts
-      # Slow golden-file / testcontainers matrices land here once the compliance
-      # edition (P2) has code — kept CI-only, never in the pre-commit hook.
+      # Test files outside any workspace package, which turbo never runs.
+      - name: tests outside the workspaces
+        run: bun test tools/demo-excerpts scripts/gen-shadcn-registry.test.ts tooling/scripts/dts-drift-check.test.ts tooling/scripts/tsgo-agreement.test.ts tooling/scripts/build-evidence-pack.test.ts tooling/scripts/sync-generator-template-pins.test.ts
+      - name: deterministic evals against their committed baselines (ADR-0062)
+        run: bunx turbo run eval --no-daemon
+      - name: tokens.css is a byte-identical rebuild of the TS tokens (ADR-0101)
+        run: |
+          bun run packages/ui/scripts/gen-tokens-css.ts
+          git diff --exit-code packages/ui/styles/tokens.css
+      - name: component manifest is a byte-identical rebuild of the UI source
+        run: bun run --filter @caisson-sh/ui check:manifest
+      - name: UI anti-slop pre-pass (allowlist-filtered)
+        run: bun run apps/site/scripts/anti-slop.ts
+      # The same pack the release publishes, minus the upload: proves every package packs and no
+      # packed manifest keeps a workspace: range.
+      - name: pack every published package
+        run: bun tooling/scripts/publish-packages.ts --dry-run
 
-  # (oss-pivot: the registry-index job is retired with registry/. The generator's module catalog is
-  # derived from the workspace packages when @caisson-sh/cli builds, and its catalog-parity test runs
-  # inside the `check` job's turbo tree.)
-
+  # NIST OSCAL v1.2.2 conformance through oscal-cli (Java), which the check job does not install
+  # (ADR-0179/0180). Schema-only validation: constraint checks resolve published import URLs.
   oscal-conformance:
-    # NIST OSCAL v1.2.2 conformance gate (ADR-0179/0180): the JSON→XML→schema-validate round-trip via
-    # oscal-cli (Java). Self-contained (installs a JDK + oscal-cli from Maven Central per run) — the
-    # `check` job SKIPS these tests (oscal-cli is not installed there), so this is where the
-    # ground-truth NIST schema validation actually runs. Validation is schema-only
-    # (--disable-constraint-validation): constraint checks resolve the published import-ap URL, a
-    # deploy-time concern, not export well-formedness. Extended by the oscal-spine SPEC (task 2,
-    # ADR-0363/0364) with two direct JSON `oscal-cli validate` legs (no XML conversion needed for a
-    # schema-only check): the generated caisson catalog, and the vendored NIST SP 800-53 rev5
-    # catalog itself (a corruption check on the committed bytes — binding requirement 1).
-    # CAISSON-96 draft guard — the one permitted `if:` on a required check (header comment).
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-bun
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
@@ -197,20 +120,165 @@ jobs:
           unzip -oq /tmp/oscal-cli.zip -d "$HOME/oscal-cli"
           echo "$HOME/oscal-cli/bin" >> "$GITHUB_PATH"
       - run: bun install --frozen-lockfile
-      - name: JSON to XML to validate round-trip (SAR + POA&M at v1.2.2)
+      - name: JSON to XML to validate round-trip (SAR + POA&M)
         run: |
           oscal-cli --version
           cd packages/oscal-spine && bun test src/evidence/oscal-export-xml.test.ts
-      - name: generate + validate the caisson OSCAL catalog (oscal-spine SPEC task 2, v1.2.2)
+      - name: generate and validate the caisson OSCAL catalog
         run: |
           cd packages/frameworks-pack
           bun run scripts/gen-catalog-for-ci.ts /tmp/caisson-catalog.oscal.json
           oscal-cli validate --disable-constraint-validation /tmp/caisson-catalog.oscal.json
-      - name: validate the vendored NIST SP 800-53 rev5 catalog (corruption check, binding req 1)
-        run: |
-          oscal-cli validate --disable-constraint-validation packages/oscal-spine/src/vendor/nist-800-53-rev5-catalog.json
-      - name: generate + validate the ISO/IEC 27001:2022 Statement of Applicability (component-definition, v1.2.2)
+      - name: validate the vendored NIST SP 800-53 rev5 catalog (corruption check)
+        run: oscal-cli validate --disable-constraint-validation packages/oscal-spine/src/vendor/nist-800-53-rev5-catalog.json
+      - name: generate and validate the ISO/IEC 27001:2022 Statement of Applicability
         run: |
           cd packages/frameworks-pack
           bun run scripts/gen-iso27001-soa-for-ci.ts /tmp/caisson-iso27001-soa.oscal.json
           oscal-cli validate --disable-constraint-validation /tmp/caisson-iso27001-soa.oscal.json
+
+  # local-store loads a platform-specific sqlite-vec extension (.so on Linux, .dylib on macOS).
+  # The check job covers Linux on every PR; this matrix adds macOS on main.
+  native-ext:
+    if: github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux, macos]
+    # runs-on stays out of the matrix so the check names stay `native-ext (linux|macos)`.
+    runs-on: ${{ matrix.platform == 'macos' && 'macos-15' || 'ubuntu-latest' }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-bun
+      - run: bun install --frozen-lockfile
+      # Apple's system SQLite disables extension loading; store.ts uses Homebrew's.
+      - name: ensure extension-capable SQLite (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          [ -f "$(brew --prefix 2>/dev/null)/opt/sqlite/lib/libsqlite3.dylib" ] || brew install sqlite
+      - name: local-store native sqlite-vec extension on ${{ matrix.platform }}
+        run: bun test packages/local-store/src
+
+  # Playwright over a production build of the site on this commit.
+  site-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-bun
+      - run: bun install --frozen-lockfile
+      # From apps/site so bunx resolves the pinned playwright, whose browser revision the tests use.
+      - name: install playwright chromium
+        working-directory: apps/site
+        run: bunx playwright install --with-deps chromium
+      - name: site end-to-end suite
+        run: bunx turbo run test:e2e --filter=@caisson-sh/site --no-daemon
+
+  # The build-provenance evidence pack (ADR-0275): standards-gate output, module catalog and
+  # catalog test run for this commit, as one downloadable artifact.
+  evidence-pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-bun
+      - run: bun install --frozen-lockfile
+      - name: assemble the evidence pack
+        run: bun tooling/scripts/build-evidence-pack.ts
+      - name: upload evidence pack
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: evidence-pack-${{ github.sha }}
+          path: evidence-pack/pack
+          if-no-files-found: error
+          retention-days: 90
+
+  # Declaration drift across a TypeScript compiler bump (ADR-0369). Runs only when a PR changes
+  # the pinned compiler (tooling/tsconfig/package.json): emits .d.ts for every package with the
+  # base and head compilers and fails on any byte difference.
+  dts-drift:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: did this PR change the compiler pin?
+        id: pin
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if git diff --quiet "origin/$BASE_REF...HEAD" -- tooling/tsconfig/package.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "tooling/tsconfig/package.json unchanged - no compiler bump to compare"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.pin.outputs.changed == 'true'
+        uses: ./.github/actions/setup-bun
+      - if: steps.pin.outputs.changed == 'true'
+        run: bun install --frozen-lockfile
+      - name: resolve the base branch's tsc-native version
+        if: steps.pin.outputs.changed == 'true'
+        id: base-pin
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -e
+          spec=$(git show "origin/$BASE_REF:tooling/tsconfig/package.json" | bun -e '
+            const pkg = JSON.parse(await Bun.stdin.text());
+            const spec = pkg.dependencies?.["tsc-native"];
+            if (!spec) { console.error("base tooling/tsconfig/package.json has no tsc-native dependency"); process.exit(1); }
+            console.log(spec);
+          ')
+          echo "version=${spec##*@}" >> "$GITHUB_OUTPUT"
+      - name: install the base compiler outside the repo
+        if: steps.pin.outputs.changed == 'true'
+        env:
+          BASE_VERSION: ${{ steps.base-pin.outputs.version }}
+        run: |
+          set -e
+          mkdir -p "$RUNNER_TEMP/base-native"
+          cd "$RUNNER_TEMP/base-native"
+          echo '{}' > package.json
+          bun add "typescript@$BASE_VERSION"
+      - name: resolve this PR's tsc-native binary
+        if: steps.pin.outputs.changed == 'true'
+        id: head-bin
+        run: |
+          set -e
+          bin=$(find -L tooling/tsconfig/node_modules -path "*/tsc-native/bin/tsc" -print -quit)
+          [ -n "$bin" ] || { echo "tsc-native not found under tooling/tsconfig/node_modules" >&2; exit 1; }
+          echo "path=$bin" >> "$GITHUB_OUTPUT"
+      - name: build the packages' dependency closure (declaration emit needs built deps)
+        if: steps.pin.outputs.changed == 'true'
+        run: bunx turbo run build --filter "{./packages/*}..."
+      - name: compare declaration output
+        if: steps.pin.outputs.changed == 'true'
+        env:
+          TSC_BASE: ${{ runner.temp }}/base-native/node_modules/.bin/tsc
+          TSC_HEAD: ${{ steps.head-bin.outputs.path }}
+        run: bun tooling/scripts/dts-drift-check.ts
+
+  # The single required status check.
+  ci:
+    if: always()
+    needs: [standards-gate, check, oscal-conformance, native-ext, site-e2e, evidence-pack, dts-drift]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: every job passed (native-ext and dts-drift may be skipped by their event gate)
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS" | jq -c 'to_entries | map({(.key): .value.result}) | add'
+          echo "$NEEDS" | jq -e 'to_entries | all(.value.result == "success" or ((.key == "native-ext" or .key == "dts-drift") and .value.result == "skipped"))' > /dev/null

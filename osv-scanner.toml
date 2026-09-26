@@ -32,15 +32,9 @@
 #                      batch), dev-only via jsdom + miniflare's exact 7.28.0 pin             -> >=7.29.0
 #   ip-address         GHSA-mwp4-54f8-5fhr / GHSA-22jq-vg5j-6vgg / GHSA-4xrf-jv44-h6hh (SSRF /
 #                      trust-boundary parse bypasses), runtime via express-rate-limit        -> >=10.3.1
-#   aiohttp            GHSA-cq5v-8q36-5273 + smuggling/deflate pair — support-bot uv.lock
-#                      (no release-age floor on the uv lane)                                 -> >=3.14.3
 #
-# Every id below has a matching dated row in docs/security/tooling-playbook.md (Accepted findings).
+# Every id below carries its reason and a dated review inline.
 
 [[IgnoredVulns]]
 id = "CVE-2026-54285"
 reason = "@opentelemetry/core 2.0.1, transitive under @trigger.dev/core's pinned OTel instrumentation (the main OTel suite is already on the fixed 2.8.0). Header-propagator over-allocation, practically bounded by Node's 16KB max-http-header-size; forcing the trigger.dev-nested core to 2.8.0 risks breaking trigger.dev runtime telemetry. Accepted 2026-07-10."
-
-# NOTE: pytest CVE-2025-71176 lives in services/support-bot/uv.lock. osv-scanner config does NOT
-# propagate into child directories (per its docs), so that accept lives in
-# services/support-bot/osv-scanner.toml, next to the lockfile it applies to.

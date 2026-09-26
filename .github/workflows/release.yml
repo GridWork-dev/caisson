@@ -1,0 +1,67 @@
+name: release
+# Versioning and publishing through Changesets, on every push to main:
+#   - Pending changesets: open or update the "version packages" PR. tooling/scripts/
+#     version-packages.ts consumes them and regenerates the files that embed versions. A PR opened
+#     with GITHUB_TOKEN gets no pull_request run, so the last step dispatches ci.yml on it.
+#   - No pending changesets (the version PR just merged): tooling/scripts/publish-packages.ts
+#     publishes every version not yet on npm, through npm trusted publishing (OIDC, provenance).
+# Runs only in the public repository: npm provenance requires one.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    if: github.repository == 'GridWork-dev/caisson'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # the version commit
+      pull-requests: write # the version PR
+      id-token: write # npm trusted publishing
+      actions: write # dispatch ci.yml on the version PR's branch
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # No dependency cache in a publishing workflow.
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: "1.4.2"
+      # Trusted publishing needs npm >= 11.5.1, which Node 24 ships. No registry-url: the .npmrc
+      # it writes expects a token and would shadow OIDC.
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24
+      - run: bun install --frozen-lockfile
+      - name: build the packages
+        run: bunx turbo run build --filter "./packages/*" --no-daemon
+      - uses: changesets/action@a45c4d594aa4e2c509dc14a9f2b3b67ba3780d0d # v1.9.0
+        id: changesets
+        with:
+          version: bun tooling/scripts/version-packages.ts
+          publish: bun tooling/scripts/publish-packages.ts
+          title: "chore(release): version packages"
+          commit: "chore(release): version packages"
+          commitMode: github-api
+          createGithubReleases: false
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          # Only for the one-time bootstrap publish (a package's first version cannot use OIDC).
+          # Unset afterwards, so publishing falls through to trusted publishing.
+          NPM_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
+      - name: run ci on the version PR
+        if: steps.changesets.outputs.pullRequestNumber != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: gh workflow run ci.yml --repo "$REPO" --ref changeset-release/main

@@ -3,6 +3,11 @@
   "version": "0.4.5",
   "description": "Provider-agnostic authentication: EdDSA-JWT account tokens, a session contract, and multi-user account membership over row-level security. better-auth is the reference session provider.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/auth"
+  },
   "type": "module",
   "exports": {
     ".": {

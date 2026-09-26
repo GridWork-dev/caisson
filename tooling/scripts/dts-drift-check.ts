@@ -1,6 +1,6 @@
 // Bump-gated declaration-drift guard (ADR-0369). Replaces the retired weekly toolchain-advisory
 // measurement lane's cutover purpose with a narrower, PR-scoped check: whenever
-// tooling/tsconfig/package.json changes (tsc-native-dts-drift.yml), emit .d.ts for every
+// tooling/tsconfig/package.json changes (the dts-drift job in ci.yml), emit .d.ts for every
 // packages/* tsc package with BOTH the base branch's pinned tsc-native compiler and this PR's
 // pinned compiler, byte-compare the trees, and fail the job if anything differs. A maintainer
 // who intends the drift regenerates baselines (and any downstream consumers) in the same PR.

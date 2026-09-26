@@ -3,6 +3,11 @@
   "version": "0.5.8",
   "description": "Transactional email port: a provider-agnostic Emailer interface with a capture driver for tests and Resend, Postmark, SMTP, and SES drivers for production, with branded React-Email templates.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/email"
+  },
   "type": "module",
   "exports": {
     ".": {

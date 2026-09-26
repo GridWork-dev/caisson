@@ -42,7 +42,6 @@
     "gate": "bun packages/kernel/src/gate.ts",
     "typecheck": "turbo run typecheck --no-daemon",
     "check": "turbo run build lint typecheck test --no-daemon && bun run gate",
-    "sot": "bun tooling/scripts/sot-check.ts",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "knip": "knip",

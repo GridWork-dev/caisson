@@ -3,6 +3,11 @@
   "version": "0.2.1",
   "description": "Local-first privacy gate: strict zero-egress policy parsing and the EgressGuard wrapper over the kernel fetchWithTimeout chokepoint.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/local-privacy"
+  },
   "type": "module",
   "exports": {
     ".": {
