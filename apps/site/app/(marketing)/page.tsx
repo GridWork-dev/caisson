@@ -522,8 +522,8 @@ export default function HomePage() {
                 maxWidth: "60ch",
               }}
             >
-              Caisson is a software product, built and backed by Liam at
-              GridWork Digital (a named engineer, not a ticket queue).
+              Caisson is open source under Apache-2.0, built and maintained by
+              Caisson Software LLC.
             </p>
             <p
               className="cs-muted"
