@@ -8,7 +8,7 @@
  * with provenance. The catalog itself stays authored by hand; crosswalk references are pointers
  * only, never copied control text.
  *
- * Mirrors the `defineModule` precedent (registry/schema/module-manifest.ts): typed Zod `.strict()`
+ * Mirrors the `defineModule` precedent (packages/registry-schema/src/module-manifest.ts): typed Zod `.strict()`
  * builders that parse-and-validate at author time and fail closed on the first violation. Depends
  * only on `@caisson/kernel` (the down-only floor, ADR-0003) -- no edition or sibling-primitive dep.
  *
