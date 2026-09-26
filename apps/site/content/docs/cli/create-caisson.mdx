@@ -5,9 +5,9 @@ description: Scaffold a tailored codebase from the versioned module registry, by
 
 ## What it does
 
-`@caisson/cli` is the generator. You pick a bundle and the modules you want; it assembles a
-tailored codebase by pulling versioned module sources from the Caisson registry. Bundles are
-compositions of the same audited base: the generator composes, it never forks.
+`@caisson/cli` is the generator. You pick the modules you want; it assembles a tailored codebase
+from the versioned module registry. Every module is Apache-2.0 and installs from the public npm
+registry, so a generated project needs no token and no registry configuration.
 
 ```bash
 bunx @caisson-sh/cli@latest my-app
@@ -15,81 +15,67 @@ cd my-app
 bun install
 ```
 
-The first prompt asks what to generate — a licensed build, a free sample, or a demo. Then you name the project and
-select modules. A bundle is chosen with the `--edition <id>` flag rather than a wizard question;
-passing one pre-checks its current members in the module list, and you can still add or remove from
-there.
-The base substrate — `kernel`, `auth`, `tenancy-rls`, `ui`, `billing`, `jobs`, `email`,
-`ai-config`, `mcp-server`, `registry-schema`, `observability`, `rate-limit`, `ds-manifest` — plus
-the generator tooling `cli`, `migrate`, and `license-verify`, is always free to install,
-independent of any entitlement.
-Paid modules such as `credits` are not part of it; they are entitlement-gated.
+In a terminal the wizard asks for the project name, then the modules.
 
 ## The registry contract
 
 Every module the CLI emits is pulled from a **versioned** registry, not copied from a moving
 template. A generation resolves the module versions it used and pins them directly into the
 generated `package.json` `dependencies` (no separate lockfile) so the same inputs reproduce the
-same tree. The CLI and the buyer's AI agent read from the one registry: there is no second,
+same tree. The CLI and your AI agent read from the one registry: there is no second,
 drifting source.
 
 Pass `--dry-run` to see exactly what a selection resolves to before anything is written:
 
 ```bash
-$ bunx @caisson-sh/cli@latest my-app --edition compliance --dry-run
-create-caisson: dry-run — 11 files for "my-app" (compliance edition)
+$ bunx @caisson-sh/cli@latest my-app --module @caisson/kernel@<version> --dry-run
+create-caisson: dry-run — 9 files for "my-app"
   .github/workflows/ci.yml
   .gitignore
-  .npmrc
+  .oxlintrc.json
   AGENTS.md
   README.md
-  eslint.config.js
   package.json
-  src/__golden__/evidence.json
   src/__golden__/smoke.json
   src/golden.test.ts
   tsconfig.json
 ```
 
-The bundle's modules arrive as pinned `dependencies` in that `package.json` rather than as copied
+The selected modules arrive as pinned `dependencies` in that `package.json` rather than as copied
 source, which is why the scaffold itself is small.
 
 Without `--dry-run` the same command writes the tree and prints the next steps:
 
 ```bash
-$ bunx @caisson-sh/cli@latest my-app --edition compliance
+$ bunx @caisson-sh/cli@latest my-app --module @caisson/kernel@<version>
 
 create-caisson: generated "my-app" → my-app
 
 Next steps:
   1. cd my-app
-  2. Add your Caisson license key to .npmrc (see README.md)
-  3. bun install   # or: npm install
-  4. bun run build
+  2. bun install   # or: npm install
+  3. bun run build
 ```
 
-The contract it upholds: a generation is **reproducible** (exact module versions pinned into
-`package.json`, never a range) and **metered** (codegen-credits are integer units, never floats; a
-run debits an exact count, or it fails closed before writing). Metering applies to the hosted
-buyer-MCP path; the local binary above generates for free.
+The contract it upholds: a generation is **reproducible**. Exact module versions are pinned into
+`package.json`, never a range.
 
 ## Drive it from your agent
 
 The shipped MCP server is auth-gated. Your Claude Code or Cursor agent authenticates, reads the same
-registry, and runs the same generation the CLI does, so the agent can scaffold and reconfigure the
-codebase without you leaving the editor. The `generate` tool call returns the generation's id
-(stable across same-key retries), not the file contents.
+registry, and asks for the same generation the CLI does, so the agent can scaffold and reconfigure
+the codebase without you leaving the editor. The `generate` tool validates the selection and hands
+it to your host, which returns the generation's id.
 
 ```ts
-// Illustrative: your agent calls the auth-gated MCP server, which resolves modules from the
-// versioned registry, meters the run, and writes the generated tree to `target`.
+// Illustrative: your agent calls the auth-gated MCP server, which validates every module id and
+// version against the registry, then hands the selection to the host's onGenerate hook.
 const result = await caisson.callTool("generate", {
-  edition: "compliance",
-  modules: ["audit-worm", "field-crypto"],
-  target: "./my-app",
+  projectName: "my-app",
+  modules: [{ id: "@caisson/audit-worm", version: "<version>" }],
 });
 
-// result.generationId — the canonical generation audit row id, stable across same-key retries
+// result.generationId — whatever id the host's onGenerate hook returns
 ```
 
 ## API reference
@@ -101,23 +87,19 @@ const result = await caisson.callTool("generate", {
 | `<name>` (positional)   | slug                                                                                              | Shorthand for `--name <name>`: the advertised `bunx create-caisson my-app` quickstart. An explicit `--name` always wins on conflict.                                                       |
 | `--name <slug>`         | a-z0-9, kebab, max 64 chars                                                                       | Project name; the output directory unless `--out` is set.                                                                                                                                  |
 | `--module <id@version>` | repeatable                                                                                        | An exact `@caisson/<slug>@<version>` pin. Split on the _last_ `@`, so a scoped id keeps its leading `@`.                                                                                   |
-| `--edition <e>`         | `compliance` \| `ai-production` \| `local-first` \| `agentic-dev` \| `provenance` \| `everything` | A bundle, exactly these six ids. Alone it auto-selects the bundle's current modules (override with `--module`). The retired ids `ai-kit` / `local-ai` / `agent-dev` are rejected outright. |
-| `--deploy <target>`     | `railway` \| `fly` \| `vercel`                                                                    | Layers that deploy target's template directory on top of base (+ bundle).                                                                                                                  |
+| `--deploy <target>`     | `railway` \| `fly` \| `vercel`                                                                    | Layers that deploy target's template directory on top of base.                                                                                                                              |
 | `--framework <target>`  | `next`                                                                                            | Layers a wired Next.js App-Router starter demonstrating auth/tenancy/billing/jobs/email/ai-config wiring on the base substrate.                                                            |
-| `--sample <id>`         | e.g. `eu-ai-act-sample`                                                                           | A free, Apache-2.0 evaluation sample. No `--module`/`--edition`, no license key. Mutually exclusive with `--demo`.                                                                         |
-| `--demo`                | flag                                                                                              | Full-catalog generation with every commercial module replaced by a watermarked stub. No license key, never for production.                                                                 |
 | `--out <dir>`           | path                                                                                              | Output directory (defaults to the project name).                                                                                                                                           |
 | `--dry-run`             | flag                                                                                              | Print the file plan; write nothing.                                                                                                                                                        |
 | `--help`, `-h`          | flag                                                                                              | Print usage.                                                                                                                                                                               |
 
-Run with no flags in a terminal and `create-caisson` prompts for whatever's missing, licensed
-build vs. free sample vs. full-catalog demo, project name, modules. Any flag you _did_ pass is
-never re-prompted; a non-TTY invocation (CI, piped stdin) fails closed on a missing required field
-instead of hanging on a prompt.
+Run with no flags in a terminal and `create-caisson` prompts for whatever's missing: project name
+and modules. Any flag you _did_ pass is never re-prompted; a non-TTY invocation (CI, piped stdin)
+fails closed on a missing required field instead of hanging on a prompt.
 
 ### The registry index schema
 
-`@caisson/registry-schema` owns the index the CLI, the buyer MCP, and the docs all read against.
+`@caisson/registry-schema` owns the index the CLI and the MCP server read against.
 Every module id **and** version is checked before it reaches a path or a subprocess argument:
 a bad id never gets far enough to matter:
 
@@ -135,7 +117,7 @@ function loadRegistryIndexFromFile(path: string): RegistryIndex;
 ```
 
 `assertKnownModule` re-checks the `@caisson/<slug>` shape and membership in the index;
-`assertKnownVersion` additionally requires that exact version among the module's published
+`assertKnownVersion` additionally requires that exact version among the module's catalog
 `versions`. Both throw a plain `Error` on a miss, synchronously, before any generation work
 starts. `loadRegistryIndexFromFile` is the one sanctioned read path (`RegistryIndex.parse`
 underneath); a malformed or tampered index file throws rather than yielding a half-typed object.
@@ -149,20 +131,21 @@ interface RegistryIndex {
     versions: {
       version: string; // semver
       manifest: ModuleManifest;
-      publishedAt: string; // ISO 8601
-      gateAttestation: string; // "<ci-run-id>@<commit-sha>" — provenance, not the access control
+      publishedAt?: string; // ISO 8601; absent from the CLI's bundled catalog
+      gateAttestation?: string; // "<ci-run-id>@<commit-sha>"; absent from the CLI's bundled catalog
     }[];
   }[];
 }
 ```
 
-The index is built by a CI-only writer, never hand-appended: a version's presence here is what
-"published" means. A generation resolves against this index once and pins the exact versions it
-used into `package.json`; nothing re-resolves against `latest` after that.
+The CLI's catalog is derived when the CLI is built: every published `@caisson/*` package, at the
+version in its `package.json`, with the description, dependencies, and stability from its
+manifest. It is never hand-edited. A generation resolves against this catalog once and pins the
+exact versions it used into `package.json`; nothing re-resolves against `latest` after that.
 
-### Generation and metering
+### Generation
 
-`@caisson/cli` validates a raw selection against the registry allowlist, then materializes it:
+`@caisson/cli` validates a raw selection against the module catalog, then materializes it:
 in-memory, no disk write yet:
 
 ```ts
@@ -175,44 +158,13 @@ function generate(
 ): { selection: Selection; files: GeneratedFileSet };
 ```
 
-`Selection` is a `.strict()` Zod object, a lowercase slug `projectName`, an optional bundle
-`edition`, `modules: { id, version }[]` (at least one, no duplicate ids), and optional
+`Selection` is a `.strict()` Zod object, a lowercase slug `projectName`,
+`modules: { id, version }[]` (at least one, no duplicate ids), and optional
 `deployTarget` / `framework`. `validateSelection` parses it, then runs `assertKnownModule` /
 `assertKnownVersion` on every module: an unknown id or a stale version throws before the engine
 is ever invoked.
 
-The local `create-caisson` binary calls `generate` plus a disk `FileSetWriter` directly and stops
-there: it generates for free; the license key gates the package _install_, not the generation.
-The hosted buyer MCP instead drives the metered path:
-
-```ts
-function runGeneration(
-  tx: TenantExecutor,
-  deps: GenerationDeps,
-  raw: unknown,
-  meter: MeterInput,
-): Promise<GenerationOutcome>;
-
-interface MeterInput {
-  accountId: string;
-  idempotencyKey: string; // caller-minted UUID; a retry with the same key debits once
-  amount?: number; // integer credits, default 1
-}
-
-interface GenerationOutcome {
-  selection: Selection;
-  files: GeneratedFileSet;
-  balance: number;
-  idempotent: boolean;
-  generationId: string; // the canonical generation audit row id, stable across retries
-}
-```
-
-`runGeneration` runs in one transaction: validate + compose the file set (bundle member pins,
-migration assembly, read-only), **debit before writing anything** (a short balance throws before
-any file touches disk), write via the injected `FileSetWriter`, then record one append-only audit
-row keyed on `(accountId, idempotencyKey)`. A retried call with the same key debits once and
-resolves to the same `generationId` instead of a duplicate row.
+The `create-caisson` binary calls `generate` plus a disk `FileSetWriter` directly.
 
 `createFileSetWriter(raw?: unknown)` — Zod-validated to `{ overwrite?: boolean }`, default
 `overwrite: false` — is the disk writer: every path is checked for null bytes, absolute paths, and
@@ -221,41 +173,29 @@ atomic rename; a failed write leaves no partial tree.
 
 ### MCP tool schemas
 
-The three base tools every authenticated buyer sees, regardless of entitlement:
+The three base tools every authenticated caller sees:
 
 ```ts
 // list_modules — no args
-type ListModulesResult = { modules: string[] }; // the caller's owned entitlement slugs, sorted
+type ListModulesResult = { modules: string[] }; // every catalog module id, sorted
 
 // describe_module
 type DescribeModuleArgs = { name: string }; // 1-128 chars
-type DescribeModuleResult = { name: string; summary: string };
-// throws EntitlementError (403) if the caller doesn't own `name`
+type DescribeModuleResult = { name: string; latest: string; summary: string };
+// throws NotFoundError (404) for an id that is not in the catalog
 
 // generate
 type GenerateArgs = {
   projectName: string; // ^[a-z0-9][a-z0-9-]*$, max 64 chars
-  edition?: "compliance" | "ai-kit" | "local-ai" | "agent-dev";
   modules: { id: string; version: string }[]; // 1-100 entries
-  idempotencyKey?: string; // UUID; minted server-side when omitted, reused verbatim on a retry
 };
-type GenerateResult = { generationId: string };
+type GenerateResult = { generationId: string }; // returned by the host's onGenerate hook
 ```
 
-Note `generate`'s `edition` is the legacy `compliance | ai-kit | local-ai | agent-dev` vocabulary,
-disjoint from the CLI's `--edition` flag, which accepts only the six current bundle ids
-(`compliance`, `ai-production`, `local-first`, `agentic-dev`, `provenance`, `everything`) and
-rejects the three retired legacy names outright. Omit `edition` and pass modules directly if
-you're targeting a bundle the legacy MCP vocabulary doesn't cover.
-
 Every `generate` call is allowlist-checked (id **and** version) against the same registry index
-the CLI validates against, before any entitlement check runs. Ownership is then checked against
-the caller's entitlements expanded through their bundle/module purchases, request a module
-outside that expanded set and the call throws `EntitlementError` (403) naming every id it isn't
-entitled to. A tool the caller isn't entitled to is invisible: it's excluded from `list_tools`,
-and calling it directly 404s exactly like a name that doesn't exist. A retired tool name instead
-answers `410` with a reason. When the host wires a rate limiter, every call is throttled per
-account before it reaches a handler (`429`).
+the CLI validates against before it reaches the host. An unknown tool name 404s; a retired tool
+name instead answers `410` with a reason. When the host wires a rate limiter, every call is
+throttled per account before it reaches a handler (`429`).
 
 <Cards>
   <Card title="Getting started" href="/docs/getting-started">

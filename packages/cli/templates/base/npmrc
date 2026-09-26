@@ -1,2 +1,0 @@
-@caisson:registry=https://registry.caisson.sh
-//registry.caisson.sh/:_authToken=${CAISSON_LICENSE_TOKEN}

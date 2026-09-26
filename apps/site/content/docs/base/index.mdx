@@ -20,8 +20,8 @@ never fork.
   `BillingProvider` port, with HMAC raw-body webhook verification.
 - **[ai-config](/docs/base/ai-config)**: provider-agnostic AI configuration with agent-assisted
   setup.
-- **[mcp-server](/docs/base/mcp-server)**: the buyer-facing MCP server, auth-gated and
-  entitlement-scoped.
+- **[mcp-server](/docs/base/mcp-server)**: the MCP server your agent connects to, auth-gated
+  with a timing-safe Bearer check.
 - **[ui](/docs/base/ui)**: a typed token floor: `--cs-*` OKLCH tokens, one light and one dark
   theme.
 - **[jobs](/docs/base/jobs)**: a Trigger.dev job port with test drivers; billing and credit
@@ -57,6 +57,5 @@ Three commercial modules extend the base without living in a persona bundle:
 
 ## Licensing
 
-The base packages are Apache-2.0 and never depend "up" on a commercial module. The Platform tier
-is commercial (`LicenseRef-Caisson-Commercial`) and requires a valid Caisson entitlement to
-install from the registry, the same model as every bundle module.
+Every package is Apache-2.0 and installs from public npm. The base packages never depend "up" on
+a higher-layer module.

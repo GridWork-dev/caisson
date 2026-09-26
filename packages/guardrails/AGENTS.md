@@ -16,7 +16,7 @@ Production Kit gateway must know to enforce content safety correctly (ADR-0063).
   PII. `GuardrailError.details` is `{ stage, category }` only. Echoing content would defeat the
   redaction the guard exists to enforce.
 - **No outbound call here.** Guardrails is a port boundary. The `provider` driver wraps an INJECTED
-  check; the buyer's real adapter performs the HTTP call with `fetchWithTimeout` (kernel floor) and
+  check; the app's real adapter performs the HTTP call with `fetchWithTimeout` (kernel floor) and
   CI injects a test double. The live transport stays the only un-exercised path.
 - **No edition up-import.** This is a base primitive (ADR-0003). It emits to the kernel sink; it
   never reaches into the Compliance WORM audit-chain (a different trust + retention model).

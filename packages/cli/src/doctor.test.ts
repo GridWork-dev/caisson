@@ -1,6 +1,6 @@
-// The doctor thin client end-to-end (ADR-0345): it calls the REAL buyer MCP check_usage tool over
-// an in-memory transport. An entitled buyer (doctor slug) gets typed findings; an unentitled buyer
-// hits the seam's invisible 404, surfaced as a clear error — never a silent empty result.
+// The doctor thin client end-to-end (ADR-0345): it calls the REAL MCP check_usage tool over an
+// in-memory transport. A server with the design-system tools returns typed findings; a server
+// without them answers the seam's 404, surfaced as a clear error — never a silent empty result.
 import { describe, expect, test } from "bun:test";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { loadRegistryIndex } from "@caisson/registry-schema";
@@ -32,15 +32,17 @@ const BROKEN: DoctorFile = {
 };
 
 async function runDoctor(
-  entitlements: string[],
   files: DoctorFile[],
+  withDesignSystem = true,
 ): Promise<Finding[]> {
   const server = createStdioMcpServer({
     mcp: {
-      tokens: [{ token: TOKEN, accountId: "acct", entitlements }],
+      tokens: [{ token: TOKEN, accountId: "acct" }],
       index: INDEX,
       onGenerate: async () => ({ generationId: "g" }),
-      dsManifest: { baseManifest: loadBaseManifest(), tokens: TOKENS },
+      ...(withDesignSystem
+        ? { dsManifest: { baseManifest: loadBaseManifest(), tokens: TOKENS } }
+        : {}),
     },
     bearer: TOKEN,
   });
@@ -53,21 +55,21 @@ async function runDoctor(
   return findings;
 }
 
-describe("caisson doctor — thin client of the buyer MCP", () => {
-  test("an entitled (doctor-slug) buyer gets typed findings", async () => {
-    const findings = await runDoctor(["ds-doctor"], [BROKEN]);
+describe("caisson doctor — thin client of the MCP server", () => {
+  test("a server with the design-system tools returns typed findings", async () => {
+    const findings = await runDoctor([BROKEN]);
     expect(findings.some((f) => f.rule === "unknown-component")).toBe(true);
   });
 
-  test("a correct-usage file yields zero findings for an entitled buyer", async () => {
+  test("a correct-usage file yields zero findings", async () => {
     const clean: DoctorFile = {
       path: "src/Ok.tsx",
       contents: `import { Button } from "@caisson/ui";\n<Button variant="primary">Go</Button>`,
     };
-    expect(await runDoctor(["ds-doctor"], [clean])).toEqual([]);
+    expect(await runDoctor([clean])).toEqual([]);
   });
 
-  test("an unentitled buyer is denied (invisible 404 surfaced as an error)", async () => {
-    await expect(runDoctor([], [BROKEN])).rejects.toThrow(/not_found/);
+  test("a server without check_usage is a clear error (404 surfaced), never an empty result", async () => {
+    await expect(runDoctor([BROKEN], false)).rejects.toThrow(/not_found/);
   });
 });

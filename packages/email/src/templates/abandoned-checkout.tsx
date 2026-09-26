@@ -2,7 +2,7 @@
 // operator-locked 2026-07-10). Matches `purchase-confirmation.tsx`'s tone exactly: a flat
 // statement of fact, the line items, one `EmailButton` back to the cart — no urgency copy, no
 // countdown, no "act now" (the same restraint `credits-expiring.tsx` uses). Sent once per
-// abandoned checkout by `services/license`'s abandoned-checkout sweep (the append-only
+// abandoned checkout by the host's abandoned-checkout sweep (the append-only
 // `checkout_abandonment_notice` marker gates the send). The discount block (env-gated,
 // `resolveAbandonedCheckoutDiscount`) is one plain sentence + the code — still no urgency framing.
 import { EmailBody, EmailButton, EmailLayout, EmailLink } from "./layout.tsx";

@@ -74,19 +74,16 @@ describe("applicableDimensions — the sparse class → lens matrix", () => {
     expect(applicableDimensions("buyer-runtime", "apps/site")).toContain("D8");
     expect(applicableDimensions("buyer-runtime", "apps/demos")).toContain("D8");
     expect(applicableDimensions("internal-only", "apps/admin")).toContain("D8");
-    // services/* ARE buyer-runtime but are backend APIs with nothing to render — a class-keyed D8
-    // would have manufactured dead cells here. Enumerated from deriveDomains rather than
-    // hand-typed (oss-pivot PR2 retired every services/* dir except services/license).
+    // services/* would be buyer-runtime backend APIs with nothing to render — a class-keyed D8
+    // would manufacture dead cells there. The open-source pivot retired every services/* dir, so
+    // deriveDomains yields none; a hypothetical one still carries no D8.
     const services = deriveDomains()
-      .filter(
-        (d) => d.class === "buyer-runtime" && d.id.startsWith("services/"),
-      )
+      .filter((d) => d.id.startsWith("services/"))
       .map((d) => d.id);
-    expect(services).toHaveLength(1);
-    expect(services).toContain("services/license");
-    for (const svc of services) {
-      expect(applicableDimensions("buyer-runtime", svc)).not.toContain("D8");
-    }
+    expect(services).toEqual([]);
+    expect(applicableDimensions("buyer-runtime", "services/api")).not.toContain(
+      "D8",
+    );
     // No package tree, no tooling dir, and no bare call picks it up.
     expect(
       applicableDimensions("internal-only", "packages/license-issue"),
@@ -125,8 +122,7 @@ describe("applicableDimensions — the sparse class → lens matrix", () => {
   });
 
   test("D5 (license-tier) applies only to internal-only PACKAGES, never a bare internal-only domain — no dead cells", () => {
-    // INTERNAL_COMMERCIAL_PKGS (domains.ts) are still real packages with a license/
-    // no-depend-up surface to check.
+    // An internal-only package is still a real package with a license surface to check.
     expect(
       applicableDimensions("internal-only", "packages/license-issue"),
     ).toContain("D5");

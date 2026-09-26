@@ -22,13 +22,13 @@ closed. None of the three guarantees depends on trusting a log entry.
 ## Install
 
 ```bash
-export CAISSON_LICENSE_TOKEN=<your registry token>
-bunx @caisson-sh/cli@latest --name caisson-app --edition provenance
+bunx @caisson-sh/cli@latest --name caisson-app --module <id@version>
 cd caisson-app
 bun install
 ```
 
-`--edition provenance` auto-selects the Provenance bundle's current modules, the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
+Repeat `--module <id@version>` once per module you want. Every module installs from public npm,
+no token needed; see [Getting started](/docs/getting-started) for the full flag reference.
 
 ## How it composes
 
@@ -60,9 +60,7 @@ The encryption boundary equals the RLS tenant boundary (`@caisson/tenancy-rls`):
 `withFieldCryptoContext` alongside `withTenant` so a query can never touch an encrypted column
 outside its own tenant scope.
 
-## Entitlement
+## License
 
-Provenance is a commercial bundle (`LicenseRef-Caisson-Commercial`). Buy the bundle, or any member
-module à la carte, a purchase grants the module's entitlement id, checked offline against the
-license. All three modules are also members of the Compliance bundle; `field-crypto` additionally
+Every module here is Apache-2.0 and installs from public npm. All three modules also appear in the Compliance family; `field-crypto` additionally
 composes with AI-Production and Local-first.

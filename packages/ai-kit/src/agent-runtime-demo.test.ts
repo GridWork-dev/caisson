@@ -3,8 +3,8 @@
 // MCP surfaces against the REAL PG stores (PGlite, mock model, zero network).
 //
 //   start   -> `caisson run start`'s thin MCP client (`@caisson/cli`'s `runStartClient`) calls the
-//              REAL `run_start` MCP tool (`@caisson/mcp-server`'s `createStdioMcpServer`, entitled on
-//              the dedicated agent-trajectory slug, ADR-0362), which invokes THIS package's
+//              REAL `run_start` MCP tool (`@caisson/mcp-server`'s `createStdioMcpServer`), which
+//              invokes THIS package's
 //              `buildRunTools` -> `runToolLoop` — a gated tool call parks the run.
 //   approve -> `caisson run approve`'s direct-DB surface (`@caisson/cli`'s `approveRun`, raw SQL, no
 //              MCP round-trip, S3's locked transport decision) — proves the MCP-started run and the
@@ -79,7 +79,6 @@ import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { loadRegistryIndex } from "@caisson/registry-schema";
 import {
   createStdioMcpServer,
-  DEFAULT_RUN_ENTITLEMENT,
   type McpServerOptions,
 } from "@caisson/mcp-server";
 import {
@@ -352,9 +351,7 @@ describe("parent-SPEC demo — start/park/approve/resume/finish across the CLI +
     });
 
     const mcpOptions: McpServerOptions = {
-      tokens: [
-        { token: TOKEN, accountId: A, entitlements: [DEFAULT_RUN_ENTITLEMENT] },
-      ],
+      tokens: [{ token: TOKEN, accountId: A }],
       index: INDEX,
       onGenerate: async () => ({ generationId: "g" }),
       runTools,

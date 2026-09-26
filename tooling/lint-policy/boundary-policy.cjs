@@ -1,10 +1,8 @@
-// The ONE boundary-policy data source (consolidation C24). Three enforcement engines read this
-// file and stay otherwise separate (ADR-0022): ESLint no-restricted-imports (boundaries.js, fast
-// static), dependency-cruiser (.dependency-cruiser.cjs, real module graph — dynamic/transitive),
-// and @caisson/standards-gate (SPDX/license authority; its EDITION_NAMES is parity-pinned to
-// BUNDLE_META_NAMES by test rather than imported, so its pre-install fs-only pass stays
-// dependency-free). CJS + zero imports on purpose: the cruiser config is CJS and this package
-// ships in the OSS mirror, so the data must load everywhere without a build.
+// The ONE boundary-policy data source (consolidation C24). Two enforcement engines read this
+// file and stay otherwise separate (ADR-0022): oxlint no-restricted-imports (fast static, parity-
+// pinned by test) and dependency-cruiser (.dependency-cruiser.cjs, real module graph —
+// dynamic/transitive). CJS + zero imports on purpose: the cruiser config is CJS, so the data must
+// load everywhere without a build.
 "use strict";
 
 /** Prohibited provider SDKs (ADR-0011/0022 Gate 2). Keep current — a stale denylist is a hole. */
@@ -50,41 +48,14 @@ const PROVIDER_SDK_RE = `node_modules/(${PROVIDER_SDKS.map((name) =>
 ).join("|")})`;
 
 /**
- * Bundle/edition meta-package workspace DIRS under `packages/` that exist on disk — the graph
- * layer's isolation + down-only targets. The four ADR-0257 legacy editions minus the deleted
- * `local-ai`, plus the five ADR-0257/0258 bundle roots.
+ * Composition-package workspace DIRS under `packages/` — the graph layer's isolation + down-only
+ * targets. Each composes base packages into a larger kit; nothing else may depend on one, and none
+ * may depend on another.
  */
-const BUNDLE_META_DIRS = [
-  "compliance",
-  "ai-kit",
-  "agent-dev",
-  "ai-production",
-  "local-first",
-  "agentic-dev",
-  "provenance",
-  "everything",
-];
-
-/**
- * Bundle/edition meta-package NAMES — the SPDX gate's class. A superset of BUNDLE_META_DIRS:
- * historical `kind:"edition"` entries stay served forever (ADR-0006 append-only ledger), so the
- * deleted `local-ai` workspace keeps its NAME row here even though it has no dir.
- */
-const BUNDLE_META_NAMES = [
-  "@caisson/compliance",
-  "@caisson/ai-kit",
-  "@caisson/local-ai",
-  "@caisson/agent-dev",
-  "@caisson/ai-production",
-  "@caisson/local-first",
-  "@caisson/agentic-dev",
-  "@caisson/provenance",
-  "@caisson/everything",
-];
+const BUNDLE_META_DIRS = ["compliance", "ai-kit", "agent-dev"];
 
 module.exports = {
   PROVIDER_SDKS,
   PROVIDER_SDK_RE,
   BUNDLE_META_DIRS,
-  BUNDLE_META_NAMES,
 };

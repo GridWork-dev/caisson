@@ -32,10 +32,7 @@ const index = loadRegistryIndex({
           manifest: {
             id: "@caisson/auth",
             version: "0.1.0",
-            kind: "base",
-            tier: "paid",
-            priceCents: 4900,
-            license: "LicenseRef-Caisson-Commercial",
+            license: "Apache-2.0",
             description: "Fixture module for the HTTP transport test.",
           },
           publishedAt: "2026-06-27T00:00:00.000Z",
@@ -46,20 +43,16 @@ const index = loadRegistryIndex({
   ],
 });
 
-// Two distinct buyers: A owns the fixture module, B owns nothing — used to prove the stateless
-// per-request transport never leaks one caller's session into another's response.
+// Two distinct callers on two accounts — used to prove the stateless per-request transport never
+// leaks one caller's session into another's response (run_status echoes the session's account).
 const TOKEN_A = "mcp_tok_http_buyer_a000000000000";
 const TOKEN_B = "mcp_tok_http_buyer_b000000000000";
 
 function baseMcpOptions(): McpServerOptions {
   return {
     tokens: [
-      {
-        token: TOKEN_A,
-        accountId: "acct_http_a",
-        entitlements: ["@caisson/auth"],
-      },
-      { token: TOKEN_B, accountId: "acct_http_b", entitlements: [] },
+      { token: TOKEN_A, accountId: "acct_http_a" },
+      { token: TOKEN_B, accountId: "acct_http_b" },
     ],
     index,
     onGenerate: () => Promise.resolve({ generationId: "gen_http_1" }),
@@ -293,7 +286,7 @@ describe("HTTP transport binding (ADR-0161)", () => {
       arguments: { name: "@caisson/billing" },
     });
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toMatchObject({ error: { code: "not_entitled" } });
+    expect(textOf(result)).toMatchObject({ error: { code: "not_found" } });
   });
 
   test("capabilities advertise resources, and resources/list + read round-trip over HTTP", async () => {
@@ -352,7 +345,13 @@ describe("HTTP transport binding (ADR-0161)", () => {
   });
 
   test("two different bearers get two independent, non-cross-talking sessions", async () => {
-    const { server, url } = await listen();
+    const { server, url } = await listen({
+      ...baseMcpOptions(),
+      runTools: {
+        runStart: async ({ accountId }) => ({ accountId }),
+        runStatus: async ({ accountId }) => ({ accountId }),
+      },
+    });
     openServers.push(server);
 
     const clientA = new Client({
@@ -370,25 +369,22 @@ describe("HTTP transport binding (ADR-0161)", () => {
     ]);
 
     // Same tool, same server process, two concurrent callers — each must see ONLY their own
-    // entitlements, proving the per-request session is never shared or reused across bearers.
+    // account (echoed back by the host's run_status callback), proving the per-request session is
+    // never shared or reused across bearers.
     const [resultA, resultB] = await Promise.all([
-      clientA.callTool({ name: "list_modules", arguments: {} }),
-      clientB.callTool({ name: "list_modules", arguments: {} }),
+      clientA.callTool({ name: "run_status", arguments: { runId: "r1" } }),
+      clientB.callTool({ name: "run_status", arguments: { runId: "r1" } }),
     ]);
-    expect(textOf(resultA)).toEqual({ modules: ["@caisson/auth"] });
-    expect(textOf(resultB)).toEqual({ modules: [] });
+    expect(textOf(resultA)).toEqual({ accountId: "acct_http_a" });
+    expect(textOf(resultB)).toEqual({ accountId: "acct_http_b" });
 
-    // B never owned the fixture module — an edition-blind 404-shaped denial, same as stdio.
+    // A failing call from B (unknown module) leaves A unaffected — no shared mutable session state.
     const describeB = await clientB.callTool({
       name: "describe_module",
-      arguments: { name: "@caisson/auth" },
+      arguments: { name: "@caisson/nope" },
     });
     expect(describeB.isError).toBe(true);
-    expect(textOf(describeB)).toMatchObject({
-      error: { code: "not_entitled" },
-    });
-
-    // A is unaffected by B's failed call in between — no shared mutable session state.
+    expect(textOf(describeB)).toMatchObject({ error: { code: "not_found" } });
     const describeA = await clientA.callTool({
       name: "describe_module",
       arguments: { name: "@caisson/auth" },

@@ -1,39 +1,24 @@
-// Argv-contract + ADR-0262 arming-rule regression tests (previously untested surface). Two
-// concerns:
-//  1. Pin `parseArgs`/`parseSampleArgs`/`runCli`/`HELP` — the CLI's public argv contract.
-//  2. Lock the interactive arming rule via dependency injection: `resolveSampleProjectName` and
-//     `resolveLicensed` take an injectable `loadInteractive` (real dynamic `import("./interactive.ts")`
-//     by default) so a test can assert it is NEVER called on a non-interactive path — a spy that
-//     THROWS if invoked, so an accidental interactive-path regression fails loudly instead of
-//     silently passing.
-import { describe, expect, mock, test } from "bun:test";
+// Argv-contract + ADR-0262 arming-rule regression tests. Two concerns:
+//  1. Pin `parseArgs`/`runCli`/`HELP` — the CLI's public argv contract.
+//  2. Lock the interactive arming rule via dependency injection: `resolveSelection` takes an
+//     injectable `loadInteractive` (real dynamic `import("./interactive.ts")` by default) so a test
+//     can assert it is NEVER called on a non-interactive path — a spy that THROWS if invoked, so an
+//     accidental interactive-path regression fails loudly instead of silently passing.
+import { afterAll, describe, expect, mock, test } from "bun:test";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadRegistryIndex } from "@caisson/registry-schema";
-import {
-  HELP,
-  type LicensedResolution,
-  parseArgs,
-  parseSampleArgs,
-  resolveDemoProjectName,
-  resolveLicensed,
-  resolveSampleProjectName,
-  runCli,
-} from "./cli.ts";
+import { HELP, parseArgs, resolveSelection, runCli } from "./cli.ts";
 import type { RawSelection } from "./generate.ts";
 import type * as InteractiveModule from "./interactive.ts";
 
 const manifest = (id: string, version: string) => ({
   id,
   version,
-  kind: "primitive" as const,
-  editions: [] as never[],
-  tier: "paid" as const,
-  priceCents: 100,
-  license: "LicenseRef-Caisson-Commercial" as const,
+  license: "Apache-2.0" as const,
   dependencies: [] as never[],
-  entry: "src/index.ts",
-  agents: "AGENTS.md",
-  golden: null,
   stability: "alpha" as const,
   description: "x",
 });
@@ -63,6 +48,39 @@ function neverImport(): Promise<typeof InteractiveModule> {
 }
 const forbiddenImport = mock(neverImport);
 
+// The spawned CLI reads the fixture catalog above, not the build's workspace catalog, so these
+// end-to-end tests stay independent of the real package versions.
+const INDEX_DIR = mkdtempSync(join(tmpdir(), "caisson-cli-index-"));
+const REGISTRY_PATH = join(INDEX_DIR, "registry-index.json");
+writeFileSync(REGISTRY_PATH, JSON.stringify(INDEX));
+afterAll(() => rmSync(INDEX_DIR, { recursive: true, force: true }));
+
+/** Spawn the real `create-caisson` entry non-interactively and collect its output. */
+async function spawnCli(
+  args: string[],
+): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+  const proc = Bun.spawn(
+    [
+      "bun",
+      "run",
+      fileURLToPath(new URL("./cli.ts", import.meta.url)),
+      ...args,
+    ],
+    {
+      env: { ...process.env, CAISSON_REGISTRY_INDEX: REGISTRY_PATH },
+      stdin: "ignore",
+      stdout: "pipe",
+      stderr: "pipe",
+    },
+  );
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ]);
+  return { stdout, stderr, exitCode };
+}
+
 describe("parseArgs — the argv contract", () => {
   test("no flags → an empty modules array, no other keys", () => {
     expect(parseArgs([])).toEqual({ modules: [] });
@@ -75,11 +93,8 @@ describe("parseArgs — the argv contract", () => {
     });
   });
 
-  test("--edition + a scoped --module id@version", () => {
-    expect(
-      parseArgs(["--edition", "compliance", "--module", "@caisson/x@1.2.3"]),
-    ).toEqual({
-      edition: "compliance",
+  test("a scoped --module id@version", () => {
+    expect(parseArgs(["--module", "@caisson/x@1.2.3"])).toEqual({
       modules: [{ id: "@caisson/x", version: "1.2.3" }],
     });
   });
@@ -99,12 +114,12 @@ describe("parseArgs — the argv contract", () => {
   });
 
   test("repeatable --module, last @ split keeps a scoped id intact", () => {
-    const raw = parseArgs([
+    const raw: RawSelection = parseArgs([
       "--module",
       "@caisson/a@1.0.0",
       "--module",
       "@caisson/b@2.0.0",
-    ]) as RawSelection;
+    ]);
     expect(raw.modules).toEqual([
       { id: "@caisson/a", version: "1.0.0" },
       { id: "@caisson/b", version: "2.0.0" },
@@ -119,6 +134,12 @@ describe("parseArgs — the argv contract", () => {
 
   test("an unknown flag throws", () => {
     expect(() => parseArgs(["--bogus"])).toThrow(/unknown argument/);
+  });
+
+  test("the retired --edition flag is an unknown argument", () => {
+    expect(() => parseArgs(["--edition", "compliance"])).toThrow(
+      /unknown argument/,
+    );
   });
 
   test("G2: a leading bare positional is the project name (bunx create-caisson my-app)", () => {
@@ -151,25 +172,7 @@ describe("parseArgs — the argv contract", () => {
   });
 });
 
-describe("parseSampleArgs — the free-sample argv contract", () => {
-  test("no flags → {}", () => {
-    expect(parseSampleArgs([])).toEqual({});
-  });
-
-  test("--name only", () => {
-    expect(parseSampleArgs(["--name", "acme"])).toEqual({
-      projectName: "acme",
-    });
-  });
-
-  test("an unknown flag throws (no --edition/--module here)", () => {
-    expect(() => parseSampleArgs(["--edition", "compliance"])).toThrow(
-      /unknown argument/,
-    );
-  });
-});
-
-describe("runCli — argv → generation plan (unchanged by ADR-0262/ADR-0268)", () => {
+describe("runCli — argv → generation plan", () => {
   test("equals generate(index, parseArgs(argv))", () => {
     const argv = ["--name", "acme-app", "--module", "@caisson/kernel@0.3.0"];
     const { selection, files } = runCli(argv, { index: INDEX });
@@ -193,120 +196,21 @@ describe("HELP text", () => {
     expect(HELP).toContain("next");
   });
 
-  test("documents the six-bundle vocabulary + the legacy edition aliases (ADR-0257/0258)", () => {
-    for (const bundle of [
-      "compliance",
-      "ai-production",
-      "local-first",
-      "agentic-dev",
-      "provenance",
-      "everything",
-    ]) {
-      expect(HELP).toContain(bundle);
-    }
-    expect(HELP).toContain("ai-kit");
-    expect(HELP).toContain("local-ai");
-    expect(HELP).toContain("agent-dev");
-  });
-
-  test("documents --edition auto-selection (CAISSON-88)", () => {
-    expect(HELP).toContain("AUTO-SELECTS the bundle's current modules");
-    expect(HELP).toContain("add --module to");
-  });
-
-  test("documents --demo (ADR-0274 §1)", () => {
-    expect(HELP).toContain("--demo");
-    expect(HELP).toContain("no license");
-  });
-
   test("G2: documents the leading-positional shorthand", () => {
     expect(HELP).toContain("<name>");
     expect(HELP).toContain("shorthand for --name");
   });
 
-  test("G28: names the real license-token env var, never the stale NODE_AUTH_TOKEN", () => {
-    expect(HELP).toContain("CAISSON_LICENSE_TOKEN");
-    expect(HELP).not.toContain("NODE_AUTH_TOKEN");
+  test("points installs at public npm and names no license token or retired flag", () => {
+    expect(HELP).toContain("public npm registry");
+    expect(HELP).not.toMatch(/_TOKEN\b/);
+    for (const retired of ["license key", "--edition", "--sample", "--demo"]) {
+      expect(HELP).not.toContain(retired);
+    }
   });
 });
 
-describe("resolveSampleProjectName — ADR-0262 arming rule (--sample path)", () => {
-  test("projectName already given → returns it, interactive.ts NEVER loaded (even if isTTY)", async () => {
-    forbiddenImport.mockClear();
-    const name = await resolveSampleProjectName(
-      ["--name", "acme"],
-      /* isTTY */ true,
-      forbiddenImport,
-    );
-    expect(name).toBe("acme");
-    expect(forbiddenImport).not.toHaveBeenCalled();
-  });
-
-  test("projectName missing + non-TTY → throws the pre-ADR-0262 error, interactive.ts NEVER loaded", async () => {
-    forbiddenImport.mockClear();
-    await expect(
-      resolveSampleProjectName([], /* isTTY */ false, forbiddenImport),
-    ).rejects.toThrow(/--sample requires --name/);
-    expect(forbiddenImport).not.toHaveBeenCalled();
-  });
-
-  test("projectName missing + isTTY → prompts via the injected interactive module", async () => {
-    const fakeLoad = mock(async () => ({
-      promptSampleProjectName: async () => "prompted-name",
-      runWizard: async () => {
-        throw new Error("not exercised in this test");
-      },
-      DEFAULT_SAMPLE_ID: "eu-ai-act-sample",
-    }));
-    const name = await resolveSampleProjectName(
-      [],
-      true,
-      fakeLoad as unknown as () => Promise<typeof InteractiveModule>,
-    );
-    expect(name).toBe("prompted-name");
-    expect(fakeLoad).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("resolveDemoProjectName — ADR-0274 arming rule (--demo path)", () => {
-  test("projectName already given → returns it, interactive.ts NEVER loaded (even if isTTY)", async () => {
-    forbiddenImport.mockClear();
-    const name = await resolveDemoProjectName(
-      ["--name", "acme"],
-      /* isTTY */ true,
-      forbiddenImport,
-    );
-    expect(name).toBe("acme");
-    expect(forbiddenImport).not.toHaveBeenCalled();
-  });
-
-  test("projectName missing + non-TTY → throws a clear error, interactive.ts NEVER loaded", async () => {
-    forbiddenImport.mockClear();
-    await expect(
-      resolveDemoProjectName([], /* isTTY */ false, forbiddenImport),
-    ).rejects.toThrow(/--demo requires --name/);
-    expect(forbiddenImport).not.toHaveBeenCalled();
-  });
-
-  test("projectName missing + isTTY → prompts via the injected interactive module", async () => {
-    const fakeLoad = mock(async () => ({
-      promptSampleProjectName: async () => "prompted-name",
-      runWizard: async () => {
-        throw new Error("not exercised in this test");
-      },
-      DEFAULT_SAMPLE_ID: "eu-ai-act-sample",
-    }));
-    const name = await resolveDemoProjectName(
-      [],
-      true,
-      fakeLoad as unknown as () => Promise<typeof InteractiveModule>,
-    );
-    expect(name).toBe("prompted-name");
-    expect(fakeLoad).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("resolveLicensed — ADR-0262/ADR-0268 arming rule (licensed path)", () => {
+describe("resolveSelection — ADR-0262/ADR-0268 arming rule", () => {
   const argv = (extra: string[] = []) => [
     "--name",
     "acme-app",
@@ -317,64 +221,27 @@ describe("resolveLicensed — ADR-0262/ADR-0268 arming rule (licensed path)", ()
 
   test("all required fields present + isTTY → zero prompt code, raw === parseArgs(argv)", async () => {
     forbiddenImport.mockClear();
-    const expected = parseArgs(argv());
-    const resolved = await resolveLicensed(
+    const resolved = await resolveSelection(
       argv(),
       INDEX,
       /* isTTY */ true,
       forbiddenImport,
     );
-    expect(resolved).toEqual({ kind: "licensed", raw: expected });
+    expect(resolved).toEqual(parseArgs(argv()));
     expect(forbiddenImport).not.toHaveBeenCalled();
   });
 
   test("non-TTY stdin, even with a gap (missing --name) → zero prompt code", async () => {
     forbiddenImport.mockClear();
     const partial = ["--module", "@caisson/kernel@0.3.0"];
-    const expected = parseArgs(partial);
-    const resolved = await resolveLicensed(
+    const resolved = await resolveSelection(
       partial,
       INDEX,
       /* isTTY */ false,
       forbiddenImport,
     );
-    expect(resolved).toEqual({ kind: "licensed", raw: expected });
+    expect(resolved).toEqual(parseArgs(partial));
     expect(forbiddenImport).not.toHaveBeenCalled();
-  });
-
-  test("a partial invocation (--edition alone) gap-fills via the wizard WITHOUT a pure run", async () => {
-    let seenPureRun: boolean | undefined;
-    const fakeLoad = mock(async () => ({
-      promptSampleProjectName: async () => {
-        throw new Error("not exercised in this test");
-      },
-      runWizard: async (
-        _index: unknown,
-        flags: { pureRun: boolean },
-      ): Promise<LicensedResolution & { kind: "licensed" }> => {
-        seenPureRun = flags.pureRun;
-        return {
-          kind: "licensed",
-          raw: {
-            projectName: "wizard-name",
-            edition: "compliance",
-            modules: [],
-          },
-        };
-      },
-      DEFAULT_SAMPLE_ID: "eu-ai-act-sample",
-    }));
-    const resolved = await resolveLicensed(
-      ["--edition", "compliance"],
-      INDEX,
-      true,
-      fakeLoad as unknown as () => Promise<typeof InteractiveModule>,
-    );
-    expect(seenPureRun).toBe(false);
-    expect(resolved).toEqual({
-      kind: "licensed",
-      raw: { projectName: "wizard-name", edition: "compliance", modules: [] },
-    });
   });
 
   test("--framework alone (ADR-0287) arms a non-pure-run gap-fill and is forwarded to the wizard", async () => {
@@ -382,26 +249,21 @@ describe("resolveLicensed — ADR-0262/ADR-0268 arming rule (licensed path)", ()
       | { pureRun: boolean; framework?: string; modules: unknown[] }
       | undefined;
     const fakeLoad = mock(async () => ({
-      promptSampleProjectName: async () => {
-        throw new Error("not exercised in this test");
-      },
       runWizard: async (
         _index: unknown,
         flags: { pureRun: boolean; framework?: string; modules: unknown[] },
-      ): Promise<LicensedResolution & { kind: "licensed" }> => {
+      ): Promise<RawSelection> => {
         seenFlags = flags;
         return {
-          kind: "licensed",
-          raw: {
-            projectName: "wizard-name",
-            modules: [],
-            framework: flags.framework,
-          },
+          projectName: "wizard-name",
+          modules: [],
+          ...(flags.framework !== undefined
+            ? { framework: flags.framework }
+            : {}),
         };
       },
-      DEFAULT_SAMPLE_ID: "eu-ai-act-sample",
     }));
-    const resolved = await resolveLicensed(
+    const resolved = await resolveSelection(
       ["--framework", "next"],
       INDEX,
       true,
@@ -413,269 +275,86 @@ describe("resolveLicensed — ADR-0262/ADR-0268 arming rule (licensed path)", ()
       modules: [],
     });
     expect(resolved).toEqual({
-      kind: "licensed",
-      raw: { projectName: "wizard-name", modules: [], framework: "next" },
+      projectName: "wizard-name",
+      modules: [],
+      framework: "next",
     });
   });
 
-  test("zero selection flags at all → pureRun=true; the wizard may resolve to the sample branch", async () => {
+  test("zero selection flags at all → pureRun=true", async () => {
     let seenPureRun: boolean | undefined;
     const fakeLoad = mock(async () => ({
-      promptSampleProjectName: async () => {
-        throw new Error("not exercised in this test");
-      },
-      runWizard: async (_index: unknown, flags: { pureRun: boolean }) => {
+      runWizard: async (
+        _index: unknown,
+        flags: { pureRun: boolean },
+      ): Promise<RawSelection> => {
         seenPureRun = flags.pureRun;
-        return { kind: "sample" as const, projectName: "picked-sample" };
+        return { projectName: "picked", modules: [] };
       },
-      DEFAULT_SAMPLE_ID: "eu-ai-act-sample",
     }));
-    const resolved = await resolveLicensed(
+    const resolved = await resolveSelection(
       [],
       INDEX,
       true,
       fakeLoad as unknown as () => Promise<typeof InteractiveModule>,
     );
     expect(seenPureRun).toBe(true);
-    expect(resolved).toEqual({
-      kind: "sample",
-      sampleId: "eu-ai-act-sample",
-      projectName: "picked-sample",
-    });
-  });
-
-  test("zero selection flags at all → the wizard may resolve to the demo branch (ADR-0274)", async () => {
-    const fakeLoad = mock(async () => ({
-      promptSampleProjectName: async () => {
-        throw new Error("not exercised in this test");
-      },
-      runWizard: async () => ({
-        kind: "demo" as const,
-        projectName: "picked-demo",
-      }),
-      DEFAULT_SAMPLE_ID: "eu-ai-act-sample",
-    }));
-    const resolved = await resolveLicensed(
-      [],
-      INDEX,
-      true,
-      fakeLoad as unknown as () => Promise<typeof InteractiveModule>,
-    );
-    expect(resolved).toEqual({ kind: "demo", projectName: "picked-demo" });
+    expect(resolved).toEqual({ projectName: "picked", modules: [] });
   });
 });
 
 describe("end-to-end: a real non-interactive invocation never touches a TTY-only prompt", () => {
-  test("a fully-specified, non-TTY invocation dry-runs with unchanged stdout and exit 0", async () => {
-    const registryPath = fileURLToPath(
-      new URL("../../../registry/index.json", import.meta.url),
-    );
-    const proc = Bun.spawn(
-      [
-        "bun",
-        "run",
-        fileURLToPath(new URL("./cli.ts", import.meta.url)),
-        "--name",
-        "acme-app",
-        "--module",
-        "@caisson/kernel@0.3.0",
-        "--dry-run",
-      ],
-      {
-        env: { ...process.env, CAISSON_REGISTRY_INDEX: registryPath },
-        stdin: "ignore",
-        stdout: "pipe",
-        stderr: "pipe",
-      },
-    );
-    const [stdout, stderr, exitCode] = await Promise.all([
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-      proc.exited,
+  test("a fully-specified, non-TTY invocation dry-runs with exit 0 and no .npmrc", async () => {
+    const { stdout, stderr, exitCode } = await spawnCli([
+      "--name",
+      "acme-app",
+      "--module",
+      "@caisson/kernel@0.3.0",
+      "--dry-run",
     ]);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
     expect(stdout).toContain(
-      'create-caisson: dry-run — 10 files for "acme-app"',
+      'create-caisson: dry-run — 9 files for "acme-app"',
     );
+    // Modules install from public npm: no registry-scope .npmrc is ever emitted.
+    expect(stdout).not.toContain(".npmrc");
   });
 
   test("G2: the advertised `create-caisson my-app` quickstart command dry-runs cleanly", async () => {
-    const registryPath = fileURLToPath(
-      new URL("../../../registry/index.json", import.meta.url),
-    );
-    const proc = Bun.spawn(
-      [
-        "bun",
-        "run",
-        fileURLToPath(new URL("./cli.ts", import.meta.url)),
-        "acme-app", // leading positional — no --name
-        "--module",
-        "@caisson/kernel@0.3.0",
-        "--dry-run",
-      ],
-      {
-        env: { ...process.env, CAISSON_REGISTRY_INDEX: registryPath },
-        stdin: "ignore",
-        stdout: "pipe",
-        stderr: "pipe",
-      },
-    );
-    const [stdout, stderr, exitCode] = await Promise.all([
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-      proc.exited,
+    const { stdout, stderr, exitCode } = await spawnCli([
+      "acme-app", // leading positional — no --name
+      "--module",
+      "@caisson/kernel@0.3.0",
+      "--dry-run",
     ]);
     expect(exitCode).toBe(0);
     expect(stderr).toBe("");
     expect(stdout).toContain(
-      'create-caisson: dry-run — 10 files for "acme-app"',
+      'create-caisson: dry-run — 9 files for "acme-app"',
     );
   });
 
-  test("--sample with a missing name + non-TTY stdin fails fast (no hang, no prompt)", async () => {
-    const proc = Bun.spawn(
-      [
-        "bun",
-        "run",
-        fileURLToPath(new URL("./cli.ts", import.meta.url)),
-        "--sample",
-        "eu-ai-act-sample",
-      ],
-      { stdin: "ignore", stdout: "pipe", stderr: "pipe" },
-    );
-    const [stderr, exitCode] = await Promise.all([
-      new Response(proc.stderr).text(),
-      proc.exited,
+  test("the retired --sample/--demo/--edition flags fail fast as unknown arguments", async () => {
+    for (const args of [
+      ["--sample", "eu-ai-act-sample", "--name", "acme"],
+      ["--demo", "--name", "acme"],
+      ["--name", "acme", "--edition", "compliance"],
+    ]) {
+      const { stderr, exitCode } = await spawnCli(args);
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain("create-caisson: unknown argument");
+    }
+  });
+
+  test("P2-5: --out immediately followed by another flag does NOT swallow it as the directory", async () => {
+    const { stderr, exitCode } = await spawnCli([
+      "--out",
+      "--dry-run",
+      "--name",
+      "acme",
     ]);
     expect(exitCode).toBe(1);
-    expect(stderr).toBe("create-caisson: --sample requires --name <slug>\n");
-  });
-
-  test("--demo against the REAL registry index dry-runs: no license, commercial ids stubbed (ADR-0274)", async () => {
-    const registryPath = fileURLToPath(
-      new URL("../../../registry/index.json", import.meta.url),
-    );
-    const index = (
-      await import("@caisson/registry-schema")
-    ).loadRegistryIndexFromFile(registryPath);
-    const paidCount = index.modules.filter(
-      (m) =>
-        m.versions.find((v) => v.version === m.latest)?.manifest.tier ===
-        "paid",
-    ).length;
-
-    const proc = Bun.spawn(
-      [
-        "bun",
-        "run",
-        fileURLToPath(new URL("./cli.ts", import.meta.url)),
-        "--demo",
-        "--name",
-        "acme-demo",
-        "--dry-run",
-      ],
-      {
-        env: { ...process.env, CAISSON_REGISTRY_INDEX: registryPath },
-        stdin: "ignore",
-        stdout: "pipe",
-        stderr: "pipe",
-      },
-    );
-    const [stdout, stderr, exitCode] = await Promise.all([
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-      proc.exited,
-    ]);
-    expect(exitCode).toBe(0);
-    expect(stderr).toBe("");
-    expect(stdout).toContain(
-      `${paidCount} of ${index.modules.length} modules stubbed`,
-    );
-    expect(stdout).toContain("DEMO.md");
-    // F1: .npmrc is emitted (tokenless scope mapping) — never deleted, never absent (demo.test.ts
-    // pins the exact tokenless content; this just locks the file plan includes it).
-    expect(stdout).toContain(".npmrc");
-  });
-
-  test("--demo and --sample together fail fast with a clear error", async () => {
-    const proc = Bun.spawn(
-      [
-        "bun",
-        "run",
-        fileURLToPath(new URL("./cli.ts", import.meta.url)),
-        "--demo",
-        "--sample",
-        "eu-ai-act-sample",
-        "--name",
-        "acme",
-      ],
-      { stdin: "ignore", stdout: "pipe", stderr: "pipe" },
-    );
-    const [stderr, exitCode] = await Promise.all([
-      new Response(proc.stderr).text(),
-      proc.exited,
-    ]);
-    expect(exitCode).toBe(1);
-    expect(stderr).toBe(
-      "create-caisson: --sample and --demo are mutually exclusive\n",
-    );
-  });
-
-  test('P2-5: --sample immediately followed by --demo does NOT greedily swallow "--demo" as the template id', async () => {
-    const proc = Bun.spawn(
-      [
-        "bun",
-        "run",
-        fileURLToPath(new URL("./cli.ts", import.meta.url)),
-        "--sample",
-        "--demo",
-        "--name",
-        "acme",
-      ],
-      { stdin: "ignore", stdout: "pipe", stderr: "pipe" },
-    );
-    const [stderr, exitCode] = await Promise.all([
-      new Response(proc.stderr).text(),
-      proc.exited,
-    ]);
-    expect(exitCode).toBe(1);
-    // Before the fix this produced "unknown sample template id: --demo" — a misleading error from
-    // --sample silently consuming the NEXT flag as its value.
-    expect(stderr).toBe("create-caisson: --sample requires a template id\n");
-  });
-
-  test("CAISSON-88: `--edition <bundle>` with NO --module dry-runs (auto-expands, non-TTY)", async () => {
-    // Pre-CAISSON-88 this failed the `Selection.modules.min(1)` invariant; now the bundle's current
-    // members auto-populate, so an edition-only invocation composes without any `--module`.
-    const registryPath = fileURLToPath(
-      new URL("../../../registry/index.json", import.meta.url),
-    );
-    const proc = Bun.spawn(
-      [
-        "bun",
-        "run",
-        fileURLToPath(new URL("./cli.ts", import.meta.url)),
-        "--name",
-        "acme-app",
-        "--edition",
-        "compliance",
-        "--dry-run",
-      ],
-      {
-        env: { ...process.env, CAISSON_REGISTRY_INDEX: registryPath },
-        stdin: "ignore",
-        stdout: "pipe",
-        stderr: "pipe",
-      },
-    );
-    const [stdout, stderr, exitCode] = await Promise.all([
-      new Response(proc.stdout).text(),
-      new Response(proc.stderr).text(),
-      proc.exited,
-    ]);
-    expect(exitCode).toBe(0);
-    expect(stderr).toBe("");
-    expect(stdout).toContain('for "acme-app" (compliance edition)');
+    expect(stderr).toBe("create-caisson: --out requires a directory\n");
   });
 });

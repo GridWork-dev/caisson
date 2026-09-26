@@ -1,7 +1,7 @@
 {
   "name": "@caisson/billing",
   "version": "0.6.9",
-  "description": "Open billing seam: raw-body HMAC webhook signature verification (Stripe, Paddle, LemonSqueezy, Polar), the BillingProvider port + config-type contracts, and the provider-agnostic DomainBillingEvent schema. Drivers/parsers/idempotency live in the commercial @caisson/billing-orchestration.",
+  "description": "Billing seam: raw-body HMAC webhook signature verification (Stripe, Paddle, LemonSqueezy, Polar), the BillingProvider port + config-type contracts, and the provider-agnostic DomainBillingEvent schema. Drivers/parsers/idempotency live in @caisson/billing-orchestration.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {

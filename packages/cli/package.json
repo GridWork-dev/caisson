@@ -1,7 +1,7 @@
 {
   "name": "@caisson/cli",
   "version": "0.8.1",
-  "description": "create-caisson generator: composes a tailored repo from the versioned registry; agent-drivable; codegen-credit metered.",
+  "description": "create-caisson generator: composes a tailored repo from the versioned module catalog; agent-drivable.",
   "license": "Apache-2.0",
   "bin": {
     "caisson": "./dist/caisson.js",
@@ -10,7 +10,6 @@
   "files": [
     "dist",
     "templates",
-    "migrations-bundle",
     "registry-index.json"
   ],
   "type": "module",
@@ -26,7 +25,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "build": "bun run scripts/bundle-migrations.ts && bun run scripts/bundle-registry-index.ts && tscn -p tsconfig.json && tscn -p tsconfig.scripts.json && bun run scripts/add-shebang.ts",
+    "build": "bun run scripts/bundle-registry-index.ts && tscn -p tsconfig.json && tscn -p tsconfig.scripts.json && bun run scripts/add-shebang.ts",
     "lint": "oxlint src scripts",
     "test": "bun test --timeout 60000 ./src ./scripts"
   },

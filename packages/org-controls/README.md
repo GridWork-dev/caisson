@@ -1,7 +1,7 @@
 # @caisson/org-controls
 
-Commercial ($249, ADR-0257). Org & operator controls, carved out of the open Base so the
-Apache-2.0 substrate stays as small as the org features allow:
+Org & operator controls (Apache-2.0), kept apart from `@caisson/auth` and `@caisson/tenancy-rls`
+so an app that needs neither SSO nor an operator plane never installs them:
 
 - **WorkOS SSO** (`createWorkosSsoProvider`) — framework-agnostic AuthKit/SSO transport seam;
   config is injected, never read from env by the package.
@@ -12,16 +12,16 @@ Apache-2.0 substrate stays as small as the org features allow:
   multi-account/seat resolution should route the verified `userId` through `@caisson/auth`'s
   `resolveUserAccounts`/`selectActiveAccount` instead.
 - **Owner-gated membership** (`listAccountMembers` / `addAccountMember` / `assertCanManageMembers`)
-  — the MANAGE half of the multi-user account model. Buyer **session resolution**
-  (`resolveUserAccounts` / `ensurePersonalAccount` / `selectActiveAccount`) stays in the open
-  `@caisson/auth` — it runs on every login and must never sit behind this entitlement.
+  — the MANAGE half of the multi-user account model. User **session resolution**
+  (`resolveUserAccounts` / `ensurePersonalAccount` / `selectActiveAccount`) stays in
+  `@caisson/auth` — it runs on every login and must never sit behind this package.
 - **Admin-write RLS layer** (`withAdminWrite` + the policy/role builders) — the cross-tenant
-  write role the operator control plane mutates through, DB-separated from the buyer `app` role.
-  Buyer tenant isolation (`withTenant` / `withUser`) stays in the open `@caisson/tenancy-rls`.
-- **Entitlement gate** (`holdsOrgControls`) — the fail-closed predicate gating the product's own
-  surfaces (e.g. `/dashboard/members`).
+  write role the operator control plane mutates through, DB-separated from the tenant `app` role.
+  Tenant isolation (`withTenant` / `withUser`) stays in `@caisson/tenancy-rls`.
+- **Feature gate** (`holdsOrgControls`) — a fail-closed predicate an app can use to gate its own
+  org surfaces (e.g. `/dashboard/members`) on a granted feature id.
 
-Composes DOWN onto `@caisson/auth`, `@caisson/tenancy-rls`, and `@caisson/kernel` (commercial → open).
+Composes DOWN onto `@caisson/auth`, `@caisson/tenancy-rls`, and `@caisson/kernel`.
 
 ## Entry points
 

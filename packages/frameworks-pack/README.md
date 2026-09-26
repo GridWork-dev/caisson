@@ -24,5 +24,5 @@ import {
 } from "@caisson/frameworks-pack";
 ```
 
-Commercial module. Sits on `@caisson/kernel` only — down-only, composed by the Compliance edition,
-never the reverse.
+Apache-2.0. Sits on `@caisson/kernel` only — down-only, composed by `@caisson/compliance`, never
+the reverse.

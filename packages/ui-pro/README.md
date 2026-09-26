@@ -1,13 +1,11 @@
 # @caisson/ui-pro
 
-The premium component tier for Caisson applications. It layers advanced data-ops
-and compliance surfaces on the open `@caisson/ui` design-system floor — the
-components a free kit paywalls, plus domain-composed operations views.
+The advanced component tier for Caisson applications. It layers data-ops and
+compliance surfaces on the `@caisson/ui` design-system floor — heavier data
+components plus domain-composed operations views.
 
-This is commercial software (`LicenseRef-Caisson-Commercial`) and requires a
-valid Caisson entitlement to install from the registry. It builds on the open
-Apache-2.0 `@caisson/ui` base and adds nothing you cannot theme through the same
-token contract.
+Licensed Apache-2.0, like the `@caisson/ui` base it builds on, and adds nothing
+you cannot theme through the same token contract.
 
 ## Components
 
@@ -17,7 +15,7 @@ token contract.
 - **TreePro** — a virtualized tree for large hierarchies with lazy-loaded
   children and keyboard navigation.
 - **OpsMatrix** — a generalized coverage matrix for permissions, controls, and
-  SKU comparisons.
+  feature comparisons.
 - **AuditTimeline** — a hash-chain event timeline with per-link verification
   badges. Takes chain entries as props; no runtime coupling to a store.
 - **PayloadViewer** — a redaction-aware JSON / payload viewer with a collapsible

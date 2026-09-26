@@ -120,8 +120,7 @@
   gap: var(--cs-space-4);
 }
 
-.resultHead,
-.previewMeta {
+.resultHead {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -241,17 +240,6 @@
 
 .viewer {
   min-width: 0;
-}
-
-/* ===== Shared preview pane ===== */
-.preview {
-  display: grid;
-  gap: var(--cs-space-4);
-}
-
-.previewSteps {
-  display: grid;
-  gap: var(--cs-space-4);
 }
 
 /* ===== Excerpts ===== */

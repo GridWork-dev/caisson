@@ -3,7 +3,7 @@
 The Local-first edition's inference seam: one `InferenceBackend` port (`embed` / `complete`) with
 three implementations sharing it — a deterministic offline stub, a guarded on-device ONNX backend,
 and metered rented-backend transports (OpenRouter, Azure OpenAI, Bedrock) — all routed through the
-`@caisson/local-privacy` egress gate. A base primitive (paid, `LicenseRef-Caisson-Commercial`).
+`@caisson/local-privacy` egress gate. A base primitive (Apache-2.0).
 
 ## What it gives you
 
@@ -47,4 +47,4 @@ const { text } = await backend.complete({
 vector) and rejects a non-positive `dim`; the rented transports are exercised against a fake
 `RentedTransport`/`MeterSink`, never a live model or a live network call.
 
-License: `LicenseRef-Caisson-Commercial`.
+License: Apache-2.0.

@@ -1,7 +1,7 @@
 # @caisson/ui-pro — authoring contract
 
-The commercial component tier. Consume it from a first-party application or a
-licensed buyer app; nothing under `packages/` may depend on it (it is a leaf).
+The advanced component tier. Consume it from an application; nothing under
+`packages/` may depend on it (it is a leaf).
 
 ## Rules
 

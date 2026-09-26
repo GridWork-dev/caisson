@@ -137,8 +137,7 @@
         "**/bin/**",
         "**/*.cli.ts",
         "**/scripts/**",
-        "tooling/scripts/**",
-        "registry/scripts/**"
+        "tooling/scripts/**"
       ],
       "rules": { "eslint/no-console": "off" }
     },

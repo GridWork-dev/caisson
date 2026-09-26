@@ -1,12 +1,10 @@
 // Slice A — the MCP RESOURCES surface, the read-side mirror of the tool registry. These
 // core-level tests drive `createMcpServer.listResources`/`readResource` directly (no transport) to
-// prove the SPEC's non-negotiable boundaries:
-//   (i)   resources/list shows ONLY entitled resources — the pro roster is invisible without the
-//         ui-pro slug, visible with it (mirrors the describe_pro_component tool boundary);
-//   (ii)  a read on an UNKNOWN and on an UNENTITLED URI return the identical not-found shape — an
-//         entitlement-gated resource never leaks that it exists;
-//   (iii) the registry-index resource serves the FULL catalog to a zero-entitlement buyer (operator
-//         lock 2026-07-17: discovery is the point; prices/tiers are already public marketing data);
+// prove:
+//   (i)   resources/list shows every registered resource to every authenticated caller, and the
+//         pro roster exists only when a pro manifest is supplied;
+//   (ii)  a read on an UNKNOWN URI is a not-found;
+//   (iii) the registry-index resource serves the FULL catalog to any authenticated caller;
 //   (iv)  the ADR-0112 rate-limit hook is awaited on a read, and a denied hook blocks it.
 // The transport round-trip + advertised capabilities (v) live in stdio.test.ts / http.test.ts.
 import { describe, expect, test } from "bun:test";
@@ -44,10 +42,7 @@ const INDEX = loadRegistryIndex({
           manifest: {
             id: "@caisson/auth",
             version: "0.1.0",
-            kind: "base",
-            tier: "paid",
-            priceCents: 4900,
-            license: "LicenseRef-Caisson-Commercial",
+            license: "Apache-2.0",
             description: "Fixture module A.",
           },
           publishedAt: "2026-06-27T00:00:00.000Z",
@@ -64,10 +59,7 @@ const INDEX = loadRegistryIndex({
           manifest: {
             id: "@caisson/billing",
             version: "0.2.0",
-            kind: "base",
-            tier: "paid",
-            priceCents: 9900,
-            license: "LicenseRef-Caisson-Commercial",
+            license: "Apache-2.0",
             description: "Fixture module B.",
           },
           publishedAt: "2026-06-27T00:00:00.000Z",
@@ -113,11 +105,10 @@ const DS_PRO_URI = "caisson://design-system/pro-components";
 function makeServer(overrides: Partial<McpServerOptions> = {}) {
   return createMcpServer({
     tokens: [
-      { token: T_BASE, accountId: "acct_base", entitlements: [] },
+      { token: T_BASE, accountId: "acct_base" },
       {
         token: T_PRO,
         accountId: "acct_pro",
-        entitlements: ["@caisson/ui-pro"],
       },
     ],
     index: INDEX,
@@ -131,14 +122,14 @@ function makeServer(overrides: Partial<McpServerOptions> = {}) {
   });
 }
 
-describe("registry-index resource (operator lock — full catalog to any authenticated buyer)", () => {
-  test("a zero-entitlement buyer reads the FULL catalog, not just what they own", async () => {
+describe("registry-index resource (full catalog to any authenticated caller)", () => {
+  test("an authenticated caller reads the FULL catalog", async () => {
     const server = makeServer();
     const base = server.authenticate(T_BASE);
     const index = (await server.readResource(base, REGISTRY_URI)) as {
       modules: { id: string }[];
     };
-    // The buyer owns nothing, yet sees every module in the built index — discovery is the point.
+    // Every module in the built index — discovery is the point.
     expect(index.modules.map((m) => m.id).sort()).toEqual([
       "@caisson/auth",
       "@caisson/billing",
@@ -147,7 +138,7 @@ describe("registry-index resource (operator lock — full catalog to any authent
 
   test("the registry index is always registered, even with no design-system manifest", async () => {
     const server = createMcpServer({
-      tokens: [{ token: T_BASE, accountId: "acct_base", entitlements: [] }],
+      tokens: [{ token: T_BASE, accountId: "acct_base" }],
       index: INDEX,
       onGenerate: async () => ({ generationId: "g" }),
     });
@@ -158,32 +149,27 @@ describe("registry-index resource (operator lock — full catalog to any authent
   });
 });
 
-describe("boundary (i) — listResources shows only entitled resources", () => {
+describe("boundary (i) — listResources shows every registered resource", () => {
   const server = makeServer();
   const base = server.authenticate(T_BASE);
   const pro = server.authenticate(T_PRO);
 
-  test("a base buyer's resource set is exactly the three open URIs (pro excluded)", () => {
-    expect(
-      server
-        .listResources(base)
-        .map((r) => r.uri)
-        .sort(),
-    ).toEqual([DS_COMPONENTS_URI, DS_TOKENS_URI, REGISTRY_URI]);
-    expect(server.listResources(base).map((r) => r.uri)).not.toContain(
-      DS_PRO_URI,
-    );
-  });
-
-  test("a pro buyer additionally sees the pro roster and can read it", async () => {
-    expect(server.listResources(pro).map((r) => r.uri)).toContain(DS_PRO_URI);
-    const roster = (await server.readResource(pro, DS_PRO_URI)) as {
+  test("every caller sees the same four URIs, and can read the pro roster", async () => {
+    for (const caller of [base, pro]) {
+      expect(
+        server
+          .listResources(caller)
+          .map((r) => r.uri)
+          .sort(),
+      ).toEqual([DS_COMPONENTS_URI, DS_PRO_URI, DS_TOKENS_URI, REGISTRY_URI]);
+    }
+    const roster = (await server.readResource(base, DS_PRO_URI)) as {
       components: { name: string }[];
     };
     expect(roster.components.map((c) => c.name)).toContain("DataTablePro");
   });
 
-  test("the open design-system resources are readable by every authenticated buyer", async () => {
+  test("the open design-system resources are readable by every authenticated caller", async () => {
     const components = (await server.readResource(base, DS_COMPONENTS_URI)) as {
       components: { name: string }[];
     };
@@ -198,13 +184,7 @@ describe("boundary (i) — listResources shows only entitled resources", () => {
 
   test("the pro roster is NOT registered at all when no pro manifest is supplied", async () => {
     const server = createMcpServer({
-      tokens: [
-        {
-          token: T_PRO,
-          accountId: "acct_pro",
-          entitlements: ["@caisson/ui-pro"],
-        },
-      ],
+      tokens: [{ token: T_PRO, accountId: "acct_pro" }],
       index: INDEX,
       onGenerate: async () => ({ generationId: "g" }),
       dsManifest: { baseManifest: BASE_MANIFEST, tokens: TOKENS },
@@ -219,37 +199,13 @@ describe("boundary (i) — listResources shows only entitled resources", () => {
   });
 });
 
-describe("boundary (ii) — unknown and unentitled reads are the identical not-found", () => {
-  const server = makeServer();
-  const base = server.authenticate(T_BASE);
-
+describe("boundary (ii) — an unknown read is a not-found", () => {
   test("an UNKNOWN URI is a NotFoundError", async () => {
+    const server = makeServer();
+    const base = server.authenticate(T_BASE);
     await expect(
       server.readResource(base, "caisson://nope/missing"),
     ).rejects.toBeInstanceOf(NotFoundError);
-  });
-
-  test("an UNENTITLED URI (pro roster, base buyer) is the SAME NotFoundError — no leak", async () => {
-    // The invisible-resource contract: an unentitled URI and an unknown URI are indistinguishable
-    // in KIND (both NotFoundError → code "not_found"), and the denial carries no pro payload.
-    const denied = await server.readResource(base, DS_PRO_URI).then(
-      () => ({ ok: true as const }),
-      (e: unknown) => ({ ok: false as const, err: e }),
-    );
-    expect(denied.ok).toBe(false);
-    const err = (denied as { ok: false; err: unknown }).err;
-    expect(err).toBeInstanceOf(NotFoundError);
-    expect((err as NotFoundError).code).toBe("not_found");
-    expect(JSON.stringify(denied)).not.toContain("aria-sort");
-
-    // Same code as the unknown-URI path — an attacker cannot distinguish "exists but forbidden"
-    // from "does not exist".
-    const unknownErr = await server
-      .readResource(base, "caisson://nope/missing")
-      .catch((e: unknown) => e);
-    expect((unknownErr as NotFoundError).code).toBe(
-      (err as NotFoundError).code,
-    );
   });
 });
 
@@ -299,7 +255,6 @@ describe("registration discipline mirrors registerTool", () => {
         name: "Dup",
         description: "A colliding resource.",
         mimeType: "application/json",
-        requiredEntitlement: null,
         handler: async () => ({}),
       }),
     ).toThrow(ValidationError);
@@ -313,7 +268,6 @@ describe("registration discipline mirrors registerTool", () => {
         name: "Bad",
         description: "Off-scheme URI.",
         mimeType: "application/json",
-        requiredEntitlement: null,
         handler: async () => ({}),
       }),
     ).toThrow(ValidationError);

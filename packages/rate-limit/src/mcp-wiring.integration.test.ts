@@ -12,12 +12,12 @@ import {
 } from "@caisson/mcp-server";
 import { createRateLimitedMcpServer } from "./account-hook.ts";
 
-const TOKEN = "mcp_tok_acct_a_000000";
+const TOKEN = "mcp_tok_acct_a_000000000000000000";
 const ACCOUNT = "acct_a";
 const EMPTY_INDEX = loadRegistryIndex({ schemaVersion: 1, modules: [] });
 
 const mcpOptions = (extra?: Partial<McpServerOptions>): McpServerOptions => ({
-  tokens: [{ token: TOKEN, accountId: ACCOUNT, entitlements: ["compliance"] }],
+  tokens: [{ token: TOKEN, accountId: ACCOUNT }],
   index: EMPTY_INDEX,
   onGenerate: async () => ({ generationId: "gen_x" }),
   ...extra,
@@ -34,6 +34,7 @@ function createRateLimitedServer(
   });
 }
 
+/** An allowed call returns the (empty) catalog listing; a denied one throws before the handler. */
 async function listModules(server: McpServer): Promise<unknown> {
   const session = server.authenticate(TOKEN);
   return server.handleToolCall(session, "list_modules", {});
@@ -86,7 +87,7 @@ describe("MCP rate-limit wiring", () => {
     // The store was reached inside withTenant (proves the hook was wired by default, not skipped)…
     expect(reached).toBe(true);
     // …and the tool still answered (a token was available).
-    expect(result).toEqual({ modules: ["compliance"] });
+    expect(result).toEqual({ modules: [] });
   });
 
   test("default path BLOCKS with RateLimitError when the bucket is empty", async () => {
@@ -107,7 +108,7 @@ describe("MCP rate-limit wiring", () => {
 
     // Fail-OPEN (lock 5): a store fault must NOT lock out a paying buyer.
     const result = await listModules(server);
-    expect(result).toEqual({ modules: ["compliance"] });
+    expect(result).toEqual({ modules: [] });
     // The fault was surfaced to the telemetry sink, not swallowed.
     expect(alerted).not.toBeNull();
     expect(alerted!.accountId).toBe(ACCOUNT);
@@ -128,7 +129,7 @@ describe("MCP rate-limit wiring", () => {
 
     const result = await listModules(server);
 
-    expect(result).toEqual({ modules: ["compliance"] });
+    expect(result).toEqual({ modules: [] });
     expect(overrideCalls).toBe(1);
     // The rate-limit store was never constructed/reached.
     expect(storeReached).toBe(false);

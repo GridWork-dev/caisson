@@ -1,8 +1,8 @@
 {
   "name": "@caisson/ui-pro",
   "version": "0.3.8",
-  "description": "Premium data-ops and compliance UI components layered on the open @caisson/ui base: an advanced data grid, a virtualized tree, an operations matrix, a hash-chain audit timeline, a redaction-aware payload viewer, a type-to-confirm dialog, an advanced date-range picker, a dependency-free charts pack, a command palette, a redaction-aware diff viewer, and a kanban board.",
-  "license": "LicenseRef-Caisson-Commercial",
+  "description": "Advanced data-ops and compliance UI components layered on the @caisson/ui base: an advanced data grid, a virtualized tree, an operations matrix, a hash-chain audit timeline, a redaction-aware payload viewer, a type-to-confirm dialog, an advanced date-range picker, a dependency-free charts pack, a command palette, a redaction-aware diff viewer, and a kanban board.",
+  "license": "Apache-2.0",
   "type": "module",
   "sideEffects": [
     "*.css"
@@ -17,8 +17,8 @@
     "./components/*": "./src/components/*"
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json && mkdir -p dist/components && cp src/components/*.css dist/components/",

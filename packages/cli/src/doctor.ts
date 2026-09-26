@@ -1,8 +1,7 @@
 // `caisson doctor` (ADR-0345 Fork F lock). A THIN CLIENT: it does NOT run the doctor logic locally
-// (that is Apache source gated at the buyer MCP `check_usage` tool). It collects the buyer's source,
-// connects to their already-credentialed local `@caisson/mcp-server` over stdio, calls `check_usage`,
-// and renders the findings. The gate is the buyer MCP's runtime entitlement (a dedicated doctor
-// slug) — an unentitled caller gets the seam's invisible 404, surfaced here as a clear error.
+// (that lives behind the MCP `check_usage` tool). It collects the project's source, connects to the
+// already-credentialed local `@caisson/mcp-server` over stdio, calls `check_usage`, and renders the
+// findings. A tool the server does not register surfaces as the seam's 404, reported as a clear error.
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -18,9 +17,9 @@ export interface DoctorClientInput {
 }
 
 /**
- * Call the buyer MCP `check_usage` tool over `transport` and return its findings. A denied
- * (unentitled/invisible) tool surfaces as the MCP `isError` envelope — rethrown as a clear Error so
- * the caller sees "not licensed", never a silent empty result.
+ * Call the MCP `check_usage` tool over `transport` and return its findings. A missing tool surfaces
+ * as the MCP `isError` envelope — rethrown as a clear Error so the caller sees why, never a silent
+ * empty result.
  */
 export async function runDoctorClient(
   input: DoctorClientInput,
@@ -83,18 +82,17 @@ export function collectFiles(root: string): DoctorFile[] {
   return out;
 }
 
-/** Build the stdio transport to the buyer's local MCP from env config (the buyer's token flows to
- *  that server process via its own env, not through the doctor). Throws a clear message when the
- *  buyer has not configured their licensed MCP. Exported: `run.ts`'s `caisson run start` is the
- *  SAME thin-MCP-client shape (a second entitlement-gated tool on the buyer's own server), so it
- *  reuses this helper rather than re-deriving env wiring. */
+/** Build the stdio transport to the local MCP server from env config (the server's own Bearer
+ *  token flows to that server process via its own env, not through the doctor). Throws a clear
+ *  message when no MCP server is configured. Exported: `run.ts`'s `caisson run start` is the SAME
+ *  thin-MCP-client shape (a second tool on the same server), so it reuses this helper rather than
+ *  re-deriving env wiring. */
 export function buyerMcpTransport(): Transport {
   const command = process.env.CAISSON_MCP_COMMAND;
   if (command === undefined || command === "") {
     throw new Error(
-      "this command needs your licensed Caisson buyer MCP — set CAISSON_MCP_COMMAND " +
-        "(and optional CAISSON_MCP_ARGS) to your local @caisson/mcp-server command. " +
-        "The agent-runtime tools are entitlement-gated.",
+      "this command needs your local Caisson MCP server — set CAISSON_MCP_COMMAND " +
+        "(and optional CAISSON_MCP_ARGS) to your local @caisson/mcp-server command.",
     );
   }
   const args = (process.env.CAISSON_MCP_ARGS ?? "")

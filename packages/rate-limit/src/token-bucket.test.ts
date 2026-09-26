@@ -1,7 +1,6 @@
-// Direct coverage of the shared generic mechanics (fixed-window charge/prune + clientIp). Each
-// consuming service (services/docs, services/license) additionally exercises this same class
-// through its own thin per-service bucket-name wrapper — this file proves the shared class works
-// standalone, generic over an arbitrary bucket-name union.
+// Direct coverage of the shared generic mechanics (fixed-window charge/prune + clientIp). A
+// consuming service wraps this same class in its own thin per-service bucket-name wrapper — this
+// file proves the shared class works standalone, generic over an arbitrary bucket-name union.
 import { describe, expect, test } from "bun:test";
 import {
   clientIp,

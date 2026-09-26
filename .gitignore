@@ -1,19 +1,15 @@
 node_modules/
 dist/
 .turbo/
+__pycache__/
+*.pyc
 mirror-out/
 .next/
 *.tsbuildinfo
 
-# CLI compose-time migration bundle (ADR-0091): a BUILD ARTIFACT regenerated from each module's
-# canonical src/migrations/ by packages/cli/scripts/bundle-migrations.ts — never hand-edited, never
-# committed (the source packages stay the single source of truth).
-packages/cli/migrations-bundle/
-
-# CLI registry-index snapshot: a BUILD ARTIFACT copied from registry/index.json by
-# packages/cli/scripts/bundle-registry-index.ts so a published install ships a usable snapshot
-# (delivery-path fix G3) — never hand-edited, never committed (registry/index.json stays the
-# single source of truth, ADR-0047).
+# CLI module catalog: a BUILD ARTIFACT derived from the workspace packages by
+# packages/cli/scripts/bundle-registry-index.ts so a published install ships it — never
+# hand-edited, never committed (each package.json version is the source of truth).
 packages/cli/registry-index.json
 
 # Docs retrieval index: versioned/checksummed build output, rebuilt by services/docs build:index.
@@ -30,10 +26,6 @@ outputs/streams/
 # graphify knowledge-graph build output (Kickoff T task 16 — served by the graphify MCP from the
 # MAIN checkout; regenerated on demand, never committed)
 graphify-out/
-
-# registry/index.json IS tracked (ADR-0047): it must be committed so the CI registry-index job can
-# `git diff --exit-code` a fresh rebuild against it and fail on drift. "Never hand-edited" is
-# enforced by that byte-identical check + CODEOWNERS — NOT by gitignoring it (which would hide drift).
 
 # local design / test artifacts + hook session logs
 .playwright-mcp/
@@ -58,9 +50,6 @@ outputs/browser-audit/*
 !outputs/browser-audit/2026-07-10-full-01/
 !outputs/browser-audit/2026-07-10-full-01/**
 outputs/browser-audit/2026-07-10-full-01/screenshots/
-
-# ADR-0223: CI-only tarball staging for R2 upload (never committed)
-registry/.tarball-staging/
 
 # ADR-0275 CI build-evidence pack output (assembled fresh each run, uploaded as an artifact)
 evidence-pack/

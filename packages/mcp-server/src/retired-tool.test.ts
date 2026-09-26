@@ -21,11 +21,7 @@ const index = loadRegistryIndex({
           manifest: {
             id: "@caisson/auth",
             version: "0.1.0",
-            kind: "base",
-            editions: [],
-            tier: "paid",
-            priceCents: 4900,
-            license: "LicenseRef-Caisson-Commercial",
+            license: "Apache-2.0",
             description: "Fixture module.",
           },
           publishedAt: "2026-06-27T00:00:00.000Z",
@@ -40,9 +36,8 @@ function makeServer() {
   return createMcpServer({
     tokens: [
       {
-        token: "tok_retired_x0000000000000000",
+        token: "tok_retired_x0000000000000000000000",
         accountId: "acct_retired",
-        entitlements: ["@caisson/auth"],
       },
     ],
     index,
@@ -58,7 +53,7 @@ describe("retired-tool ledger (ADR-0216)", () => {
       reason: "Superseded by generate v2 — the {id, version} shape.",
       retiredAt: "2026-06-01T00:00:00.000Z",
     });
-    const session = server.authenticate("tok_retired_x0000000000000000");
+    const session = server.authenticate("tok_retired_x0000000000000000000000");
 
     let err: unknown;
     try {
@@ -83,7 +78,7 @@ describe("retired-tool ledger (ADR-0216)", () => {
       reason: "Superseded.",
       retiredAt: "2026-06-01T00:00:00.000Z",
     });
-    const session = server.authenticate("tok_retired_x0000000000000000");
+    const session = server.authenticate("tok_retired_x0000000000000000000000");
 
     await expect(
       server.handleToolCall(session, "never_existed", {}),
@@ -129,7 +124,7 @@ describe("retired-tool ledger (ADR-0216)", () => {
       reason: "Superseded.",
       retiredAt: "2026-06-01T00:00:00.000Z",
     });
-    const session = server.authenticate("tok_retired_x0000000000000000");
+    const session = server.authenticate("tok_retired_x0000000000000000000000");
     const names = server.listTools(session).map((reg) => reg.name);
     expect(names).not.toContain("old_generate_v1");
   });

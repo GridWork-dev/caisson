@@ -50,9 +50,9 @@ const ARTIFACTS: readonly {
   },
   {
     icon: "audit-chain",
-    label: "Registry provenance",
-    body: "The signed module index is not hand-edited. CI rebuilds registry/index.json from the append-only ledger and asserts the result is byte-identical to what's committed — a diff fails the build. What the CLI and the edge Worker resolve is provably the index the ledger produced.",
-    proof: "index.json == rebuild(ledger) · git diff --exit-code",
+    label: "Catalog provenance",
+    body: "The module catalog the generator validates against is never hand-edited. Every CLI build derives it from the packages in the repository: each published package at its package.json version, with its manifest's description and dependencies. A test fails the build if the catalog misses a package or carries a version its package.json doesn't.",
+    proof: "catalog == workspace package.json versions",
   },
   {
     icon: "check",

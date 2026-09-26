@@ -45,7 +45,6 @@ describe("BUNDLE_PAGES (bundle content records)", () => {
       "tenancy-rls",
       "migrate",
       "ai-config",
-      "license-verify",
     ]);
     const unknown = BUNDLE_PAGES.flatMap((r) =>
       r.members

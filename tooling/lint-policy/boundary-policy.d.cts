@@ -3,4 +3,3 @@
 export declare const PROVIDER_SDKS: readonly string[];
 export declare const PROVIDER_SDK_RE: string;
 export declare const BUNDLE_META_DIRS: readonly string[];
-export declare const BUNDLE_META_NAMES: readonly string[];

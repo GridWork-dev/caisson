@@ -1,41 +1,25 @@
 ---
 title: MCP server
-description: The buyer-facing MCP server, auth-gated and entitlement-scoped.
+description: The MCP server your AI agent connects to, auth-gated with a timing-safe Bearer check.
 ---
 
-`@caisson/mcp-server` is the buyer-facing MCP server your AI agent connects to, to drive
-generation, configuration, and the metered operations the base exposes. It is a first-class surface,
-not a side door.
+`@caisson/mcp-server` is the MCP server your AI agent connects to, to drive generation,
+configuration, and the operations the base exposes. It is a first-class surface, not a side door.
 
 ## The contract
 
-Every tool call is **auth-gated**: the Bearer token is checked against the issued buyer-token
-set with a constant-time compare (`tokens: readonly BuyerToken[]` in the server config below),
-and **entitlement-scoped**: an agent can only reach the tools the buyer's entitlements cover. A
-token without an entitlement does not see the tool, scoping happens before dispatch, not inside
-it.
+Every tool call is **auth-gated**: the Bearer token is checked against the issued token set with a
+constant-time compare (`tokens: readonly BuyerToken[]` in the server config below). A missing or
+wrong token is refused before any tool is listed or dispatched.
 
 ```jsonc
-// .mcp.json — the agent connects with the buyer's token.
+// .mcp.json — the agent connects with its issued token.
 {
   "mcpServers": {
     "caisson": {
       "url": "https://mcp.example.com",
       "headers": { "Authorization": "Bearer ${CAISSON_TOKEN}" },
     },
-  },
-}
-```
-
-A call outside the token's entitlements is refused, not silently downgraded:
-
-```jsonc
-// generate — a requested module outside the token's entitlements (HTTP 403)
-{
-  "error": {
-    "code": "not_entitled",
-    "message": "Not entitled to: field-crypto",
-    "details": { "notEntitled": ["field-crypto"] },
   },
 }
 ```
@@ -49,13 +33,13 @@ stdio connection or an HTTP handler below, each transport constructs its own cor
 from those options (`createStdioMcpServer`/`createHttpMcpHandler` both call `createMcpServer`
 internally), so a host runs one or the other from shared config rather than sharing a single
 running instance across both. It owns no database transaction: `onGenerate` is the host's
-hook for the actual credit debit and generation.
+hook for the actual generation.
 
 ```ts
 function createMcpServer(options: McpServerOptions): McpServer;
 
 interface McpServerOptions {
-  tokens: readonly BuyerToken[]; // issued buyer tokens (prod: a DB lookup by token hash)
+  tokens: readonly BuyerToken[]; // issued { token, accountId } pairs (prod: a DB lookup by token hash)
   index: RegistryIndex; // the built registry index — generate's allowlist
   onGenerate: (ctx: GenerateContext) => Promise<{ generationId: string }>;
   coach?: CoachOptions; // opt-in ai-kit setup-coach tools (see below)
@@ -76,15 +60,10 @@ interface McpServer {
 ```
 
 `authenticate` compares the bearer against every issued token in constant time before
-deciding, no early return on a match. `listTools` returns only the tools the caller's
-entitlements cover; an edition tool the caller doesn't own is excluded outright, not
-returned-then-blocked. `handleToolCall` re-checks the entitlement per call (timing-safe,
-`safeEqualVariable`) and answers a tool that doesn't exist and a tool the caller isn't
-entitled to with the **same 404**: a non-entitled caller can't distinguish "unknown" from
-"exists but you don't own it."
+deciding, no early return on a match. `listTools` returns every registered tool, sorted.
+`handleToolCall` answers a name that doesn't exist with a 404.
 
-`registerTool` lets an edition add its own buyer tools through the same seam `generate`
-uses. It validates the declarative manifest (`description`, semver `version`,
+`registerTool` lets a host add its own tools through the same seam `generate` uses. It validates the declarative manifest (`description`, semver `version`,
 `audit.logArgs`) before the duplicate-name guard, so a bad manifest fails at registration,
 not at first call. `retireTool` marks a name **retired** rather than deleting it: a call to
 a retired tool answers `RetiredToolError` (410, `{ reason, retiredAt }`) instead of the
@@ -92,27 +71,25 @@ generic 404 an unknown name gets, so an integration built against a dropped tool
 actionable signal. Retirement is append-only, no `unretireTool`, and a name is always
 exactly one of active / retired / unknown, never two at once.
 
-### The buyer tool catalog
+### The tool catalog
 
-Three tools are visible to every authenticated buyer (`requiredEntitlement: null`); the
-four setup-coach tools require the `ai-kit` entitlement and are otherwise invisible.
+Three tools are always registered; the four setup-coach tools exist only when the host passes
+`coach` options.
 
-| Tool                 | Entitlement | Args                                                                   | Behavior                                                                                                                                                               |
-| -------------------- | ----------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_modules`       | none        |,                                                                      | Returns the caller's owned entitlement slugs, sorted.                                                                                                                  |
-| `describe_module`    | none        | `{ name }`                                                             | Describes one entitled module. `EntitlementError` (403) if the caller doesn't own `name`.                                                                              |
-| `generate`           | none        | `{ projectName, edition?, modules: {id, version}[], idempotencyKey? }` | Validates every `{id, version}` against the built registry index, expands the caller's entitlements (editions/bundles → member slugs), then delegates to `onGenerate`. |
-| `inspect_env`        | `ai-kit`    | `{ names: string[] }`                                                  | Reports which env-var **names** are set, presence only, never values.                                                                                                 |
-| `propose_ai_config`  | `ai-kit`    | `{ defaultLane, lanes: [...] }`                                        | Turns desired AI lanes into a validated `forge.config` plus the required env-var names.                                                                                |
-| `write_forge_config` | `ai-kit`    | `{ settings, approve? }`                                               | Fail-closed: without `approve: true` it returns a preview and never touches the writer port.                                                                           |
-| `validate_setup`     | `ai-kit`    | `{ settings }`                                                         | Confirms the config parses and every referenced key name is present in the environment.                                                                                |
+| Tool                 | Args                                         | Behavior                                                                                  |
+| -------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `list_modules`       | none                                         | Returns every catalog module id, sorted.                                                  |
+| `describe_module`    | `{ name }`                                   | Returns `{ name, latest, summary }` for one module; `NotFoundError` (404) for an unknown id. |
+| `generate`           | `{ projectName, modules: {id, version}[] }`  | Validates every `{id, version}` against the built registry index, then delegates to `onGenerate`. |
+| `inspect_env`        | `{ names: string[] }`                        | Reports which env-var **names** are set, presence only, never values.                    |
+| `propose_ai_config`  | `{ defaultLane, lanes: [...] }`              | Turns desired AI lanes into a validated `forge.config` plus the required env-var names.   |
+| `write_forge_config` | `{ settings, approve? }`                     | Fail-closed: without `approve: true` it returns a preview and never touches the writer port. |
+| `validate_setup`     | `{ settings }`                               | Confirms the config parses and every referenced key name is present in the environment.   |
 
-`generate`'s gate order matters: the registry allowlist check (unknown module or version →
-`ValidationError`, 400) runs **before** the entitlement expansion (`EntitlementError`, 403),
-which runs before any credit debit. A caller-supplied `idempotencyKey` is reused verbatim so
-a genuine retry debits once; an omitted one is minted fresh per call. The `modules` array is
-capped at 100 entries, rejected on raw length before the Zod parse runs, a guard against a
-parse-then-cap ordering that would otherwise walk an oversized array once before rejecting it.
+`generate`'s registry allowlist check (unknown module or version → `ValidationError`, 400) runs
+before the host hook sees anything. The `modules` array is capped at 100 entries, rejected on raw
+length before the Zod parse runs, a guard against a parse-then-cap ordering that would otherwise
+walk an oversized array once before rejecting it.
 
 ### Transports
 
@@ -120,7 +97,7 @@ The core is transport-agnostic; two bindings ship. Both authenticate before any 
 object is constructed, an invalid token never reaches `listTools` or `handleToolCall`.
 
 ```ts
-// stdio — one connection == one buyer session, authenticated once at connect time.
+// stdio — one connection == one session, authenticated once at connect time.
 function createStdioMcpServer(deps: StdioServerDeps): Server;
 function runStdioServer(
   deps: StdioServerDeps,
@@ -159,7 +136,7 @@ ceiling before handing it to the SDK transport, rejecting an oversized body (`Va
 
 ### The setup-coach ports
 
-`registerCoachTools` wires the four `ai-kit` tools above onto an `McpServer` (or anything
+`registerCoachTools` wires the four setup-coach tools above onto an `McpServer` (or anything
 structurally equal to the minimal `CoachToolRegistrar` slice). It is secrets-safe by
 construction: no tool ever accepts or returns a key value.
 
@@ -175,7 +152,6 @@ function presenceEnvPort(
 interface CoachOptions {
   env: CoachEnvPort; // presence-only: has(name) => boolean, never reads a value
   writer: CoachWriterPort; // write(files) — only invoked when a call passes approve: true
-  requiredEntitlement?: string; // default "ai-kit"
   configPath?: string; // default "forge.config.json"
   envExamplePath?: string; // default ".env.example"
 }

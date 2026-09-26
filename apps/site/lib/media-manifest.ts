@@ -253,7 +253,7 @@ const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
   "schematic-ai-production":
     "The AI-Production bundle in cross-section: six commercial members at the module seam, composing onto the kernel, tenancy-rls, and ai-config base, on a Postgres bedrock.",
   "schematic-local-first":
-    "The Local-first bundle in cross-section: five commercial members at the module seam, composing onto the kernel and license-verify base, on an on-device SQLite bedrock.",
+    "The Local-first bundle in cross-section: five members at the module seam, composing onto the kernel base, on an on-device SQLite bedrock.",
   "schematic-agentic-dev":
     "The Agentic-Dev bundle in cross-section: five commercial members at the module seam, composing onto the kernel and ai-config base, on Postgres and on-device SQLite bedrock.",
   "schematic-provenance":

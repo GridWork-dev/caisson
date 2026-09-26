@@ -9,8 +9,8 @@ Real src + tests: fail-closed RLS. Small by design — the guard is the whole pa
 ## ORM adapter family (ADR-0266)
 
 `withTenant`'s `TenantExecutor` port is raw SQL (`query(sql, params)` / `exec(sql)`) — the fail-closed
-guarantee is enforced by Postgres RLS, not by any particular query-building style. Buyers who already
-have Drizzle or Prisma in their app can bridge straight through the same `TenantExecutor` instead of
+guarantee is enforced by Postgres RLS, not by any particular query-building style. Apps that already
+have Drizzle or Prisma can bridge straight through the same `TenantExecutor` instead of
 hand-writing raw SQL for every tenant-scoped call.
 
 ### Drizzle — `.toSQL()` bridge

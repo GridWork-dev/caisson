@@ -32,9 +32,6 @@ describe("deriveDomains — the mechanical tree partition (ADR-0233, Fork A)", (
       "scripts",
       "root-config",
       "oss-mirror",
-      "registry/worker",
-      "registry/scripts",
-      "registry/schema",
     ]) {
       expect(ids.has(id)).toBe(true);
     }
@@ -43,7 +40,7 @@ describe("deriveDomains — the mechanical tree partition (ADR-0233, Fork A)", (
   test("surface classes are read from license/public-surface, never guessed", () => {
     const byId = new Map(domains.map((d) => [d.id, d]));
     expect(byId.get("packages/kernel")?.class).toBe("oss-source"); // Apache-2.0
-    expect(byId.get("packages/compliance")?.class).toBe("sold-source"); // edition, buyer reads it
+    expect(byId.get("packages/compliance")?.class).toBe("oss-source"); // every package is Apache-2.0
     expect(byId.get("tooling/audit-harness")?.class).toBe("internal-only");
     expect(byId.get("tooling/demo-registry")?.class).toBe("internal-only");
     expect(byId.get("apps/site")?.class).toBe("buyer-runtime");

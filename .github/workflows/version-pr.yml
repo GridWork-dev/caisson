@@ -42,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          # Full history so changesets can read tags and the ledger diff is honest.
+          # Full history so changesets can read tags.
           fetch-depth: 0
       - uses: ./.github/actions/setup-bun
       - run: bun install --frozen-lockfile
@@ -66,7 +66,7 @@ jobs:
       - name: refresh generator template pins and Next starter golden
         run: |
           set -euo pipefail
-          bun registry/scripts/sync-generator-template-pins.ts
+          bun tooling/scripts/sync-generator-template-pins.ts
           (
             cd packages/cli
             BLESS=1 bun test ./src/generate.test.ts -t "framework=next composes the Next.js starter"
@@ -76,7 +76,7 @@ jobs:
       - name: refresh bun.lock for the bumped versions
         run: bun install
       # Commit everything the consume produced and open the PR. Pathspecs cover EVERY workspace
-      # (apps/services/registry/tooling get dependent bumps too) + bun.lock; the loud leftovers
+      # (apps/tooling get dependent bumps too) + bun.lock; the loud leftovers
       # check fails with filenames if a future write-site slips past the pathspec.
       - name: open the version PR
         env:

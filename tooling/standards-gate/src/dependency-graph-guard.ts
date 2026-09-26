@@ -29,13 +29,15 @@ export interface DependencyGraphCoverage {
   dependencies: number;
 }
 
-// Non-vacuity floors, about 10% under the measured tree (2064 modules, 1416 TypeScript, 5871
-// dependencies after the site dropped its commerce surface). They catch a scan that silently
-// covered a fraction of the tree; re-measure and lower them when a deliberate deletion lands.
+// Non-vacuity floors, about 10% under a CLEAN checkout (1779 modules, 1342 TypeScript, 5487
+// dependencies after the sale-only packages were deleted). They catch a scan that silently covered
+// a fraction of the tree; re-measure and lower them when a deliberate deletion lands. Measure on a
+// fresh `git worktree` + `bun install`, never a dev tree: untracked build output there adds ~200
+// modules that CI never sees.
 const DEFAULT_OPTIONS: DependencyGraphGuardOptions = {
-  minimumModules: 1_850,
-  minimumTypeScriptModules: 1_250,
-  minimumDependencies: 5_250,
+  minimumModules: 1_600,
+  minimumTypeScriptModules: 1_200,
+  minimumDependencies: 4_900,
   sentinels: [
     "packages/kernel/src/index.ts",
     "apps/site/app/layout.tsx",

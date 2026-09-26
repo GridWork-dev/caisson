@@ -213,9 +213,8 @@ beforeAll(async () => {
     mcp: {
       tokens: [
         {
-          token: "mcp_tok_acct_a_000000",
+          token: "mcp_tok_acct_a_000000000000000000",
           accountId: "acct_a",
-          entitlements: ["compliance", "auth"],
         },
       ],
       index: EMPTY_INDEX,
@@ -293,16 +292,15 @@ describe("base package composition (HTTP)", () => {
     expect(await res.json()).toEqual({ balance: 799, idempotent: false });
   });
 
-  test("the buyer MCP answers an authed query", async () => {
+  test("the MCP server answers an authed query", async () => {
     const res = await post(
       "/mcp",
       { tool: "list_modules" },
-      { authorization: "Bearer mcp_tok_acct_a_000000" },
+      { authorization: "Bearer mcp_tok_acct_a_000000000000000000" },
     );
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({
-      result: { modules: ["auth", "compliance"] },
-    });
+    // The fixture wires an empty registry index, so the catalog listing is empty.
+    expect(await res.json()).toEqual({ result: { modules: [] } });
   });
 
   test("a request with no session is 401", async () => {

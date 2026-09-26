@@ -2,7 +2,7 @@
   "name": "@caisson/ai-evals",
   "version": "0.5.2",
   "description": "Eval harness (defineEval) + grader taxonomy (exact / regex / json-shape / schema / model-graded + a fail-closed injection class) + a regression-vs-committed-baseline gate. Offline + deterministic (cassette-replayed judge).",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "type": "module",
   "exports": {
     ".": {
@@ -17,8 +17,8 @@
     }
   },
   "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",

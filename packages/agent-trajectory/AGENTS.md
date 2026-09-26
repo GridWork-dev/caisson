@@ -42,5 +42,5 @@ into `model.usage` events; treat their `billingStatus` as authoritative for trus
 ## Out of scope (this slice)
 
 No tool loop, no approval/durability engine, no PG store implementation (the shape is documented in
-the README), no MCP/CLI exposure, no bundle membership or pricing. This package is the trajectory
+the README), no MCP/CLI exposure. This package is the trajectory
 CONTRACT + the in-memory store + the deterministic projection + the first usage adapter.

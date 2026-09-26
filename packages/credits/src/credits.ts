@@ -165,9 +165,8 @@ export async function balance(
  *     persists until the grants naturally expire.
  * `debit()` 402s on whichever floor is tighter; a display figure has to agree, or it promises
  * more than a debit will actually cover. This is a read-time fix: a plain read, no sweep/write
- * triggered from a page render (the alternative, sweep-before-read, is what
- * `services/license/src/admin-mutations.ts`'s `adjustCreditsAdmin` uses for an operator MUTATION —
- * a page GET stays read-only).
+ * triggered from a page render (the alternative, sweep-before-read, belongs to an operator
+ * MUTATION — a page GET stays read-only).
  */
 export async function spendableBalance(
   tx: TenantExecutor,

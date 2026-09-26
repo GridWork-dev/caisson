@@ -1,6 +1,0 @@
-{
-  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
-  // Minimal oxlint config for the generated repo — green from clone. oxlint's `correctness`
-  // category is on by default; add rules or raise categories as the project grows.
-  "ignorePatterns": ["dist/", "node_modules/"]
-}

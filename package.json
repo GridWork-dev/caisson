@@ -1,14 +1,12 @@
 {
   "name": "caisson",
   "private": true,
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "workspaces": {
     "packages": [
       "tooling/*",
       "packages/*",
-      "apps/*",
-      "registry",
-      "services/license"
+      "apps/*"
     ],
     "catalog": {
       "zod": "^4.0.0",

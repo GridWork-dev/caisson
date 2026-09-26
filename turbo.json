@@ -7,7 +7,6 @@
       "dependsOn": ["^build"],
       "outputs": [
         "dist/**",
-        "migrations-bundle/**",
         "registry-index.json",
         ".next/**",
         "!.next/cache/**"

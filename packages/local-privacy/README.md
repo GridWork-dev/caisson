@@ -3,7 +3,7 @@
 The Local-first edition's privacy gate: a strict zero-egress `PrivacyPolicy` (Zod `.strict()`,
 closed enums — `"local-only"` is the only mode, a sink is `model-fetch` or `rented-backend` and
 nothing else) plus `EgressGuard`, the runtime wrapper around the kernel `fetchWithTimeout`
-chokepoint. A base primitive (paid, `LicenseRef-Caisson-Commercial`) — no vendor SDK import, no
+chokepoint. A base primitive (Apache-2.0) — no vendor SDK import, no
 live network call in this package itself.
 
 ## What it gives you
@@ -46,4 +46,4 @@ const res = await guard.fetch("https://huggingface.co/model.onnx");
 guard blocks an empty allowlist, a non-allowlisted host, a non-https scheme, and a wrong-kind
 purpose-bound request; an allowlisted host passes through to `fetchWithTimeout`.
 
-License: `LicenseRef-Caisson-Commercial`.
+License: Apache-2.0.

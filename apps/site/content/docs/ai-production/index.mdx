@@ -41,13 +41,13 @@ budget returns `402`, never an unbounded charge.
 ## Install
 
 ```bash
-export CAISSON_LICENSE_TOKEN=<your registry token>
-bunx @caisson-sh/cli@latest --name caisson-app --edition ai-production
+bunx @caisson-sh/cli@latest --name caisson-app --module <id@version>
 cd caisson-app
 bun install
 ```
 
-`--edition ai-production` auto-selects the AI-Production bundle's current modules, the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
+Repeat `--module <id@version>` once per module you want. Every module installs from public npm,
+no token needed; see [Getting started](/docs/getting-started) for the full flag reference.
 
 ## How it composes
 
@@ -73,8 +73,6 @@ never checked against the wrong tenant's budget. Guardrails and the eval harness
 of billing, wire `@caisson/billing` separately if a spend cap should also gate a subscription
 tier.
 
-## Entitlement
+## License
 
-AI-Production is a commercial bundle (`LicenseRef-Caisson-Commercial`). Buy the bundle, or any
-member module à la carte, a purchase grants the module's entitlement id, checked offline against
-the license.
+Every module here is Apache-2.0 and installs from public npm.

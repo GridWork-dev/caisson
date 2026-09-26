@@ -3,7 +3,7 @@
   "version": "0.1.6",
   "private": true,
   "description": "The private Caisson brand layer: the wordmark + glyph lockup and the 37 bespoke domain glyphs, kept out of the Apache-2.0 @caisson/ui floor so the kit stays brand-neutral. Never published; apps consume it directly and register the glyphs into the kit icon surface via registerIcons(brandGlyphs).",
-  "license": "LicenseRef-Caisson-Commercial",
+  "license": "Apache-2.0",
   "type": "module",
   "sideEffects": [
     "*.css"

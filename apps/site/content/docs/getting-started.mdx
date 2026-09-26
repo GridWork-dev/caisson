@@ -15,31 +15,17 @@ description: Install the base, wire a tenant, and run the standards gate.
 bunx @caisson-sh/cli@latest
 ```
 
-With no flags, `create-caisson` runs **interactively** in a terminal (TTY): it prompts for a
-licensed build vs. the free Apache-2.0 sample vs. the full-catalog demo, then your project name
-and module selection. A scripted, non-interactive run needs an explicit `--name` plus either
-`--edition <bundle>` (which auto-selects the bundle's current modules) or at least one
-`--module <id@version>` (repeatable; also overrides or extends an edition's auto-selection).
-Run `bunx @caisson-sh/cli@latest --help` for the full flag reference.
+With no flags, `create-caisson` runs **interactively** in a terminal (TTY): it prompts for your
+project name and module selection. A scripted, non-interactive run needs an explicit `--name` plus
+at least one `--module <id@version>` (repeatable). Run `bunx @caisson-sh/cli@latest --help` for the
+full flag reference.
 
-**Free, no license key:** `--sample` and `--demo` need no module selection and no
-`CAISSON_LICENSE_TOKEN`. `--sample` installs only public-npm Apache-2.0 packages; `--demo`
-composes the full catalog with every commercial module replaced by a local stub, and its
-generated `.npmrc` still maps `@caisson:registry` to `registry.caisson.sh`: tokenless, since that
-registry serves the open module set to an unauthenticated request.
+Every module installs from the public npm registry, so the generated project needs no token and no
+registry configuration:
 
 ```bash
-bunx @caisson-sh/cli@latest --demo --name my-app   # full catalog, commercial modules stubbed
+bunx @caisson-sh/cli@latest --name my-app --module @caisson/kernel@<version>
 cd my-app
-bun install
-```
-
-**Licensed install:** every other generated project ships a `.npmrc` pointing `@caisson:registry`
-at `registry.caisson.sh` with the auth token read from `CAISSON_LICENSE_TOKEN`: export your
-registry token under that name before `bun install`.
-
-```bash
-export CAISSON_LICENSE_TOKEN=<your registry token>
 bun install
 ```
 
@@ -49,11 +35,11 @@ bun install
 
 A `create-caisson` run carries two independent pins: which release of the generator you run, and
 which exact version of each module it resolves. Neither accepts a range, every version string is
-matched byte-for-byte against the registry.
+matched byte-for-byte against the module catalog.
 
-**The generator release.** Each published `@caisson-sh/cli` release bundles a snapshot of the
-registry index at build time, so the id/version pairs `--module` can resolve against are frozen to
-whatever the registry looked like when that CLI version shipped.
+**The generator release.** Each published `@caisson-sh/cli` release bundles a module catalog built
+from the packages released alongside it, one version per module, so the id/version pairs
+`--module` can resolve against are frozen to the package versions of that CLI release.
 
 ```bash
 bunx @caisson-sh/cli@0.4.0 --name my-app --module @caisson/kernel@1.4.0
@@ -73,7 +59,7 @@ bunx @caisson-sh/cli@latest --name my-app \
 
 - Each value splits on the **last** `@`, so a scoped id (`@caisson/kernel`) keeps its leading `@`;
   a value with no `@` after position 0 fails immediately (`--module expects <id@version>`).
-- `version` is not a semver range, it must equal one of that module's published versions exactly.
+- `version` is not a semver range, it must equal that module's catalog version exactly.
   `^1.4.0`, `~1.4`, `1.x`, and `latest` are all rejected.
 - The same module id twice in one selection is rejected before generation runs (an ambiguous
   "which version wins" case, `package.json` and the generated README would otherwise disagree).
@@ -82,7 +68,7 @@ Both checks run **before** any path is built or any file touches disk, so a bad 
 reaches the filesystem:
 
 ```
-unknown module id (not in registry allowlist): "@caisson/typo"
+unknown module id (not in the module catalog): "@caisson/typo"
 unknown version for @caisson/kernel: "9.9.9"
 ```
 
@@ -120,7 +106,6 @@ whichever path the pinning rules above resolve to. `Selection` (also exported as
 ```ts
 type Selection = {
   projectName: string; // /^[a-z0-9][a-z0-9-]*$/, 1-64 chars — becomes the output directory
-  edition?: BundleId; // legacy edition ids normalize to a bundle id at this boundary
   modules: { id: string; version: string }[]; // at least 1, no duplicate ids
   deployTarget?: "railway" | "fly" | "vercel"; // DEPLOY_TARGETS
   framework?: "next";
@@ -143,13 +128,12 @@ drive Caisson, pick the one that matches how much wiring you want to do.
 you would by hand:
 
 ```bash
-bunx @caisson-sh/cli@latest --name my-app --edition compliance --module <id@version>
+bunx @caisson-sh/cli@latest --name my-app --module <id@version>
 ```
 
 Repeat `--module` per module. `--help` prints the flag reference, not the live catalog, an agent
 (or you) gets the current registry ids and exact versions from the MCP server's `list_modules`/
-`describe_module` tools (below). No extra wiring beyond the
-`CAISSON_LICENSE_TOKEN` you already export for `bun install`.
+`describe_module` tools (below). No extra wiring: installs come from public npm.
 
 ### Wire the MCP server (tool-native)
 
@@ -160,7 +144,7 @@ to your generated project first:
 bun add @caisson/mcp-server
 ```
 
-It is an auth-gated, entitlement-scoped MCP server exposing `list_modules`, `describe_module`, and
+It is an auth-gated MCP server exposing `list_modules`, `describe_module`, and
 `generate` as tools, so an agent calls them natively instead of shelling out. Host it locally over
 stdio with `runStdioServer`: one process per buyer session, the same pattern Claude Desktop /
 Claude Code use for any local stdio MCP server:
@@ -190,7 +174,7 @@ Then point your agent's `.mcp.json` at that process:
 }
 ```
 
-The full tool catalog, entitlement scoping, and the network-reachable HTTP transport
+The full tool catalog, the Bearer authentication, and the network-reachable HTTP transport
 (`runHttpServer`) for a hosted deployment are in [MCP server](/docs/base/mcp-server).
 
 ## Wire a tenant

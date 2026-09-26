@@ -1437,10 +1437,10 @@ function gatherDiskPackageCounts(): Map<string, PackageCounts> {
 const BUILD_STATE_PATH = "docs/build-state.md";
 
 const APACHE_LICENSE = "Apache-2.0";
-const COMMERCIAL_LICENSE = "LicenseRef-Caisson-Commercial";
 
 /** Disk truth for the census totals: every workspace manifest the root `workspaces` globs
- *  actually resolve to, and the `packages/*` subset split by SPDX license. */
+ *  actually resolve to, and the `packages/*` subset split by SPDX license (Apache-2.0 vs any other
+ *  declared license, which the census still reports as "commercial"). */
 function gatherDiskTotals(): DiskTotals {
   const root = JSON.parse(fileText("package.json")) as {
     workspaces?: string[] | { packages?: string[] };
@@ -1464,7 +1464,7 @@ function gatherDiskTotals(): DiskTotals {
     packages++;
     const license = (JSON.parse(fileText(rel)) as { license?: string }).license;
     if (license === APACHE_LICENSE) apache++;
-    else if (license === COMMERCIAL_LICENSE) commercial++;
+    else if (license !== undefined) commercial++;
   }
   return { packages, apache, commercial, workspaces: manifests.size };
 }

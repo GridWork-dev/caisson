@@ -1,7 +1,7 @@
 // The T-30d updates-window expiry notice (G24, buyer-lifecycle audit 2026-07-07) — the sibling of
 // `credits-expiring.tsx` on the updates-window axis. One bounded, no-PII prop set: the expiring
 // entitlement id, the expiry date, and the license/dashboard URL. Sent once per (account,
-// entitlement, expiry instant) by services/license's updates-window-expiry sweep (the append-only
+// entitlement, expiry instant) by the host's updates-window-expiry sweep (the append-only
 // `updates_window_expiry_notice` marker gates the send).
 import { EmailBody, EmailButton, EmailLayout } from "./layout.tsx";
 

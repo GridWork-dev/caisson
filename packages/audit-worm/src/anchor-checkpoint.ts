@@ -1,10 +1,9 @@
 // src/anchor-checkpoint.ts — the external-anchoring checkpoint handler + job wiring (CR-16, ADR-0332).
 //
-// The concrete anchoring logic deliberately lives in COMMERCIAL audit-worm, never Apache-2.0
-// packages/jobs: it imports only the GENERIC scheduling ports (defineTask / JobQueue) from jobs and
-// registers this concrete handler from here (CR-16 / ADR-0094 — no open package gains anchoring
-// knowledge, no upward dependency). The scheduler that fans this task out per-tenant lives in a
-// deployed service (services/license, ADR-0346 P3) — a sibling stage.
+// The concrete anchoring logic deliberately lives in audit-worm, never packages/jobs: it imports
+// only the GENERIC scheduling ports (defineTask / JobQueue) from jobs and registers this concrete
+// handler from here (CR-16 — jobs gains no anchoring knowledge, no upward dependency). The
+// scheduler that fans this task out per-tenant lives in the host application — a sibling stage.
 //
 // The handler NEVER runs inside `append()` (SPEC non-goal / KNOWN-BOUND): it is a scheduled job that
 // reads the anchor AFTER the append commits. It composes the outbox (durability) + the port (egress) +
@@ -51,7 +50,7 @@ export type AnchorCheckpointPayload = z.infer<
  * Injected as a port so this handler never imports chain-store internals (`encodeAnchor`/`anchorKey`
  * are file-private, and chain-store.ts is owned by a parallel lane this wave). The deployed adapter —
  * reading the current anchor object off the WORM store / AuditChainStore — is wired at scheduler time
- * (services/license) or reconcile, once the chain-store accessor lands.
+ * by the host or at reconcile, once the chain-store accessor lands.
  */
 export interface CurrentAnchorReader {
   readCurrentAnchor(accountId: string): Promise<{

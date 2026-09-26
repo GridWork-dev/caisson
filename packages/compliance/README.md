@@ -1,12 +1,12 @@
 # @caisson/compliance
 
-The Compliance edition — the hero (ADR-0040). A buyer seeds a tenant, writes encrypted SEC/HIPAA
-fields under a tenant-scoped crypto boundary, locks an append-only artifact into WORM storage with a
-SHA-256 audit-chain anchor, and emits a deterministic, signed control→evidence pack that validates
+The compliance evidence kit — the hero (ADR-0040). You seed a tenant, write encrypted SEC/HIPAA
+fields under a tenant-scoped crypto boundary, lock an append-only artifact into WORM storage with a
+SHA-256 audit-chain anchor, and emit a deterministic, signed control→evidence pack that validates
 against a golden fixture — and that REFUSES to generate when any control's evidence is missing (flag,
 never guess). A COMPOSITION of base packages, never a fork (ADR-0003).
 
-- **Kind / tier:** edition · paid · `LicenseRef-Caisson-Commercial`
+- **License:** Apache-2.0
 
 ## Install
 
@@ -47,19 +47,16 @@ await withTenantCrypto(db, accountId, keyProvider, async (tx) => {
 - **Evidence engine** — declarative collectors (`rlsForceCollector` / `chainVerifyCollector` /
   `wormRetentionCollector`) → the typed canonical pack format → `generateEvidencePack` (deterministic,
   byte-stable, flag-never-guess) → `signEvidencePack` (per-tenant detached Ed25519) → an OSCAL export
-  step a buyer opts into separately.
+  step you opt into separately.
 - **Composition + assembly** — `withTenantCrypto` (crypto nested inside the RLS scope, fail-closed) +
   `assembleComplianceMigrations` (ordered, checksum-ledgered cross-package migrations).
-- **Bundled primitives** — `@caisson/alerting` and `@caisson/retention-runner` are composed into the
-  edition via `createComplianceEdition` and re-exported from this package's barrel.
 - **Operational telemetry** — `emitEvidenceGenerated` / `emitErasureCryptoShred` through the base
   `EventSink` port; the evidentiary record stays in the WORM chain.
 
 ## Dependencies
 
 Down-only (ADR-0003): `@caisson/audit-worm` + `@caisson/field-crypto` + `@caisson/tenancy-rls` +
-`@caisson/alerting` + `@caisson/retention-runner` + `@caisson/kernel`. Evidence is FREE in v1 — no
-`@caisson/credits`. All three framework catalogs — SOC2-TSC, HIPAA-Security, and the EU AI Act
+`@caisson/kernel`. Evidence generation meters nothing — no `@caisson/credits`. All three framework catalogs — SOC2-TSC, HIPAA-Security, and the EU AI Act
 high-risk set — are authored + golden-pinned.
 
 ## Golden

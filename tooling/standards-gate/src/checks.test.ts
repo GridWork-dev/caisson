@@ -1,24 +1,22 @@
-// Open-core gate checks (ADR-0094/0097). These lock the license SPLIT (open Base = Apache-2.0, else
-// commercial) and the open↔commercial no-depend-up BOUNDARY. Synthetic Pkg[] inputs — no workspace IO.
+// Gate checks over synthetic Pkg[] inputs plus throwaway temp-dir fixtures — no workspace IO.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  checkOpenCoreLicensing,
-  checkOpenCommercialBoundary,
   checkManifestAgreement,
-  checkManifestPriceAgreement,
+  checkNoSalesCopy,
+  checkOpenLicense,
+  checkPrivatePackages,
   checkRlsEquivalence,
   checkShippedProse,
 } from "./checks";
 // Same relative import checks.ts itself uses (SPEC-tenancy-rls task 3: no workspace specifier —
 // this build session cannot `bun install` a new dependency edge).
 import { buildTenantPolicySql } from "../../../packages/tenancy-rls/src/rls.ts";
-import type { Pkg } from "./workspace";
+import { findRoot, readWorkspace, type Pkg } from "./workspace";
 
 const APACHE = "Apache-2.0";
-const COMMERCIAL = "LicenseRef-Caisson-Commercial";
 
 /** Build a module-candidate Pkg (under packages/) with sane defaults; `over` wins on every field. */
 function pkg(over: Partial<Pkg> & Pick<Pkg, "name" | "license">): Pkg {
@@ -28,146 +26,12 @@ function pkg(over: Partial<Pkg> & Pick<Pkg, "name" | "license">): Pkg {
     workspaceDeps: [],
     manifestPath: null,
     hasCode: true,
+    private: false,
     ...over,
   };
 }
 
-describe("checkOpenCoreLicensing (ADR-0094/0097)", () => {
-  test("an open-Base package on Apache-2.0 passes", () => {
-    expect(
-      checkOpenCoreLicensing([
-        pkg({ name: "@caisson/kernel", license: APACHE }),
-      ]),
-    ).toEqual([]);
-  });
-
-  test("registry-schema (the open contract) must be Apache-2.0", () => {
-    expect(
-      checkOpenCoreLicensing([
-        pkg({ name: "@caisson/registry-schema", license: APACHE }),
-      ]),
-    ).toEqual([]);
-    const bad = checkOpenCoreLicensing([
-      pkg({ name: "@caisson/registry-schema", license: COMMERCIAL }),
-    ]);
-    expect(bad).toHaveLength(1);
-    expect(bad[0]?.rule).toBe("open-core-license");
-  });
-
-  test("an open-Base package on the commercial license is flagged", () => {
-    // jobs, not credits — credits flipped commercial (ADR-0249 G5) and left OPEN_BASE_NAMES.
-    const f = checkOpenCoreLicensing([
-      pkg({ name: "@caisson/jobs", license: COMMERCIAL }),
-    ]);
-    expect(f).toHaveLength(1);
-    expect(f[0]?.message).toContain("open Base");
-    expect(f[0]?.message).toContain(APACHE);
-  });
-
-  test("a non-Base package must be commercial — Apache-2.0 is flagged", () => {
-    const f = checkOpenCoreLicensing([
-      pkg({ name: "@caisson/field-crypto", license: APACHE }),
-    ]);
-    expect(f).toHaveLength(1);
-    expect(f[0]?.message).toContain("commercial");
-  });
-
-  test("a non-Base commercial package passes", () => {
-    expect(
-      checkOpenCoreLicensing([
-        pkg({ name: "@caisson/compliance", license: COMMERCIAL }),
-      ]),
-    ).toEqual([]);
-  });
-
-  test("a non-packages/ candidate (apps/, registry service) is skipped", () => {
-    const app: Pkg = {
-      ...pkg({ name: "@caisson/base-app", license: COMMERCIAL }),
-      dir: "/repo/apps/example",
-    };
-    const service: Pkg = {
-      ...pkg({ name: "@caisson/registry", license: COMMERCIAL }),
-      dir: "/repo/registry",
-    };
-    expect(checkOpenCoreLicensing([app, service])).toEqual([]);
-  });
-
-  test("a missing license is left to checkDeclarations (not double-flagged)", () => {
-    expect(
-      checkOpenCoreLicensing([pkg({ name: "@caisson/kernel", license: null })]),
-    ).toEqual([]);
-  });
-});
-
-describe("checkOpenCommercialBoundary (ADR-0094/0097)", () => {
-  const commercialRegistry = pkg({
-    name: "@caisson/registry",
-    license: COMMERCIAL,
-    dir: "/repo/registry",
-  });
-
-  test("open → open dependency passes", () => {
-    const credits = pkg({
-      name: "@caisson/credits",
-      license: APACHE,
-      workspaceDeps: ["@caisson/kernel", "@caisson/registry-schema"],
-    });
-    const kernel = pkg({ name: "@caisson/kernel", license: APACHE });
-    const schema = pkg({ name: "@caisson/registry-schema", license: APACHE });
-    expect(checkOpenCommercialBoundary([credits, kernel, schema])).toEqual([]);
-  });
-
-  test("open → commercial dependency is flagged (the W1 conflict)", () => {
-    const credits = pkg({
-      name: "@caisson/credits",
-      license: APACHE,
-      workspaceDeps: ["@caisson/registry"],
-    });
-    const f = checkOpenCommercialBoundary([credits, commercialRegistry]);
-    expect(f).toHaveLength(1);
-    expect(f[0]?.rule).toBe("open-core-boundary");
-    expect(f[0]?.message).toContain("@caisson/registry");
-  });
-
-  test("open → unlicensed workspace dependency is flagged", () => {
-    const open = pkg({
-      name: "@caisson/ui",
-      license: APACHE,
-      workspaceDeps: ["@caisson/mystery"],
-    });
-    const mystery = pkg({ name: "@caisson/mystery", license: null });
-    const f = checkOpenCommercialBoundary([open, mystery]);
-    expect(f).toHaveLength(1);
-    expect(f[0]?.message).toContain("unlicensed");
-  });
-
-  test("commercial → commercial and commercial → open both pass (only open is constrained)", () => {
-    // Synthetic commercial consumer (the real cli is open Apache-2.0 Base as of ADR-0136); the
-    // pricebook is a real commercial package that legitimately depends "down" onto open + commercial.
-    const consumer = pkg({
-      name: "@caisson/pricebook",
-      license: COMMERCIAL,
-      workspaceDeps: ["@caisson/registry", "@caisson/kernel"],
-    });
-    const kernel = pkg({ name: "@caisson/kernel", license: APACHE });
-    expect(
-      checkOpenCommercialBoundary([consumer, kernel, commercialRegistry]),
-    ).toEqual([]);
-  });
-
-  test("open -> @caisson dep absent from the workspace is flagged (fail-closed)", () => {
-    const open = pkg({
-      name: "@caisson/billing",
-      license: APACHE,
-      workspaceDeps: ["@caisson/ghost"], // not present in the pkg set
-    });
-    const f = checkOpenCommercialBoundary([open]);
-    expect(f).toHaveLength(1);
-    expect(f[0]?.message).toContain("absent from the workspace");
-  });
-});
-
-describe("checkManifestAgreement fail-closed (ADR-0094/0097)", () => {
+describe("checkManifestAgreement fail-closed", () => {
   const fixtureDir = join(import.meta.dir, "__fixtures__");
 
   test("a schema-invalid manifest (defineModule throws on load) is an ERROR, not a warn", async () => {
@@ -197,47 +61,6 @@ describe("checkManifestAgreement fail-closed (ADR-0094/0097)", () => {
     ]);
     expect(f).toHaveLength(1);
     expect(f[0]?.severity).toBe("warn");
-  });
-});
-
-describe("checkManifestPriceAgreement (audit-v2 P1 price-drift guard)", () => {
-  const fixtureDir = join(import.meta.dir, "__fixtures__");
-
-  test("a priceCents matching PRICE_AUTHORITY passes", async () => {
-    const f = await checkManifestPriceAgreement([
-      pkg({
-        name: "@caisson/compliance",
-        license: COMMERCIAL,
-        manifestPath: join(fixtureDir, "price-agreement-match.fixture.ts"),
-      }),
-    ]);
-    expect(f).toEqual([]);
-  });
-
-  test("a priceCents drifted from PRICE_AUTHORITY is an ERROR", async () => {
-    const f = await checkManifestPriceAgreement([
-      pkg({
-        name: "@caisson/compliance",
-        license: COMMERCIAL,
-        manifestPath: join(fixtureDir, "price-agreement-drift.fixture.ts"),
-      }),
-    ]);
-    expect(f).toHaveLength(1);
-    expect(f[0]?.rule).toBe("manifest-price-agreement");
-    expect(f[0]?.severity).toBe("error");
-    expect(f[0]?.message).toContain("ADR-0383");
-  });
-
-  test("a package not seeded in PRICE_AUTHORITY is out of scope (skipped)", async () => {
-    const f = await checkManifestPriceAgreement([
-      pkg({
-        name: "@caisson/some-other-priced-pkg",
-        license: COMMERCIAL,
-        // Never resolved — the check short-circuits before importing an unseeded package's manifest.
-        manifestPath: join(fixtureDir, "does-not-exist.fixture.ts"),
-      }),
-    ]);
-    expect(f).toEqual([]);
   });
 });
 
@@ -344,6 +167,163 @@ describe("checkRlsEquivalence (ADR-0210/0005)", () => {
       ]),
     );
     expect(await checkRlsEquivalence([p], root)).toEqual([]);
+  });
+});
+
+describe("checkOpenLicense", () => {
+  const APACHE_TEXT =
+    "Apache License\nVersion 2.0\n...\nCopyright 2026 Caisson Software LLC\n";
+  let root: string;
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), "standards-gate-license-"));
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  /** A package dir under the temp root, optionally with a LICENSE body. */
+  function licensed(name: string, license: string, text?: string): Pkg {
+    const dir = join(root, name);
+    mkdirSync(dir, { recursive: true });
+    if (text !== undefined) writeFileSync(join(dir, "LICENSE"), text);
+    return pkg({ name: `@caisson/${name}`, dir, license });
+  }
+
+  test("Apache-2.0 plus an Apache LICENSE naming the holder is clean", () => {
+    expect(checkOpenLicense([licensed("ok", APACHE, APACHE_TEXT)])).toEqual([]);
+  });
+
+  test("a non-Apache license is an error naming the package", () => {
+    const f = checkOpenLicense([licensed("mit", "MIT", APACHE_TEXT)]);
+    expect(f).toHaveLength(1);
+    expect(f[0]).toMatchObject({
+      severity: "error",
+      rule: "open-license",
+      pkg: "@caisson/mit",
+    });
+    expect(f[0]?.message).toContain("MIT");
+  });
+
+  test("a missing LICENSE, or one that is not Apache naming the holder, is an error", () => {
+    const f = checkOpenLicense([
+      licensed("none", APACHE),
+      licensed("other-holder", APACHE, "Apache License\nCopyright Someone\n"),
+      licensed(
+        "commercial",
+        APACHE,
+        "Commercial License\nCopyright (c) Caisson Software LLC.\n",
+      ),
+    ]);
+    expect(f.map((x) => x.pkg)).toEqual([
+      "@caisson/none",
+      "@caisson/other-holder",
+      "@caisson/commercial",
+    ]);
+  });
+
+  test("a private package is out of scope", () => {
+    const p = { ...licensed("internal", "UNLICENSED"), private: true };
+    expect(checkOpenLicense([p])).toEqual([]);
+  });
+
+  test("the committed tree is clean, and the check really walked the published set", () => {
+    const pkgs = readWorkspace(findRoot(import.meta.dir));
+    const published = pkgs.filter((p) => !p.private);
+    expect(published.length).toBeGreaterThan(40);
+    expect(checkOpenLicense(pkgs)).toEqual([]);
+  });
+});
+
+describe("checkPrivatePackages", () => {
+  const priv = (name: string, isPrivate = true): Pkg =>
+    pkg({ name: `@caisson/${name}`, license: APACHE, private: isPrivate });
+
+  test("brand as the only private packages/ member is clean", () => {
+    expect(
+      checkPrivatePackages([priv("brand"), priv("kernel", false)]),
+    ).toEqual([]);
+  });
+
+  test("a second private package, or brand going public, is an error", () => {
+    const extra = checkPrivatePackages([priv("brand"), priv("billing")]);
+    expect(extra).toHaveLength(1);
+    expect(extra[0]).toMatchObject({
+      severity: "error",
+      rule: "open-license-private-set",
+    });
+    expect(extra[0]?.message).toContain("billing");
+    expect(checkPrivatePackages([priv("brand", false)])).toHaveLength(1);
+  });
+
+  test("private members outside packages/ are not counted", () => {
+    const app = { ...priv("site"), dir: "/repo/apps/site" };
+    expect(checkPrivatePackages([priv("brand"), app])).toEqual([]);
+  });
+
+  test("the committed tree's private packages/ set is exactly brand", () => {
+    expect(
+      checkPrivatePackages(readWorkspace(findRoot(import.meta.dir))),
+    ).toEqual([]);
+  });
+});
+
+describe("checkNoSalesCopy", () => {
+  let root: string;
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), "standards-gate-sales-"));
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  /** A published package dir with the given description and optional README body. */
+  function listed(name: string, description: string, readme?: string): Pkg {
+    const dir = join(root, name);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(dir, "package.json"),
+      JSON.stringify({ name: `@caisson/${name}`, description }),
+    );
+    if (readme !== undefined) writeFileSync(join(dir, "README.md"), readme);
+    return pkg({ name: `@caisson/${name}`, dir, license: APACHE });
+  }
+
+  test("a plain description and README pass; `$1` inside code is a placeholder, not a price", () => {
+    const readme =
+      "# Rls\n\nTenant isolation.\n\n```ts\ndb.query(`SELECT 1 WHERE id = $1`);\n```\n\nUses `$1`/`$2` placeholders.\n";
+    expect(
+      checkNoSalesCopy([listed("ok", "Tenant isolation over RLS.", readme)]),
+    ).toEqual([]);
+  });
+
+  test("'commercial' in a description, and a price or 'Commercial' in README prose, are errors", () => {
+    const f = checkNoSalesCopy([
+      listed("desc", "Commercial billing orchestration."),
+      listed("price", "Access reviews.", "Sellable at $199 on its own.\n"),
+      listed("tier", "Signing.", "Commercial module. Sits on the kernel.\n"),
+    ]);
+    expect(f.map((x) => [x.pkg, x.rule])).toEqual([
+      ["@caisson/desc", "no-sales-copy"],
+      ["@caisson/price", "no-sales-copy"],
+      ["@caisson/tier", "no-sales-copy"],
+    ]);
+    expect(f[1]?.message).toContain("$1");
+    expect(f[2]?.message).toContain("README.md");
+  });
+
+  test("a private package is out of scope", () => {
+    const p = { ...listed("brand", "Commercial glyphs, $5."), private: true };
+    expect(checkNoSalesCopy([p])).toEqual([]);
+  });
+
+  test("the committed tree is clean, and the check really walked the published set", () => {
+    const pkgs = readWorkspace(findRoot(import.meta.dir));
+    expect(pkgs.filter((p) => !p.private).length).toBeGreaterThan(40);
+    expect(checkNoSalesCopy(pkgs)).toEqual([]);
   });
 });
 

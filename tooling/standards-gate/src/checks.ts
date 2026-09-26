@@ -12,7 +12,7 @@
  * SDK family is Apache-2.0, so it passes the Gate 1/1b AGPL tripwire below by construction; its
  * only constraint is composition (ADR-0011/0022), not copyleft.
  */
-import { join, relative, sep } from "node:path";
+import { basename, join, relative, sep } from "node:path";
 import {
   existsSync,
   readFileSync,
@@ -20,12 +20,7 @@ import {
   realpathSync,
   statSync,
 } from "node:fs";
-import {
-  createHash,
-  createPrivateKey,
-  createPublicKey,
-  verify as cryptoVerify,
-} from "node:crypto";
+import { createHash } from "node:crypto";
 import ts from "typescript";
 import type { Pkg } from "./workspace";
 import { isAgpl } from "./workspace";
@@ -39,73 +34,9 @@ import {
 // checkRlsEquivalence's lazy VALUE import below for the runtime seam).
 import type { buildTenantPolicySql as BuildTenantPolicySqlFn } from "@caisson/tenancy-rls";
 
-/**
- * The bundle/edition meta-packages (by package name) — the down-only direction is keyed on these.
- * Hand-copy of the ADR-0257 bundle ids + the historical `kind:"edition"` meta-package names, which stay
- * served forever (ADR-0006 append-only ledger; ADR-0270 purged the edition PURCHASE ids but keeps the
- * index/ledger machinery). This check runs in the pre-install fs-only pass, so it cannot value-import the
- * workspace constant; keep this set in sync with the shipped edition + bundle meta-packages.
- */
-export const EDITION_NAMES = new Set([
-  // Legacy edition names (historical kind:"edition" entries stay valid forever, ADR-0257).
-  "@caisson/compliance",
-  "@caisson/ai-kit",
-  "@caisson/local-ai",
-  "@caisson/agent-dev",
-  // ADR-0257 bundle ids (compliance keeps its id — shared with the legacy row above).
-  "@caisson/ai-production",
-  "@caisson/local-first",
-  "@caisson/agentic-dev",
-  "@caisson/provenance",
-  "@caisson/everything",
-]);
-
-// Open-core (ADR-0094/0097). The open Base substrate ships `Apache-2.0`; every OTHER published module
-// (editions + their members, the compliance primitives field-crypto/audit-worm, the commercial
-// registry SERVICE, updates, the pricebook) ships `LicenseRef-Caisson-Commercial`. The open set is the
-// ADR-0094 ten PLUS `@caisson/registry-schema` (the open registry contract split out by ADR-0097),
-// `@caisson/observability` (ADR-0117), and the ships-with-generator tooling trio cli·migrate·
-// license-verify (ADR-0136): every buyer's generated repo embeds all three, so they are open Base,
-// not sold à-la-carte. `@caisson/pricebook` stays commercial (it is the seller's price catalog).
-const OPEN_LICENSE = "Apache-2.0";
-const COMMERCIAL_LICENSE = "LicenseRef-Caisson-Commercial";
-const OPEN_BASE_NAMES = new Set([
-  "@caisson/kernel",
-  "@caisson/auth",
-  "@caisson/tenancy-rls",
-  "@caisson/ui",
-  "@caisson/billing",
-  "@caisson/jobs",
-  "@caisson/email",
-  "@caisson/ai-config",
-  "@caisson/mcp-server",
-  "@caisson/registry-schema",
-  // ADR-0117: vendor-neutral OTel bootstrap is base substrate every buyer gets, same as the rest
-  // of the open Base set above — never edition-gated.
-  "@caisson/observability",
-  // ADR-0136: ships-with-generator tooling. create-caisson (cli) composes migrate + embeds the
-  // offline license verifier into EVERY generated repo, so all three ship with each buyer and are
-  // open Apache-2.0 Base — never gated, never sold à-la-carte. cli→kernel·migrate·registry-schema
-  // (the codegen debit is an injected port; the commercial @caisson/credits — flipped by ADR-0249
-  // G5/ADR-0260 — is dev-only), migrate→kernel, license-verify→kernel: all open, so open-only
-  // holds (ADR-0094).
-  "@caisson/cli",
-  "@caisson/migrate",
-  "@caisson/license-verify",
-  // Shared abuse-throttle primitives (extracted out of two near-duplicate service-local copies plus
-  // a per-account store that was marooned in a commercial service): generic infra, no commercial
-  // secret, open Base alongside kernel/tenancy-rls.
-  "@caisson/rate-limit",
-  // Agent-ready design-system surface foundation layer (ADR-0330/ADR-0345): a manifest schema +
-  // reader + pure static-check library with zero @caisson runtime deps (token objects and file
-  // contents are always passed in by the caller) — generic infra, same open-Base posture as
-  // registry-schema/rate-limit.
-  "@caisson/ds-manifest",
-]);
-
 // A registry-module candidate is a `packages/` member. `apps/` are reference applications (the
 // base/edition reference apps + the design studio) — never published to the registry, so they are
-// not held to the module declaration rules (they still face the AGPL + down-only checks below).
+// not held to the module declaration rules (they still face the AGPL checks below).
 const isModuleCandidate = (p: Pkg): boolean =>
   p.dir.includes("/packages/") || p.dir.includes("\\packages\\");
 
@@ -117,13 +48,11 @@ export interface Finding {
 }
 
 /**
- * DORMANT TRIPWIRE (ADR-0050/0094). Under the open-core model (ADR-0094: base Apache-2.0, editions/
- * primitives/cli/registry commercial; amends the ADR-0050 uniform-commercial stance) the SPDX
- * allowlist is {Commercial, Apache-2.0} — still NO AGPL/copyleft source in the tree, so Gate 1
- * and Gate 1b NEVER fire by construction: there is no AGPL package for them to catch. They stay
- * wired ON PURPOSE as a standing tripwire — a re-introduced AGPL dependency (workspace OR external
- * npm) MUST still hard-fail CI. Do not delete: this is the guard that keeps copyleft out of the
- * commercial tree even though it is dormant today.
+ * DORMANT TRIPWIRE. Every package ships Apache-2.0, so there is NO AGPL/copyleft source in the
+ * tree and Gate 1 and Gate 1b never fire by construction. They stay wired ON PURPOSE as a
+ * standing tripwire — a re-introduced AGPL dependency (workspace OR external npm) MUST still
+ * hard-fail CI. Do not delete: this is the guard that keeps copyleft out of the tree even though it
+ * is dormant today.
  *
  * Gate 1 — AGPL boundary over WORKSPACE deps. Only an AGPL package may consume an AGPL package.
  */
@@ -272,45 +201,16 @@ export function checkExternalAgpl(pkgs: Pkg[], root: string): Finding[] {
   }));
 }
 
-/** Gate 3 — down-only dependency boundary (ADR-0003). base/primitive ↛ edition; edition ↛ edition. */
-export function checkDownOnly(pkgs: Pkg[]): Finding[] {
-  const findings: Finding[] = [];
-  for (const p of pkgs) {
-    // Down-only governs the PACKAGE dependency tower (base/primitive/edition) only (ADR-0003).
-    // apps/ are reference applications ABOVE the tower — top-level consumers, not packages — so they
-    // may legitimately depend on an edition (each edition's reference app wires its edition). The
-    // authoritative .dependency-cruiser.cjs likewise anchors its down-only `from` to packages/, so
-    // gating on isModuleCandidate keeps the two enforcement layers aligned. Base/primitive (in
-    // packages/) stay fully checked — this exempts the consumer layer, not the tower.
-    if (!isModuleCandidate(p)) continue;
-    const pIsEdition = EDITION_NAMES.has(p.name);
-    for (const dep of p.workspaceDeps) {
-      if (EDITION_NAMES.has(dep) && dep !== p.name) {
-        findings.push({
-          severity: "error",
-          rule: "down-only",
-          pkg: p.name,
-          message: `${pIsEdition ? "edition" : "base/primitive"} depends "up" on edition ${dep} — editions compose base, never the reverse (ADR-0003).`,
-        });
-      }
-    }
-  }
-  return findings;
-}
-
 /**
- * `packages/` members that are internal engineering plumbing and will NEVER enter the sold
- * registry index — each one's own package.json `description` already says so in prose; this set
- * just makes that an enforced, auditable fact instead of a manifest-pending warning nobody will
- * ever clear. NOT inferred from `private: true` (several sellable modules may set that too for
- * unrelated npm-publish-prevention reasons) — every entry here is a deliberate opt-in with its
- * own one-line rationale, so a real future module can't slip past `manifest-pending` by accident.
+ * `packages/` members that are internal engineering plumbing and will NEVER enter the registry
+ * index — each one's own package.json `description` already says so in prose; this set just makes
+ * that an enforced, auditable fact instead of a manifest-pending warning nobody will ever clear.
+ * NOT inferred from `private: true` — every entry here is a deliberate opt-in with its own one-line
+ * rationale, so a real future module can't slip past `manifest-pending` by accident.
  */
 const NEVER_PUBLISHED = new Set([
-  // The private brand layer (glyphs/wordmark) — apps consume it directly, never a registry SKU.
+  // The private brand layer (glyphs/wordmark) — apps consume it directly, never a registry module.
   "@caisson/brand",
-  // The ordered platform migration chain — internal engineering plumbing, not a buyer module.
-  "@caisson/platform-migrations",
 ]);
 
 /**
@@ -339,6 +239,111 @@ export function checkDeclarations(pkgs: Pkg[]): Finding[] {
         pkg: p.name,
         message: `no manifest.ts yet — registry manifests land at P5 (ADR-0021 T5.1b backfill); mandatory at publish.`,
       });
+  }
+  return findings;
+}
+
+export const OPEN_LICENSE = "Apache-2.0";
+export const LICENSE_HOLDER = "Caisson Software LLC";
+
+/**
+ * Every published (non-private) workspace package is Apache-2.0: package.json says so, and the
+ * package ships an Apache LICENSE file naming the copyright holder. The "Apache License" check is
+ * load-bearing — the retired commercial LICENSE also named the holder.
+ */
+export function checkOpenLicense(pkgs: Pkg[]): Finding[] {
+  const findings: Finding[] = [];
+  for (const p of pkgs) {
+    if (p.private) continue;
+    const fail = (message: string) =>
+      findings.push({
+        severity: "error",
+        rule: "open-license",
+        pkg: p.name,
+        message,
+      });
+    if (p.license !== OPEN_LICENSE)
+      fail(
+        `package.json license is ${p.license ?? "absent"}; every published package must be ${OPEN_LICENSE}.`,
+      );
+    const licenseFile = join(p.dir, "LICENSE");
+    const text = existsSync(licenseFile)
+      ? readFileSync(licenseFile, "utf8")
+      : null;
+    if (text === null) fail(`no LICENSE file next to package.json.`);
+    else if (!text.includes("Apache License") || !text.includes(LICENSE_HOLDER))
+      fail(`LICENSE is not the Apache License naming ${LICENSE_HOLDER}.`);
+  }
+  return findings;
+}
+
+/**
+ * The `packages/*` directories allowed to be `private: true`. checkOpenLicense skips private
+ * packages, so `private: true` must not become a quiet way out of the Apache-2.0 rule.
+ */
+export const PRIVATE_PACKAGE_DIRS: readonly string[] = ["brand"];
+
+/** The set of `private: true` members under `packages/` (by directory name) is exactly the allowlist. */
+export function checkPrivatePackages(pkgs: Pkg[]): Finding[] {
+  const actual = pkgs
+    .filter((p) => isModuleCandidate(p) && p.private)
+    .map((p) => basename(p.dir))
+    .sort();
+  const expected = [...PRIVATE_PACKAGE_DIRS].sort();
+  if (actual.join("\n") === expected.join("\n")) return [];
+  return [
+    {
+      severity: "error",
+      rule: "open-license-private-set",
+      pkg: "(packages)",
+      message: `private packages under packages/ are [${actual.join(", ")}]; only [${expected.join(", ")}] may skip the ${OPEN_LICENSE} check.`,
+    },
+  ];
+}
+
+/** Sales framing a published package's description or README may not carry: a paid tier, a price. */
+const SALES_COPY: readonly RegExp[] = [/\bcommercial\b/i, /\$\d/];
+
+/** Drop fenced blocks and inline code spans — a `$1` there is a SQL placeholder, not a price. */
+function stripMarkdownCode(md: string): string {
+  return md.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
+}
+
+/**
+ * Nothing is sold: every published (non-private) package's package.json `description` and prose
+ * README must describe what the package does, never a commercial tier or a dollar price.
+ */
+export function checkNoSalesCopy(pkgs: Pkg[]): Finding[] {
+  const findings: Finding[] = [];
+  for (const p of pkgs) {
+    if (p.private) continue;
+    const texts: { where: string; text: string }[] = [];
+    const pjPath = join(p.dir, "package.json");
+    if (existsSync(pjPath)) {
+      const { description } = JSON.parse(readFileSync(pjPath, "utf8")) as {
+        description?: unknown;
+      };
+      if (typeof description === "string")
+        texts.push({ where: "package.json description", text: description });
+    }
+    const readme = join(p.dir, "README.md");
+    if (existsSync(readme))
+      texts.push({
+        where: "README.md",
+        text: stripMarkdownCode(readFileSync(readme, "utf8")),
+      });
+    for (const { where, text } of texts) {
+      const hit = SALES_COPY.map((re) => re.exec(text)?.[0]).find(
+        (m) => m !== undefined,
+      );
+      if (hit !== undefined)
+        findings.push({
+          severity: "error",
+          rule: "no-sales-copy",
+          pkg: p.name,
+          message: `${where} says "${hit}" — every package is ${OPEN_LICENSE} and nothing is sold; describe what the package does.`,
+        });
+    }
   }
   return findings;
 }
@@ -399,477 +404,6 @@ export async function checkManifestAgreement(pkgs: Pkg[]): Promise<Finding[]> {
     const md = [...(manifest.dependencies ?? [])].sort().join(",");
     const pd = [...p.workspaceDeps].sort().join(",");
     mismatch("dependencies", md, pd);
-  }
-  return findings;
-}
-
-/**
- * Every locked buyer-facing price, keyed by package id. The single place to update when an ADR
- * reprices a module — `checkManifestPriceAgreement` below fails the gate on any drift from here.
- */
-export const PRICE_AUTHORITY: Record<string, { cents: number; adr: string }> = {
-  // Compliance bundle repriced as the three compliance-gap members joined (was 104900/ADR-0258;
-  // before that 79900/ADR-0227 as an edition).
-  "@caisson/compliance": { cents: 164900, adr: "ADR-0383" },
-  "@caisson/ai-production": { cents: 73900, adr: "ADR-0258" },
-  "@caisson/local-first": { cents: 62900, adr: "ADR-0258" },
-  "@caisson/agentic-dev": { cents: 32900, adr: "ADR-0260" },
-  "@caisson/provenance": { cents: 39900, adr: "ADR-0260" },
-  "@caisson/everything": { cents: 225900, adr: "ADR-0386" },
-  "@caisson/audit-worm": { cents: 14900, adr: "ADR-0129" },
-  // The surviving retired-alias meta stays trued to its alias-target bundle price.
-  "@caisson/ai-kit": { cents: 73900, adr: "ADR-0258" },
-  "@caisson/credits": { cents: 14900, adr: "ADR-0260" },
-  "@caisson/field-crypto": { cents: 19900, adr: "ADR-0129" },
-  "@caisson/retention-runner": { cents: 19900, adr: "ADR-0137" },
-  "@caisson/alerting": { cents: 14900, adr: "ADR-0137" },
-  "@caisson/ai-meter": { cents: 19900, adr: "ADR-0129" },
-  "@caisson/ai-evals": { cents: 19900, adr: "ADR-0129" },
-  "@caisson/guardrails": { cents: 14900, adr: "ADR-0129" },
-  "@caisson/prompt-registry": { cents: 9900, adr: "ADR-0129" },
-  "@caisson/local-store": { cents: 9900, adr: "ADR-0129" },
-  "@caisson/agent-kernel": { cents: 19900, adr: "ADR-0129" },
-  "@caisson/agent-runner": { cents: 4900, adr: "ADR-0222" },
-  "@caisson/agent-trajectory": { cents: 4900, adr: "ADR-0379" },
-  // Catalog-rework carves (all private pre-first-publish; prices locked by the rework pickers).
-  "@caisson/org-controls": { cents: 24900, adr: "ADR-0257" },
-  "@caisson/compliance-core": { cents: 29900, adr: "ADR-0260" },
-  "@caisson/frameworks-pack": { cents: 24900, adr: "ADR-0260" },
-  "@caisson/oscal-spine": { cents: 24900, adr: "ADR-0383" },
-  "@caisson/signing-primitive": { cents: 19900, adr: "ADR-0260" },
-  "@caisson/billing-orchestration": { cents: 9900, adr: "ADR-0260" },
-  "@caisson/local-sync": { cents: 19900, adr: "ADR-0258" },
-  "@caisson/local-inference": { cents: 24900, adr: "ADR-0258" },
-  "@caisson/local-privacy": { cents: 9900, adr: "ADR-0258" },
-  "@caisson/tool-exec": { cents: 9900, adr: "ADR-0260" },
-  // ui-pro first publish (2026-07-07): trued to the live catalog $129 standalone (ADR-0259 band).
-  "@caisson/ui-pro": { cents: 12900, adr: "ADR-0259" },
-  // The 2026-07-20 compliance-gap SKUs (first prices; sellable flip in the membership cut).
-  "@caisson/access-review": { cents: 19900, adr: "ADR-0373" },
-  "@caisson/risk-register": { cents: 27900, adr: "ADR-0373" },
-  "@caisson/trust-page": { cents: 14900, adr: "ADR-0373" },
-};
-
-/**
- * manifest.priceCents ↔ locked-ADR agreement. Root-cause guard for the audit-v2 P1 finding class
- * (manifests carrying stale/PLACEHOLDER prices that drifted from a later ADR reprice): only
- * packages seeded in `PRICE_AUTHORITY` are asserted — every other manifest.ts still carrying its
- * own unpriced/unlocked number is out of scope until it lands in the map. A load failure is
- * already reported by `checkManifestAgreement` above, so it is silently skipped here (no
- * double-report).
- */
-export async function checkManifestPriceAgreement(
-  pkgs: Pkg[],
-): Promise<Finding[]> {
-  const findings: Finding[] = [];
-  for (const p of pkgs) {
-    if (!p.manifestPath) continue;
-    const authority = PRICE_AUTHORITY[p.name];
-    if (!authority) continue;
-    let manifest: { priceCents?: number | null };
-    try {
-      const mod = await import(p.manifestPath);
-      manifest = (mod.default ?? mod.manifest ?? mod) as typeof manifest;
-    } catch {
-      continue;
-    }
-    if (manifest.priceCents !== authority.cents) {
-      findings.push({
-        severity: "error",
-        rule: "manifest-price-agreement",
-        pkg: p.name,
-        message: `manifest.priceCents (${String(manifest.priceCents)}) ≠ the price locked by ${authority.adr} (${authority.cents}) — reconcile the manifest, not the ADR.`,
-      });
-    }
-  }
-  return findings;
-}
-
-// ─── Catalog-rework gate checks (ADR-0248 F5, ADR-0257/0258) ─────────────────────────────────────
-// Four checks that keep the sellable catalog, the manifest prices, the PRICE_AUTHORITY map, and the
-// site's displayed catalog in agreement as editions dissolve into bundles. Each is a pure function
-// over (disk, PRICE_AUTHORITY) like its siblings; all degrade to a skip/warn when node_modules or a
-// cross-surface file is absent (the post-install CI pass is authoritative).
-
-interface CatalogManifest {
-  priceCents?: number | null;
-  kind?: string;
-  sellable?: boolean;
-  members?: Record<string, string>;
-}
-
-/** Import a manifest's catalog fields; null if it can't be resolved (pre-install / broken load —
- *  the post-install gate pass re-runs it for real, mirroring checkManifestPriceAgreement's posture). */
-async function loadCatalogManifestPath(
-  manifestPath: string,
-): Promise<CatalogManifest | null> {
-  try {
-    const mod = await import(manifestPath);
-    return (mod.default ?? mod.manifest ?? mod) as CatalogManifest;
-  } catch {
-    return null;
-  }
-}
-
-async function loadCatalogManifest(p: Pkg): Promise<CatalogManifest | null> {
-  return p.manifestPath === null
-    ? null
-    : loadCatalogManifestPath(p.manifestPath);
-}
-
-/**
- * price-coverage (ADR-0248 F5). Every SELLABLE commercial `packages/*` module must carry a positive
- * integer price AND a PRICE_AUTHORITY row, so every shipped SKU's price is CI-pinned to its ADR and
- * can never silently drift. The only exemption is an explicit `sellable: false` declaration for
- * bundle-only, internal, retired, or unpublished packages. In particular, $49 is a legitimate
- * buyer price rather than a sentinel and bundle metas are themselves sellable SKUs.
- */
-export async function checkPriceCoverage(pkgs: Pkg[]): Promise<Finding[]> {
-  const findings: Finding[] = [];
-  for (const p of pkgs) {
-    if (
-      !isModuleCandidate(p) ||
-      p.license !== COMMERCIAL_LICENSE ||
-      !p.manifestPath
-    )
-      continue;
-    const m = await loadCatalogManifest(p);
-    if (m === null) continue; // unresolvable pre-install — post-install pass is authoritative
-    if (m.sellable === false) continue; // bundle-only substrate, never sold standalone
-    if (
-      typeof m.priceCents !== "number" ||
-      !Number.isInteger(m.priceCents) ||
-      m.priceCents <= 0
-    ) {
-      findings.push({
-        severity: "error",
-        rule: "price-coverage",
-        pkg: p.name,
-        message: `sellable commercial module carries no positive integer priceCents (found ${String(m.priceCents)}) — every sold SKU needs a price (ADR-0007).`,
-      });
-      continue;
-    }
-    if (!PRICE_AUTHORITY[p.name]) {
-      findings.push({
-        severity: "error",
-        rule: "price-coverage",
-        pkg: p.name,
-        message: `sellable commercial module carries a locked price (${m.priceCents}) but has no PRICE_AUTHORITY row — add one keyed by ${p.name} so the manifest price stays CI-locked to its ADR.`,
-      });
-    }
-  }
-  return findings;
-}
-
-/**
- * orphan-SKU (ADR-0248 F5). The inverse of price-coverage: no PRICE_AUTHORITY row may name a package
- * that isn't a real, manifested `packages/*` module — a stale row (renamed/deleted package) would
- * assert a price nothing ships, and the price-drift guard would silently never fire for it.
- */
-export function checkOrphanSku(pkgs: Pkg[]): Finding[] {
-  const byName = new Map(pkgs.map((p) => [p.name, p]));
-  const findings: Finding[] = [];
-  for (const id of Object.keys(PRICE_AUTHORITY)) {
-    const p = byName.get(id);
-    if (!p || !isModuleCandidate(p) || !p.manifestPath) {
-      findings.push({
-        severity: "error",
-        rule: "orphan-sku",
-        pkg: id,
-        message: !p
-          ? `PRICE_AUTHORITY names ${id} but no such package exists on disk — remove the stale row or restore the package (ADR-0248 F5).`
-          : `PRICE_AUTHORITY names ${id} but it is not a manifested packages/* module — a priced SKU must map to a real, manifested package (ADR-0248 F5).`,
-      });
-    }
-  }
-  return findings;
-}
-
-/**
- * pricebook-price-agreement (2026-07-20, the SKU-arming audit's structural finding). PRICE_AUTHORITY
- * pins manifests, and the site's displayed prices are test-pinned to the pricebook — but nothing
- * bridged the two, so a manifest reprice could leave the pricebook (and therefore the site display,
- * upgrade quotes, and renewal math) silently on the old number while every gate stayed green. This
- * check closes the bridge in BOTH directions: (a) for every PRICE_AUTHORITY row, the pricebook's
- * SKU_RETAIL (modules) or BUNDLE_RETAIL (bundles) entry must exist and agree at dollars * 100 ===
- * cents; (b) no pricebook row may name a slug PRICE_AUTHORITY does not lock — SKU_RETAIL doubles as
- * the F8 upgrade-CREDIT table and the creditable-item vocabulary (`resolveUpgradeCredit` /
- * `isPricedItem` read its keys), so an unlocked row is a live money number no ADR pins and no
- * sibling check asserts. Degrades to a
- * VISIBLE warn when the pricebook can't be imported (legitimate pre-install; post-install it means
- * the bridge is not running) — a silent skip here would false-PASS the exact drift class this
- * check exists to catch.
- */
-export async function checkPricebookPriceAgreement(
-  pkgs: Pkg[],
-): Promise<Finding[]> {
-  const pricebook = pkgs.find((p) => p.name === "@caisson/pricebook");
-  if (!pricebook) return [];
-  let books: {
-    SKU_RETAIL?: Record<string, number>;
-    BUNDLE_RETAIL?: Record<string, number>;
-  };
-  try {
-    books = await import(join(pricebook.dir, "src", "upgrades.ts"));
-  } catch {
-    return [
-      {
-        severity: "warn",
-        rule: "pricebook-price-agreement",
-        pkg: "@caisson/pricebook",
-        message:
-          "src/upgrades.ts could not be imported — expected pre-install only; post-install this means the price-agreement bridge is NOT running (fix the import path).",
-      },
-    ];
-  }
-  const sku = books.SKU_RETAIL ?? {};
-  const bundles = books.BUNDLE_RETAIL ?? {};
-  const byName = new Map(pkgs.map((p) => [p.name, p]));
-  const findings: Finding[] = [];
-  for (const [id, { cents }] of Object.entries(PRICE_AUTHORITY)) {
-    const slug = id.replace(/^@caisson\//, "");
-    // Mirror checkPriceCoverage's sole exemption: sellable:false packages owe no pricebook row.
-    const pkg = byName.get(id);
-    const m = pkg ? await loadCatalogManifest(pkg) : null;
-    if (m?.sellable === false) continue;
-    const isBundle = slug in bundles;
-    const dollars = isBundle ? bundles[slug] : sku[slug];
-    if (dollars === undefined) {
-      findings.push({
-        severity: "error",
-        rule: "pricebook-price-agreement",
-        pkg: id,
-        message: `PRICE_AUTHORITY locks ${id} at ${cents} cents but the pricebook carries no SKU_RETAIL/BUNDLE_RETAIL row for "${slug}" — without one, upgrade quotes credit $0 for it (silent overcharge).`,
-      });
-      continue;
-    }
-    if (dollars * 100 !== cents) {
-      findings.push({
-        severity: "error",
-        rule: "pricebook-price-agreement",
-        pkg: id,
-        message: `pricebook ${isBundle ? "BUNDLE_RETAIL" : "SKU_RETAIL"}.${slug} = $${dollars} disagrees with PRICE_AUTHORITY's ${cents} cents — reprice both surfaces in the same change.`,
-      });
-    }
-  }
-  // Reverse direction (the missing leg): no pricebook row may name a slug PRICE_AUTHORITY does not
-  // lock. SKU_RETAIL is the F8 upgrade-CREDIT table AND the creditable-item vocabulary
-  // (`Object.keys(SKU_RETAIL)` / `Object.hasOwn(SKU_RETAIL, itemId)` in upgrades.ts), so an
-  // unlocked row is a live buyer-facing number that no ADR pins and that every sibling check
-  // (manifest-price-agreement, price-coverage, orphan-sku — all keyed off PRICE_AUTHORITY) skips.
-  // A STALE one is worse: a renamed/retired slug stays a quotable, creditable item id for a SKU
-  // that no longer ships. This mirrors checkOrphanSku on the pricebook side.
-  const authoritySlugs = new Set(
-    Object.keys(PRICE_AUTHORITY).map((id) => id.replace(/^@caisson\//, "")),
-  );
-  // A slug in BOTH books falls through both legs: the forward leg picks exactly one book per
-  // authority row (`isBundle` short-circuits to BUNDLE_RETAIL), and the reverse leg tests only set
-  // membership against the union, so the shadowed SKU_RETAIL row is never price-compared and never
-  // orphan-flagged. Bundle ids and package slugs share one namespace — `compliance` is both a
-  // bundle id and packages/compliance — so this is a live collision risk, and an unexamined
-  // SKU_RETAIL row is a creditable money value (`upgrades.ts` reads its keys directly).
-  for (const slug of Object.keys(sku)) {
-    if (!(slug in bundles)) continue;
-    findings.push({
-      severity: "error",
-      rule: "pricebook-price-agreement",
-      pkg: `@caisson/${slug}`,
-      message: `pricebook carries "${slug}" in BOTH SKU_RETAIL ($${sku[slug]}) and BUNDLE_RETAIL ($${bundles[slug]}) — the bundle row wins every comparison and the SKU row is never checked against PRICE_AUTHORITY, while still feeding upgrade credits; keep the slug in exactly one book.`,
-    });
-  }
-  for (const [book, rows] of Object.entries({
-    SKU_RETAIL: sku,
-    BUNDLE_RETAIL: bundles,
-  })) {
-    for (const [slug, dollars] of Object.entries(rows)) {
-      if (authoritySlugs.has(slug)) continue;
-      findings.push({
-        severity: "error",
-        rule: "pricebook-price-agreement",
-        pkg: `@caisson/${slug}`,
-        message: `pricebook ${book}.${slug} = $${dollars} but no PRICE_AUTHORITY row locks @caisson/${slug} — an unpinned price still feeds upgrade credits and checkout quotes, and a stale slug keeps quoting a SKU that no longer ships; add the authority row or drop the pricebook entry.`,
-      });
-    }
-  }
-  return findings;
-}
-
-/** Extract the `RESERVED_MODULE_ENTITLEMENT_IDS` string set from entitlements.ts source (fs-only, so
- *  the check survives the pre-install pass and never drifts from a hand-copy — it reads live source).
- *  The optional generic matters: the real declaration is `new Set<string>([...])`, and a regex
- *  requiring bare `new Set(` silently parsed it to [] — a no-op staleness gate (audit P2-2). */
-function parseReservedEntitlementIds(src: string): string[] {
-  const block = src.match(
-    /RESERVED_MODULE_ENTITLEMENT_IDS[^=]*=\s*new Set(?:<[^>]*>)?\(\s*\[([\s\S]*?)\]\s*\)/,
-  );
-  if (!block?.[1]) return [];
-  return [...block[1].matchAll(/["']([a-z0-9-]+)["']/g)].map(
-    (m) => m[1] as string,
-  );
-}
-
-/** Extract `slug → first version` pairs from `RESERVED_MODULE_ENTITLEMENT_VERSIONS`. */
-function parseReservedEntitlementVersions(src: string): Map<string, string> {
-  const block = src.match(
-    /RESERVED_MODULE_ENTITLEMENT_VERSIONS[^=]*=\s*new Map(?:<[^>]*>)?\(\s*\[([\s\S]*?)\]\s*\)/,
-  );
-  const entries = new Map<string, string>();
-  if (!block?.[1]) return entries;
-  for (const match of block[1].matchAll(
-    /\[\s*["']([a-z0-9-]+)["']\s*,\s*["']([0-9]+\.[0-9]+\.[0-9]+)["']\s*\]/g,
-  )) {
-    const slug = match[1];
-    const version = match[2];
-    if (slug !== undefined && version !== undefined) entries.set(slug, version);
-  }
-  return entries;
-}
-
-/**
- * Reserved-id lifecycle (ADR-0248 F5). `RESERVED_MODULE_ENTITLEMENT_IDS` is a fail-soft
- * carve-out for a SKU that is sold but not yet published — a purchased reserved id expands to nothing
- * rather than throwing. The matching first-version map lets bundle pins resolve during the same
- * pre-publish cut. Their keys must remain identical, and both exceptions must leave atomically when
- * the first registry row lands; otherwise a later missing pin can be hidden by a stale reservation.
- */
-export function checkReservedIdsStaleness(root: string): Finding[] {
-  const entPath = join(root, "packages/registry-schema/src/entitlements.ts");
-  const indexPath = join(root, "registry/index.json");
-  if (!existsSync(entPath) || !existsSync(indexPath)) return [];
-  const source = readFileSync(entPath, "utf8");
-  const reserved = new Set(parseReservedEntitlementIds(source));
-  const reservedVersions = parseReservedEntitlementVersions(source);
-  let indexed: Set<string>;
-  try {
-    const idx = JSON.parse(readFileSync(indexPath, "utf8")) as {
-      modules: { id: string }[];
-    };
-    indexed = new Set(idx.modules.map((m) => m.id));
-  } catch {
-    return [];
-  }
-  const findings: Finding[] = [];
-  const reservationKeys = new Set([...reserved, ...reservedVersions.keys()]);
-  for (const id of reservationKeys) {
-    if (!reserved.has(id) || !reservedVersions.has(id)) {
-      findings.push({
-        severity: "error",
-        rule: "reserved-ids-staleness",
-        pkg: `@caisson/${id}`,
-        message: `pre-publish reservation keys drifted: "${id}" must appear in both RESERVED_MODULE_ENTITLEMENT_IDS and RESERVED_MODULE_ENTITLEMENT_VERSIONS, or in neither.`,
-      });
-    }
-    if (indexed.has(`@caisson/${id}`)) {
-      findings.push({
-        severity: "error",
-        rule: "reserved-ids-staleness",
-        pkg: `@caisson/${id}`,
-        message: `@caisson/${id} is published in the registry index but its pre-publish reservation remains — remove "${id}" from both RESERVED_MODULE_ENTITLEMENT_IDS and RESERVED_MODULE_ENTITLEMENT_VERSIONS in the version PR.`,
-      });
-    }
-  }
-  return findings;
-}
-
-/**
- * Extract every TARGET id from a `Map<string, readonly string[]>` of named entitlement edges.
- *
- * `null` means the DECLARATION could not be found or parsed — distinct from `[]`, which means it
- * parsed and is legitimately empty. This is a regex over source text, so any reshaping of the
- * declaration (a `satisfies` clause, entries hoisted to a named const, a builder call) makes it stop
- * seeing the real thing; collapsing that into `[]` would report a clean gate that measured nothing,
- * while the runtime half skips unresolvable edges silently by design.
- */
-function parseNamedEntitlementTargets(
-  src: string,
-  constName: string,
-): string[] | null {
-  const block = src.match(
-    new RegExp(
-      `${constName}[^=]*=\\s*new Map(?:<[\\s\\S]*?>)?\\(\\s*\\[([\\s\\S]*?)\\]\\s*\\)\\s*;`,
-    ),
-  );
-  if (!block) return null;
-  // Each entry is `["@caisson/parent", ["@caisson/target", …]]` — the targets are every id after
-  // the first in the entry, so match the inner array specifically.
-  const targets: string[] = [];
-  for (const entry of (block[1] ?? "").matchAll(
-    /\[\s*["']@caisson\/[a-z0-9-]+["']\s*,\s*\[([\s\S]*?)\]\s*\]/g,
-  )) {
-    for (const id of (entry[1] ?? "").matchAll(
-      /["'](@caisson\/[a-z0-9-]+)["']/g,
-    )) {
-      if (id[1] !== undefined) targets.push(id[1]);
-    }
-  }
-  return targets;
-}
-
-/**
- * Gate — named-entitlement edges resolve (release audit v2026.07.27.1, F1).
- *
- * `addNamedEntitlementClosure` SKIPS an edge whose target is neither indexed nor reserved, because
- * throwing there would reject a paying buyer's entire entitlement set over one bad edge. That makes
- * the runtime quiet by design, so the loudness has to live here: an edge naming a target no index
- * entry backs is a build-time error, which is the moment it can still be fixed for free.
- *
- * Without this, adding a compatibility edge before its target ships would silently under-grant
- * every holder of the parent, and nothing would say so.
- */
-export function checkNamedEntitlementTargets(root: string): Finding[] {
-  const entPath = join(root, "packages/registry-schema/src/entitlements.ts");
-  const indexPath = join(root, "registry/index.json");
-  if (!existsSync(entPath) || !existsSync(indexPath)) return [];
-  const source = readFileSync(entPath, "utf8");
-  const reserved = new Set(parseReservedEntitlementIds(source));
-  const findings: Finding[] = [];
-  let indexed: Set<string>;
-  try {
-    const idx = JSON.parse(readFileSync(indexPath, "utf8")) as {
-      modules: { id: string }[];
-    };
-    indexed = new Set(idx.modules.map((m) => m.id));
-  } catch {
-    // An index that EXISTS but will not parse is a broken gate, not a pre-publish posture — the
-    // absent case already returned above. Returning [] here would report PASS while measuring
-    // nothing, and the runtime half skips unresolvable edges silently by design, so both halves
-    // would go quiet at once.
-    return [
-      {
-        severity: "error",
-        rule: "named-entitlement-target-gate-unreadable",
-        pkg: "registry/index.json",
-        message:
-          "registry/index.json exists but could not be parsed — the named-entitlement target gate did not run",
-      },
-    ];
-  }
-  for (const constName of [
-    "COMPATIBILITY_REEXPORT_ENTITLEMENTS",
-    "INTERNAL_RUNTIME_ENTITLEMENTS",
-  ]) {
-    const parsed = parseNamedEntitlementTargets(source, constName);
-    if (parsed === null) {
-      findings.push({
-        severity: "error",
-        rule: "named-entitlement-target-gate-blind",
-        pkg: "packages/registry-schema/src/entitlements.ts",
-        message: `could not parse ${constName} — its declaration shape changed and this gate is no longer reading it, so an unresolvable edge would now pass silently at build time AND be skipped silently at runtime.`,
-      });
-      continue;
-    }
-    for (const target of parsed) {
-      const slug = target.startsWith("@caisson/")
-        ? target.slice("@caisson/".length)
-        : target;
-      if (indexed.has(target) || reserved.has(slug)) continue;
-      findings.push({
-        severity: "error",
-        rule: "named-entitlement-target-unresolvable",
-        pkg: target,
-        message: `${constName} names "${target}", which is neither in registry/index.json nor a pre-publish reservation. The runtime skips such an edge (so a buyer silently loses it) — index the target, or add it to RESERVED_MODULE_ENTITLEMENT_IDS until it publishes.`,
-      });
-    }
   }
   return findings;
 }
@@ -939,67 +473,6 @@ export function checkCopyPaste(root: string): Finding[] {
           .join(
             " ≡ ",
           )} — extract to ONE shared package and import it, don't copy (ADR-0101 #4).`,
-      });
-    }
-  }
-  return findings;
-}
-
-/**
- * Open-core licensing split (ADR-0094/0097). Every shipped `packages/` module must carry the license
- * its tier mandates: the open Base set (`OPEN_BASE_NAMES`) ships `Apache-2.0`; every other module
- * ships `LicenseRef-Caisson-Commercial`. This is the gate change ADR-0094 scheduled (it replaces the
- * former implicit "all modules commercial" posture). The commercial registry SERVICE lives at
- * `registry/` (outside `packages/`) so it is not a module candidate here — only the open registry
- * CONTRACT, `@caisson/registry-schema` under `packages/`, is checked (and must be open). A missing
- * `license` is `checkDeclarations`' job, so an unlicensed package is skipped here (not double-flagged).
- */
-export function checkOpenCoreLicensing(pkgs: Pkg[]): Finding[] {
-  const findings: Finding[] = [];
-  for (const p of pkgs) {
-    if (!isModuleCandidate(p) || !p.hasCode || !p.license) continue;
-    const shouldBeOpen = OPEN_BASE_NAMES.has(p.name);
-    const expected = shouldBeOpen ? OPEN_LICENSE : COMMERCIAL_LICENSE;
-    if (p.license !== expected) {
-      findings.push({
-        severity: "error",
-        rule: "open-core-license",
-        pkg: p.name,
-        message: `${shouldBeOpen ? "open Base" : "commercial"} module must ship ${expected} (ADR-0094/0097); found ${p.license}.`,
-      });
-    }
-  }
-  return findings;
-}
-
-/**
- * Open↔commercial no-depend-up boundary (ADR-0094/0097). An open (`Apache-2.0`) package may depend
- * only on other open packages — the open Base must be resolvable against open deps alone (the
- * acquisition/trust premise of ADR-0094). A commercial package may depend on anything (commercial→open
- * is always fine). Keyed on the package's actual SPDX `license` (not a name allowlist) so it stays
- * correct if the open set changes. This is the LICENSE-keyed half of the boundary; dependency-cruiser
- * (which cannot read SPDX) owns the graph-direction half (down-only base↛edition), per ADR-0022.
- */
-export function checkOpenCommercialBoundary(pkgs: Pkg[]): Finding[] {
-  const licenseByName = new Map(pkgs.map((p) => [p.name, p.license]));
-  const findings: Finding[] = [];
-  for (const p of pkgs) {
-    if (!isModuleCandidate(p) || p.license !== OPEN_LICENSE) continue;
-    for (const dep of p.workspaceDeps) {
-      // workspaceDeps are @caisson/* runtime deps only (devDeps excluded — they don't ship). An open
-      // package must resolve every one to an in-workspace OPEN package. Fail closed: a non-open dep
-      // OR a dep absent from the workspace (an external/renamed @caisson pkg we can't verify is open)
-      // is a violation — never silently allowed.
-      const depLicense = licenseByName.get(dep);
-      if (depLicense === OPEN_LICENSE) continue;
-      findings.push({
-        severity: "error",
-        rule: "open-core-boundary",
-        pkg: p.name,
-        message:
-          depLicense === undefined
-            ? `open (Apache-2.0) package depends on @caisson dep ${dep} absent from the workspace — cannot verify it is open; the open Base must resolve against open packages only (ADR-0094/0097).`
-            : `open (Apache-2.0) package depends "up" on non-open ${dep} (${depLicense ?? "unlicensed"}) — the open Base must depend only on open packages (ADR-0094/0097).`,
       });
     }
   }
@@ -1280,10 +753,10 @@ export async function checkRlsEquivalence(
  */
 const PROSE_SCAN_DOC_FILES = ["README.md", "AGENTS.md", "CHANGELOG.md"];
 
-/** True for a package/app dir this gate scans — the rubric's oss-source/sold-source/buyer-runtime class. */
+/** True for a package/app dir this gate scans — the published packages plus the public site. */
 function isProseScanTarget(relDir: string): boolean {
   if (relDir.startsWith("packages/")) return true;
-  return relDir === "apps/site" || relDir === "services/license";
+  return relDir === "apps/site";
 }
 
 /**
@@ -1483,95 +956,5 @@ export function checkChangesetProse(root: string): Finding[] {
       }
     }
   }
-  return findings;
-}
-
-/**
- * Entitlement-token scan (P0 audit remediation). A real license token is itself the leak — the
- * token IS the entitlement, and offline Ed25519 verify has no revocation list — so NO prod-signed
- * token may live under the paths that ship in fixtures, demos, or the public mirror. DEV-keypair
- * tokens are exempt: they are signed by the DOCUMENTED test seed
- * (SHA-256("caisson-license-verify-KAT-seed-v1")), carry no entitlement, and verify here by
- * reconstruction. ponytail: a regex walk over two directory globs + one Ed25519 check is the whole
- * gate — no pattern DB, no semgrep.
- */
-// Match the VERIFIER's wire grammar, not the brand: decodeToken accepts ANY uppercase
-// PREFIX-TIER, and the cosmetic prefix is never trusted — so the scan must not pin `CAISSON-`
-// (a re-encoded real token under another prefix would still verify to pro).
-const ENTITLEMENT_TOKEN_SHAPE = /\b[A-Z0-9]+-[A-Z0-9]+-[A-Za-z0-9_-]{88,}/g;
-
-export function checkEntitlementTokenScan(root: string): Finding[] {
-  // Derive the dev PUBLIC key via the private half (same pattern as the license-verify tests —
-  // `createPublicKey`'s KeyObject overload is absent from bun-types).
-  const devKey = createPublicKey(
-    createPrivateKey({
-      key: Buffer.concat([
-        Buffer.from("302e020100300506032b657004220420", "hex"),
-        createHash("sha256")
-          .update("caisson-license-verify-KAT-seed-v1")
-          .digest(),
-      ]),
-      format: "der",
-      type: "pkcs8",
-    }).export({ format: "pem", type: "pkcs8" }),
-  );
-  const isDevSigned = (token: string): boolean => {
-    // Split on the SECOND hyphen (PREFIX-TIER-body), whatever the prefix length.
-    const bodyB64 = token.slice(token.indexOf("-", token.indexOf("-") + 1) + 1);
-    const body = Buffer.from(bodyB64, "base64url");
-    // base64url decode is lenient; require the canonical round-trip (mirrors decodeToken) so a
-    // mutated-but-decodes-same string is never exempted on the strength of the original signature.
-    if (body.toString("base64url") !== bodyB64) return false;
-    if (body.length <= 64) return false;
-    try {
-      return cryptoVerify(
-        null,
-        body.subarray(0, body.length - 64),
-        devKey,
-        body.subarray(body.length - 64),
-      );
-    } catch {
-      return false;
-    }
-  };
-
-  const findings: Finding[] = [];
-  const scanDir = (dir: string, label: string): void => {
-    if (!existsSync(dir)) return;
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const abs = join(dir, entry.name);
-      if (entry.isDirectory()) {
-        scanDir(abs, label);
-        continue;
-      }
-      const content = readFileSync(abs, "utf8");
-      for (const match of content.match(ENTITLEMENT_TOKEN_SHAPE) ?? []) {
-        if (isDevSigned(match)) continue;
-        findings.push({
-          severity: "error",
-          rule: "entitlement-token-scan",
-          pkg: label,
-          message: `${abs.slice(root.length + 1)}: license-token-shaped string that does NOT verify against the dev test keypair — a real entitlement token must never be committed (rotate the issuer key if one leaked).`,
-        });
-      }
-    }
-  };
-
-  // The two shipping-surface globs: golden fixtures + reference-app demos.
-  for (const group of ["packages", "apps"]) {
-    const base = join(root, group);
-    if (!existsSync(base)) continue;
-    for (const slug of readdirSync(base)) {
-      scanDir(
-        join(base, slug, group === "packages" ? "src/__golden__" : "app/demo"),
-        `${group}/${slug}`,
-      );
-    }
-  }
-  // The registry Worker tree (PR #117 P1 follow-up): its tests historically committed a
-  // PROD-signed fixture — now they mint dev-key tokens at runtime (worker/dev-license.ts), and
-  // this scan keeps it that way. Whole-tree walk; the shape regex only fires on 88+ char
-  // token-shaped strings, so index/tarball hashes and attestations never match.
-  scanDir(join(root, "registry", "worker"), "registry/worker");
   return findings;
 }
