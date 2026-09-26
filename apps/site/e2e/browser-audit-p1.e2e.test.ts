@@ -233,6 +233,10 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
 
         // the skip link is the document's FIRST focusable, and activating it moves focus (not
         // just the hash) — `tabIndex={-1}` on the landmark makes it the fragment focus target.
+        // Wait for the page to settle first: Tab + Enter while hydration is still running left
+        // focus on <body> in 5 of 60 runs at 6x CPU throttling (0 of 60 after this wait) — the
+        // CI flake on 2026-09-26.
+        await page.waitForLoadState("networkidle");
         await page.keyboard.press("Tab");
         const first = await page.evaluate(() => ({
           href: document.activeElement?.getAttribute("href") ?? null,
