@@ -13,13 +13,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { redactToAllowlist } from "@caisson/artifact-render";
-import { parseEvidencePackManifest } from "@caisson/compliance-core";
+import { redactToAllowlist } from "@caisson-sh/artifact-render";
+import { parseEvidencePackManifest } from "@caisson-sh/compliance-core";
 import {
   CROSSWALK_ROLLUP_ROWS_KEY,
   DEFAULT_TRUST_PAGE_ALLOWLIST,
   generateTrustPage,
-} from "@caisson/trust-page";
+} from "@caisson-sh/trust-page";
 
 import {
   ALL_FACT_KEYS,

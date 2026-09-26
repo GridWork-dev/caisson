@@ -75,7 +75,7 @@ export interface ChainVerification {
  * Pure — it READS hashes the chain already committed and never computes one — so it lives here with
  * the value types rather than in the node-only `audit-chain.ts`, and the node chain builder and the
  * WebCrypto browser/offline verifier mint anchors through ONE implementation. `audit-chain.ts`
- * re-exports it, so `@caisson/kernel/node`'s surface is unchanged.
+ * re-exports it, so `@caisson-sh/kernel/node`'s surface is unchanged.
  */
 export function anchorChain(
   entries: readonly AuditChainEntry[],

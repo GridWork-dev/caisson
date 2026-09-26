@@ -16,18 +16,18 @@
 //      pins remain as positive controls for the browser-safe primitives used to build the same facts.
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { ALG_AES_256_GCM, parseEnvelope } from "@caisson/field-crypto";
-import { hashChainLink } from "@caisson/kernel/node";
-import { soc2Tsc } from "@caisson/frameworks-pack/browser";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { ALG_AES_256_GCM, parseEnvelope } from "@caisson-sh/field-crypto";
+import { hashChainLink } from "@caisson-sh/kernel/node";
+import { soc2Tsc } from "@caisson-sh/frameworks-pack/browser";
 import {
   chainVerifyCollector,
   fieldCryptoPolicyCollector,
-} from "@caisson/compliance-core";
+} from "@caisson-sh/compliance-core";
 import {
   EvidencePackBlockedError,
   rlsForceCollector,
-} from "@caisson/compliance-core/browser";
+} from "@caisson-sh/compliance-core/browser";
 
 import {
   CARDS,

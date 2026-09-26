@@ -1,4 +1,4 @@
-# AGENTS — @caisson/audit-harness
+# AGENTS — @caisson-sh/audit-harness
 
 Agent-facing authoring/usage contract (ADR-0134 · v2: ADR-0233). What a generation agent or a
 downstream integration must know to use the harness correctly.

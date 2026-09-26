@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/email",
+  "name": "@caisson-sh/email",
   "version": "0.5.8",
   "description": "Transactional email port: a provider-agnostic Emailer interface with a capture driver for tests and Resend, Postmark, SMTP, and SES drivers for production, with branded React-Email templates.",
   "license": "Apache-2.0",
@@ -21,15 +21,15 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/kernel": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
     "nodemailer": "^9.1.1",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-email": "^6.0.0"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "@types/nodemailer": "^8.0.1",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

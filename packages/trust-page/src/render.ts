@@ -5,7 +5,7 @@
 //
 // Permanent non-goals (never scaffolded): no auth, no sign-off, no hosted comments, no NDA-gating.
 // This generator only ever RENDERS what it is handed; it has no notion of who is viewing the page.
-import type { EvidencePackManifest } from "@caisson/compliance-core";
+import type { EvidencePackManifest } from "@caisson-sh/compliance-core";
 import {
   assertReadinessLanguage,
   citationRowToJson,
@@ -13,7 +13,7 @@ import {
   renderCitationRow,
   type CitationRow,
   type FlatFacts,
-} from "@caisson/artifact-render";
+} from "@caisson-sh/artifact-render";
 import {
   CROSSWALK_ROLLUP_ROWS_KEY,
   DEFAULT_TRUST_PAGE_ALLOWLIST,
@@ -129,7 +129,7 @@ ${renderCrosswalkSection(rows)}
 /**
  * Generate the buyer trust page. Every fact is filtered through the caller's `allowlist` before
  * either output is built (a field absent from it never renders, in JSON or HTML), and every rendered
- * string passes the readiness-language gate (`@caisson/artifact-render`'s `assertReadinessLanguage`)
+ * string passes the readiness-language gate (`@caisson-sh/artifact-render`'s `assertReadinessLanguage`)
  * — this generator cannot ship a "compliant"/"certified"/"verified" claim even if the underlying
  * evidence pack's own posture copy somehow slipped one past its own gate.
  */

@@ -1,10 +1,10 @@
-// The access-review poke's checkable claims, now that it drives the REAL @caisson/access-review
+// The access-review poke's checkable claims, now that it drives the REAL @caisson-sh/access-review
 // pure module (src/decisions.ts) and the hand-ported mirror (access-review-logic.ts) is deleted:
 //
 //   1. The poke's client graph is browser-safe — proven by a STATIC SOURCE-GRAPH WALK, never by a
 //      build (a bundler does not fail on a node builtin, it SUBSTITUTES a ~428KB polyfill).
 //      Critically, the walk must NOT reach campaign.ts (node:crypto + a VALUE import of
-//      @caisson/tenancy-rls) — the exact taint that forced the pure half into its own module.
+//      @caisson-sh/tenancy-rls) — the exact taint that forced the pure half into its own module.
 //   2. The component really imports the pure module, not the package barrel — the barrel is
 //      deliberately NOT browser-safe (campaign.ts + schedule.ts live on it), so the import
 //      specifier itself is the guard.
@@ -14,8 +14,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { ConflictError } from "@caisson/kernel";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { ConflictError } from "@caisson-sh/kernel";
 
 import {
   evaluateCampaignClose,
@@ -63,7 +63,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
   test("the component imports the pure module by its decisions path, never the barrel", () => {
     const src = readFileSync(POKE_ENTRY, "utf8");
     expect(src).toContain("packages/access-review/src/decisions.ts");
-    expect(src).not.toMatch(/from "@caisson\/access-review"/);
+    expect(src).not.toMatch(/from "@caisson-sh\/access-review"/);
   });
 });
 

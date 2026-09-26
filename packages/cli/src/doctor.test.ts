@@ -3,20 +3,23 @@
 // without them answers the seam's 404, surfaced as a clear error — never a silent empty result.
 import { describe, expect, test } from "bun:test";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { loadRegistryIndex } from "@caisson/registry-schema";
-import { createStdioMcpServer, type DesignTokens } from "@caisson/mcp-server";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
+import {
+  createStdioMcpServer,
+  type DesignTokens,
+} from "@caisson-sh/mcp-server";
 import {
   loadBaseManifest,
   type DoctorFile,
   type Finding,
-} from "@caisson/ds-manifest";
+} from "@caisson-sh/ds-manifest";
 import {
   darkTheme,
   functionalDark,
   functionalLight,
   fonts,
   lightTheme,
-} from "@caisson/ui/tokens";
+} from "@caisson-sh/ui/tokens";
 import { runDoctorClient } from "./doctor.ts";
 
 const INDEX = loadRegistryIndex({ schemaVersion: 1, modules: [] });
@@ -28,7 +31,7 @@ const TOKENS: DesignTokens = {
 const TOKEN = "tok_cli_doctor_".padEnd(40, "0");
 const BROKEN: DoctorFile = {
   path: "src/Broken.tsx",
-  contents: `import { Button, Frobnicate } from "@caisson/ui";\n<Frobnicate />`,
+  contents: `import { Button, Frobnicate } from "@caisson-sh/ui";\n<Frobnicate />`,
 };
 
 async function runDoctor(
@@ -64,7 +67,7 @@ describe("caisson doctor — thin client of the MCP server", () => {
   test("a correct-usage file yields zero findings", async () => {
     const clean: DoctorFile = {
       path: "src/Ok.tsx",
-      contents: `import { Button } from "@caisson/ui";\n<Button variant="primary">Go</Button>`,
+      contents: `import { Button } from "@caisson-sh/ui";\n<Button variant="primary">Go</Button>`,
     };
     expect(await runDoctor([clean])).toEqual([]);
   });

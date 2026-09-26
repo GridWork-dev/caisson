@@ -5,7 +5,7 @@
 // tail and watch the trusted anchor catch it. Nothing leaves the page.
 //
 // This component drives the REAL packages: the hand-ported mirror (audit-worm-logic.ts) is deleted
-// (ADR-0396). The chain algebra is `@caisson/kernel/audit-verify` — the browser-safe entry whose
+// (ADR-0396). The chain algebra is `@caisson-sh/kernel/audit-verify` — the browser-safe entry whose
 // WebCrypto twins (`chainEntryAsync`/`buildChainAsync`/`verifyChainAsync`) are pinned byte-for-byte
 // against the node originals in the kernel's own cross-impl test — and `anchorChain` there is
 // literally the same function the node builder calls. The WORM retention floor is the package's own
@@ -25,14 +25,14 @@ import {
   buildChainAsync,
   chainEntryAsync,
   verifyChainAsync,
-} from "@caisson/kernel/audit-verify";
+} from "@caisson-sh/kernel/audit-verify";
 import type {
   AuditChainAnchor,
   AuditChainEntry,
   ChainVerification,
   JsonValue,
-} from "@caisson/kernel";
-import type { RetentionMode } from "@caisson/audit-worm";
+} from "@caisson-sh/kernel";
+import type { RetentionMode } from "@caisson-sh/audit-worm";
 
 import {
   DEFAULT_RETENTION_YEARS,
@@ -49,7 +49,11 @@ import styles from "./audit-worm-poke.module.css";
 export const SEED_PAYLOADS: readonly JsonValue[] = [
   { event: "license.issued", licenseId: "lic_8a2f", actor: "system" },
   { event: "entitlement.granted", module: "audit-worm", actor: "admin" },
-  { event: "registry.pull", package: "@caisson/audit-worm", actor: "acme-co" },
+  {
+    event: "registry.pull",
+    package: "@caisson-sh/audit-worm",
+    actor: "acme-co",
+  },
   { event: "evidence.exported", pack: "soc2-2026q3", actor: "auditor" },
 ];
 
@@ -245,7 +249,7 @@ export default function AuditWormPoke() {
   if (state === null || verdict === null) {
     return (
       <PokeShell
-        label="@caisson/audit-worm"
+        label="@caisson-sh/audit-worm"
         title="Append. Anchor. Then edit history and watch the verdict flip."
       >
         <p className={styles.loading}>Sealing the chain…</p>
@@ -258,7 +262,7 @@ export default function AuditWormPoke() {
 
   return (
     <PokeShell
-      label="@caisson/audit-worm"
+      label="@caisson-sh/audit-worm"
       title="Append. Anchor. Then edit history and watch the verdict flip."
     >
       <ol className={styles.chain}>

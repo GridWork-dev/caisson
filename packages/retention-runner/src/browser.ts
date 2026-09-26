@@ -1,7 +1,7 @@
-// The browser-safe entry (`@caisson/retention-runner/browser`, ADR-0396): the request/result
+// The browser-safe entry (`@caisson-sh/retention-runner/browser`, ADR-0396): the request/result
 // contract, the `ErasureTarget` port with its three reference drivers, the audit-sink port with its
 // in-memory driver, and `runErasure` itself. In other words `.` minus `./schedule.ts`, whose
-// `@caisson/jobs` edge reaches `node:crypto` through three queue drivers — a job queue is not a
+// `@caisson-sh/jobs` edge reaches `node:crypto` through three queue drivers — a job queue is not a
 // thing a client bundle runs, so nothing is lost.
 //
 // ADDITIVE: `.` is untouched and keeps the full surface; every name here is also on `.`

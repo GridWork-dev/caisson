@@ -1,4 +1,4 @@
-// The browser-safe entry (`@caisson/local-store/browser`): the Reciprocal Rank Fusion arithmetic
+// The browser-safe entry (`@caisson-sh/local-store/browser`): the Reciprocal Rank Fusion arithmetic
 // and its constant — the one part of this package that does not need a database. Fuse leg rankings
 // a server (or a worker) already produced, inside a client bundle. ADDITIVE — the `.` barrel is
 // untouched and stays the full surface; every name here is also on `.` (the subset test in

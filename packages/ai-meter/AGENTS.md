@@ -1,4 +1,4 @@
-# AGENTS — @caisson/ai-meter
+# AGENTS — @caisson-sh/ai-meter
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or the AI
 Production Kit gateway must know to meter inference correctly.
@@ -60,6 +60,6 @@ exist on `.`.
 
 ## Out of scope
 
-No provider-SDK import (the gateway `@caisson/ai-kit` owns that boundary, ADR-0011/0059). No live
+No provider-SDK import (the gateway `@caisson-sh/ai-kit` owns that boundary, ADR-0011/0059). No live
 model/network call — the meter is provider-agnostic and prices a usage shape, not a transport. This
 is the base primitive the AI Production Kit gateway composes (ADR-0003); it never imports an edition.

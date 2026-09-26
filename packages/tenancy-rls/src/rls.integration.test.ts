@@ -10,8 +10,8 @@ import {
 } from "bun:test";
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
-import { newTestPg, type TestPg } from "@caisson/testing";
-import { TenancyError } from "@caisson/kernel";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
+import { TenancyError } from "@caisson-sh/kernel";
 import { buildTenantPolicySql, withTenant } from "./index.ts";
 
 let tp: TestPg;

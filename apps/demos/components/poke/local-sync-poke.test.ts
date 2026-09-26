@@ -1,4 +1,4 @@
-// The local-sync poke's checkable claims, now that it drives the REAL @caisson/local-sync and the
+// The local-sync poke's checkable claims, now that it drives the REAL @caisson-sh/local-sync and the
 // hand-ported mirror (local-sync-logic.ts) is deleted:
 //
 //   1. The poke's client graph is browser-safe — proven by a STATIC SOURCE-GRAPH WALK, never by a
@@ -16,13 +16,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { TenancyError } from "@caisson/kernel";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { TenancyError } from "@caisson-sh/kernel";
 import {
   reconcileWithTombstones,
   type Changeset,
   type ReconciledRow,
-} from "@caisson/local-sync";
+} from "@caisson-sh/local-sync";
 
 import {
   A_QUEUE,
@@ -69,7 +69,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
 
   test("the walk really crossed into the package, past the first hop", () => {
     // Guard the guard: files.length alone proves nothing. These are reachable ONLY through
-    // @caisson/local-sync's own imports — the barrel (first hop), the merge behind it (second
+    // @caisson-sh/local-sync's own imports — the barrel (first hop), the merge behind it (second
     // hop), and one file behind the kernel seam (a second cross-package hop).
     expect(walk.files).toContain("packages/local-sync/src/index.ts");
     expect(walk.files).toContain("packages/local-sync/src/tombstone.ts");
@@ -97,7 +97,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
 
   test("the poke imports the package, never a re-ported copy", () => {
     const src = readFileSync(POKE_ENTRY, "utf8");
-    expect(src).toMatch(/ from "@caisson\/local-sync";$/m);
+    expect(src).toMatch(/ from "@caisson-sh\/local-sync";$/m);
     expect(src).not.toMatch(/from "\.\/local-sync-logic"/);
   });
 });

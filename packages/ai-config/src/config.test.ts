@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { NotFoundError, ValidationError } from "@caisson/kernel";
+import { NotFoundError, ValidationError } from "@caisson-sh/kernel";
 import { parseAiSettings, resolveProvider } from "./index.ts";
 import type { AiSettings, ProviderConfig } from "./index.ts";
 

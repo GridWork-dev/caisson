@@ -21,13 +21,13 @@ import {
   validateVersionSet,
   currentVersions,
   ValidationError,
-} from "@caisson/kernel/node";
+} from "@caisson-sh/kernel/node";
 import type {
   AuditChainEntry,
   AuditChainAnchor,
   ChainVerification,
   VersionRecord,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import { transition } from "./lifecycle.ts";
 import type { Act } from "./lifecycle.ts";
 import type { HookResult } from "./governance.ts";

@@ -7,15 +7,15 @@ import {
   anchorSignatureEnvelopeBytes,
   buildRowReceipt,
   type RowReceipt,
-} from "@caisson/kernel/audit-verify";
+} from "@caisson-sh/kernel/audit-verify";
 import {
   buildEvidencePack,
   evidencePackManifest,
   evidencePackManifestForInput,
   evidencePackSealPayloadBytes,
   type EvidencePack,
-} from "@caisson/kernel/evidence";
-import { canonicalize, type JsonValue } from "@caisson/kernel";
+} from "@caisson-sh/kernel/evidence";
+import { canonicalize, type JsonValue } from "@caisson-sh/kernel";
 import { verifyEvidencePack, type EvidencePackTrust } from "./index.ts";
 
 const TENANT_ID = "11111111-1111-4111-8111-111111111111";

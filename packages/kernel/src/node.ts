@@ -1,9 +1,9 @@
-// @caisson/kernel/node — the node-only half of the kernel, split out of the `.` barrel.
+// @caisson-sh/kernel/node — the node-only half of the kernel, split out of the `.` barrel.
 //
 // WHY THIS FILE EXISTS: the `.` barrel used to re-export four modules that import a node builtin at
 // module scope — `crypto.ts` + `audit-chain.ts` + `migration-assembly.ts` (`node:crypto`) and
 // `ssrf.ts` (`node:dns/promises`). A browser bundler resolves the whole module graph behind a
-// specifier, so ANY import of "@caisson/kernel" — even one that only wanted `strictObject` — pulled
+// specifier, so ANY import of "@caisson-sh/kernel" — even one that only wanted `strictObject` — pulled
 // those builtins and failed to bundle. That is what forced `apps/site` to hand-port parity-tested
 // mirrors of packages it already depends on. The `.` barrel is now browser-safe and everything that
 // needs a node builtin lives here.

@@ -4,16 +4,16 @@
 // `verified` (L4), and that a redacted row's link leg reads "not applicable" (CR-06).
 import { act } from "react";
 import { generateKeyPairSync, sign as nodeSign } from "node:crypto";
-import { renderIntoJsdom } from "@caisson/testing";
+import { renderIntoJsdom } from "@caisson-sh/testing";
 import { afterEach, describe, expect, test } from "bun:test";
-import { anchorChain, chainEntry } from "@caisson/kernel/node";
+import { anchorChain, chainEntry } from "@caisson-sh/kernel/node";
 import {
   buildRowReceipt,
   anchorSignatureEnvelopeBytes,
   type PinnedAnchorKey,
   type RowReceipt,
   type VerifyLegs,
-} from "@caisson/kernel/audit-verify";
+} from "@caisson-sh/kernel/audit-verify";
 import { ProofPanel, type ProofBundleResponse } from "./proof-panel.tsx";
 import { useRowVerify } from "./use-row-verify.ts";
 

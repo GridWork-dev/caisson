@@ -10,7 +10,7 @@
 // readiness). A NEW or DIFFERENT flagged reason on the same control is a regression past what was
 // accepted, and re-arms alerting even before expiry.
 import { z } from "zod";
-import { strictObject, parseStrict } from "@caisson/kernel";
+import { strictObject, parseStrict } from "@caisson-sh/kernel";
 import type { ComplianceSnapshot } from "./types.ts";
 import type { ControlStatusTransition } from "./diff.ts";
 

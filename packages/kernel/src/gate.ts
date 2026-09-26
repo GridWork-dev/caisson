@@ -1,6 +1,6 @@
 // The standards gate (ADR-0016 / ADR-0004). The single enforcement of the ADR-0002 "one
-// standard" invariant: every active package extends @caisson/tsconfig + @caisson/testing,
-// declares build/lint/test, and is @caisson/-scoped. It is also the sole registry
+// standard" invariant: every active package extends @caisson-sh/tsconfig + @caisson-sh/testing,
+// declares build/lint/test, and is @caisson-sh/-scoped. It is also the sole registry
 // ingress — no `registry/` module may land without a golden fixture + a gate stamp.
 //
 // Run from the repo root: `bun run gate` (CI job + a fast slice in the pre-commit hook).
@@ -11,7 +11,10 @@ import { join, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dir, "../../..");
 
-const CONFIG_PACKAGES = new Set(["@caisson/tsconfig", "@caisson/lint-policy"]);
+const CONFIG_PACKAGES = new Set([
+  "@caisson-sh/tsconfig",
+  "@caisson-sh/lint-policy",
+]);
 const REQUIRED_SCRIPTS = ["build", "lint", "test"] as const;
 
 export interface Violation {
@@ -74,7 +77,7 @@ function extendsBaseTsconfig(absDir: string): boolean {
   const path = join(absDir, "tsconfig.json");
   if (!existsSync(path)) return false;
   const ext = (readJson(path) as { extends?: unknown }).extends;
-  const target = "@caisson/tsconfig/base.json";
+  const target = "@caisson-sh/tsconfig/base.json";
   if (typeof ext === "string") return ext === target;
   if (Array.isArray(ext)) return ext.includes(target);
   return false;
@@ -93,11 +96,11 @@ function checkPackage(rel: string): {
 
   // Pure config/policy packages (tsconfig, lint-policy) are exempt from the code rules.
   if (name !== undefined && CONFIG_PACKAGES.has(name)) {
-    if (!name.startsWith("@caisson/")) {
+    if (!name.startsWith("@caisson-sh/")) {
       v.push({
         pkg: name,
         rule: "naming",
-        detail: "config package must be @caisson/-scoped",
+        detail: "config package must be @caisson-sh/-scoped",
       });
     }
     return { violations: v, status: "ok" };
@@ -115,18 +118,18 @@ function checkPackage(rel: string): {
       detail: "has .ts source but no tsconfig.json",
     });
   }
-  if (!name.startsWith("@caisson/")) {
+  if (!name.startsWith("@caisson-sh/")) {
     v.push({
       pkg: name,
       rule: "naming",
-      detail: `package name "${name}" is not @caisson/-scoped`,
+      detail: `package name "${name}" is not @caisson-sh/-scoped`,
     });
   }
   if (!extendsBaseTsconfig(absDir)) {
     v.push({
       pkg: name,
       rule: "tsconfig",
-      detail: 'must extend "@caisson/tsconfig/base.json"',
+      detail: 'must extend "@caisson-sh/tsconfig/base.json"',
     });
   }
   for (const s of REQUIRED_SCRIPTS) {
@@ -139,17 +142,17 @@ function checkPackage(rel: string): {
   // .oxlintrc.json whose globs anchor to the repo root. There is nothing left for a package to
   // declare or extend, so the old "has an eslint.config.js" and "depends on the lint config"
   // rules are gone rather than repointed — a per-package lint config would now be the violation.
-  for (const required of ["@caisson/tsconfig"]) {
+  for (const required of ["@caisson-sh/tsconfig"]) {
     if (deps[required] === undefined) {
       v.push({ pkg: name, rule: "deps", detail: `must depend on ${required}` });
     }
   }
   // Every non-tooling code package extends the shared test harness.
-  if (!isTooling && deps["@caisson/testing"] === undefined) {
+  if (!isTooling && deps["@caisson-sh/testing"] === undefined) {
     v.push({
       pkg: name,
       rule: "deps",
-      detail: "must depend on @caisson/testing",
+      detail: "must depend on @caisson-sh/testing",
     });
   }
   return { violations: v, status: "ok" };

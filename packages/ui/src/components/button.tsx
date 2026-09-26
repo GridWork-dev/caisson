@@ -14,7 +14,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * Render as the single child element instead of a `<button>` (Radix Slot). This is the
    * framework-agnostic navigation seam: a Next consumer writes
-   * `<Button asChild><Link href="/x">…</Link></Button>` so `@caisson/ui` never imports `next/link`.
+   * `<Button asChild><Link href="/x">…</Link></Button>` so `@caisson-sh/ui` never imports `next/link`.
    * The child must accept `className` + `data-*` (Slot merges the kit's props onto it).
    */
   asChild?: boolean;

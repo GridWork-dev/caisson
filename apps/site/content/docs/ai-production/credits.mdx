@@ -3,7 +3,7 @@ title: credits
 description: An integer credit wallet with an append-only ledger and debit-before-spend, an empty balance fails closed, never a negative wallet.
 ---
 
-`@caisson/credits` is the credit wallet: grant, debit, and query an account's balance as
+`@caisson-sh/credits` is the credit wallet: grant, debit, and query an account's balance as
 whole integer units, never a float. A debit only records once the wallet can cover it:
 insufficient credits throw before any paid work runs, and nothing is written on that path.
 
@@ -23,25 +23,25 @@ insufficient credits throw before any paid work runs, and nothing is written on 
   nothing is ever mutated or deleted.
 - **Expiry**: grants default to a 12-month expiry; `sweepExpiredGrants()` claws back
   unspent residue past `expires_at`, and `sweepExpiryNotices()` emails accounts inside a
-  configurable expiring-soon window. Both ship as `@caisson/jobs` task definitions.
+  configurable expiring-soon window. Both ship as `@caisson-sh/jobs` task definitions.
 - **Clawback**: `clawback()` reverses unspent credits tied to a specific purchase line,
   so a partial refund only claws back that line's grant.
 
 ## Install
 
 ```bash
-bun add @caisson/credits
+bun add @caisson-sh/credits
 ```
 
 ## Quickstart
 
-Every call runs inside a tenant transaction from `@caisson/tenancy-rls`, which scopes the
+Every call runs inside a tenant transaction from `@caisson-sh/tenancy-rls`, which scopes the
 wallet and ledger rows to the account via RLS:
 
 ```ts
-import { withTenant } from "@caisson/tenancy-rls";
-import { asCredits } from "@caisson/kernel";
-import { grant, debit, balance } from "@caisson/credits";
+import { withTenant } from "@caisson-sh/tenancy-rls";
+import { asCredits } from "@caisson-sh/kernel";
+import { grant, debit, balance } from "@caisson-sh/credits";
 
 await withTenant(pg, accountId, async (tx) => {
   await grant(tx, {
@@ -65,7 +65,7 @@ await withTenant(pg, accountId, async (tx) => {
 ## Fail-closed on an empty balance
 
 ```ts
-import { InsufficientCreditsError } from "@caisson/kernel";
+import { InsufficientCreditsError } from "@caisson-sh/kernel";
 
 try {
   await debit(tx, { accountId, eventType: "ai_feature_debit", amount: asCredits(1000) });
@@ -83,7 +83,7 @@ and the FIFO sum over unexpired grants, so it never promises more than a debit w
 actually cover:
 
 ```ts
-import { getLedger, spendableBalance } from "@caisson/credits";
+import { getLedger, spendableBalance } from "@caisson-sh/credits";
 
 const entries = await getLedger(tx, accountId); // every grant/debit event, oldest first
 const spendable = await spendableBalance(tx, accountId);
@@ -95,7 +95,7 @@ const spendable = await spendableBalance(tx, accountId);
 import {
   defineCreditExpirySweepTask,
   defineCreditExpiryNoticeTask,
-} from "@caisson/credits";
+} from "@caisson-sh/credits";
 
 const sweepTask = defineCreditExpirySweepTask({ db });
 const noticeTask = defineCreditExpiryNoticeTask({
@@ -106,12 +106,12 @@ const noticeTask = defineCreditExpiryNoticeTask({
 });
 ```
 
-Register both on a `@caisson/jobs` queue and enqueue one payload per account on a cron
+Register both on a `@caisson-sh/jobs` queue and enqueue one payload per account on a cron
 tick, both sweeps are idempotent, so a replayed tick is a no-op.
 
 ## Composition
 
-`@caisson/credits` sits on `@caisson/kernel` (the `Credits`/`RoundedMoney` branded types
-and `InsufficientCreditsError`), `@caisson/tenancy-rls` (the `TenantExecutor` every
-function takes), and `@caisson/jobs` (the expiry-sweep task definitions). It is
+`@caisson-sh/credits` sits on `@caisson-sh/kernel` (the `Credits`/`RoundedMoney` branded types
+and `InsufficientCreditsError`), `@caisson-sh/tenancy-rls` (the `TenantExecutor` every
+function takes), and `@caisson-sh/jobs` (the expiry-sweep task definitions). It is
 Apache-2.0 and installs from public npm.

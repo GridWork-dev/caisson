@@ -1,6 +1,6 @@
 // Paddle driver + mapper (ADR-0108): Paddle→domain event mapping, the PaddleEventSchema envelope
 // boundary, and the transaction-based createCheckout. The raw-body signature-VERIFY assertions live with
-// the open verifier in @caisson/billing (packages/billing/src/paddle.test.ts); this file covers the
+// the open verifier in @caisson-sh/billing (packages/billing/src/paddle.test.ts); this file covers the
 // commercial parse/driver half (ADR-0249 G3). Synthetic secrets only.
 import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, test } from "bun:test";

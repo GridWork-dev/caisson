@@ -5,7 +5,7 @@
 //
 // Domain-separated from the license issuer key ON PURPOSE: an anchor-key compromise must not
 // forge licenses, and rotating the license key must not invalidate anchor-verification history. This
-// mirrors @caisson/license-issue's Ed25519Signer discipline — the key is held as an opaque KeyObject
+// mirrors @caisson-sh/license-issue's Ed25519Signer discipline — the key is held as an opaque KeyObject
 // (never enumerated, logged, or JSON-serialized) and loaded from a DEDICATED env var whose VALUE is
 // never echoed in an error. This package NEVER generates or commits a real key; production key
 // material is operator-provisioned (as the license issuer key was, ADR-0107) and injected via env.
@@ -15,11 +15,11 @@ import {
   createPublicKey,
   sign as cryptoSign,
 } from "node:crypto";
-import { ConfigError, ValidationError } from "@caisson/kernel";
+import { ConfigError, ValidationError } from "@caisson-sh/kernel";
 import {
   EVIDENCE_PACK_KEY_ID_MAX_LENGTH,
   isEvidencePackKeyId,
-} from "@caisson/kernel/evidence";
+} from "@caisson-sh/kernel/evidence";
 import { z } from "zod";
 
 const ED25519_SIGNATURE_BYTES = 64;

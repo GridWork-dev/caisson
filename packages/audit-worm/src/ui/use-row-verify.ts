@@ -14,7 +14,7 @@ import {
   type RowReceipt,
   type RowState,
   type VerifyLegs,
-} from "@caisson/kernel/audit-verify";
+} from "@caisson-sh/kernel/audit-verify";
 
 export interface RowVerifyResult {
   /** The client-recomputed state (never read off the receipt's server-supplied `checks`). */

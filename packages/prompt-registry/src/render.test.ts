@@ -4,8 +4,8 @@
 // render contract, not just that a file exists. Independent assertions backstop the golden.
 import { readFileSync } from "node:fs";
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
-import { ValidationError } from "@caisson/kernel";
+import { matchGolden } from "@caisson-sh/testing";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   buildVarSchema,
   MAX_CONTENT_LENGTH,

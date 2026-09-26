@@ -5,8 +5,8 @@
 // ISMS puts in scope; this module carries no hardcoded Annex A catalog, deliberately, since the
 // buyer's own ISMS scoping decision is theirs, never Caisson's to assert) plus the ISO/IEC
 // 27001:2022 `iso27001Crosswalk` (`../crosswalks/regimes.ts`) and a per-canonical-control-id
-// evidence-status map (the same shape `computeCrosswalkRollup`'s caller in `@caisson/compliance-core`
-// already builds from a collector run). Lives in `@caisson/frameworks-pack` — NOT `compliance-core` —
+// evidence-status map (the same shape `computeCrosswalkRollup`'s caller in `@caisson-sh/compliance-core`
+// already builds from a collector run). Lives in `@caisson-sh/frameworks-pack` — NOT `compliance-core` —
 // because dependencies are down-only (ADR-0003): `compliance-core` depends on `frameworks-pack`, never
 // the reverse, so a function needing the `CrosswalkRollup` type would have to live one level up from
 // here; this one only needs the crosswalk row shape this package already owns.
@@ -17,11 +17,11 @@
 // whether an Annex A control the crosswalk doesn't cover applies to the buyer's ISMS is the buyer's
 // own scoping call, which this function never makes for them.
 import { z } from "zod";
-import { strictObject, parseStrict, ValidationError } from "@caisson/kernel";
-import type { RegimeCrosswalk } from "@caisson/oscal-spine";
+import { strictObject, parseStrict, ValidationError } from "@caisson-sh/kernel";
+import type { RegimeCrosswalk } from "@caisson-sh/oscal-spine";
 
 /** Per-canonical-control-id evidence status for one pack run — mirrors
- *  `@caisson/compliance-core`'s `ControlStatus` (duplicated, not imported: down-only dependency
+ *  `@caisson-sh/compliance-core`'s `ControlStatus` (duplicated, not imported: down-only dependency
  *  direction forbids this package from depending on compliance-core). */
 export type ControlEvidenceStatus = "ready" | "gap" | "unresolved";
 

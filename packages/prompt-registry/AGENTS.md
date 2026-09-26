@@ -1,4 +1,4 @@
-# AGENTS — @caisson/prompt-registry
+# AGENTS — @caisson-sh/prompt-registry
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or the AI
 Production Kit gateway must know to use the prompt registry correctly.
@@ -29,7 +29,7 @@ Production Kit gateway must know to use the prompt registry correctly.
 
 ## Entry points
 
-`.` is the full surface. `@caisson/prompt-registry/browser` is the client-safe subset — addressing
+`.` is the full surface. `@caisson-sh/prompt-registry/browser` is the client-safe subset — addressing
 (`parsePromptRef`) plus the render boundary (`renderPrompt`, `buildVarSchema`, the message and var
 schemas) — and never carries a registry function or the schema module, because those take a
 `TenantExecutor` and RLS is the tenant boundary. Import from `./browser` in a client bundle; import
@@ -43,6 +43,6 @@ their string form at the escaping boundary.
 
 ## Out of scope (this primitive)
 
-No provider call, no token metering (that is `@caisson/ai-meter`), no eval linkage logic (that is
-`@caisson/ai-evals`). This package only stores, addresses, and renders prompts. The golden fixture
+No provider call, no token metering (that is `@caisson-sh/ai-meter`), no eval linkage logic (that is
+`@caisson-sh/ai-evals`). This package only stores, addresses, and renders prompts. The golden fixture
 `src/__golden__/render.json` pins the render contract; update only via `BLESS=1`.

@@ -1,4 +1,4 @@
-# @caisson/signing-primitive
+# @caisson-sh/signing-primitive
 
 Per-tenant evidence signing. Produces a detached Ed25519 signature over a canonical,
 chain-anchored manifest body, with an optional RFC-3161 trusted-timestamp countersignature and a
@@ -13,7 +13,7 @@ import {
   Ed25519Signer,
   signEvidencePack,
   verifyEvidenceSignature,
-} from "@caisson/signing-primitive";
+} from "@caisson-sh/signing-primitive";
 ```
 
 ## Entry points
@@ -28,5 +28,5 @@ import {
   constant-time compare needs `node:crypto` (`timestampCountersignsSignatureAsync` is the browser
   path). Every name on `./browser` is also on `.`.
 
-Apache-2.0. Sits on `@caisson/kernel` plus the shared Ed25519 primitive — down-only, composed by
-`@caisson/compliance`, never the reverse.
+Apache-2.0. Sits on `@caisson-sh/kernel` plus the shared Ed25519 primitive — down-only, composed by
+`@caisson-sh/compliance`, never the reverse.

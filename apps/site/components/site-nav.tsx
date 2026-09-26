@@ -1,14 +1,14 @@
 import Link from "next/link";
 
-import { ThemeToggle } from "@caisson/ui/components";
-import { Wordmark } from "@caisson/brand";
+import { ThemeToggle } from "@caisson-sh/ui/components";
+import { Wordmark } from "@caisson-sh/brand";
 
 import { MobileNav } from "./mobile-nav";
 import type { MobileNavItem, MobileNavSection } from "./mobile-drawer";
 import { NavPanels, type NavCard, type NavPanelSpec } from "./nav-panels";
 import { NavSearchTrigger } from "./nav-search-trigger";
 import { Button } from "./button";
-import { type IconName } from "@caisson/ui/components";
+import { type IconName } from "@caisson-sh/ui/components";
 import { BUNDLE_MARKS } from "@/lib/marks";
 import { bundleById, isBundleId } from "@/lib/catalog";
 import { BUNDLE_ROUTES } from "@/lib/routes";

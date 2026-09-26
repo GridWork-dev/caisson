@@ -1,4 +1,4 @@
-# @caisson/jobs — agent usage note
+# @caisson-sh/jobs — agent usage note
 
 Provides the provider-agnostic background-job queue port: enqueue interface, in-memory test driver, and the Trigger.dev production driver (ADR-0018).
 
@@ -25,4 +25,4 @@ Provides the provider-agnostic background-job queue port: enqueue interface, in-
 
 ## Scope
 
-Job enqueueing and the queue-port abstraction only. The billing domain logic belongs in `@caisson/billing`; credit accounting belongs in `@caisson/credits`.
+Job enqueueing and the queue-port abstraction only. The billing domain logic belongs in `@caisson-sh/billing`; credit accounting belongs in `@caisson-sh/credits`.

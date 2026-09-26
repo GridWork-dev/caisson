@@ -1,4 +1,4 @@
-# @caisson/credits
+# @caisson-sh/credits
 
 Integer credit wallet + append-only ledger + debit-before-spend (402).
 
@@ -11,7 +11,7 @@ per line item so a partial refund only reverses the credits tied to that line.
 ## Entry points
 
 - `.` — the full surface: `grant`, `debit`, `clawback`, the balance and ledger reads, the expiry
-  sweeps, and the schema SQL. Every one of these takes a `@caisson/tenancy-rls` `TenantExecutor`
+  sweeps, and the schema SQL. Every one of these takes a `@caisson-sh/tenancy-rls` `TenantExecutor`
   and runs inside `withTenant`; node-capable.
 - `./browser` — the pure half, safe inside a client bundle: the grant/debit event vocabulary and
   `planFifoDebit`, the FIFO waterfall `debit()` itself walks (given grant remainders and an

@@ -1,6 +1,6 @@
 /**
  * The demo surface's route ids (ADR-0400) — one embed route per poke, served at
- * `/demos/embed/<id>`. Each id is the module's package name minus the `@caisson/` scope, which is
+ * `/demos/embed/<id>`. Each id is the module's package name minus the `@caisson-sh/` scope, which is
  * also the key apps/site's media manifest uses for its `kind: "poke"` slides. That shared spelling
  * is the whole contract between the two apps: the site emits an iframe pointing at
  * `/demos/embed/<its manifest key>`, and this list is what answers.

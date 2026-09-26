@@ -105,7 +105,7 @@ export default function MarketplacePage() {
                   overflowWrap: "anywhere",
                 }}
               >
-                {c.packages.map((p) => `@caisson/${p}`).join(" · ")}
+                {c.packages.map((p) => `@caisson-sh/${p}`).join(" · ")}
               </p>
             </Card>
           ))}

@@ -4,7 +4,7 @@
 // api.workos.com. apps/site wires these two functions into better-auth's genericOAuth/SSO plugin
 // config in a separate step — this package never imports better-auth.
 //
-// Moved out of the open @caisson/auth into the commercial @caisson/org-controls (ADR-0257 §1.3): SSO
+// Moved out of the open @caisson-sh/auth into the commercial @caisson-sh/org-controls (ADR-0257 §1.3): SSO
 // is an org-plan surface with zero live consumers on the free base, so it belongs with the paid org
 // module rather than the Apache-2.0 auth substrate.
 import {
@@ -13,7 +13,7 @@ import {
   fetchWithTimeout,
   parseStrict,
   strictObject,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import { z } from "zod";
 
 export interface WorkosSsoConfig {

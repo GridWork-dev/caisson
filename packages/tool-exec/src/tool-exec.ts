@@ -1,4 +1,4 @@
-// @caisson/tool-exec — governed tool-call / sandboxed-exec primitive (ADR-0153). The security
+// @caisson-sh/tool-exec — governed tool-call / sandboxed-exec primitive (ADR-0153). The security
 // floor is the whole point: a default-deny allowlist maps a logical command NAME to a real
 // executable + a Zod-`.strict()` argument schema; a call is validated against that schema BEFORE
 // spawn, and the validated result is used directly as an `execFile` argv array — never a shell
@@ -8,7 +8,11 @@
 // `env` on a `CommandSpec` to narrow a child to exactly the vars it needs (used verbatim, never
 // merged with `process.env`). Flipping the default to always-narrow is a separate major bump.
 import { execFile as execFileCb } from "node:child_process";
-import { NotFoundError, parseStrict, ValidationError } from "@caisson/kernel";
+import {
+  NotFoundError,
+  parseStrict,
+  ValidationError,
+} from "@caisson-sh/kernel";
 import { createToolProposer } from "./propose.ts";
 import type { CommandSpec } from "./propose.ts";
 import {

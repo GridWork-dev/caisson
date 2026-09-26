@@ -1,11 +1,11 @@
 // The browser-safety contract for `./browser` (ADR-0396) — proven by a STATIC SOURCE-GRAPH WALK,
 // never by a build: a bundler does not fail on a node builtin, it SUBSTITUTES one (turbopack swaps
 // in crypto-browserify and the client chunk silently grows ~428KB, exit 0). The shared walker
-// resolves relative specifiers AND workspace @caisson/* specifiers through each package's exports
+// resolves relative specifiers AND workspace @caisson-sh/* specifiers through each package's exports
 // map, so the zero-offender claim covers the whole graph, kernel included.
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../..");
 const BROWSER_ENTRY = join(import.meta.dir, "browser.ts");
@@ -26,7 +26,7 @@ describe("`./browser` is browser-safe", () => {
       "packages/retention-runner/src/run-erasure.ts",
     );
     // run-erasure.ts reaches the kernel barrel by BARE specifier, so this is the assertion that
-    // fails if @caisson/* resolution silently goes blind and greens on nothing.
+    // fails if @caisson-sh/* resolution silently goes blind and greens on nothing.
     expect(walk.files).toContain("packages/kernel/src/schema.ts");
     expect(
       walk.files.some((f) => f.endsWith("retention-runner/src/schedule.ts")),
@@ -37,7 +37,7 @@ describe("`./browser` is browser-safe", () => {
     const barrel = nodeBuiltinTaint(BARREL_ENTRY, {
       workspaceRoot: WORKSPACE_ROOT,
     });
-    // The barrel's only taint is the scheduling half: @caisson/jobs' three queue drivers.
+    // The barrel's only taint is the scheduling half: @caisson-sh/jobs' three queue drivers.
     expect(barrel.offenders.length).toBeGreaterThan(0);
     expect(
       barrel.offenders.every((o) => o.file.startsWith("packages/jobs/src/")),

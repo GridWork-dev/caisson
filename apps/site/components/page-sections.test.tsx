@@ -6,7 +6,7 @@ import type { PageSection } from "@/lib/page-sections";
 import { PageSections } from "./page-sections";
 
 // Render smoke tests — one per `kind` (renderer SPEC §3, glossary SPEC Task 2 verify): each
-// variant must render its mapped @caisson/ui / site primitive.
+// variant must render its mapped @caisson-sh/ui / site primitive.
 describe("<PageSections> — exhaustive switch renderer", () => {
   test("hero → <Hero>", () => {
     const html = renderToStaticMarkup(

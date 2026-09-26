@@ -3,11 +3,11 @@
 // `assertAllowed` gate and returns a canned `Response`, proving request shapes AND the fail-closed
 // egress gate with zero network. The live wire is `live/rented-drivers.live.test.ts` (creds-gated).
 import { describe, expect, test } from "bun:test";
-import { AuthzError, InternalError, ValidationError } from "@caisson/kernel";
-import type { UsageMetering } from "@caisson/kernel";
-import { EgressGuard } from "@caisson/local-privacy";
-import { localOnlyPolicy } from "@caisson/local-privacy";
-import type { PrivacyPolicy } from "@caisson/local-privacy";
+import { AuthzError, InternalError, ValidationError } from "@caisson-sh/kernel";
+import type { UsageMetering } from "@caisson-sh/kernel";
+import { EgressGuard } from "@caisson-sh/local-privacy";
+import { localOnlyPolicy } from "@caisson-sh/local-privacy";
+import type { PrivacyPolicy } from "@caisson-sh/local-privacy";
 import { createAzureOpenAIRentedTransport } from "./azure-openai-transport.ts";
 import { EMBEDDING_DIM } from "./backend.ts";
 import { RentedInferenceBackend } from "./rented-backend.ts";

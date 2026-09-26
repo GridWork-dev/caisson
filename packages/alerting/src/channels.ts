@@ -4,8 +4,8 @@
 // orchestrator can reach them without dragging this file's `node:crypto` + DNS-resolving SSRF
 // guard into a browser graph (ADR-0396). Every name is still on `.` exactly as before.
 // Every network driver reads its endpoint/token from injected config (never a module
-// constant), routes through `fetchWithTimeout`, and on a non-ok response throws a `@caisson/kernel`
-// typed error WITHOUT the response body (the same no-body-leak rule `@caisson/email`'s drivers follow) — then CATCHES that
+// constant), routes through `fetchWithTimeout`, and on a non-ok response throws a `@caisson-sh/kernel`
+// typed error WITHOUT the response body (the same no-body-leak rule `@caisson-sh/email`'s drivers follow) — then CATCHES that
 // itself so one channel failing never aborts the others (per-channel isolation). `deliverAll` adds
 // a second isolation layer on top, so isolation holds even for a channel that doesn't self-catch.
 // Buyer-supplied destination URLs (webhook/Slack/Telegram) pass an SSRF guard (`assertSafeUrl`) at
@@ -17,15 +17,15 @@ import {
   fetchWithTimeout,
   InternalError,
   strictObject,
-} from "@caisson/kernel/node";
+} from "@caisson-sh/kernel/node";
 import { z } from "zod";
-import type { Emailer } from "@caisson/email";
+import type { Emailer } from "@caisson-sh/email";
 import { toErrorMessage } from "./delivery.ts";
 import type { AlertChannel, DeliveryResult } from "./delivery.ts";
 import type { AlertEvent, AlertSeverity } from "./types.ts";
 
 /** Maps an `AlertEvent` onto an `EmailMessage` and delegates to the injected `Emailer` port —
- * reuses `@caisson/email` rather than a second email path. */
+ * reuses `@caisson-sh/email` rather than a second email path. */
 export function createEmailChannel(emailer: Emailer): AlertChannel {
   return {
     name: "email",
@@ -51,7 +51,7 @@ export function createEmailChannel(emailer: Emailer): AlertChannel {
 /** An https URL to a public host — the SSRF-guarded string type used for every buyer-supplied
  * destination. Runs the kernel {@link assertSafePublicUrl} LITERAL guard at the schema boundary (sync,
  * no DNS); the resolve-time re-check (DNS-rebinding defense) runs at each fetch seam
- * via {@link assertSafePublicUrlResolved} — one shared policy source (@caisson/kernel/ssrf). */
+ * via {@link assertSafePublicUrlResolved} — one shared policy source (@caisson-sh/kernel/ssrf). */
 const safeHttpsUrl = z.string().superRefine((value, ctx) => {
   try {
     assertSafePublicUrl(value);

@@ -1,5 +1,5 @@
 /**
- * Generate the agent-readable @caisson/ui component manifest from the authoritative component
+ * Generate the agent-readable @caisson-sh/ui component manifest from the authoritative component
  * barrel, exported prop types, co-located CSS, and component JSDoc.
  *
  * Run:

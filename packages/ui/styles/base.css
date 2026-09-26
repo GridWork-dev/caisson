@@ -1,4 +1,4 @@
-/* @caisson/ui base — the design-system reset + shared utilities (ADR-0042/0078). Hand-authored
+/* @caisson-sh/ui base — the design-system reset + shared utilities (ADR-0042/0078). Hand-authored
  * (NOT generated; tokens.css is the generated sibling). Every value is a --cs-* token. Consumers
  * import this once at the root layout, after tokens.css. Component-specific rules live co-located
  * with each component (the recipe, ADR-0099) — this file holds ONLY cross-component base + utilities.

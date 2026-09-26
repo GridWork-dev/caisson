@@ -1,7 +1,7 @@
 // Stage 4's PORT and its two node-clean pieces: the `AlertChannel` interface, the isolation
 // wrapper `deliverAll` relies on, and the in-memory capture driver. Carved out of `channels.ts`
 // (ADR-0396) so `orchestrator.ts` can reach `deliverAll` without value-importing the five NETWORK
-// drivers, which pull `node:crypto` (webhook HMAC) and `@caisson/kernel/node` (the DNS-resolving
+// drivers, which pull `node:crypto` (webhook HMAC) and `@caisson-sh/kernel/node` (the DNS-resolving
 // SSRF re-check). Nothing here fetches, hashes, or resolves a hostname — that is the whole point.
 // Every name below is still exported from `.` exactly as before; `channels.ts` imports what it
 // needs from here, so there is one implementation of the isolation rule, not two.

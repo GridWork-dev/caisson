@@ -40,7 +40,7 @@ const functionalDark: ContrastFunctional = {
 // overrides, no data-* variants, no hand-rolled aria. This is the "no-credentials agent builds a
 // working screen" half of the SPEC acceptance.
 const CORRECT_SCREEN = `
-import { Button, Card, FormField } from "@caisson/ui";
+import { Button, Card, FormField } from "@caisson-sh/ui";
 
 export function SignupPanel() {
   return (
@@ -57,7 +57,7 @@ export function SignupPanel() {
 
 // One file that breaks five different rules at once.
 const BROKEN_SCREEN = `
-import { Button, Frobnicate } from "@caisson/ui";
+import { Button, Frobnicate } from "@caisson-sh/ui";
 
 export function BrokenPanel() {
   return (
@@ -73,7 +73,7 @@ export function BrokenPanel() {
 
 const BROKEN_PACKAGE_JSON = `{
   "name": "buyer-app",
-  "dependencies": { "@caisson/ui": "^0.5.0" }
+  "dependencies": { "@caisson-sh/ui": "^0.5.0" }
 }`;
 
 describe("checkUsage — correct usage", () => {
@@ -114,10 +114,10 @@ describe("checkUsage — broken usage yields typed findings", () => {
     expect(f?.loc?.line).toBeGreaterThan(0);
   });
 
-  // Real buyers import from the `@caisson/ui/components` subpath (the root barrel is tokens+theme
+  // Real buyers import from the `@caisson-sh/ui/components` subpath (the root barrel is tokens+theme
   // only) — the headline unknown-component check must fire on that path, not just the bare barrel.
   test("a hallucinated import from the real /components subpath is flagged", () => {
-    const real = `import { Button, Frobnicate } from "@caisson/ui/components";\n<Frobnicate />`;
+    const real = `import { Button, Frobnicate } from "@caisson-sh/ui/components";\n<Frobnicate />`;
     const f = checkUsage(manifest, {
       files: [{ path: "src/Screen.tsx", contents: real }],
     });
@@ -125,22 +125,10 @@ describe("checkUsage — broken usage yields typed findings", () => {
     expect(unknown?.message).toContain("Frobnicate");
     expect(f.some((x) => x.message.includes("Button"))).toBe(false); // real component, not flagged
   });
-
-  // A mirror buyer imports the renamed `@caisson-sh/ui` — the finding message must name the scope
-  // they actually used, not the private `@caisson/ui`.
-  test("a hallucinated import from the mirror's @caisson-sh/ui scope names that scope in the message", () => {
-    const shBroken = `import { Button, Frobnicate } from "@caisson-sh/ui";\n<Frobnicate />`;
-    const f = checkUsage(manifest, {
-      files: [{ path: "src/Screen.tsx", contents: shBroken }],
-    });
-    const unknown = f.find((x) => x.rule === "unknown-component");
-    expect(unknown?.message).toContain("@caisson-sh/ui");
-    expect(unknown?.message).not.toContain("@caisson/ui");
-  });
 });
 
 describe("checkUsage — version skew from package.json", () => {
-  test("a mismatched @caisson/ui pin is flagged against the manifest version", () => {
+  test("a mismatched @caisson-sh/ui pin is flagged against the manifest version", () => {
     const findings = checkUsage(manifest, {
       files: [{ path: "package.json", contents: BROKEN_PACKAGE_JSON }],
     });
@@ -148,19 +136,7 @@ describe("checkUsage — version skew from package.json", () => {
     expect(skew).toBeDefined();
     expect(skew?.message).toContain(manifest.generatedFor.version);
     expect(skew?.file).toBe("package.json");
-  });
-
-  test("a mismatched @caisson-sh/ui pin names that scope, not the private one", () => {
-    const shBroken = `{
-  "name": "buyer-app",
-  "dependencies": { "@caisson-sh/ui": "^0.5.0" }
-}`;
-    const findings = checkUsage(manifest, {
-      files: [{ path: "package.json", contents: shBroken }],
-    });
-    const skew = findings.find((f) => f.rule === "version-skew");
-    expect(skew?.message).toContain("@caisson-sh/ui");
-    expect(skew?.message).not.toContain("pins @caisson/ui");
+    expect(skew?.message).toContain("pins @caisson-sh/ui");
   });
 });
 

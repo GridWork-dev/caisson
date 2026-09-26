@@ -6,7 +6,7 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { ed25519, ed25519ph } from "@noble/curves/ed25519.js";
-import { ConfigError, ValidationError } from "@caisson/kernel";
+import { ConfigError, ValidationError } from "@caisson-sh/kernel";
 import {
   Ed25519PhSigner,
   DEFAULT_REKOR_ANCHORING_KEY_ID,

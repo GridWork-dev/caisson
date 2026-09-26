@@ -5,7 +5,7 @@
 import { describe, expect, test } from "bun:test";
 import { Inngest } from "inngest";
 import { z } from "zod";
-import { strictObject } from "@caisson/kernel";
+import { strictObject } from "@caisson-sh/kernel";
 import {
   createInMemoryQueue,
   createInngestJobQueue,

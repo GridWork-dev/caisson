@@ -1,4 +1,4 @@
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import type { KmsOperationOptions } from "./kms-port.ts";
 
 const DEFAULT_KMS_OPERATION_TIMEOUT_MS = 15_000;

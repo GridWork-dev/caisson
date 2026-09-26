@@ -6,7 +6,7 @@
 // STRICT-SUBSET INVARIANT (mandatory): this unauthenticated server resolves ONLY what is
 // in the base manifest it is constructed with — `describeComponent` throws `NotFoundError` for any
 // name not in that manifest. Because the runnable entry (`discovery-bin.ts`) only ever loads
-// `loadBaseManifest()`, a `@caisson/ui-pro` component is structurally unreachable here: it lives in
+// `loadBaseManifest()`, a `@caisson-sh/ui-pro` component is structurally unreachable here: it lives in
 // the pro manifest, which this server is never handed. There is no check_usage, no pro tool, no
 // generate — discovery only.
 import {
@@ -26,8 +26,8 @@ import {
   parseStrict,
   strictObject,
   toErrorResponse,
-} from "@caisson/kernel";
-import type { ComponentManifest } from "@caisson/ds-manifest";
+} from "@caisson-sh/kernel";
+import type { ComponentManifest } from "@caisson-sh/ds-manifest";
 import {
   describeComponent,
   getTokens,
@@ -51,12 +51,12 @@ const READ_TOOLS = [
   {
     name: "list_components",
     description:
-      "List the open @caisson/ui components (name, one-line summary, typed variant props). No auth.",
+      "List the open @caisson-sh/ui components (name, one-line summary, typed variant props). No auth.",
   },
   {
     name: "describe_component",
     description:
-      "Full metadata for one open @caisson/ui component: props, variants, token deps, a11y + recipe notes.",
+      "Full metadata for one open @caisson-sh/ui component: props, variants, token deps, a11y + recipe notes.",
   },
   {
     name: "get_tokens",

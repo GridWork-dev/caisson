@@ -1,4 +1,4 @@
-# @caisson/alerting
+# @caisson-sh/alerting
 
 A SOC2 CC7.2 multi-channel alerting pipeline — the concrete "anomaly detection and timely
 notification" control primitive. ADR-0135 (pipeline) · ADR-0151 (transport).
@@ -11,14 +11,14 @@ notification" control primitive. ADR-0135 (pipeline) · ADR-0151 (transport).
   `Intl`, no tz dependency; a `critical` event always overrides) → **multi-channel delivery** →
   **structured audit log**.
 - **One `AlertChannel` port, five drivers.** Capture (in-memory, tests), Email (delegates to the
-  injected `@caisson/email` `Emailer` — no second email path), Webhook (+ optional HMAC signing),
+  injected `@caisson-sh/email` `Emailer` — no second email path), Webhook (+ optional HMAC signing),
   Slack, Telegram. Every network driver is injected config + `fetchWithTimeout` + a
-  `@caisson/kernel` typed error on non-ok **without the response body**. `deliverAll` runs every
+  `@caisson-sh/kernel` typed error on non-ok **without the response body**. `deliverAll` runs every
   channel and isolates a failing one — the rest still deliver.
 - **A data-only `EventTypeRegistry`** (`eventType -> { defaultSeverity, channels, ratePolicy }`) —
   a small seed, not the full 12-type reference; extend per real usage.
 - **Plain-Postgres audit logging**, explicitly **NOT** hash-chained WORM — see
-  `src/migrations/0001_alert_audit.sql`. `@caisson/audit-worm` owns tamper-evidence; this owns
+  `src/migrations/0001_alert_audit.sql`. `@caisson-sh/audit-worm` owns tamper-evidence; this owns
   "what happened and why", one row per outcome.
 
 ## Entry points
@@ -39,7 +39,7 @@ import {
   createEmailChannel,
   createWebhookChannel,
   createInMemoryAuditSink,
-} from "@caisson/alerting";
+} from "@caisson-sh/alerting";
 
 const result = await processAlert(event, {
   openIncidents, // { dedupeKey }[] — from your incident store
@@ -56,13 +56,13 @@ const result = await processAlert(event, {
 
 ## Drivers
 
-| Channel  | Factory                         | Transport                                            |
-| -------- | ------------------------------- | ---------------------------------------------------- |
-| Capture  | `createCaptureChannel()`        | In-memory; test-only.                                |
-| Email    | `createEmailChannel(emailer)`   | Delegates to an injected `@caisson/email` `Emailer`. |
-| Webhook  | `createWebhookChannel(config)`  | `fetchWithTimeout` POST; optional HMAC signature.    |
-| Slack    | `createSlackChannel(config)`    | `fetchWithTimeout` POST to an incoming-webhook URL.  |
-| Telegram | `createTelegramChannel(config)` | `fetchWithTimeout` POST to a bot-API `sendMessage`.  |
+| Channel  | Factory                         | Transport                                               |
+| -------- | ------------------------------- | ------------------------------------------------------- |
+| Capture  | `createCaptureChannel()`        | In-memory; test-only.                                   |
+| Email    | `createEmailChannel(emailer)`   | Delegates to an injected `@caisson-sh/email` `Emailer`. |
+| Webhook  | `createWebhookChannel(config)`  | `fetchWithTimeout` POST; optional HMAC signature.       |
+| Slack    | `createSlackChannel(config)`    | `fetchWithTimeout` POST to an incoming-webhook URL.     |
+| Telegram | `createTelegramChannel(config)` | `fetchWithTimeout` POST to a bot-API `sendMessage`.     |
 
 ## Tests
 

@@ -5,7 +5,7 @@
 // substrate fact (a verified audit chain + anchor, an RLS posture snapshot, a WORM retention term)
 // is gathered at the edge by code that DOES depend on `audit-worm`/`tenancy-rls`, then handed in.
 // That keeps collectors deterministic, unit-testable with no live cloud/DB (HOUSE RULE), and
-// down-only: the only runtime dependency a collector composes is `@caisson/kernel` (`verifyChain`).
+// down-only: the only runtime dependency a collector composes is `@caisson-sh/kernel` (`verifyChain`).
 //
 // Boundary note (why no Zod here): the facts a collector consumes are produced in-process by the
 // trusted substrate stores (`AuditChainStore.load`, the RLS catalog read, `ArtifactStore.head`),
@@ -16,7 +16,7 @@
 // Flag-never-guess (ADR-0058): a collector NEVER infers a passing status it cannot evidence. A
 // `flagged` (real deficiency) or `unresolved` (evidence absent → hard-blocks the pack in the generator) result
 // MUST carry a recorded reason — enforced by the `flaggedResult`/`unresolvedResult` constructors.
-import { ValidationError, type JsonValue } from "@caisson/kernel";
+import { ValidationError, type JsonValue } from "@caisson-sh/kernel";
 
 /**
  * The verdict for one collected evidence item:

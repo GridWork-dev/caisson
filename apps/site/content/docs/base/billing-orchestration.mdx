@@ -3,7 +3,7 @@ title: Billing orchestration
 description: The multi-provider payment drivers, provider-to-domain-event parsers, and dual-layer webhook idempotency composed on top of the open BillingProvider port.
 ---
 
-`@caisson/billing-orchestration` is the commercial companion to `@caisson/billing`: the open package
+`@caisson-sh/billing-orchestration` is the commercial companion to `@caisson-sh/billing`: the open package
 owns raw-body signature verification, the `BillingProvider` port, and the `DomainBillingEvent`
 contract; this package composes those primitives into the full verify → parse → checkout →
 idempotency flow for Stripe, Paddle, LemonSqueezy, and Polar.
@@ -25,13 +25,13 @@ idempotency flow for Stripe, Paddle, LemonSqueezy, and Polar.
 ## Install
 
 ```bash
-bun add @caisson/billing-orchestration
+bun add @caisson-sh/billing-orchestration
 ```
 
 ## Quickstart
 
 ```ts
-import { createPaddleBilling } from "@caisson/billing-orchestration";
+import { createPaddleBilling } from "@caisson-sh/billing-orchestration";
 
 const billing = createPaddleBilling({
   apiKey: process.env.PADDLE_API_KEY!,
@@ -64,7 +64,7 @@ everything else a webhook triggers:
 import {
   processEvent,
   withIdempotentSideEffect,
-} from "@caisson/billing-orchestration";
+} from "@caisson-sh/billing-orchestration";
 
 await withTenant(tx, accountId, async () => {
   const { alreadyProcessed } = await processEvent(
@@ -107,11 +107,11 @@ schema string follows.
 
 ## Composing with the base
 
-Every driver satisfies the identical open `BillingProvider` port from `@caisson/billing`: swapping
+Every driver satisfies the identical open `BillingProvider` port from `@caisson-sh/billing`: swapping
 providers is a new driver, not a rewrite of call sites. The idempotency claim table is tenant-owned:
-`processEvent`/`withIdempotentSideEffect` bind `account_id` from the `@caisson/tenancy-rls` tenant
+`processEvent`/`withIdempotentSideEffect` bind `account_id` from the `@caisson-sh/tenancy-rls` tenant
 GUC, so a claim attempted outside `withTenant` fails a non-blank `CHECK` instead of landing under a
 shared tenant.
 
 Sold standalone as a single SKU; the raw-body signature verifiers and the `DomainBillingEvent`
-contract it builds on stay open in `@caisson/billing`.
+contract it builds on stay open in `@caisson-sh/billing`.

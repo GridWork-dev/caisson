@@ -23,10 +23,10 @@
  * MECHANICALLY from `claim` — never editorially. "certified" / "compliant" / "satisfies" are never
  * used with Caisson as the subject (§a/§b of the memo; ADR-0080 copy law).
  *
- * Depends only on `@caisson/kernel` (the down-only floor, ADR-0003) — no edition or sibling dep.
+ * Depends only on `@caisson-sh/kernel` (the down-only floor, ADR-0003) — no edition or sibling dep.
  */
 import { z } from "zod";
-import { parseStrict, strictObject } from "@caisson/kernel";
+import { parseStrict, strictObject } from "@caisson-sh/kernel";
 
 /**
  * The three regimes ADR-0277 locks, plus `iso-27001` -- the fourth `regimes.ts`-pattern crosswalk
@@ -102,7 +102,7 @@ const rowBase = {
   /** LOAD-BEARING: what Caisson does NOT cover for this control. Required — the row is dishonest without it. */
   buyerResponsibility: z.string().trim().min(1).max(600),
   /**
-   * Optional pointer to a `@caisson/frameworks-pack` canonical control (ADR-0347 Fork G1). Lets a
+   * Optional pointer to a `@caisson-sh/frameworks-pack` canonical control (ADR-0347 Fork G1). Lets a
    * live collector run light this row through the same join `compliance-core`'s rollup uses for the
    * framework packs — additive, `.strict()`-safe. Unset today (no v1 caller wires it); the join
    * itself is a later-wave concern (ADR-0347 Fork G1 stages the actual join at the ISO crosswalk).

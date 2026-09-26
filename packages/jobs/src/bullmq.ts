@@ -29,7 +29,7 @@
 // the Redis connections). Each `work()` handle's `stop()` closes only its own Worker.
 import { Queue, Worker } from "bullmq";
 import type { ConnectionOptions, Job, JobType } from "bullmq";
-import { ConfigError, parseStrict } from "@caisson/kernel";
+import { ConfigError, parseStrict } from "@caisson-sh/kernel";
 import { createTaskRegistry, requireRegisteredTask } from "./task-registry.ts";
 import { deriveIdempotentJobId } from "./pgboss.ts";
 import type {

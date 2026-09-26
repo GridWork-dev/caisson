@@ -3,7 +3,7 @@ title: field-crypto
 description: Per-tenant field encryption with wrapped random DEKs or self-hosted HKDF derivation, behind a pluggable FieldKeyProvider KMS port.
 ---
 
-`@caisson/field-crypto` encrypts individual fields under a distinct tenant key. A KMS-backed
+`@caisson-sh/field-crypto` encrypts individual fields under a distinct tenant key. A KMS-backed
 deployment wraps each tenant's data-encryption key under a tenant-specific key-encryption key;
 the dev/self-hosted zero-infra path can instead derive tenant keys with HKDF-SHA256 from an
 environment-held master key. One tenant's key cannot decrypt another tenant's ciphertext,
@@ -30,7 +30,7 @@ that could be skipped.
 ## Install
 
 ```bash
-bun add @caisson/field-crypto
+bun add @caisson-sh/field-crypto
 ```
 
 ## Quickstart
@@ -48,7 +48,7 @@ FIELD_CRYPTO_SALT=...
 ```
 
 ```ts
-import { DerivedKeyProvider, TenantFieldCrypto } from "@caisson/field-crypto";
+import { DerivedKeyProvider, TenantFieldCrypto } from "@caisson-sh/field-crypto";
 
 const provider = DerivedKeyProvider.fromEnv(); // reads MASTER_FIELD_KEY + FIELD_CRYPTO_SALT
 // Not named `crypto`: that would shadow the global WebCrypto object this page later tells you to
@@ -88,7 +88,7 @@ import {
   encryptedColumn,
   withFieldCryptoContext,
   derivedContext,
-} from "@caisson/field-crypto";
+} from "@caisson-sh/field-crypto";
 
 const patients = pgTable("patients", {
   id: uuid("id").primaryKey(),
@@ -110,7 +110,7 @@ row-bound path instead of the transparent column, `rowId` must be a client-minte
 `crypto.randomUUID()` primary key, known before the insert:
 
 ```ts
-import { encryptField, decryptField } from "@caisson/field-crypto";
+import { encryptField, decryptField } from "@caisson-sh/field-crypto";
 
 const sealed = encryptField(ctx, "patient.ssn", rowId, "424-00-1234");
 const plain = decryptField(ctx, "patient.ssn", rowId, sealed);
@@ -129,7 +129,7 @@ provider.registry.rotate(tenantId); // bumps the current version; new writes use
 To own the registry yourself, inject it at construction and rotate on that same instance:
 
 ```ts
-import { DerivedKeyProvider, KeyVersionRegistry } from "@caisson/field-crypto";
+import { DerivedKeyProvider, KeyVersionRegistry } from "@caisson-sh/field-crypto";
 
 const registry = new KeyVersionRegistry();
 const provider = DerivedKeyProvider.fromEnv(process.env, registry);
@@ -154,7 +154,7 @@ import {
   KmsKeyProvider,
   PgWrappedKeyStore,
   withKmsFieldCryptoContext,
-} from "@caisson/field-crypto";
+} from "@caisson-sh/field-crypto";
 
 // `tenantScopedKmsClient` maps the logical tenant scope to a provider KEK.
 // Caisson's hosted adapter does this with a deterministic Azure key name.
@@ -185,7 +185,7 @@ change, and `verifyChain` still passes after the shred, because the chain only e
 ciphertext envelope, never plaintext.
 
 ```ts
-import { cryptoShred } from "@caisson/field-crypto";
+import { cryptoShred } from "@caisson-sh/field-crypto";
 
 const { auditPayload } = await cryptoShred(kmsProvider, {
   keyScopeId: subjectId,
@@ -231,9 +231,9 @@ their chosen KMS client (`createAwsKmsClient`, `createGcpKmsClient`, or
 
 ## Composing with the base
 
-The encryption boundary equals the RLS tenant boundary (`@caisson/tenancy-rls`): bind
+The encryption boundary equals the RLS tenant boundary (`@caisson-sh/tenancy-rls`): bind
 `withFieldCryptoContext` alongside `withTenant` so a query can never touch an encrypted
-column outside its tenant scope. `cryptoShred` is designed to sit under `@caisson/audit-worm`:
+column outside its tenant scope. `cryptoShred` is designed to sit under `@caisson-sh/audit-worm`:
 the shred receipt's audit payload is meant to be appended to the WORM chain by the caller,
 so an erasure is recorded without ever mutating the chain's committed bytes.
 
@@ -245,14 +245,14 @@ so an erasure is recorded without ever mutating the chain's committed bytes.
 </Callout>
 
 field-crypto is sold standalone, or as one of the primitives composing the **Compliance** and
-**Provenance** bundles, alongside `@caisson/audit-worm`, `@caisson/signing-primitive`,
-`@caisson/retention-runner`, and the alert pipeline.
+**Provenance** bundles, alongside `@caisson-sh/audit-worm`, `@caisson-sh/signing-primitive`,
+`@caisson-sh/retention-runner`, and the alert pipeline.
 
 ## Migrating from pre-1.0
 
 The current release is `1.1.1`. Three API changes landed in `1.0.0` and nothing since has
 moved them: the request context lends key material instead of returning it, `WrappedKeyStore`
-gained an atomic first-write member, and `@caisson/ai-kit`'s `buildRunTools` takes a context
+gained an atomic first-write member, and `@caisson-sh/ai-kit`'s `buildRunTools` takes a context
 runner instead of a key provider. The wire format did not change, so no stored ciphertext
 needs re-encrypting, an envelope written by a pre-1.0 build opens under `1.1.1` unchanged.
 
@@ -267,7 +267,7 @@ there is nothing to change, those moved to `withKey` internally. Direct key call
 body instead:
 
 ```ts
-import { aesGcm, buildAad, serializeEnvelope } from "@caisson/field-crypto";
+import { aesGcm, buildAad, serializeEnvelope } from "@caisson-sh/field-crypto";
 
 const keyVersion = ctx.currentVersion();
 const aad = buildAad(ctx.tenantId, keyVersion, "patient.ssn");
@@ -281,7 +281,7 @@ const sealed = serializeEnvelope({ algId: aesGcm.algId, keyVersion, nonce, ciphe
 After — the same body, moved inside the lend:
 
 ```ts
-import { aesGcm, buildAad, serializeEnvelope } from "@caisson/field-crypto";
+import { aesGcm, buildAad, serializeEnvelope } from "@caisson-sh/field-crypto";
 
 const keyVersion = ctx.currentVersion();
 const aad = buildAad(ctx.tenantId, keyVersion, "patient.ssn");
@@ -303,7 +303,7 @@ Building a context has not changed, `derivedContext(provider, tenantId)` and
 `withKey`. If you hand-rolled a `FieldCryptoContext`, swap the member and wipe what you lend:
 
 ```ts
-import type { FieldCryptoContext } from "@caisson/field-crypto";
+import type { FieldCryptoContext } from "@caisson-sh/field-crypto";
 
 const ctx: FieldCryptoContext = {
   tenantId,
@@ -335,7 +335,7 @@ append-only winner already exists, which is what elects a single first-provision
 concurrent binds:
 
 ```ts
-import type { WrappedKeyStore } from "@caisson/field-crypto";
+import type { WrappedKeyStore } from "@caisson-sh/field-crypto";
 
 class MyWrappedKeyStore implements WrappedKeyStore {
   // getWrapped / putWrapped / currentVersion / setCurrentVersion are unchanged.
@@ -359,20 +359,20 @@ transitions that stop an overlapping recovery writer from lowering a newer durab
 
 ### `buildRunTools` takes a `fieldCryptoContext` runner
 
-In `@caisson/ai-kit`, `RunToolsDeps.keyProvider` (a `SyncFieldKeyProvider`) is removed and
+In `@caisson-sh/ai-kit`, `RunToolsDeps.keyProvider` (a `SyncFieldKeyProvider`) is removed and
 replaced by a required `fieldCryptoContext` runner. Callers still passing a key provider do
 not compile. The runner receives an account id and a callback, and binds the tenant executor
 and the field-crypto context together in one transaction, so `parked_state` is sealed under a
 context that retains no plaintext key between requests:
 
 ```ts
-import { buildRunTools } from "@caisson/ai-kit";
+import { buildRunTools } from "@caisson-sh/ai-kit";
 import {
   KmsKeyProvider,
   PgWrappedKeyStore,
   withKmsFieldCryptoContext,
-} from "@caisson/field-crypto";
-import { withTenant } from "@caisson/tenancy-rls";
+} from "@caisson-sh/field-crypto";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 
 const tools = buildRunTools({
   ...deps, // tx, settings, resolveModel, guard, lane, agentId, tools, maxSteps, creditBudget
@@ -397,6 +397,6 @@ deadline. Read each tenant's current version first; raise the bound through the
 `maxPrefetchVersions` option on `kmsContext` or `withKmsFieldCryptoContext` only with evidence
 that the KMS request budget still holds at that depth.
 
-Everything else on the surface is additive. `1.1.0` added the `@caisson/field-crypto/browser`
+Everything else on the surface is additive. `1.1.0` added the `@caisson-sh/field-crypto/browser`
 entry and its `…Async` and `…Bytes` names alongside the existing exports, over the same wire
 format, so a value sealed in a browser opens under `decryptField` and the reverse.

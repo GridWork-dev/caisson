@@ -8,7 +8,7 @@
 //
 // Token counts are INTEGERS; time is carried as integer epoch-milliseconds (a `bigint` column + an
 // injectable `now`), so the whole refill computation is integer-pure and deterministic in tests. The
-// store is tenant-owned + fail-closed RLS via @caisson/tenancy-rls, mirroring an entitlement store:
+// store is tenant-owned + fail-closed RLS via @caisson-sh/tenancy-rls, mirroring an entitlement store:
 // every read/write runs inside `withTenant`, the policy WITH CHECK rejects a write whose account_id
 // does not match the bound tenant.
 //
@@ -19,8 +19,8 @@
 // Originally implemented inside the license-issuer service; hoisted into this shared base package so
 // the reference app composing the base substrate can wire per-account throttling without depending on
 // a commercial service (see account-hook.ts for the composition seam).
-import type { TenantExecutor } from "@caisson/tenancy-rls";
-import { buildTenantPolicySql } from "@caisson/tenancy-rls";
+import type { TenantExecutor } from "@caisson-sh/tenancy-rls";
+import { buildTenantPolicySql } from "@caisson-sh/tenancy-rls";
 
 /**
  * The effective bucket parameters for an account. `capacity` is the burst ceiling (and the initial

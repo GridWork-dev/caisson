@@ -4,7 +4,7 @@
 // a legitimate numeric ID from a sensitive one, but it never lets a header/attribute NAMED like a
 // secret slip through, which is the failure mode that matters here.
 //
-// This is deliberately NOT a re-export of @caisson/kernel's `redactEvent` (ADR-0075): that function
+// This is deliberately NOT a re-export of @caisson-sh/kernel's `redactEvent` (ADR-0075): that function
 // redacts the `OpsEvent` envelope, a separate operational-telemetry event stream (ADR-0117); this one
 // mutates a span's flat `attributes` record in place, which is the shape `SpanProcessor#onEnd` hands
 // back. The two paths intentionally never share a write path.
@@ -45,7 +45,7 @@ const PII_TERMS =
  * {@link splitKeyWords} inserts. `ssn` is anchored on ONE side only so `userssn`/`SSNVALUE` still
  * hit while a mid-word `ssN` does not.
  *
- * Deliberately NOT included: `address`. The sibling deep scrubber (`@caisson/kernel` `PHI_KEY`)
+ * Deliberately NOT included: `address`. The sibling deep scrubber (`@caisson-sh/kernel` `PHI_KEY`)
  * accepts `ipAddress` over-redaction as fail-safe for compliance-evidence egress; on a span it would
  * drop `net.peer.address` / `server.address` / `client.address` and blind tracing. Value-level
  * scrubbing is the right tool for an address, not a key match.

@@ -1,7 +1,7 @@
 // Stage 5 of the alerting pipeline (ADR-0135): a structured, PLAIN audit-logging row — explicitly
-// NOT hash-chained WORM (see ADR-0135 "Genericness"; do not import @caisson/audit-worm here). The
+// NOT hash-chained WORM (see ADR-0135 "Genericness"; do not import @caisson-sh/audit-worm here). The
 // Postgres shape lives in `src/migrations/0001_alert_audit.sql`; this file ships the port + the
-// in-memory driver (the `@caisson/jobs` in-memory-queue idiom: real assertions, no daemon).
+// in-memory driver (the `@caisson-sh/jobs` in-memory-queue idiom: real assertions, no daemon).
 import type { AlertSeverity } from "./types.ts";
 import type { DeliveryResult } from "./delivery.ts";
 

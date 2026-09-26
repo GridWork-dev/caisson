@@ -9,7 +9,7 @@
 //   - NO secret logging: nothing is ever `console.log`'d; the only thing emitted to the pluggable
 //     sink on a handler throw is the hook name + the error's TYPE name — never its message or stack,
 //     which may carry a secret. The emitted payload is secret-free by construction.
-//   - PLUGGABLE sink: an optional `@caisson/kernel` `EventSink` port (no tg-bridge / postgres
+//   - PLUGGABLE sink: an optional `@caisson-sh/kernel` `EventSink` port (no tg-bridge / postgres
 //     coupling). The sink applies its own redaction; the dispatcher hands it nothing sensitive.
 //   - SHELL SAFETY: TS handlers are first-class. A shell-command hook is admitted ONLY through
 //     `commandHandler`, which spawns via `execFile` with an argv ARRAY — no shell, no interpolation,
@@ -18,7 +18,7 @@
 //     `execFile` default) — pass the optional `env` field to narrow the child to exactly the vars
 //     it needs (used verbatim, never merged with `process.env`). Flipping the default to
 //     always-narrow is a separate major-version change, not made here.
-import type { EventSink, OpsEvent } from "@caisson/kernel";
+import type { EventSink, OpsEvent } from "@caisson-sh/kernel";
 import type { Act } from "./lifecycle.ts";
 import { allow, mutate } from "./governance.ts";
 import type { HookResult } from "./governance.ts";

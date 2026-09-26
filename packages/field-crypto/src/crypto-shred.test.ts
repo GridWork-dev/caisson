@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
+import { matchGolden } from "@caisson-sh/testing";
 import {
   anchorChain,
   buildChain,
@@ -7,7 +7,7 @@ import {
   ValidationError,
   verifyChain,
   type JsonValue,
-} from "@caisson/kernel/node";
+} from "@caisson-sh/kernel/node";
 import {
   InMemoryWrappedKeyStore,
   KmsKeyProvider,

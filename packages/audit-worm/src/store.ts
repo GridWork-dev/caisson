@@ -8,7 +8,7 @@
 //      `ArtifactExistsError`, never an overwrite (the WORM essence; chain anchors rely on it, ADR-0052).
 //   3. Monotonic retention — `extendRetention` only ever moves a lock LATER (strictly), never
 //      shortens or clamps; no de-escalation path exists in the port (ADR-0202).
-import { CaissonError, ValidationError } from "@caisson/kernel";
+import { CaissonError, ValidationError } from "@caisson-sh/kernel";
 
 /**
  * Metadata for an artifact — never the body. `retainUntil` is the WORM lock expiry (ADR-0054).

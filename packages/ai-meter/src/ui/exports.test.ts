@@ -1,8 +1,8 @@
 // Exports-map + React-isolation contract (ADR-0250 G2c; a known class of bug: an exports-map entry a component needs can go missing and break consumers).
 // Proves the `./ui` subpath is wired AND that the package ROOT stays
-// framework-free: importing `@caisson/<pkg>` must pull no React. The React check is TRANSITIVE — it
+// framework-free: importing `@caisson-sh/<pkg>` must pull no React. The React check is TRANSITIVE — it
 // walks every module reachable from the root barrel (excluding the optional `./ui` tree) and asserts
-// none imports react / react-dom / @caisson/ui, so a React import hidden a re-export deep can't slip.
+// none imports react / react-dom / @caisson-sh/ui, so a React import hidden a re-export deep can't slip.
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -18,7 +18,7 @@ const pkgRoot = join(import.meta.dir, "..", "..");
 const rootEntry = join(pkgRoot, "src", "index.ts");
 
 const REL_IMPORT = /from\s+["'](\.[^"']+)["']/g;
-const REACT_OR_KIT = /from\s+["']react(-dom)?["']|@caisson\/ui/;
+const REACT_OR_KIT = /from\s+["']react(-dom)?["']|@caisson-sh\/ui/;
 
 /** Resolve a relative import specifier to a real source file (.ts/.tsx/index), or null if external. */
 function resolveRel(fromDir: string, spec: string): string | null {

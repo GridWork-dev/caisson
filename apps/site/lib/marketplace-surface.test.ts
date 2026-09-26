@@ -142,7 +142,7 @@ describe("media manifest", () => {
     expect(entryHasMedia("module", "prompt-registry")).toBe(true);
   });
 
-  test("ADR-0308 full-depth: each module that ships a showable @caisson/ui surface carries its component slide (after any sheet + poke, ADR-0378)", () => {
+  test("ADR-0308 full-depth: each module that ships a showable @caisson-sh/ui surface carries its component slide (after any sheet + poke, ADR-0378)", () => {
     const expected: Record<string, string> = {
       "ui-pro": "ui-pro",
       "audit-worm": "audit-worm",
@@ -164,7 +164,7 @@ describe("media manifest", () => {
         `module:${id} must carry its ${key} component slide directly after sheet/poke`,
       ).toBe(true);
     }
-    // A backend-only module with no showable @caisson/ui surface carries no component slide —
+    // A backend-only module with no showable @caisson-sh/ui surface carries no component slide —
     // field-crypto's interactive slide is its ADR-0378 poke, not a kit component.
     expect(
       mediaSlides("module", "field-crypto").some((s) => s.kind === "component"),

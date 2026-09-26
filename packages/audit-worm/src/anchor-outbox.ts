@@ -25,12 +25,12 @@
 // Transitions are DB-guarded (`… AND state IN (<from>) RETURNING id`): a `submitted` row can never be
 // re-submitted because markSubmitted only fires from `pending`. "No second submit" is structural.
 import { randomUUID } from "node:crypto";
-import { ConflictError, InternalError, parseStrict } from "@caisson/kernel";
+import { ConflictError, InternalError, parseStrict } from "@caisson-sh/kernel";
 import {
   withTenant,
   type TenantExecutor,
   type Transactor,
-} from "@caisson/tenancy-rls";
+} from "@caisson-sh/tenancy-rls";
 import { assertValidArtifactVersionId } from "./store.ts";
 import {
   anchorOutboxKeySchema,

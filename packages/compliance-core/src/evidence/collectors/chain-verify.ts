@@ -1,14 +1,14 @@
 // src/evidence/collectors/chain-verify.ts — audit-chain integrity evidence (ADR-0058, ADR-0052).
 //
 // Composes the kernel's `verifyChain(entries, anchor)` VERBATIM over the persisted chain + its
-// trusted WORM anchor (gathered at the edge by `@caisson/audit-worm`'s `AuditChainStore`). The collector adds no hash
+// trusted WORM anchor (gathered at the edge by `@caisson-sh/audit-worm`'s `AuditChainStore`). The collector adds no hash
 // algebra; it only turns the verification verdict into an evidence item. Flag-never-guess: a missing
 // anchor is `unresolved` (integrity cannot be attested), a failed verification is `flagged`.
 import {
   verifyChain,
   type AuditChainAnchor,
   type AuditChainEntry,
-} from "@caisson/kernel/node";
+} from "@caisson-sh/kernel/node";
 import {
   flaggedResult,
   passResult,

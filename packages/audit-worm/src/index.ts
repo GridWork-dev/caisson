@@ -1,4 +1,4 @@
-// @caisson/audit-worm — the compliance evidentiary primitive (ADR-0006/0052/0053/0054).
+// @caisson-sh/audit-worm — the compliance evidentiary primitive (ADR-0006/0052/0053/0054).
 //
 // Three composable layers over the kernel's pure integrity algebra (it COMPOSES `canonicalize`/
 // `chainEntry`/`anchorChain`/`verifyChain`/`validateVersionSet`, never re-implements them):
@@ -11,7 +11,7 @@
 //     current version is a derived no-successor predicate, cross-checked against the kernel model.
 //
 // Every method is tenant-scoped through `withTenant` (the encryption/RLS boundary, ADR-0005,
-// fail-closed). This package depends DOWN on `@caisson/kernel` + `@caisson/tenancy-rls` only.
+// fail-closed). This package depends DOWN on `@caisson-sh/kernel` + `@caisson-sh/tenancy-rls` only.
 
 // Write-once artifact store + retention.
 export {

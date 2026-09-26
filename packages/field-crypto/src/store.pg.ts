@@ -3,11 +3,11 @@
 // tenant's current key version (the derived-key path) and `PgWrappedKeyStore` stores each version's
 // KEK-wrapped DEK (the KMS path), both over the `0001_field_keys.sql` tables.
 //
-// KERNEL-ONLY (ADR-0043/0003, locked SPEC dep graph): this file imports ONLY @caisson/kernel — never
-// @caisson/tenancy-rls. The RLS boundary is the caller's to establish: every store takes a
+// KERNEL-ONLY (ADR-0043/0003, locked SPEC dep graph): this file imports ONLY @caisson-sh/kernel — never
+// @caisson-sh/tenancy-rls. The RLS boundary is the caller's to establish: every store takes a
 // PRE-TENANT-SCOPED executor (a connection/transaction the caller already opened via
 // `withTenant` — SET ROLE app + the `app.current_account` GUC bound). field-crypto therefore stays a
-// pure primitive whose `manifest.dependencies` is `["@caisson/kernel"]`; the RLS policy lives in the
+// pure primitive whose `manifest.dependencies` is `["@caisson-sh/kernel"]`; the RLS policy lives in the
 // hand-authored migration, not in an emitted `buildTenantPolicySql` call.
 //
 // APPEND-ONLY per version (ADR-0046, lazy re-encrypt): a (tenant, version) → wrapped-DEK mapping,
@@ -21,12 +21,12 @@ import {
   ConflictError,
   isUniqueViolation,
   ValidationError,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import type { WrappedKeyStore } from "./kms.ts";
 
 /**
  * The minimal SQL surface these stores need: a `query` over a connection/transaction that is ALREADY
- * tenant-scoped by the caller (`withTenant` from @caisson/tenancy-rls — SET ROLE app + GUC bound). A
+ * tenant-scoped by the caller (`withTenant` from @caisson-sh/tenancy-rls — SET ROLE app + GUC bound). A
  * structural subset of that package's `TenantExecutor` (and of the test harness's `PgExec`), so a
  * scoped `tx` is assignable here WITHOUT field-crypto importing tenancy-rls. Fail-closed: with no GUC
  * bound, RLS yields zero rows.

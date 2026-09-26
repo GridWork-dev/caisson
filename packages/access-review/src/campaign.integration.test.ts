@@ -1,7 +1,7 @@
 // src/campaign.integration.test.ts — the access-review lifecycle over a REAL Postgres (ADR-0371).
 //
 // Runs the real migration set on PGlite (no Docker, no network) plus the REAL `AuditChainStore` +
-// `LocalArtifactStore` from `@caisson/audit-worm` — the same chain every other WORM-logged module
+// `LocalArtifactStore` from `@caisson-sh/audit-worm` — the same chain every other WORM-logged module
 // rides, no new anchoring primitive. Proves the SPEC's three load-bearing behaviors:
 //   1. round-trip — a membership snapshot opens a campaign, decisions record, and every row
 //      verifies against the chain (`chain.verify`);
@@ -10,9 +10,9 @@
 //   3. the schedule.ts tasks run the SAME operations end-to-end over a real `JobQueue`.
 //
 // Migration composition is test-only and hand-rolled rather than routed through the
-// `@caisson/migrate` package-layering composer: that composer earns its keep assembling an
+// `@caisson-sh/migrate` package-layering composer: that composer earns its keep assembling an
 // EDITION's multi-package migration DAG with global renumbering (see
-// @caisson/compliance/src/migrate/assemble.ts); this test only needs two known packages' raw SQL
+// @caisson-sh/compliance/src/migrate/assemble.ts); this test only needs two known packages' raw SQL
 // concatenated once, so it resolves audit-worm's `src/migrations` directory the same
 // `fileURLToPath` + relative-join way that composer's own package-set declaration does.
 import {
@@ -30,11 +30,11 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { newTestPg, type TestPg } from "@caisson/testing";
-import { ConflictError, ValidationError } from "@caisson/kernel";
-import { buildTenantPolicySql } from "@caisson/tenancy-rls";
-import { AuditChainStore, LocalArtifactStore } from "@caisson/audit-worm";
-import { createInMemoryQueue } from "@caisson/jobs";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
+import { ConflictError, ValidationError } from "@caisson-sh/kernel";
+import { buildTenantPolicySql } from "@caisson-sh/tenancy-rls";
+import { AuditChainStore, LocalArtifactStore } from "@caisson-sh/audit-worm";
+import { createInMemoryQueue } from "@caisson-sh/jobs";
 import {
   closeCampaign,
   openCampaign,

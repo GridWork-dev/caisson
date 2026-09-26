@@ -6,7 +6,7 @@
 // never be read or written outside a tenant scope. The sync derived-key path backs this; a KMS
 // (async) provider pre-resolves + caches keys into the context (P2 wiring, not the sync hot-path).
 import { AsyncLocalStorage } from "node:async_hooks";
-import { InternalError, ValidationError } from "@caisson/kernel";
+import { InternalError, ValidationError } from "@caisson-sh/kernel";
 import { customType } from "drizzle-orm/pg-core";
 import { type AeadCipher, aesGcm, cipherForAlg } from "./cipher.ts";
 import { parseEnvelope, serializeEnvelope } from "./envelope.ts";

@@ -173,7 +173,7 @@ export interface ToolCallProjection {
 
 /**
  * Fold a log's tool.proposed/approved/denied/result events into one entry per `toolCallId`,
- * ordered by proposal seq — the shape a trajectory-quality scorer (ADR-0360 U-7, `@caisson/ai-
+ * ordered by proposal seq — the shape a trajectory-quality scorer (ADR-0360 U-7, `@caisson-sh/ai-
  * evals`) reads: which tool, what it argued (digest only), who approved/denied it and how, and
  * whether it succeeded. An approval/result event naming a `toolCallId` with no matching
  * `tool.proposed` (a malformed/partial log) is dropped rather than synthesizing a call — mirrors

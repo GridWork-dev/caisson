@@ -28,7 +28,7 @@ import {
   task as defineTriggerTask,
   tasks as triggerTasks,
 } from "@trigger.dev/sdk";
-import { ConfigError, parseStrict } from "@caisson/kernel";
+import { ConfigError, parseStrict } from "@caisson-sh/kernel";
 import { createTaskRegistry, requireRegisteredTask } from "./task-registry.ts";
 import type {
   EnqueueOptions,

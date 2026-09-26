@@ -2,7 +2,7 @@
 // control catalog (SPEC outputs/specs/oscal-spine (a), ADR-0363/ADR-0364). Sibling pattern to
 // `oscal-export.ts`: a PLAIN, PURE, SEAM-TESTED FUNCTION — no I/O, no network, no file write.
 //
-// Input: `Framework[]` from `@caisson/frameworks-pack` (the three shipped own-authored packs).
+// Input: `Framework[]` from `@caisson-sh/frameworks-pack` (the three shipped own-authored packs).
 // Output: ONE merged OSCAL `catalog` document (F4 lock) — `groups` mirror each control's own
 // `family` field; controls addressed under a caisson URN namespace (`urn:caisson:control:<id>`,
 // mirroring the existing `CAISSON_OSCAL_NS` prop convention) via a `link`, while the control's own
@@ -15,7 +15,7 @@
 // minting is a SEAM (`newId`, default `crypto.randomUUID`). Groups and controls are sorted
 // lexicographically by id regardless of input order, so the same catalog set always produces
 // byte-identical output — golden-fixturable.
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   CAISSON_OSCAL_NS,
   OSCAL_VERSION,

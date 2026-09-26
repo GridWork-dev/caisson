@@ -1,7 +1,7 @@
 // src/sign.ts — evidence-pack signing (ADR-0056), carved out of the Compliance edition as the
 // standalone signing surface (ADR-0246/0257).
 //
-// The edge layer that proves PROVENANCE of an evidence pack. The generator (@caisson/compliance-core)
+// The edge layer that proves PROVENANCE of an evidence pack. The generator (@caisson-sh/compliance-core)
 // produces a byte-stable canonical `manifest.json`; this module signs it so a relying party can prove
 // *who* sealed it and *what chain state* it was sealed against — without touching the canonical body
 // (the signature is DETACHED, so the body stays byte-stable and golden-fixturable, ADR-0013).
@@ -31,7 +31,7 @@
 // (a tenant secret), and the two constant-time compares that need `node:crypto`'s `timingSafeEqual`.
 import { createHash } from "node:crypto";
 import * as ed from "@noble/ed25519";
-import { safeEqualFixed, ValidationError } from "@caisson/kernel/node";
+import { safeEqualFixed, ValidationError } from "@caisson-sh/kernel/node";
 import {
   ED25519_PUBLIC_BYTES,
   ED25519_SIGNATURE_BYTES,

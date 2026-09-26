@@ -2,8 +2,8 @@
 // compare, answers an authed query, and gates the `generate` write on the REGISTRY INDEX (id AND
 // version, the same gate the CLI runs) before delegating generation to the host via `onGenerate`.
 import { describe, expect, test } from "bun:test";
-import { AuthnError, NotFoundError, ValidationError } from "@caisson/kernel";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+import { AuthnError, NotFoundError, ValidationError } from "@caisson-sh/kernel";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
 import {
   createMcpServer,
   type GenerateContext,
@@ -35,9 +35,9 @@ function catalogModule(id: string) {
 const index = loadRegistryIndex({
   schemaVersion: 1,
   modules: [
-    catalogModule("@caisson/auth"),
-    catalogModule("@caisson/billing"),
-    catalogModule("@caisson/kernel"),
+    catalogModule("@caisson-sh/auth"),
+    catalogModule("@caisson-sh/billing"),
+    catalogModule("@caisson-sh/kernel"),
   ],
 });
 
@@ -64,23 +64,27 @@ describe("MCP server", () => {
 
   test("list_modules lists the registry catalog", async () => {
     expect(await server.handleToolCall(session, "list_modules", {})).toEqual({
-      modules: ["@caisson/auth", "@caisson/billing", "@caisson/kernel"],
+      modules: [
+        "@caisson-sh/auth",
+        "@caisson-sh/billing",
+        "@caisson-sh/kernel",
+      ],
     });
   });
 
   test("describe_module describes a catalog module and 404s an unknown one", async () => {
     expect(
       await server.handleToolCall(session, "describe_module", {
-        name: "@caisson/auth",
+        name: "@caisson-sh/auth",
       }),
     ).toEqual({
-      name: "@caisson/auth",
+      name: "@caisson-sh/auth",
       latest: "0.1.0",
-      summary: "Fixture module @caisson/auth.",
+      summary: "Fixture module @caisson-sh/auth.",
     });
     await expect(
       server.handleToolCall(session, "describe_module", {
-        name: "@caisson/gateway",
+        name: "@caisson-sh/gateway",
       }),
     ).rejects.toBeInstanceOf(NotFoundError);
   });
@@ -89,8 +93,8 @@ describe("MCP server", () => {
     const out = await server.handleToolCall(session, "generate", {
       projectName: "my-app",
       modules: [
-        { id: "@caisson/kernel", version: "0.1.0" },
-        { id: "@caisson/auth", version: "0.1.0" },
+        { id: "@caisson-sh/kernel", version: "0.1.0" },
+        { id: "@caisson-sh/auth", version: "0.1.0" },
       ],
     });
     expect(out).toEqual({ generationId: "gen_1" });
@@ -99,8 +103,8 @@ describe("MCP server", () => {
       selection: {
         projectName: "my-app",
         modules: [
-          { id: "@caisson/kernel", version: "0.1.0" },
-          { id: "@caisson/auth", version: "0.1.0" },
+          { id: "@caisson-sh/kernel", version: "0.1.0" },
+          { id: "@caisson-sh/auth", version: "0.1.0" },
         ],
       },
     });
@@ -122,7 +126,7 @@ describe("MCP server", () => {
     await expect(
       server.handleToolCall(session, "generate", {
         projectName: "my-app",
-        modules: [{ id: "@caisson/auth", version: "9.9.9" }],
+        modules: [{ id: "@caisson-sh/auth", version: "9.9.9" }],
       }),
     ).rejects.toBeInstanceOf(ValidationError);
     expect(calls.length).toBe(before);
@@ -137,7 +141,7 @@ describe("MCP server", () => {
       await expect(
         server.handleToolCall(session, "generate", {
           projectName: "my-app",
-          modules: [{ id: "@caisson/auth", version: "0.1.0" }],
+          modules: [{ id: "@caisson-sh/auth", version: "0.1.0" }],
           ...extra,
         }),
       ).rejects.toBeInstanceOf(ValidationError);
@@ -173,7 +177,7 @@ describe("MCP server", () => {
     await expect(
       server.handleToolCall(session, "generate", {
         projectName: "my-app",
-        modules: [{ id: `@caisson/${"a".repeat(200)}`, version: "0.1.0" }],
+        modules: [{ id: `@caisson-sh/${"a".repeat(200)}`, version: "0.1.0" }],
       }),
     ).rejects.toBeInstanceOf(ValidationError);
     expect(calls.length).toBe(before);
@@ -309,14 +313,14 @@ describe("prompt registry (registerPrompt / listPrompts / getPrompt)", () => {
 
   test("integrate_module renders a describe_module -> generate recipe for a known module", async () => {
     const out = await server.getPrompt(session, "integrate_module", {
-      module_id: "@caisson/auth",
+      module_id: "@caisson-sh/auth",
       project_name: "shop",
     });
     expect(out.messages).toHaveLength(1);
     const text = out.messages[0]?.content.text ?? "";
     expect(text).toContain("describe_module");
     expect(text).toContain("generate");
-    expect(text).toContain("@caisson/auth");
+    expect(text).toContain("@caisson-sh/auth");
     expect(text).toContain("shop");
     // The recipe pins the CONCRETE latest from the index — the literal "latest" is a pointer
     // the generate gate (assertKnownVersion) rejects with a 400.
@@ -327,7 +331,7 @@ describe("prompt registry (registerPrompt / listPrompts / getPrompt)", () => {
   test("integrate_module rejects a module the registry does not know (400, never recommends it)", async () => {
     await expect(
       server.getPrompt(session, "integrate_module", {
-        module_id: "@caisson/does-not-exist",
+        module_id: "@caisson-sh/does-not-exist",
       }),
     ).rejects.toBeInstanceOf(ValidationError);
   });
@@ -385,14 +389,14 @@ describe("prompt registry (registerPrompt / listPrompts / getPrompt)", () => {
     // an undeclared extra key is rejected (strict).
     await expect(
       server.getPrompt(session, "integrate_module", {
-        module_id: "@caisson/auth",
+        module_id: "@caisson-sh/auth",
         bogus: "y",
       }),
     ).rejects.toBeInstanceOf(ValidationError);
     // args are length-bounded at the boundary like every tool arg (max 512).
     await expect(
       server.getPrompt(session, "integrate_module", {
-        module_id: "@caisson/auth",
+        module_id: "@caisson-sh/auth",
         project_name: "x".repeat(513),
       }),
     ).rejects.toBeInstanceOf(ValidationError);

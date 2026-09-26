@@ -5,7 +5,7 @@
 import { describe, expect, test } from "bun:test";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
 import { createStdioMcpServer } from "./stdio.ts";
 
 const INDEX = loadRegistryIndex({ schemaVersion: 1, modules: [] });

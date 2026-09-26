@@ -1,12 +1,12 @@
 "use client";
 
 // The ai-meter module's `component` media slide (ADR-0308 full-depth) — the module's own shipped
-// surface `@caisson/ai-meter/ui` <UsageChart>, rendered live over sample metered-usage events. The
+// surface `@caisson-sh/ai-meter/ui` <UsageChart>, rendered live over sample metered-usage events. The
 // component owns the aggregation (a pure reduce), the per-model bar chart, and the credit/cost
 // rollup; credits + cost stay integer units end to end (ADR-0007). Presentational still-frame.
 // Loaded via next/dynamic (ssr: false) so this commercial-tier tree never lands in the shared
 // client bundle. Source: packages/ai-meter/src/ui/usage-chart.tsx.
-import { UsageChart, type UsageEventDatum } from "@caisson/ai-meter/ui";
+import { UsageChart, type UsageEventDatum } from "@caisson-sh/ai-meter/ui";
 
 import { MediaFrame } from "./media-frame";
 

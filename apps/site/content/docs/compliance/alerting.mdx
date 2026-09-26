@@ -3,7 +3,7 @@ title: alerting
 description: A five-stage alert-delivery pipeline (dedup, rate-cap-to-digest, IANA-timezone quiet hours, multi-channel send, one audit row) the SOC 2 CC7.2 control.
 ---
 
-`@caisson/alerting` is Caisson's SOC 2 CC7.2 alert-delivery control: a deterministic
+`@caisson-sh/alerting` is Caisson's SOC 2 CC7.2 alert-delivery control: a deterministic
 five-stage pipeline between an event and a delivered alert. Every dependency, including
 the clock, is injected, dedup, rate-cap, quiet hours, delivery, and audit are pure
 functions of their inputs.
@@ -30,7 +30,7 @@ functions of their inputs.
 ## Install
 
 ```bash
-bun add @caisson/alerting
+bun add @caisson-sh/alerting
 ```
 
 ## Quickstart
@@ -41,7 +41,7 @@ import {
   createEmailChannel,
   createWebhookChannel,
   createInMemoryAuditSink,
-} from "@caisson/alerting";
+} from "@caisson-sh/alerting";
 
 const result = await processAlert(event, {
   openIncidents, // { dedupeKey }[] — from your incident store
@@ -87,12 +87,12 @@ actually delivered.
 | Channel  | Factory                         | Transport                                            |
 | -------- | -------------------------------- | ----------------------------------------------------- |
 | Capture  | `createCaptureChannel()`         | In-memory; test-only.                                  |
-| Email    | `createEmailChannel(emailer)`    | Delegates to an injected `@caisson/email` `Emailer`.   |
+| Email    | `createEmailChannel(emailer)`    | Delegates to an injected `@caisson-sh/email` `Emailer`.   |
 | Webhook  | `createWebhookChannel(config)`   | `fetchWithTimeout` POST; optional HMAC signature.      |
 | Slack    | `createSlackChannel(config)`     | `fetchWithTimeout` POST to an incoming-webhook URL.    |
 | Telegram | `createTelegramChannel(config)`  | `fetchWithTimeout` POST to a bot-API `sendMessage`.    |
 
-Webhook, Slack, and Telegram config URLs pass `@caisson/kernel`'s `assertSafePublicUrl`
+Webhook, Slack, and Telegram config URLs pass `@caisson-sh/kernel`'s `assertSafePublicUrl`
 at the Zod schema boundary and `assertSafePublicUrlResolved` again at the fetch call, a
 DNS-rebinding recheck, and every outbound POST sets `redirect: "error"` so a 3xx can't
 hop the request to a private host after the check.
@@ -106,14 +106,14 @@ boundary every stage consumes.
 
 ## Composing with the base
 
-Alerting is a plain package on top of the base substrate: it reuses `@caisson/kernel`'s
-`fetchWithTimeout` and SSRF guards, and delegates its email channel to `@caisson/email`
+Alerting is a plain package on top of the base substrate: it reuses `@caisson-sh/kernel`'s
+`fetchWithTimeout` and SSRF guards, and delegates its email channel to `@caisson-sh/email`
 rather than opening a second email path. Its audit sink writes to a plain, RLS-forced
 Postgres table (`alert_audit_log`), explicitly not the hash-chained WORM chain that
-`@caisson/audit-worm` owns; the two products stay deliberately distinct.
+`@caisson-sh/audit-worm` owns; the two products stay deliberately distinct.
 
 <Callout type="info" title="A real dependency, not a manifest listing">
   Alerting is a `workspace:*` dependency the Compliance bundle re-exports at runtime
-  (`export * from '@caisson/alerting'`), not a promise on a manifest. Buy it standalone,
+  (`export * from '@caisson-sh/alerting'`), not a promise on a manifest. Buy it standalone,
   or get it composed into Compliance.
 </Callout>

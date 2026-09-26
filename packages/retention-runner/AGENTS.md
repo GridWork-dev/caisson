@@ -1,4 +1,4 @@
-# AGENTS — @caisson/retention-runner
+# AGENTS — @caisson-sh/retention-runner
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or a downstream
 edition must know to wire the erasure runner correctly.
@@ -11,7 +11,7 @@ edition must know to wire the erasure runner correctly.
 - **Exactly one audit row per run.** `runErasure` calls `sink.record` once, after every target has
   settled, with the full `results` array. Never call `sink.record` per-target.
 - **NOT WORM.** The audit row is plain-Postgres audit-_logging_ (ADR-0135 Genericness). Never import
-  `@caisson/audit-worm`/`audit-chain` here or treat `retention_audit` as tamper-evident.
+  `@caisson-sh/audit-worm`/`audit-chain` here or treat `retention_audit` as tamper-evident.
 - **`auto_90d` is the only reason enqueued.** `ccpa_request` and `operator_manual` call `runErasure`
   directly — they are one-shot, operator/subject-triggered. Do not route them through the `JobQueue`.
 - **Inject `now`.** `runErasure`/`defineRetentionTask` take an injectable clock (`now: () => number`,
@@ -24,7 +24,7 @@ edition must know to wire the erasure runner correctly.
 ## Entry points
 
 `.` is the full surface. `./browser` (ADR-0396) is the same package minus `schedule.ts`'s
-`@caisson/jobs` edge — import it from client code. When you add a name, put it on `.`; add it to
+`@caisson-sh/jobs` edge — import it from client code. When you add a name, put it on `.`; add it to
 `./browser` too only if its whole value-import graph is free of node builtins
 (`src/browser-safety.test.ts` walks that statically and fails the build if not). Never add a name
 to `./browser` that is not also on `.` — the subset is one-way.
@@ -38,7 +38,7 @@ to `./browser` that is not also on `.` — the subset is one-way.
 
 ## Scheduling (ADR-0152)
 
-`defineRetentionTask(deps)` returns a `@caisson/jobs` `TaskDefinition` for `AUTO_90D_SWEEP_TASK`.
+`defineRetentionTask(deps)` returns a `@caisson-sh/jobs` `TaskDefinition` for `AUTO_90D_SWEEP_TASK`.
 Register it on a `JobQueue` (`createInMemoryQueue` in dev/test; Trigger.dev in prod — the queue
 port never changes across drivers). Enqueue through `enqueueAutoSweep(queue, { subjectId, tenantId })`
 — never call `queue.enqueue(AUTO_90D_SWEEP_TASK, …)` directly, since `enqueueAutoSweep` sets the

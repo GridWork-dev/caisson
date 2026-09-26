@@ -1,6 +1,6 @@
 // resolveIndexPath contract tests (delivery-path fix G3). `resolve-index-path.ts` is a pure module
 // (only node:fs/node:url) so it can be copied OUTSIDE the monorepo and imported standalone — no
-// workspace `node_modules` resolution required — exactly like a real `node_modules/@caisson/cli`
+// workspace `node_modules` resolution required — exactly like a real `node_modules/@caisson-sh/cli`
 // install. The "simulated installed layout" tests prove the bundled catalog is found next to the
 // package root, and that its absence is a named error rather than a path that does not exist.
 import { describe, expect, test } from "bun:test";

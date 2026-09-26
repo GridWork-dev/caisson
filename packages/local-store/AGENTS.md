@@ -1,4 +1,4 @@
-# AGENTS — @caisson/local-store
+# AGENTS — @caisson-sh/local-store
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or a downstream
 edition must know to wire the local store correctly.
@@ -8,7 +8,7 @@ edition must know to wire the local store correctly.
 - **Engine-neutral.** This package imports NO vendor SDK and runs NO LLM or embedding model. It is the
   store / fuse / isolation **mechanism** only. The embedding that produces a query/doc vector is an
   **injected seam** the consuming edition wires — pass the vector in; never compute it here.
-- **Down-only (ADR-0022).** `@caisson/local-store` is `kind: base`; it may be consumed by the
+- **Down-only (ADR-0022).** `@caisson-sh/local-store` is `kind: base`; it may be consumed by the
   Local-first and Agentic-Dev bundles (and base), but it MUST NEVER import a bundle. Each bundle
   composes this store as a pinned primitive.
 - **Dimension is fixed at table creation.** `LocalStore.open({ dim })` creates `vec0(... FLOAT[dim])`.
@@ -54,6 +54,6 @@ reviewable diff.
 
 ## Out of scope
 
-No embedding model, no provider SDK, no agent loop, no Postgres/RLS (that is `@caisson/tenancy-rls`).
+No embedding model, no provider SDK, no agent loop, no Postgres/RLS (that is `@caisson-sh/tenancy-rls`).
 This store is the primitive the local editions compose; the embedding wiring and curated content live in
 the edition.

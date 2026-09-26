@@ -6,11 +6,11 @@ import { describe, expect, test } from "bun:test";
  * with no matching entry (or a typo'd one) fails at the CONSUMER, not here, unless something
  * self-imports through the real package name the way a real consumer would (a known class of
  * bug: the kit once shipped without an exports entry a component needed). Self-import via the package's
- * own name (`@caisson/ui/...`) exercises the same resolution path bun/node give any consumer.
+ * own name (`@caisson-sh/ui/...`) exercises the same resolution path bun/node give any consumer.
  */
-describe("@caisson/ui exports map (self-import resolution)", () => {
+describe("@caisson-sh/ui exports map (self-import resolution)", () => {
   test('"." resolves and re-exports both the token contract and the theme API', async () => {
-    const root = await import("@caisson/ui");
+    const root = await import("@caisson-sh/ui");
     // token contract (pre-existing)
     expect(root.darkTheme).toBeDefined();
     expect(root.foundation).toBeDefined();
@@ -21,13 +21,13 @@ describe("@caisson/ui exports map (self-import resolution)", () => {
   });
 
   test('"./tokens" resolves and includes the shared css-var helpers', async () => {
-    const tokens = await import("@caisson/ui/tokens");
+    const tokens = await import("@caisson-sh/ui/tokens");
     expect(tokens.darkTheme).toBeDefined();
     expect(tokens.semanticThemeToCssVars).toBeTypeOf("function");
   });
 
   test('"./theme" resolves the full runtime theme API surface', async () => {
-    const theme = await import("@caisson/ui/theme");
+    const theme = await import("@caisson-sh/ui/theme");
     expect(theme.createTheme).toBeTypeOf("function");
     expect(theme.applyTheme).toBeTypeOf("function");
     expect(theme.themeToCssVars).toBeTypeOf("function");

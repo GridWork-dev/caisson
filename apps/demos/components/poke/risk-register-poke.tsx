@@ -6,9 +6,9 @@
 // accountable exception record (kind "risk.residual-overridden") that governs effectiveResidual
 // going forward, exactly like a real register does.
 //
-// This component drives the REAL @caisson/risk-register — the hand-ported mirror
+// This component drives the REAL @caisson-sh/risk-register — the hand-ported mirror
 // (risk-register-logic.ts) is deleted. The package's `.` barrel is browser-safe (its only
-// audit-worm imports are statement-level `import type`, erased at emit; @caisson/kernel's `.`
+// audit-worm imports are statement-level `import type`, erased at emit; @caisson-sh/kernel's `.`
 // barrel has been browser-safe since the ./node split), so the real defineRiskEntry /
 // buildRiskTreatmentPlan / computeResidual run in the client bundle, and the real ASYNC
 // recordResidualOverride runs against an injected in-memory chain port (its only I/O is the
@@ -17,10 +17,10 @@
 // substitutes node builtins instead of failing on them. Nothing here fetches, persists, or
 // measures the visitor; the clock is the fixed SAMPLE_NOW (no Date.now(), no argless new Date()).
 import { useId, useMemo, useRef, useState } from "react";
-import { Button, StatusChip } from "@caisson/ui/components";
-import { ValidationError } from "@caisson/kernel";
-import type { AuditChainEntry, JsonValue } from "@caisson/kernel";
-import type { AppendResult, AuditChainStore } from "@caisson/audit-worm";
+import { Button, StatusChip } from "@caisson-sh/ui/components";
+import { ValidationError } from "@caisson-sh/kernel";
+import type { AuditChainEntry, JsonValue } from "@caisson-sh/kernel";
+import type { AppendResult, AuditChainStore } from "@caisson-sh/audit-worm";
 import {
   Impact,
   Likelihood,
@@ -28,11 +28,11 @@ import {
   computeResidual,
   defineRiskEntry,
   recordResidualOverride,
-} from "@caisson/risk-register";
+} from "@caisson-sh/risk-register";
 import type {
   Residual,
   RiskResidualOverrideRecord,
-} from "@caisson/risk-register";
+} from "@caisson-sh/risk-register";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./risk-register-poke.module.css";
@@ -57,7 +57,7 @@ export const LIKELIHOODS = Likelihood.options;
 export const IMPACTS = Impact.options;
 
 /** Not a hash, and deliberately not hash-shaped. Real chain hashing is `chainEntry` in
- *  @caisson/kernel/node (node:crypto) and cannot run in a browser, so this double never mints
+ *  @caisson-sh/kernel/node (node:crypto) and cannot run in a browser, so this double never mints
  *  one and the UI never renders these fields — only the returned `record` and the append count.
  *  It implements nothing the package implements; it only satisfies the injected
  *  `Pick<AuditChainStore, "append">` port so the REAL recordResidualOverride runs unmodified. */
@@ -218,7 +218,7 @@ export default function RiskRegisterPoke() {
 
   return (
     <PokeShell
-      label="@caisson/risk-register"
+      label="@caisson-sh/risk-register"
       title="Move the sliders. The residual is computed, never typed in."
     >
       <div className={styles.layout}>

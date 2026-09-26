@@ -46,7 +46,7 @@ const COMPONENT_SLIDES: Record<ComponentKey, ComponentType> = {
 
 // The interactive poke slides (ADR-0378 lock 2) no longer load here. They render from apps/demos
 // through a same-origin iframe (ADR-0400), which is why this file no longer imports a single
-// @caisson/* module package: the lazy-load map that used to sit at this spot is now
+// @caisson-sh/* module package: the lazy-load map that used to sit at this spot is now
 // apps/demos/components/poke/registry.tsx, alongside the components it loads.
 
 function Slide({ slide }: { slide: MediaSlide }) {

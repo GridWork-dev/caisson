@@ -43,7 +43,7 @@ export const FeatureTagSchema = z.enum(REGISTERED_FEATURE_TAGS);
 
 /**
  * Assert a caller-supplied tag is registered, narrowing to `FeatureTag`. Fail-closed: an unregistered
- * tag throws. Registry depends only on `zod` (not `@caisson/kernel`), so this raises a plain `Error`;
+ * tag throws. Registry depends only on `zod` (not `@caisson-sh/kernel`), so this raises a plain `Error`;
  * the base `credits` boundary maps the same rejection to a typed `ValidationError` (HTTP 400).
  */
 export function assertRegisteredFeatureTag(

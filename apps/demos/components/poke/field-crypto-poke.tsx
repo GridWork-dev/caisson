@@ -1,12 +1,12 @@
 "use client";
 
-// Flagship F1 — the @caisson/field-crypto "envelope bench" poke (ADR-0378 lock 2, kimi spec F1).
+// Flagship F1 — the @caisson-sh/field-crypto "envelope bench" poke (ADR-0378 lock 2, kimi spec F1).
 // A self-contained, in-browser run of the SHIPPED field-crypto primitive: HKDF-SHA256
 // per-tenant key derivation feeding AES-256-GCM with the real row-bound AAD 4-tuple, rendered as the
 // real self-describing envelope byte layout. Seal a value as one tenant; every other tenant fails to
 // open it (the cross-tenant isolation claim, proven under the cursor).
 //
-// The crypto is the PACKAGE'S OWN, imported from @caisson/field-crypto/browser (ADR-0396) — the
+// The crypto is the PACKAGE'S OWN, imported from @caisson-sh/field-crypto/browser (ADR-0396) — the
 // hand-ported mirror this file used to drive (field-crypto-logic.ts) is deleted, and the package's
 // browser entry now ships those WebCrypto twins as supported surface, byte-parity-pinned against the
 // node path and the __golden__ fixtures in packages/field-crypto/src/browser-parity.test.ts.
@@ -27,7 +27,7 @@ import {
   nextKeyVersion,
   parseEnvelopeBytes,
   serializeEnvelopeBytes,
-} from "@caisson/field-crypto/browser";
+} from "@caisson-sh/field-crypto/browser";
 
 import { PokeShell, Verdict, type VerdictState } from "./poke-rig";
 
@@ -302,7 +302,7 @@ export default function FieldCryptoPoke() {
 
   return (
     <PokeShell
-      label="@caisson/field-crypto"
+      label="@caisson-sh/field-crypto"
       title="Seal a value as one tenant. Watch every other tenant fail to open it."
     >
       <div className={styles.zones}>

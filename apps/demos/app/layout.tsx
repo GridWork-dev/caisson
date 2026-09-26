@@ -1,5 +1,5 @@
-import "@caisson/ui/styles/tokens.css";
-import "@caisson/ui/styles/base.css";
+import "@caisson-sh/ui/styles/tokens.css";
+import "@caisson-sh/ui/styles/base.css";
 import "./global.css";
 
 import type { Metadata } from "next";

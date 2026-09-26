@@ -9,8 +9,8 @@ import {
   useTransform,
   type MotionValue,
 } from "motion/react";
-import { ChainViewer } from "@caisson/audit-worm/ui";
-import { StatusChip } from "@caisson/ui/components";
+import { ChainViewer } from "@caisson-sh/audit-worm/ui";
+import { StatusChip } from "@caisson-sh/ui/components";
 
 import {
   CHAIN_ENTRIES,
@@ -24,7 +24,7 @@ import styles from "./living-chain.module.css";
 
 // The Living Chain (ADR-0334 moment 4 — the flagship). ONE of the exactly-two library-bearing
 // components the ADR admits: motion (formerly framer-motion) drives a ~260vh sticky evidence
-// build of the REAL SHA-256 chain. Motion NEVER enters @caisson/audit-worm — this site-local
+// build of the REAL SHA-256 chain. Motion NEVER enters @caisson-sh/audit-worm — this site-local
 // wrapper drives the shipped <ChainViewer> purely through its public props (entries grow row by
 // row; the verdict stamp is the real `verifyChain` output baked in lib/audit-chain-sample.ts).
 //

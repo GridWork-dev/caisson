@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { EventSink, OpsEvent } from "@caisson/kernel";
+import type { EventSink, OpsEvent } from "@caisson-sh/kernel";
 import {
   HookDispatcher,
   commandHandler,

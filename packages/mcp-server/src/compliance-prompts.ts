@@ -5,19 +5,19 @@
 // This module imports NOTHING from `server.ts` (it declares the minimal `CompliancePromptRegistrar`
 // slice it needs); `McpServer` is structurally assignable to it, so `server.ts` wires it
 // one-directionally with no import cycle — the same pattern as `coach.ts`/`manifest-tools.ts`. It
-// deliberately takes NO `@caisson/compliance` package dependency: framework names are prompt-local
+// deliberately takes NO `@caisson-sh/compliance` package dependency: framework names are prompt-local
 // advisory strings, not imported OSCAL frameworkIds, keeping the cross-package coupling ADR-0161
 // already rejects for the transports out of this seam too.
-import { ValidationError } from "@caisson/kernel";
-import type { RegistryIndex } from "@caisson/registry-schema";
+import { ValidationError } from "@caisson-sh/kernel";
+import type { RegistryIndex } from "@caisson-sh/registry-schema";
 
 // The compliance module list this prompt tells the caller to generate. It must be updated whenever
 // the compliance composition changes — the prompt should never recommend a set that drifts from
 // what the compliance package actually composes.
 const COMPLIANCE_MODULES = [
-  "@caisson/compliance",
-  "@caisson/audit-worm",
-  "@caisson/field-crypto",
+  "@caisson-sh/compliance",
+  "@caisson-sh/audit-worm",
+  "@caisson-sh/field-crypto",
 ] as const;
 
 // Frameworks the walkthrough can tailor its pointer to — a small closed set validated in-handler.

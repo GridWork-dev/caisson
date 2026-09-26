@@ -15,7 +15,7 @@
 // `agent-loop.ts` wraps each `reserve`/`reconcile` call individually. This is the SAME shape
 // ai-meter's own `reserve`/`reconcile` take (a pre-scoped `TenantExecutor`, wrapped fresh by the
 // CALLER on every invocation) — `store.append(event)`'s port signature has no per-call slot for that
-// wrapping, so the store does it internally instead. `@caisson/tenancy-rls` is therefore a REAL
+// wrapping, so the store does it internally instead. `@caisson-sh/tenancy-rls` is therefore a REAL
 // runtime dependency here (unlike field-crypto's ADR-0043-locked kernel-only constraint, which this
 // package carries no equivalent lock against).
 //
@@ -28,9 +28,9 @@
 // because `RunStateStore.approve`'s `wasNoop` on a retry means "already decided", so a caller that
 // only re-runs the CAS and gates its append on `!wasNoop` would skip the append FOREVER — the
 // crash window would otherwise be a silently lost audit record, not a recoverable one. The actual
-// recovery is the CALLER's job: `@caisson/ai-kit`'s `approveToolCall` reads the log tail on a
+// recovery is the CALLER's job: `@caisson-sh/ai-kit`'s `approveToolCall` reads the log tail on a
 // `wasNoop` retry and re-appends `tool.approved` if it's missing (self-heal), and
-// `@caisson/cli`'s `run.ts` avoids the window entirely by running the CAS and the append in ONE
+// `@caisson-sh/cli`'s `run.ts` avoids the window entirely by running the CAS and the append in ONE
 // transaction. This store provides the idempotency primitive; it does not itself guarantee
 // recovery — a caller composing raw appends around a CAS must do one of those two things.
 //
@@ -40,12 +40,16 @@
 // `ConflictError`. A `pg_advisory_xact_lock` on `(namespace, runId)` serializes concurrent appends
 // for the SAME run so two racers can't both compute the same "next free slot" — the `(run_id, seq)`
 // UNIQUE constraint is the hard belt underneath even if the lock were ever bypassed.
-import { ConflictError, isUniqueViolation, parseStrict } from "@caisson/kernel";
+import {
+  ConflictError,
+  isUniqueViolation,
+  parseStrict,
+} from "@caisson-sh/kernel";
 import {
   withTenant,
   type TenantExecutor,
   type Transactor,
-} from "@caisson/tenancy-rls";
+} from "@caisson-sh/tenancy-rls";
 import { TrajectoryEvent } from "./schema.ts";
 import type { TrajectoryStore } from "./store.ts";
 

@@ -7,7 +7,7 @@
 // dependency (mirrors the Stripe driver's no-SDK posture; ADR-0108's "Verify using Paddle SDKs" path
 // is the recommended-but-optional one, not required).
 import { createHmac } from "node:crypto";
-import { AuthnError, safeEqualFixed } from "@caisson/kernel/node";
+import { AuthnError, safeEqualFixed } from "@caisson-sh/kernel/node";
 import type { VerifyOptions } from "./webhook.ts";
 
 function parsePaddleSignatureHeader(header: string): {

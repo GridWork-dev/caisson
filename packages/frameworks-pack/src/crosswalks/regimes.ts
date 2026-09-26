@@ -34,7 +34,7 @@ import {
   defineRegimeCrosswalk,
   type RegimeCrosswalk,
   nist80053Crosswalk,
-} from "@caisson/oscal-spine/browser";
+} from "@caisson-sh/oscal-spine/browser";
 
 /** Caisson crosswalk data version — dated, versioned like the framework catalogs (bumped on any edit). */
 const CROSSWALK_VERSION = "2026.1";
@@ -60,7 +60,7 @@ export const soc2Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "Logical access to protected information assets is restricted to authorized users and processes.",
       mechanism:
-        "@caisson/tenancy-rls — Postgres FORCE ROW LEVEL SECURITY with a fail-closed tenant boundary (a missing tenant scope denies as a 404, never widens access).",
+        "@caisson-sh/tenancy-rls — Postgres FORCE ROW LEVEL SECURITY with a fail-closed tenant boundary (a missing tenant scope denies as a 404, never widens access).",
       evidence:
         "Tenant-isolation tests and the RLS provisioning generator in packages/tenancy-rls.",
       buyerResponsibility:
@@ -72,7 +72,7 @@ export const soc2Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "The entity implements logical access security measures to protect the system against threats from sources outside its boundaries, including authenticating external access before protected resources are reached.",
       mechanism:
-        "@caisson/auth — session and JWT verification (built-auth integration) gating requests at the application boundary.",
+        "@caisson-sh/auth — session and JWT verification (built-auth integration) gating requests at the application boundary.",
       evidence: "JWT/session verification tests in packages/auth.",
       buyerResponsibility:
         "Multi-factor authentication policy, network boundary and WAF/firewall controls, credential lifecycle, and any federation with your own IdP.",
@@ -83,7 +83,7 @@ export const soc2Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "The entity uses detection and monitoring procedures to identify configuration changes that introduce new vulnerabilities and susceptibility to newly discovered vulnerabilities.",
       mechanism:
-        "@caisson/alerting — a rule-driven alerting pipeline that raises signals on defined conditions.",
+        "@caisson-sh/alerting — a rule-driven alerting pipeline that raises signals on defined conditions.",
       evidence: "Alerting pipeline and channel tests in packages/alerting.",
       buyerResponsibility:
         "Deciding what to monitor, defining alert thresholds and routing, vulnerability scanning of your own deployment, and acting on the alerts raised.",
@@ -94,7 +94,7 @@ export const soc2Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "The entity monitors system components and their operation for anomalies indicative of malicious acts, natural disasters, and errors, and analyzes anomalies to determine whether they represent security events.",
       mechanism:
-        "@caisson/audit-worm provides the tamper-evident, hash-chained record a monitoring and anomaly-analysis program draws on; @caisson/alerting can raise signals against events written to it. Neither package performs the anomaly analysis itself.",
+        "@caisson-sh/audit-worm provides the tamper-evident, hash-chained record a monitoring and anomaly-analysis program draws on; @caisson-sh/alerting can raise signals against events written to it. Neither package performs the anomaly analysis itself.",
       evidence:
         "The audit chain in packages/audit-worm and the alerting pipeline in packages/alerting.",
       buyerResponsibility:
@@ -106,7 +106,7 @@ export const soc2Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "The entity identifies and maintains confidential information to meet its confidentiality objectives — classifying what counts as confidential and safeguarding it appropriately.",
       mechanism:
-        "@caisson/field-crypto — per-field AEAD encryption at rest with row-bound additional authenticated data safeguards confidential fields once identified; a relocated ciphertext fails authentication rather than decrypting elsewhere.",
+        "@caisson-sh/field-crypto — per-field AEAD encryption at rest with row-bound additional authenticated data safeguards confidential fields once identified; a relocated ciphertext fails authentication rather than decrypting elsewhere.",
       evidence:
         "Row-bound encryption tests in packages/field-crypto (encrypt-field, envelope, isolation).",
       buyerResponsibility:
@@ -118,7 +118,7 @@ export const soc2Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "Confidential information is disposed of so that it can no longer be recovered.",
       mechanism:
-        "@caisson/field-crypto — crypto-shred renders a subject's ciphertext irreversibly unrecoverable by destroying its governing key, selectively (other subjects still decrypt) and irreversibly (re-provisioning a shredded scope is refused), while the append-only audit chain still verifies over the committed ciphertext.",
+        "@caisson-sh/field-crypto — crypto-shred renders a subject's ciphertext irreversibly unrecoverable by destroying its governing key, selectively (other subjects still decrypt) and irreversibly (re-provisioning a shredded scope is refused), while the append-only audit chain still verifies over the committed ciphertext.",
       evidence:
         "The crypto-shred tests prove ciphertext becomes unrecoverable, the disposal is selective and irreversible, and the audit record commits the fact of erasure with no PII.",
       buyerResponsibility:
@@ -154,7 +154,7 @@ export const pciDssCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "Stored account data is rendered unreadable wherever it is stored, using strong cryptography.",
       mechanism:
-        "@caisson/field-crypto — per-field AEAD encryption at rest with row-bound AAD and a self-describing, rotatable key envelope.",
+        "@caisson-sh/field-crypto — per-field AEAD encryption at rest with row-bound AAD and a self-describing, rotatable key envelope.",
       evidence: "Encryption and key-envelope tests in packages/field-crypto.",
       buyerResponsibility:
         "Caisson stores no cardholder data — you scope your cardholder data environment, apply field-crypto to the PAN columns, and run key management per Req 3.6/3.7. Truncation, hashing, or tokenization of the PAN where used are your choices.",
@@ -165,7 +165,7 @@ export const pciDssCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "Access is assigned on need-to-know and least privilege through a defined access-control model.",
       mechanism:
-        "@caisson/tenancy-rls — fail-closed FORCE ROW LEVEL SECURITY enforcing the tenant boundary at the data layer.",
+        "@caisson-sh/tenancy-rls — fail-closed FORCE ROW LEVEL SECURITY enforcing the tenant boundary at the data layer.",
       evidence: "RLS force-enforcement tests in packages/tenancy-rls.",
       buyerResponsibility:
         "Defining roles and privileges for your environment, the approval workflow, and periodic access reviews (Req 7.2.4).",
@@ -176,7 +176,7 @@ export const pciDssCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "Access is authenticated with at least one strong authentication factor before it is granted.",
       mechanism:
-        "@caisson/auth — session and JWT verification gating access at the application boundary.",
+        "@caisson-sh/auth — session and JWT verification gating access at the application boundary.",
       evidence: "JWT/session verification tests in packages/auth.",
       buyerResponsibility:
         "Multi-factor authentication into the cardholder data environment (Req 8.4/8.5), credential and password policy, and account lifecycle management.",
@@ -187,7 +187,7 @@ export const pciDssCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "Audit logs capture the events needed to reconstruct who did what to in-scope systems.",
       mechanism:
-        "@caisson/audit-worm — the append-only audit chain is the durable, tamper-evident sink those events are written to.",
+        "@caisson-sh/audit-worm — the append-only audit chain is the durable, tamper-evident sink those events are written to.",
       evidence:
         "Append/anchor/verify integration tests in packages/audit-worm.",
       buyerResponsibility:
@@ -199,7 +199,7 @@ export const pciDssCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "Audit log files are protected so that they cannot be modified after they are written.",
       mechanism:
-        "@caisson/audit-worm — an append-only, hash-chained log anchored to a trusted tip, so modification, truncation, or rewriting after the fact is detectable; production deployments back the log with a write-once object store (e.g. S3 Object-Lock in GOVERNANCE mode).",
+        "@caisson-sh/audit-worm — an append-only, hash-chained log anchored to a trusted tip, so modification, truncation, or rewriting after the fact is detectable; production deployments back the log with a write-once object store (e.g. S3 Object-Lock in GOVERNANCE mode).",
       evidence:
         "The tamper-evidence integration tests prove modification, truncation, and rewrite are all detected against the trusted tip.",
       buyerResponsibility:
@@ -216,7 +216,7 @@ export const pciDssCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "Audit trail history is retained for at least twelve months, with recent history readily available.",
       mechanism:
-        "@caisson/audit-worm — a fail-closed retention floor: a retain term below the configured minimum is rejected and never auto-extended, so a retention window cannot be silently shortened.",
+        "@caisson-sh/audit-worm — a fail-closed retention floor: a retain term below the configured minimum is rejected and never auto-extended, so a retention window cannot be silently shortened.",
       evidence:
         "Retention-floor tests in packages/audit-worm (a term below the floor fails closed).",
       buyerResponsibility:
@@ -246,7 +246,7 @@ export const gdprCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "Personal data is kept in identifiable form no longer than necessary for the purpose (storage limitation).",
       mechanism:
-        "@caisson/retention-runner — scheduled, per-target erasure sweeps, backed by the audit-worm retention floor that prevents a window from being silently shortened.",
+        "@caisson-sh/retention-runner — scheduled, per-target erasure sweeps, backed by the audit-worm retention floor that prevents a window from being silently shortened.",
       evidence: "Erasure-run and schedule tests in packages/retention-runner.",
       buyerResponsibility:
         "Defining the retention periods and lawful basis for each data category, and which records are in scope for erasure.",
@@ -257,7 +257,7 @@ export const gdprCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "The controller can demonstrate compliance with the data-protection principles (accountability).",
       mechanism:
-        "@caisson/audit-worm — a tamper-evident, hash-chained record, exportable through the signed evidence pack (OSCAL) as demonstrable evidence.",
+        "@caisson-sh/audit-worm — a tamper-evident, hash-chained record, exportable through the signed evidence pack (OSCAL) as demonstrable evidence.",
       evidence:
         "The audit chain plus the compliance-bundle evidence-pack export.",
       buyerResponsibility:
@@ -269,7 +269,7 @@ export const gdprCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "A data subject can obtain erasure of their personal data (the right to be forgotten).",
       mechanism:
-        "@caisson/field-crypto — crypto-shred destroys a subject's governing key so their ciphertext is irreversibly unrecoverable, selectively (other subjects still decrypt) and irreversibly (re-provisioning a shredded scope is refused); @caisson/retention-runner schedules the erasure sweep across targets.",
+        "@caisson-sh/field-crypto — crypto-shred destroys a subject's governing key so their ciphertext is irreversibly unrecoverable, selectively (other subjects still decrypt) and irreversibly (re-provisioning a shredded scope is refused); @caisson-sh/retention-runner schedules the erasure sweep across targets.",
       evidence:
         "The crypto-shred tests prove the field-level erasure primitive is selective, irreversible, and produces a PII-free audit record.",
       buyerResponsibility:
@@ -286,7 +286,7 @@ export const gdprCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "Data protection is built into processing by design and applied by default.",
       mechanism:
-        "The compliance bundle's composition — fail-closed tenant RLS (@caisson/tenancy-rls), field-level encryption (@caisson/field-crypto), and an append-only audit chain (@caisson/audit-worm) — provides data-protection-by-design mechanisms.",
+        "The compliance bundle's composition — fail-closed tenant RLS (@caisson-sh/tenancy-rls), field-level encryption (@caisson-sh/field-crypto), and an append-only audit chain (@caisson-sh/audit-worm) — provides data-protection-by-design mechanisms.",
       evidence: "The tenancy-rls, field-crypto, and audit-worm test suites.",
       buyerResponsibility:
         "The design decisions for your processing: your DPIA, the default settings you choose, data minimization, and the technical-and-organizational-measures assessment for your system.",
@@ -297,7 +297,7 @@ export const gdprCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "The controller or processor maintains a record of its processing activities.",
       mechanism:
-        "@caisson/audit-worm — the immutable activity chain contributes evidence toward the processing record.",
+        "@caisson-sh/audit-worm — the immutable activity chain contributes evidence toward the processing record.",
       evidence: "The audit chain and its verify path in packages/audit-worm.",
       buyerResponsibility:
         "Maintaining the Article 30 register itself — purposes of processing, categories of data and recipients, transfers, and retention — which is your documentation duty, not a Caisson artifact.",
@@ -308,7 +308,7 @@ export const gdprCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "Personal data is protected by appropriate measures including pseudonymization and encryption.",
       mechanism:
-        "@caisson/field-crypto — per-field AEAD encryption of personal data at rest, bound to its tenant/column/row by additional authenticated data, so a relocated or cross-tenant ciphertext fails to authenticate and an old key version still decrypts after rotation.",
+        "@caisson-sh/field-crypto — per-field AEAD encryption of personal data at rest, bound to its tenant/column/row by additional authenticated data, so a relocated or cross-tenant ciphertext fails to authenticate and an old key version still decrypts after rotation.",
       evidence:
         "The encrypt-field tests prove round-trip encryption plus cross-row, cross-column, and cross-tenant relocation failures and tamper detection.",
       buyerResponsibility:
@@ -325,7 +325,7 @@ export const gdprCrosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
       summary:
         "Processing systems maintain the ongoing confidentiality of personal data.",
       mechanism:
-        "@caisson/tenancy-rls — fail-closed FORCE ROW LEVEL SECURITY isolating each tenant's data at the database layer.",
+        "@caisson-sh/tenancy-rls — fail-closed FORCE ROW LEVEL SECURITY isolating each tenant's data at the database layer.",
       evidence: "The force-RLS and tenant-guard tests in packages/tenancy-rls.",
       buyerResponsibility:
         "The full confidentiality/integrity/availability/resilience posture Art. 32(1)(b)–(c) require — availability and disaster recovery, resilience, and the regular testing of your measures under Art. 32(1)(d).",
@@ -373,7 +373,7 @@ export const iso27001Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
         "Logical and physical access to information and other associated assets is governed by " +
         "rules derived from business and security requirements.",
       mechanism:
-        "@caisson/tenancy-rls — Postgres FORCE ROW LEVEL SECURITY with a fail-closed tenant boundary " +
+        "@caisson-sh/tenancy-rls — Postgres FORCE ROW LEVEL SECURITY with a fail-closed tenant boundary " +
         "(a missing tenant scope denies as a 404, never widens access).",
       evidence:
         "Tenant-isolation tests and the RLS provisioning generator in packages/tenancy-rls.",
@@ -389,7 +389,7 @@ export const iso27001Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
         "The use of cryptography to protect information is governed by defined rules, including key " +
         "management practices.",
       mechanism:
-        "@caisson/field-crypto — per-field AEAD encryption at rest with row-bound additional " +
+        "@caisson-sh/field-crypto — per-field AEAD encryption at rest with row-bound additional " +
         "authenticated data, plus a self-describing, rotatable key envelope.",
       evidence: "Encryption and key-envelope tests in packages/field-crypto.",
       buyerResponsibility:
@@ -404,7 +404,7 @@ export const iso27001Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
         "Information held in systems, devices, or storage media is deleted once it is no longer " +
         "required, so it cannot be recovered.",
       mechanism:
-        "@caisson/field-crypto — crypto-shred renders a subject's ciphertext irreversibly " +
+        "@caisson-sh/field-crypto — crypto-shred renders a subject's ciphertext irreversibly " +
         "unrecoverable by destroying its governing key, selectively (other subjects still decrypt) " +
         "and irreversibly (a shredded scope cannot be re-provisioned).",
       evidence:
@@ -422,7 +422,7 @@ export const iso27001Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
         "Activity logs are produced, retained, and protected from unauthorized access or " +
         "alteration so that events remain reviewable.",
       mechanism:
-        "@caisson/audit-worm — an append-only, hash-chained log verifiable against a trusted " +
+        "@caisson-sh/audit-worm — an append-only, hash-chained log verifiable against a trusted " +
         "anchor, so tampering, truncation, or rewriting after the fact is detectable.",
       evidence: "The tamper-evidence integration tests in packages/audit-worm.",
       buyerResponsibility:
@@ -437,7 +437,7 @@ export const iso27001Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
         "Systems are monitored for anomalous behavior so that potential security events are " +
         "identified and can be acted on.",
       mechanism:
-        "@caisson/alerting — a rule-driven alerting pipeline that raises signals on defined " +
+        "@caisson-sh/alerting — a rule-driven alerting pipeline that raises signals on defined " +
         "conditions, drawing on the audit-worm chain and substrate collector facts.",
       evidence: "Alerting pipeline and channel tests in packages/alerting.",
       buyerResponsibility:
@@ -452,7 +452,7 @@ export const iso27001Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
         "Access is granted only after a secure authentication procedure verifies the identity of " +
         "the person or entity requesting it.",
       mechanism:
-        "@caisson/auth — session and JWT verification gating requests at the application " +
+        "@caisson-sh/auth — session and JWT verification gating requests at the application " +
         "boundary before any protected resource is reached.",
       evidence: "JWT/session verification tests in packages/auth.",
       buyerResponsibility:
@@ -467,7 +467,7 @@ export const iso27001Crosswalk: RegimeCrosswalk = defineRegimeCrosswalk({
         "Operating procedures and records for information-security-relevant processes are " +
         "documented, retained, and made available to those who need them.",
       mechanism:
-        "@caisson/audit-worm — a fail-closed retention floor rejects a retention term configured " +
+        "@caisson-sh/audit-worm — a fail-closed retention floor rejects a retention term configured " +
         "below the minimum, so operating records and documentation are not disposed of early.",
       evidence: "Retention-floor tests in packages/audit-worm.",
       buyerResponsibility:

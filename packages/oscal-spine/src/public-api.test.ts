@@ -47,7 +47,7 @@ const PRE_CARVE_RUNTIME_EXPORTS = [
   "toOscalPlanOfActionAndMilestones",
 ] as const;
 
-describe("@caisson/oscal-spine pre-carve public API", () => {
+describe("@caisson-sh/oscal-spine pre-carve public API", () => {
   test("retains every historical runtime export", () => {
     const available = new Set(Object.keys(oscalSpine));
     expect(

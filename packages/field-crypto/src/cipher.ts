@@ -8,7 +8,7 @@
 // The browser twins of this seam are `aesGcmSealAsync` / `aesGcmOpenAsync` (portable.ts, ADR-0396):
 // the same AES-256-GCM over `crypto.subtle`, byte-parity-pinned against this implementation.
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   ALG_AES_256_GCM,
   NONCE_BYTES,

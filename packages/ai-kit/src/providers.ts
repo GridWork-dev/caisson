@@ -27,8 +27,8 @@ import {
   fetchWithTimeout,
   ssrfGuardedFetch,
   ValidationError,
-} from "@caisson/kernel/node";
-import type { AiSettings, ProviderConfig } from "@caisson/ai-config";
+} from "@caisson-sh/kernel/node";
+import type { AiSettings, ProviderConfig } from "@caisson-sh/ai-config";
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 // Hardcoded default hosts for the three OpenAI-compatible named vendors (ADR-0171 board lock
@@ -42,7 +42,7 @@ const TOGETHER_BASE_URL = "https://api.together.xyz/v1";
 export const DEFAULT_PROVIDER_TIMEOUT_MS = 60_000;
 
 /**
- * Wrap `fetchWithTimeout` (`@caisson/kernel`) to the AI-SDK's `fetch?: FetchFunction` option shape
+ * Wrap `fetchWithTimeout` (`@caisson-sh/kernel`) to the AI-SDK's `fetch?: FetchFunction` option shape
  * (`typeof globalThis.fetch`). Every `create*` factory below is handed this instead of the ambient
  * global fetch, so a stalling live call aborts at `timeoutMs` instead of hanging the process.
  *
@@ -82,7 +82,7 @@ export function providerFor(
   const key = apiKey !== undefined ? { apiKey } : {};
   // SSRF guard once, before the switch, so every provider path (incl. openrouter's `cfg.baseUrl ??`
   // default and the `local`/`ollama` self-hosted hosts) inherits it. The kernel guard is the shared
-  // policy source (@caisson/kernel/ssrf) — https-only, no-creds, private/loopback DENYLIST.
+  // policy source (@caisson-sh/kernel/ssrf) — https-only, no-creds, private/loopback DENYLIST.
   if (cfg.baseUrl !== undefined) assertSafePublicUrl(cfg.baseUrl);
   const base = cfg.baseUrl !== undefined ? { baseURL: cfg.baseUrl } : {};
   // ONE transport fetch per instance — the deadline floor and the SSRF re-check must COMPOSE, never

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { Popover } from "@caisson/ui-pro/components";
+import { Popover } from "@caisson-sh/ui-pro/components";
 
 import { Button, Card, Checkbox, Icon, StatusChip } from "@/components";
 import { isBundleId } from "@/lib/catalog";

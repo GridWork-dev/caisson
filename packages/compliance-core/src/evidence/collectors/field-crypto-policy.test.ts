@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { canonicalize } from "@caisson/kernel";
-import { ALG_AES_256_GCM, serializeEnvelope } from "@caisson/field-crypto";
+import { canonicalize } from "@caisson-sh/kernel";
+import { ALG_AES_256_GCM, serializeEnvelope } from "@caisson-sh/field-crypto";
 import {
   fieldCryptoPolicyCollector,
   type PhiFieldFact,

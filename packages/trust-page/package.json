@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/trust-page",
+  "name": "@caisson-sh/trust-page",
   "version": "0.3.5",
   "description": "Trust-page generator: a self-contained static HTML + JSON page, built from an evidence pack + its crosswalk rollup through allowlist-based redaction, that you host anywhere to show your own customers your compliance posture.",
   "license": "Apache-2.0",
@@ -21,13 +21,13 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/artifact-render": "workspace:*",
-    "@caisson/compliance-core": "workspace:*",
-    "@caisson/kernel": "workspace:*"
+    "@caisson-sh/artifact-render": "workspace:*",
+    "@caisson-sh/compliance-core": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

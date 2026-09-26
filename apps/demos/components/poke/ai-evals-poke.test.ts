@@ -1,4 +1,4 @@
-// The ai-evals poke's checkable claims, now that it drives the REAL @caisson/ai-evals through its
+// The ai-evals poke's checkable claims, now that it drives the REAL @caisson-sh/ai-evals through its
 // `./browser` entry and the hand-ported mirror (ai-evals-logic.ts) is deleted:
 //
 //   1. The poke's client graph is browser-safe — a STATIC SOURCE-GRAPH WALK, never a build (a
@@ -15,13 +15,13 @@
 // dist module graph is the src module graph — CI builds packages before the site consumes them.
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
 import {
   compareToBaseline,
   mergeIntoBaseline,
   wilsonLowerBound,
-} from "@caisson/ai-evals/browser";
-import type { BaselineFile, EvalRun } from "@caisson/ai-evals/browser";
+} from "@caisson-sh/ai-evals/browser";
+import type { BaselineFile, EvalRun } from "@caisson-sh/ai-evals/browser";
 
 import {
   COMMITTED_CASES,
@@ -51,7 +51,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
 
   test("the walk really crossed into the package, past its browser entry", () => {
     // The UI kit alone contributes dozens of files, so files.length can never prove the ai-evals
-    // edges resolved. These two are reachable ONLY through @caisson/ai-evals/browser — the entry,
+    // edges resolved. These two are reachable ONLY through @caisson-sh/ai-evals/browser — the entry,
     // then a second hop — so a resolver that went blind inside a workspace package fails here.
     expect(walk.files).toContain("packages/ai-evals/src/browser.ts");
     expect(walk.files).toContain("packages/ai-evals/src/baseline-compare.ts");

@@ -2,7 +2,7 @@
 // is the conservative floor, an override extends it, a below-floor term fails closed, and a Feb-29
 // anchor rolls FORWARD (never shorter) in a non-leap target year.
 import { describe, expect, test } from "bun:test";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   DEFAULT_RETENTION_YEARS,
   MIN_RETENTION_YEARS,

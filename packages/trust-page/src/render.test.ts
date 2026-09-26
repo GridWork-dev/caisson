@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
-import { ValidationError } from "@caisson/kernel";
+import { matchGolden } from "@caisson-sh/testing";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   parseEvidencePackManifest,
   type EvidencePackManifest,
-} from "@caisson/compliance-core";
+} from "@caisson-sh/compliance-core";
 import {
   CROSSWALK_ROLLUP_ROWS_KEY,
   DEFAULT_TRUST_PAGE_ALLOWLIST,

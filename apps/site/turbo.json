@@ -3,7 +3,7 @@
   "extends": ["//"],
   "tasks": {
     "build": {
-      "dependsOn": ["^build", "@caisson/demos#build"],
+      "dependsOn": ["^build", "@caisson-sh/demos#build"],
       "outputs": ["out/**", ".next/**", "!.next/cache/**"]
     }
   }

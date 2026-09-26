@@ -1,4 +1,4 @@
-// @caisson/ai-evals harness tests (ADR-0062). Fully offline + deterministic: model graders replay a
+// @caisson-sh/ai-evals harness tests (ADR-0062). Fully offline + deterministic: model graders replay a
 // committed cassette, never a live call. Asserts: the grader taxonomy; the injection
 // grader is a fail-closed class that can't be loosened; the cassette judge fails closed on a
 // miss; the committed evals match the committed baseline with BLESS unset; a worse-than-baseline run

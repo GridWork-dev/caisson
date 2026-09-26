@@ -1,4 +1,4 @@
-# @caisson/ai-kit
+# @caisson-sh/ai-kit
 
 The **AI Production Kit** edition (ADR-0059/0213): one metered gateway with four public entry points—
 `infer`, `inferStream`, `embed`, and `embedMany`—that enforce reserve-before-provider-call accounting.
@@ -7,8 +7,8 @@ control, reproducible prompts, fail-closed content safety, and a quality gate **
 not by discipline.
 
 - **Layer:** edition (`editions: ["ai-kit"]`) — a composition, never a fork (ADR-0003).
-- **Composes:** `@caisson/prompt-registry` (resolve + render), `@caisson/ai-meter` (reserve /
-  reconcile + caps / breaker), `@caisson/guardrails` (moderation + PII), `@caisson/ai-config`
+- **Composes:** `@caisson-sh/prompt-registry` (resolve + render), `@caisson-sh/ai-meter` (reserve /
+  reconcile + caps / breaker), `@caisson-sh/guardrails` (moderation + PII), `@caisson-sh/ai-config`
   (lane → provider). The provider-SDK boundary (ADR-0011/0022) makes this the **only** package
   that imports `ai` / `@ai-sdk/*`.
 

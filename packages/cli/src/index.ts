@@ -1,4 +1,4 @@
-// @caisson/cli — the create-caisson generator (ADR-0004/0048). The registry catalog gate, the
+// @caisson-sh/cli — the create-caisson generator (ADR-0004/0048). The registry catalog gate, the
 // templated engine, the path-safe writer, and the `caisson` companion commands.
 export {
   type Selection,
@@ -49,7 +49,7 @@ export {
   type TrajectoryProjectionView,
 } from "./run.ts";
 
-// The migration assembler + runner are owned by the base @caisson/migrate (ADR-0090); the cli imports
+// The migration assembler + runner are owned by the base @caisson-sh/migrate (ADR-0090); the cli imports
 // them, never copies them. Re-exported here so the cli's existing public API is unchanged.
 export {
   type SelectedPackage,
@@ -60,4 +60,4 @@ export {
   assembleSelected,
   emitMigrationFileSet,
   runMigrations,
-} from "@caisson/migrate";
+} from "@caisson-sh/migrate";

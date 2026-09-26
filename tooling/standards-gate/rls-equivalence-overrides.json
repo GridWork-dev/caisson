@@ -1,52 +1,52 @@
 [
   {
     "table": "retention_audit",
-    "package": "@caisson/retention-runner",
+    "package": "@caisson-sh/retention-runner",
     "reason": "Plain audit-LOGGING, not WORM/hash-chained (ADR-0135) — SELECT+INSERT only is ordinary audit-trail hygiene, not an immutability guarantee."
   },
   {
     "table": "alert_audit_log",
-    "package": "@caisson/alerting",
+    "package": "@caisson-sh/alerting",
     "reason": "Plain audit-LOGGING, not WORM/hash-chained (ADR-0135) — SELECT+INSERT only is ordinary audit-trail hygiene, not an immutability guarantee."
   },
   {
     "table": "locked_version",
-    "package": "@caisson/audit-worm",
+    "package": "@caisson-sh/audit-worm",
     "reason": "Append-only: SELECT+INSERT only, UPDATE/DELETE explicitly REVOKEd and blocked by a belt trigger + FORCE RLS (ADR-0053/0006) — no single bug can defeat immutability."
   },
   {
     "table": "audit_chain_entry",
-    "package": "@caisson/audit-worm",
+    "package": "@caisson-sh/audit-worm",
     "reason": "SPEC-tenancy-rls task-4 live-gate addition (not in the SPEC's original 6): hash-chained WORM audit trail (ADR-0052/0054) — the `app` role gets SELECT+INSERT only, UPDATE/DELETE are withheld (never granted, no REVOKE needed) so a compromised app query can append but never rewrite or drop a committed entry."
   },
   {
     "table": "field_key_version",
-    "package": "@caisson/field-crypto",
+    "package": "@caisson-sh/field-crypto",
     "reason": "Append-only key material: SELECT+INSERT only, UPDATE/DELETE explicitly REVOKEd and blocked by a belt trigger (ADR-0046/0055)."
   },
   {
     "table": "field_wrapped_dek",
-    "package": "@caisson/field-crypto",
+    "package": "@caisson-sh/field-crypto",
     "reason": "Append-only key material: SELECT+INSERT only, UPDATE/DELETE explicitly REVOKEd and blocked by a belt trigger (ADR-0046/0055)."
   },
   {
     "table": "impersonation_session",
-    "package": "@caisson/compliance",
+    "package": "@caisson-sh/compliance",
     "reason": "Begin/end is the whole app write surface: SELECT+INSERT+column-scoped UPDATE (ended_at) only — never a full-row UPDATE or DELETE (ADR-0187)."
   },
   {
     "table": "trajectory_event",
-    "package": "@caisson/agent-trajectory",
+    "package": "@caisson-sh/agent-trajectory",
     "reason": "Append-only trajectory log (ADR-0360 U-3): SELECT+INSERT only, UPDATE/DELETE explicitly REVOKEd — mirrors ai-meter's usage_event and audit-worm's audit_chain_entry (a compromised app query can append but never rewrite or drop a committed event)."
   },
   {
     "table": "access_review_campaign",
-    "package": "@caisson/access-review",
+    "package": "@caisson-sh/access-review",
     "reason": "Open/close is the whole app write surface: SELECT+INSERT+column-scoped UPDATE (closed_at) only — never a full-row UPDATE or DELETE (ADR-0371); mirrors impersonation_session's ended_at."
   },
   {
     "table": "worm_artifact_version",
-    "package": "@caisson/audit-worm",
+    "package": "@caisson-sh/audit-worm",
     "reason": "Immutable object-version identities (ADR-0380 lane A): SELECT+INSERT only, UPDATE/DELETE explicitly REVOKEd in 0004_artifact_versions.sql — mirrors audit_chain_entry. A recorded artifact version IS the WORM proof, so a compromised app query must be able to append a new version but never rewrite or drop one already committed."
   }
 ]

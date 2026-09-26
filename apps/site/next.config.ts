@@ -22,22 +22,22 @@ const config: NextConfig = {
   reactStrictMode: true,
   // next/image's optimizer needs a server; a static export serves the source images as-is.
   images: { unoptimized: true },
-  // @caisson/ui ships raw TS (exports point at src/*.ts); Next transpiles it (ADR-0042 token floor).
-  // @caisson/ui-pro is the same raw-.tsx-plus-co-located-.css delivery — the /ui showcase renders it.
-  // @caisson/demo-registry (CAISSON-35, the /ui showcase's data source) is the same raw-source
+  // @caisson-sh/ui ships raw TS (exports point at src/*.ts); Next transpiles it (ADR-0042 token floor).
+  // @caisson-sh/ui-pro is the same raw-.tsx-plus-co-located-.css delivery — the /ui showcase renders it.
+  // @caisson-sh/demo-registry (CAISSON-35, the /ui showcase's data source) is the same raw-source
   // delivery, and its module-scope CATALOG_ENTRIES unconditionally combines all three entry files
   // — including the five per-package `./ui` surfaces — so every package below needs to resolve
   // through this list too.
   transpilePackages: [
-    "@caisson/ui",
-    "@caisson/brand",
-    "@caisson/ui-pro",
-    "@caisson/demo-registry",
-    "@caisson/audit-worm",
-    "@caisson/local-store",
-    "@caisson/prompt-registry",
-    "@caisson/ai-meter",
-    "@caisson/audit-harness",
+    "@caisson-sh/ui",
+    "@caisson-sh/brand",
+    "@caisson-sh/ui-pro",
+    "@caisson-sh/demo-registry",
+    "@caisson-sh/audit-worm",
+    "@caisson-sh/local-store",
+    "@caisson-sh/prompt-registry",
+    "@caisson-sh/ai-meter",
+    "@caisson-sh/audit-harness",
   ],
   turbopack: { root: monorepoRoot },
 };

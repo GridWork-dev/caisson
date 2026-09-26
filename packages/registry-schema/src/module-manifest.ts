@@ -1,6 +1,6 @@
 /**
  * Module manifest schema — the typed declaration every registry module carries (ADR-0020).
- * Imported + enforced by `@caisson/standards-gate`. package.json stays the source of truth for the
+ * Imported + enforced by `@caisson-sh/standards-gate`. package.json stays the source of truth for the
  * fields npm + changesets read; the gate asserts manifest↔package.json agreement on
  * id/version/license/dependencies.
  */
@@ -23,7 +23,7 @@ const semver = z
   );
 const moduleId = z
   .string()
-  .regex(/^@caisson\/[a-z0-9-]+$/, "must be @caisson/<slug>");
+  .regex(/^@caisson-sh\/[a-z0-9-]+$/, "must be @caisson-sh/<slug>");
 
 export const ModuleManifest = z
   .object({
@@ -31,7 +31,7 @@ export const ModuleManifest = z
     version: semver,
     /** SPDX from the allowlist; MUST mirror package.json `license`. */
     license: z.enum(SPDX_LICENSES),
-    /** Workspace module ids; MUST mirror package.json's `@caisson/*` runtime dependencies. */
+    /** Workspace module ids; MUST mirror package.json's `@caisson-sh/*` runtime dependencies. */
     dependencies: z.array(moduleId).default([]),
     description: z.string().min(1),
     stability: z.enum(STABILITY).default("alpha"),

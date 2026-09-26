@@ -1,4 +1,4 @@
-# @caisson/jobs
+# @caisson-sh/jobs
 
 Provider-agnostic background-job queue port: an enqueue interface with an in-memory
 reference driver and a production driver.
@@ -8,7 +8,7 @@ reference driver and a production driver.
 ## Install
 
 ```bash
-bun add @caisson/jobs
+bun add @caisson-sh/jobs
 ```
 
 ## Drivers

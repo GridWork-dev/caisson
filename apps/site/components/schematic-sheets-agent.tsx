@@ -233,7 +233,7 @@ export function AgentRunnerSheet() {
 // project(events) folds the same log to the same RunProjection every time, sorted by seq first, so
 // out-of-order delivery still resolves to one canonical result. RunStateStore's park/approve/deny
 // are CAS transitions keyed on (runId, toolCallId), idempotent on a repeat of the same decision;
-// the PG impl seals a parked run's opaque resumable state through @caisson/field-crypto's
+// the PG impl seals a parked run's opaque resumable state through @caisson-sh/field-crypto's
 // encryptField() before it reaches the row.
 export function AgentTrajectorySheet() {
   return (

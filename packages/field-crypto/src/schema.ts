@@ -4,7 +4,7 @@
 //
 // Append-only is enforced at three layers: the app role has SELECT+INSERT only, explicit REVOKEs
 // remove mutation privileges, and a trigger rejects UPDATE/DELETE even for the table owner. RLS is
-// FORCEd and uses the pooler-hardened NULLIF GUC comparison from @caisson/tenancy-rls.
+// FORCEd and uses the pooler-hardened NULLIF GUC comparison from @caisson-sh/tenancy-rls.
 export const FIELD_CRYPTO_KEY_SCHEMA_SQL = `
 CREATE TABLE field_key_version (
   id          uuid        PRIMARY KEY,

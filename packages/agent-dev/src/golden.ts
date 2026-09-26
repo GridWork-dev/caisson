@@ -10,8 +10,8 @@
 // was wired to the live `renderHarnessBundles(EMIT_INPUT)`; the committed `src/__golden__/emit/` tree
 // enforces byte-equality with BLESS unset — the emitter must reproduce it exactly. The emitter owns
 // the bundle types; this fixture re-exports them so consumers (and the test) keep one import surface.
-import { parseArtifact, type Artifact } from "@caisson/agent-kernel";
-import { defineModuleGolden } from "@caisson/testing/golden-module";
+import { parseArtifact, type Artifact } from "@caisson-sh/agent-kernel";
+import { defineModuleGolden } from "@caisson-sh/testing/golden-module";
 import { renderHarnessBundles, type EmitInput } from "./emitter.ts";
 
 export type {
@@ -99,7 +99,7 @@ export const EMIT_INPUT: EmitInput = {
 };
 
 export const agentDevGolden = defineModuleGolden({
-  module: "@caisson/agent-dev",
+  module: "@caisson-sh/agent-dev",
   goldenDir: "src/__golden__",
   cases: [
     {

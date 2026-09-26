@@ -4,7 +4,7 @@
 // deterministic run of the package's regression-vs-committed-baseline comparator (ADR-0072)
 // against a sample eval run you can drag off course.
 //
-// This component drives the REAL @caisson/ai-evals: the hand-ported mirror (ai-evals-logic.ts) is
+// This component drives the REAL @caisson-sh/ai-evals: the hand-ported mirror (ai-evals-logic.ts) is
 // deleted. The gate's pure half — the boundary schema, `compareToBaseline`, the pre-BLESS
 // eligibility check, and the BLESS merge — lives in the package's own node-free
 // `baseline-compare.ts` and is imported here through its public `./browser` entry point; the
@@ -13,16 +13,16 @@
 // instead of failing on them. Sample data and layout below are poke-local; no ported logic is.
 // Nothing here fetches, persists, or measures the visitor: "blessing" only updates local state.
 import { useId, useMemo, useState } from "react";
-import { Checkbox, StatusChip } from "@caisson/ui/components";
+import { Checkbox, StatusChip } from "@caisson-sh/ui/components";
 import {
   compareToBaseline,
   mergeIntoBaseline,
-} from "@caisson/ai-evals/browser";
+} from "@caisson-sh/ai-evals/browser";
 import type {
   BaselineFile,
   EvalRun,
   RegressionKind,
-} from "@caisson/ai-evals/browser";
+} from "@caisson-sh/ai-evals/browser";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./ai-evals-poke.module.css";
@@ -138,7 +138,7 @@ export default function AiEvalsPoke() {
 
   return (
     <PokeShell
-      label="@caisson/ai-evals"
+      label="@caisson-sh/ai-evals"
       title="Every run compares against the committed baseline. Drag a score down to break it."
     >
       <div className={styles.layout}>

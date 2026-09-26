@@ -7,7 +7,7 @@
 // log via bare stream writes (no logger abstraction), so the bridge is what makes those lines
 // exist in Loki at all (2026-07-10: the logs pipeline was dead fleet-wide without it).
 import { z } from "zod";
-import { ConfigError } from "@caisson/kernel";
+import { ConfigError } from "@caisson-sh/kernel";
 import { SeverityNumber, logs } from "@opentelemetry/api-logs";
 import type { Logger } from "@opentelemetry/api-logs";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";

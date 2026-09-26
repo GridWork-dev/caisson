@@ -26,15 +26,15 @@
 // short-lived and not shared with any loop) — this module can't share that shape because `store`/
 // `runState` are the long-lived ports the loop also holds, not a one-shot connection.
 import { randomUUID } from "node:crypto";
-import type { JobQueue } from "@caisson/jobs";
+import type { JobQueue } from "@caisson-sh/jobs";
 import {
   TRAJECTORY_VERSION,
   type RunStateStore,
   type RunStatus,
   type TrajectoryEvent,
   type TrajectoryStore,
-} from "@caisson/agent-trajectory";
-import { ValidationError } from "@caisson/kernel";
+} from "@caisson-sh/agent-trajectory";
+import { ValidationError } from "@caisson-sh/kernel";
 
 /** The pg-boss/JobQueue task name `approveToolCall` enqueues (ADR-0360 U-3): the enqueue itself IS
  *  the wake signal — no job exists for a run while it is parked. */
@@ -50,7 +50,7 @@ export interface ApprovalDeps {
   readonly store: TrajectoryStore;
   readonly runState: RunStateStore;
   /** The resume job is enqueued through this port — never called inline (mirrors every other
-   *  billing/side-effect enqueue in this codebase, `@caisson/jobs`'s own doc). */
+   *  billing/side-effect enqueue in this codebase, `@caisson-sh/jobs`'s own doc). */
   readonly jobs: JobQueue;
 }
 

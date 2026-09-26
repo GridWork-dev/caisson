@@ -16,8 +16,12 @@
 // A crash between submit and receipt-persist leaves the row `submitted`; a later tick resolves it to
 // needs_reconcile (step 3) rather than duplicating the submission.
 import { z } from "zod";
-import { defineTask, type JobQueue, type TaskDefinition } from "@caisson/jobs";
-import { parseStrict, strictObject } from "@caisson/kernel";
+import {
+  defineTask,
+  type JobQueue,
+  type TaskDefinition,
+} from "@caisson-sh/jobs";
+import { parseStrict, strictObject } from "@caisson-sh/kernel";
 import {
   anchorReceiptKey,
   anchorReceiptSchema,
@@ -206,7 +210,7 @@ export async function runAnchorCheckpoint(
 }
 
 /**
- * Register the checkpoint handler as a `@caisson/jobs` `TaskDefinition` (the CR-16 boundary: the
+ * Register the checkpoint handler as a `@caisson-sh/jobs` `TaskDefinition` (the CR-16 boundary: the
  * concrete handler is defined HERE, in commercial audit-worm, using only the generic `defineTask` port
  * from open packages/jobs). The deployed scheduler registers this on its queue and enqueues per tenant.
  */

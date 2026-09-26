@@ -1,8 +1,8 @@
-// @caisson/compliance-core — the compliance evidence engine, carved out of the Compliance edition
+// @caisson-sh/compliance-core — the compliance evidence engine, carved out of the Compliance edition
 // (ADR-0246/0257). The leg this engine ships: run typed collectors over live system state, assemble
 // a deterministic, byte-stable canonical evidence pack that REFUSES to generate when any control's
 // evidence is unresolved (flag-never-guess), and export the result through the OSCAL seam. Framework
-// catalogs live in @caisson/frameworks-pack; evidence signing lives in @caisson/signing-primitive;
+// catalogs live in @caisson-sh/frameworks-pack; evidence signing lives in @caisson-sh/signing-primitive;
 // the Compliance edition composes all three (and assembles the signed OSCAL bundle over them).
 
 // --- Collectors — typed evidence collection over live system state. -----------------------------
@@ -28,17 +28,17 @@ export * from "./evidence/generate.ts";
 export * from "./evidence/external-anchor.ts";
 
 // --- OSCAL compatibility surface (ADR-0384) — the complete carve re-exported unchanged. ----------
-export * from "@caisson/oscal-spine";
+export * from "@caisson-sh/oscal-spine";
 
 // --- Control<->collector binding table (PLAN Group E) — a derived artifact, not a config layer. --
 export * from "./evidence/binding-table.ts";
 
 // --- Compliance drift monitor (ADR-0371) — scheduled re-run of the registered collectors, a
 // deterministic previous-vs-current snapshot diff, accepted-deviation alert suppression, and
-// every-run WORM anchoring. Composed from ports STRUCTURALLY compatible with @caisson/jobs'
-// TaskDefinition, @caisson/alerting's AlertChannel, and @caisson/audit-worm's chain+outbox seam —
+// every-run WORM anchoring. Composed from ports STRUCTURALLY compatible with @caisson-sh/jobs'
+// TaskDefinition, @caisson-sh/alerting's AlertChannel, and @caisson-sh/audit-worm's chain+outbox seam —
 // compliance-core stays dependency-free of all three (the same precedent `external-anchor.ts`
-// already set for @caisson/audit-worm), so a caller with those real packages wires them in directly.
+// already set for @caisson-sh/audit-worm), so a caller with those real packages wires them in directly.
 export * from "./evidence/drift/types.ts";
 export * from "./evidence/drift/diff.ts";
 export * from "./evidence/drift/deviation.ts";

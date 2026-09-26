@@ -1,7 +1,7 @@
 // src/evidence/collectors/field-crypto-policy.ts — PHI encryption-at-rest evidence (ADR-0058, ADR-0181,
 // ADR-0043/0046). HIPAA Technical Safeguard §164.312(a)(2)(iv)/(e)(2)(ii): PHI is encrypted at rest.
 //
-// Composes `@caisson/field-crypto`'s `parseEnvelope` VERBATIM (mirroring how chain-verify composes the
+// Composes `@caisson-sh/field-crypto`'s `parseEnvelope` VERBATIM (mirroring how chain-verify composes the
 // kernel's `verifyChain`) over per-PHI-field at-rest samples gathered TENANT-SCOPED at the edge (a read
 // inside `withTenantCrypto`, so the sample never crosses a tenant boundary). The collector adds no
 // crypto; it turns the envelope verdict into evidence. Fail-closed / flag-never-guess (ADR-0058):
@@ -9,7 +9,7 @@
 //   - any field whose stored value is NOT a valid AES-256-GCM field-crypto envelope (plaintext, a wrong
 //     algorithm, or a corrupt/unknown format) → `flagged` — a real deficiency (PHI not encrypted at rest);
 //   - a field with no populated row to sample (evidence absent) → `unresolved`; refuse to guess a pass.
-import { ALG_AES_256_GCM, parseEnvelope } from "@caisson/field-crypto";
+import { ALG_AES_256_GCM, parseEnvelope } from "@caisson-sh/field-crypto";
 import {
   flaggedResult,
   passResult,

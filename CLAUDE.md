@@ -8,7 +8,7 @@ discipline auto-load from there). This file holds only what is specific to this 
 the four editions DISSOLVED into these 2026-07-06, legacy ids alias forever) + a `create-caisson`
 generator + a custom support service. Sold one-time + per-module + subscription/credits.
 Full founding spec: `specs/00-product-spec.md`. Built **rebuild-clean** from proven GridWork
-repos — never a port. **Name + positioning LOCKED: Caisson · `@caisson/*` · `caisson.sh`**
+repos — never a port. **Name + positioning LOCKED: Caisson · `@caisson-sh/*` · `caisson.sh`**
 (ADR-0041 name · ADR-0040 hero · ADR-0042 design).
 
 ## The one operator rule
@@ -85,8 +85,8 @@ implementation**. The harvestable license kit is taken from PUBLIC `tessera`.
   2026-06-29):** the **Base substrate** (kernel·auth·tenancy-rls·ui·billing·jobs·email·ai-config·
   mcp-server) is now **Apache-2.0**; editions + field-crypto + audit-worm + registry-service + updates
   stay commercial. Re-licensing is **DONE in code** (work item W1, ADR-0094 + **ADR-0097**):
-  the open registry contract split into Apache-2.0 `@caisson/registry-schema` (the commercial
-  `@caisson/registry` service re-exports it); 15 base pkgs flipped to Apache-2.0/oss (the open set is **16** since ADR-0412 named `ds-manifest`) + Apache `LICENSE`
+  the open registry contract split into Apache-2.0 `@caisson-sh/registry-schema` (the commercial
+  `@caisson-sh/registry` service re-exports it); 15 base pkgs flipped to Apache-2.0/oss (the open set is **16** since ADR-0412 named `ds-manifest`) + Apache `LICENSE`
   files (ADR-0136 added cli·migrate·license-verify — incl. the generator — to the open Base set); the
   standards-gate enforces the license split + the open↔commercial no-depend-up boundary.
   Remaining W1 tail: `apps/site` licensing copy (design track owns that tree).

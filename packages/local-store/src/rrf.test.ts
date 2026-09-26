@@ -2,7 +2,7 @@
 // pin the fused RANKING through `hybridSearch`; these cover what only the extracted function can be
 // asked directly — the two guards and the unlimited form.
 import { describe, expect, test } from "bun:test";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import { RRF_K, fuseByRrf } from "./rrf.ts";
 
 const vec = { ranks: new Map([[1, 1]]), weight: 1 };

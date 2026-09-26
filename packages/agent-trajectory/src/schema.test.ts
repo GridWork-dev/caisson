@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ValidationError, parseStrict } from "@caisson/kernel";
+import { ValidationError, parseStrict } from "@caisson-sh/kernel";
 import { DigestRef, TrajectoryEvent } from "./index.ts";
 
 const UUID = "11111111-1111-4111-8111-111111111111";

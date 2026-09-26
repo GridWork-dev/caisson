@@ -1,11 +1,11 @@
-// @caisson/agent-dev — the Agentic-Dev EDITION composition (ADR-0065/0066/0067). An edition is
+// @caisson-sh/agent-dev — the Agentic-Dev EDITION composition (ADR-0065/0066/0067). An edition is
 // NOT a new primitive: it composes the shipped base seams DOWN-ONLY (ADR-0003/0022) into one
 // buyer-facing surface —
-//   • the governed, engine-neutral agent kernel (@caisson/agent-kernel): the agent/skill/rule schema +
+//   • the governed, engine-neutral agent kernel (@caisson-sh/agent-kernel): the agent/skill/rule schema +
 //     define*() builders, the reference-integrity validator, the pure lifecycle FSM, governance guards
 //     + the unified HookResult, the hooks dispatcher, and the opt-in AUDITED lifecycle (the
 //     tamper-evident moat);
-//   • the local hybrid memory (@caisson/local-store): vec0 + FTS5 + RRF (RRF_K=60) with the FTS-only
+//   • the local hybrid memory (@caisson-sh/local-store): vec0 + FTS5 + RRF (RRF_K=60) with the FTS-only
 //     offline floor, the pluggable Embedder port, the cloud-egress secret-scrub guard, and the
 //     dedup/TTL/GC retention default;
 //   • the thin multi-harness emitter (./emitter.ts): one typed schema → `.claude/` + the universal
@@ -13,30 +13,30 @@
 //     coding agent — ADR-0264, superseding the prior "Codex harness" framing) + per-artifact Cursor,
 //     Devin Desktop/legacy Windsurf, GitHub Copilot, and Cline bundles — Claude Code is ONE emit
 //     target among several, never the substrate (the ADR-0066 binding contract VERIFY re-asks);
-//   • the governed sandboxed tool-exec gate (@caisson/tool-exec, ADR-0178): a default-deny allowlist +
+//   • the governed sandboxed tool-exec gate (@caisson-sh/tool-exec, ADR-0178): a default-deny allowlist +
 //     Zod-strict argv schemas + execFile arg-arrays (never a shell) — wired as a live gate on the
 //     composed edition so a buyer gets the exec seam from this one import home;
-//   • the sandboxed, governed agent runner (@caisson/agent-runner, ADR-0186): spawns a headless agent
+//   • the sandboxed, governed agent runner (@caisson-sh/agent-runner, ADR-0186): spawns a headless agent
 //     CLI in an isolated worktree behind a from-scratch, scrubbed environment, streaming an auditable
 //     run transcript — reachable from this one edition import home; a buyer supplies its own provider
 //     credential and endpoint for each run, so the edition never resolves or holds one itself.
-// Plus the curated Caisson-native default content and the @caisson/ai-config embedder-lane seam.
+// Plus the curated Caisson-native default content and the @caisson-sh/ai-config embedder-lane seam.
 // Engine-neutral end to end: no LLM call, no vendor SDK, no harness assumption lives in the kernel.
 
 // ── The composed base surfaces + curated content, re-exported as ONE edition import home ────────────
-export * from "@caisson/agent-kernel";
-export * from "@caisson/local-store";
+export * from "@caisson-sh/agent-kernel";
+export * from "@caisson-sh/local-store";
 // The governed sandboxed tool-exec gate (ADR-0178): a default-deny allowlist + Zod-strict argv schemas
 // + execFile arg-arrays (never a shell). Bundled into the edition so a buyer gets the exec gate from
 // this one import home — the composition factory wires a live instance below.
-export * from "@caisson/tool-exec";
+export * from "@caisson-sh/tool-exec";
 
-// The sandboxed governed agent-runner primitive (@caisson/agent-runner, ADR-0186) — folded into the
+// The sandboxed governed agent-runner primitive (@caisson-sh/agent-runner, ADR-0186) — folded into the
 // edition's paid bundle exactly like tool-exec above, but NOT wired to a live instance here: `spawn()`
 // takes a per-call provider credential + endpoint (`authKey`/`baseUrl`) that this factory, like the
 // ai-config embedder lane below, never resolves or holds (ADR-0066 no-credential/engine-neutral
 // floor). A buyer constructs `createAgentRunner({ runsRoot })` themselves and supplies its own
-// provider config per run. `ProviderConfig` collides with `@caisson/ai-config`'s type of the same
+// provider config per run. `ProviderConfig` collides with `@caisson-sh/ai-config`'s type of the same
 // name — re-exported under an `AgentRunner`-prefixed alias so both stay reachable from this one home.
 export {
   buildEngineEnv,
@@ -46,7 +46,7 @@ export {
   PASSTHROUGH_KEYS,
   ProviderConfig as AgentRunnerProviderConfig,
   RunMeta,
-} from "@caisson/agent-runner";
+} from "@caisson-sh/agent-runner";
 export type {
   AgentRunner,
   AgentRunnerConfig,
@@ -59,18 +59,18 @@ export type {
   SpawnAgentOptions,
   SpawnAgentResult,
   TailResult,
-} from "@caisson/agent-runner";
+} from "@caisson-sh/agent-runner";
 
 export * from "./emitter.ts";
 export * from "./content/index.ts";
 
 // The provider-agnostic embedder LANE seam the edition wires for memory embeddings (base→base; never
 // reads a key, no network — the live embed transport stays the one un-exercised path, ADR-0067).
-export { parseAiSettings, resolveProvider } from "@caisson/ai-config";
-export type { AiSettings, ProviderConfig } from "@caisson/ai-config";
+export { parseAiSettings, resolveProvider } from "@caisson-sh/ai-config";
+export type { AiSettings, ProviderConfig } from "@caisson-sh/ai-config";
 
 // The kernel compliance substrate the audited lifecycle records into — re-surfaced so the buyer/app
-// verifies a governed record from this single edition surface (down-only into @caisson/kernel).
+// verifies a governed record from this single edition surface (down-only into @caisson-sh/kernel).
 export {
   fetchWithTimeout,
   canonicalize,
@@ -78,21 +78,24 @@ export {
   anchorChain,
   verifyChain,
   CaissonError,
-} from "@caisson/kernel/node";
-export type { AuditChainEntry, AuditChainAnchor } from "@caisson/kernel";
+} from "@caisson-sh/kernel/node";
+export type { AuditChainEntry, AuditChainAnchor } from "@caisson-sh/kernel";
 
 // ── The composition factory ────────────────────────────────────────────────────────────────────
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
-import type { Artifact, AuditLifecycleStore } from "@caisson/agent-kernel";
-import { AuditedLifecycle, validateArtifactSet } from "@caisson/agent-kernel";
-import { LocalStore, tenantDbPath } from "@caisson/local-store";
+import type { Artifact, AuditLifecycleStore } from "@caisson-sh/agent-kernel";
+import {
+  AuditedLifecycle,
+  validateArtifactSet,
+} from "@caisson-sh/agent-kernel";
+import { LocalStore, tenantDbPath } from "@caisson-sh/local-store";
 import {
   createToolExec,
   type ToolExec,
   type ToolExecConfig,
-} from "@caisson/tool-exec";
-import { ValidationError } from "@caisson/kernel";
+} from "@caisson-sh/tool-exec";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   renderHarnessBundles,
   writeBundle,
@@ -132,7 +135,7 @@ export interface AgentDevEditionOptions {
 
 /** The composed edition: the governed kernel + hybrid memory + a bound multi-harness emitter. */
 export interface AgentDevEdition {
-  /** The governed, optionally tamper-evident lifecycle engine (@caisson/agent-kernel). */
+  /** The governed, optionally tamper-evident lifecycle engine (@caisson-sh/agent-kernel). */
   readonly lifecycle: AuditedLifecycle;
   /** The local hybrid-memory store (vec0 + FTS5 + RRF; FTS-only offline floor). */
   readonly memory: LocalStore;

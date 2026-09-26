@@ -6,17 +6,17 @@
 // delegates to evaluateCampaignClose, so there is one guard, not a mirror of one); closing past
 // the deadline reports the undecided as unresolved, never auto-approved.
 //
-// This component drives the REAL @caisson/access-review: the hand-ported mirror
+// This component drives the REAL @caisson-sh/access-review: the hand-ported mirror
 // (access-review-logic.ts) is deleted. The pure half of the campaign kernel lives in the
-// package's src/decisions.ts — no node builtin, no @caisson/tenancy-rls, no db; its only
-// non-relative edge is the browser-safe @caisson/kernel barrel — and is imported here by
+// package's src/decisions.ts — no node builtin, no @caisson-sh/tenancy-rls, no db; its only
+// non-relative edge is the browser-safe @caisson-sh/kernel barrel — and is imported here by
 // RELATIVE path (an internal module, deliberately not a public entry point of the sold package).
 // Browser-safety is proven by the static source-graph walk in risk-register-poke.test.ts /
 // access-review-poke.test.ts — NOT by a build; a bundler substitutes node builtins instead of
 // failing on them. Nothing here fetches, persists, or measures the visitor.
 import { useCallback, useId, useMemo, useState } from "react";
-import { Button, Checkbox, StatusChip } from "@caisson/ui/components";
-import type { AuditChainEntry } from "@caisson/kernel";
+import { Button, Checkbox, StatusChip } from "@caisson-sh/ui/components";
+import type { AuditChainEntry } from "@caisson-sh/kernel";
 
 import {
   CAMPAIGN_CLOSED_RECORD,
@@ -48,7 +48,7 @@ export const SAMPLE_REVIEWEES: readonly string[] = [
 
 /** A sample decision entry for the poke's in-memory log. The prevHash/hash strings are INERT
  *  sample values — never rendered, never read by scanCampaignDecisions (it reads only seq +
- *  payload); real chain hashing is @caisson/audit-worm's job and is not what this poke
+ *  payload); real chain hashing is @caisson-sh/audit-worm's job and is not what this poke
  *  demonstrates. They exist only to satisfy the real AuditChainEntry shape. */
 export function decisionEntry(
   seq: number,
@@ -109,7 +109,7 @@ export default function AccessReviewPoke() {
 
   return (
     <PokeShell
-      label="@caisson/access-review"
+      label="@caisson-sh/access-review"
       title="Decide every reviewee, or try closing the campaign early."
     >
       <div className={styles.layout}>

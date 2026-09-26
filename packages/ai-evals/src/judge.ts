@@ -1,9 +1,9 @@
-// @caisson/ai-evals — the model-judge port + cassette record/replay driver (ADR-0062).
+// @caisson-sh/ai-evals — the model-judge port + cassette record/replay driver (ADR-0062).
 //
 // Model-graded scorers route every judgement through the `Judge` port. CI uses the cassette REPLAY
 // driver: recorded verdicts loaded from a committed cassette, zero network, zero provider secret —
 // the eval gate must be deterministic and offline. A LIVE judge (a real LLM) is INJECTED
-// LOCALLY by the caller; this module never imports the `@caisson/ai-kit` edition or any provider SDK
+// LOCALLY by the caller; this module never imports the `@caisson-sh/ai-kit` edition or any provider SDK
 // (down-only: ai-evals is a base primitive, ADR-0003). A local live run can be wrapped in
 // `recordingJudge` to mint a fresh cassette, reviewed, then committed.
 import { z } from "zod";
@@ -11,7 +11,7 @@ import { z } from "zod";
 export const JUDGE_VERDICTS = ["pass", "fail"] as const;
 
 // A 100k-char ceiling on the evaluated output (the exact injection vector) — mirrors
-// @caisson/local-store MAX_TEXT; the largest plausible model response, not a hard product limit.
+// @caisson-sh/local-store MAX_TEXT; the largest plausible model response, not a hard product limit.
 const MAX_OUTPUT = 100_000;
 
 /** The request a model-grader hands the judge — never carries a secret or a provider handle. */

@@ -3,7 +3,7 @@ title: tool-exec
 description: Governed tool-call / sandboxed-exec primitive, a default-deny command allowlist, Zod-strict argv validation, and execFile arg-arrays only, never a shell.
 ---
 
-`@caisson/tool-exec` is the security floor Agentic-Dev's tool layer stands on: a governed gate
+`@caisson-sh/tool-exec` is the security floor Agentic-Dev's tool layer stands on: a governed gate
 between an agent's tool call and a real process spawn. A call names a registered logical command;
 anything unregistered is refused before anything spawns.
 
@@ -25,14 +25,14 @@ anything unregistered is refused before anything spawns.
 ## Install
 
 ```bash
-bun add @caisson/tool-exec
+bun add @caisson-sh/tool-exec
 ```
 
 ## Quickstart
 
 ```ts
 import { z } from "zod";
-import { createToolExec } from "@caisson/tool-exec";
+import { createToolExec } from "@caisson-sh/tool-exec";
 
 const toolExec = createToolExec({
   allowlist: [
@@ -64,11 +64,11 @@ A name not on the allowlist, or args that fail the schema, throw before any proc
 
 ## Composition
 
-`tool-exec` depends on `@caisson/kernel` for `NotFoundError` and `parseStrict`: the same
+`tool-exec` depends on `@caisson-sh/kernel` for `NotFoundError` and `parseStrict`: the same
 default-deny and schema-validation primitives the rest of the base substrate uses, so a tool call's
 failure modes look like every other kernel-governed boundary. It's the gate Agentic-Dev's agent
 kernel and agent-runner reach for whenever a running agent needs to touch a real executable.
 
 <Callout type="info" title="Commercial, Agentic-Dev">
-  `@caisson/tool-exec` ships under the Agentic-Dev bundle license.
+  `@caisson-sh/tool-exec` ships under the Agentic-Dev bundle license.
 </Callout>

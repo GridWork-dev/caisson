@@ -9,7 +9,7 @@
 // impl is for tests + single-process runs; a PG-backed impl mirrors ai-meter's append-only
 // `usage_event` table (a `(run_id, seq)` UNIQUE + REVOKE UPDATE, DELETE) — documented in the README,
 // not built in slice 1.
-import { ConflictError, parseStrict } from "@caisson/kernel";
+import { ConflictError, parseStrict } from "@caisson-sh/kernel";
 import { TrajectoryEvent } from "./schema.ts";
 
 export interface TrajectoryStore {

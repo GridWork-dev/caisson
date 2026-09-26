@@ -81,10 +81,10 @@ const LUCIDE: Record<string, LucideIcon> = {
 
 /**
  * The bespoke domain-glyph name contract. The kit floor ships NO bespoke glyphs — their SVG art is
- * private brand IP in `@caisson/brand`. This union is the type-only registry key set: it keeps every
+ * private brand IP in `@caisson-sh/brand`. This union is the type-only registry key set: it keeps every
  * `<Icon name="worm" />` call site fully type-checked (a typo is a compile error), while the glyphs
  * themselves are supplied at runtime by the consuming app via `registerIcons(brandGlyphs)`. Adding a
- * name here obliges `@caisson/brand` to provide its glyph (its map is typed against this union).
+ * name here obliges `@caisson-sh/brand` to provide its glyph (its map is typed against this union).
  */
 export type RegisteredIconName =
   | "rls"

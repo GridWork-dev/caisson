@@ -21,7 +21,7 @@ const APACHE = "Apache-2.0";
 
 function pkg(over: Partial<Pkg> & Pick<Pkg, "name" | "license">): Pkg {
   return {
-    dir: `/repo/packages/${over.name.replace("@caisson/", "")}`,
+    dir: `/repo/packages/${over.name.replace("@caisson-sh/", "")}`,
     version: "0.0.0",
     workspaceDeps: [],
     manifestPath: null,
@@ -60,7 +60,7 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
   test("an all-MIT tree passes", () => {
     writePackageJson(root, "foo", "foo", "MIT");
     const consumer = pkg({
-      name: "@caisson/x",
+      name: "@caisson-sh/x",
       license: APACHE,
     });
     expect(checkExternalAgpl([consumer], root)).toEqual([]);
@@ -75,7 +75,7 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
       "AGPL-3.0-only",
     );
     const consumer = pkg({
-      name: "@caisson/x",
+      name: "@caisson-sh/x",
       license: APACHE, // bad-lib is a dep of foo, never declared directly
     });
     const findings = checkExternalAgpl([consumer], root);
@@ -91,7 +91,7 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
   test("legacy object-form license ({ type: ... }) is parsed and flagged", () => {
     writePackageJson(root, "bad-obj", "bad-obj", { type: "AGPL-3.0" });
     const findings = checkExternalAgpl(
-      [pkg({ name: "@caisson/x", license: APACHE })],
+      [pkg({ name: "@caisson-sh/x", license: APACHE })],
       root,
     );
     expect(findings).toHaveLength(1);
@@ -110,7 +110,7 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
       }),
     );
     const findings = checkExternalAgpl(
-      [pkg({ name: "@caisson/x", license: APACHE })],
+      [pkg({ name: "@caisson-sh/x", license: APACHE })],
       root,
     );
     expect(findings).toHaveLength(1);
@@ -122,7 +122,7 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
     const findings = checkExternalAgpl(
       [
         pkg({
-          name: "@caisson/x",
+          name: "@caisson-sh/x",
           license: APACHE,
         }),
       ],
@@ -137,7 +137,7 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
     const findings = checkExternalAgpl(
       [
         pkg({
-          name: "@caisson/x",
+          name: "@caisson-sh/x",
           license: APACHE,
         }),
       ],
@@ -158,7 +158,7 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
       "dir",
     );
     const findings = checkExternalAgpl(
-      [pkg({ name: "@caisson/x", license: APACHE })],
+      [pkg({ name: "@caisson-sh/x", license: APACHE })],
       root,
     );
     expect(findings).toEqual([]);
@@ -168,7 +168,7 @@ describe("checkExternalAgpl (Gate 1b, ADR-0010)", () => {
     rmSync(root, { recursive: true, force: true });
     mkdirSync(root, { recursive: true }); // root exists, but no node_modules
     const findings = checkExternalAgpl(
-      [pkg({ name: "@caisson/x", license: APACHE })],
+      [pkg({ name: "@caisson-sh/x", license: APACHE })],
       root,
     );
     expect(findings).toHaveLength(1);

@@ -235,7 +235,7 @@ export default function CompliancePage() {
       <Reveal>
         <Section
           title="What it composes"
-          lede="The Compliance bundle's core has ten direct @caisson/* dependencies: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. compliance-core and frameworks-pack both depend on and re-export oscal-spine, the shared commercial package that owns OSCAL assessment, catalog, XML, ISO 27001 SoA, and pinned NIST SP 800-53 surfaces. The bundle also includes three standalone compliance modules beside that runtime graph: access-review, risk-register, and trust-page."
+          lede="The Compliance bundle's core has ten direct @caisson-sh/* dependencies: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. compliance-core and frameworks-pack both depend on and re-export oscal-spine, the shared commercial package that owns OSCAL assessment, catalog, XML, ISO 27001 SoA, and pinned NIST SP 800-53 surfaces. The bundle also includes three standalone compliance modules beside that runtime graph: access-review, risk-register, and trust-page."
         />
       </Reveal>
 

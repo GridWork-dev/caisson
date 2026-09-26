@@ -36,7 +36,7 @@ import {
   type ReadResourceResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import { toErrorResponse } from "@caisson/kernel";
+import { toErrorResponse } from "@caisson-sh/kernel";
 import { createMcpServer, type McpServerOptions } from "./server.ts";
 
 // Reported to the MCP client as `Implementation.version` (protocol metadata only — no gate or test

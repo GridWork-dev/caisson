@@ -11,7 +11,7 @@
 // never leaking the up-front reservation).
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
-import { newTestPg, type TestPg } from "@caisson/testing";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
@@ -19,14 +19,14 @@ import {
   GRANT_CONSUMPTION_MIGRATION_SQL,
   balance,
   grant,
-} from "@caisson/credits";
+} from "@caisson-sh/credits";
 import {
   GuardrailError,
   InMemoryEventSink,
   InsufficientCreditsError,
   asCredits,
   asMicroUsdPerCredit,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   AI_METER_SCHEMA_SQL,
   SPEND_POLICY_TABLE,
@@ -34,19 +34,19 @@ import {
   USAGE_EVENT_TABLE,
   reconcile,
   type MeterConfig,
-} from "@caisson/ai-meter";
+} from "@caisson-sh/ai-meter";
 import {
   PROMPT_REGISTRY_SCHEMA_SQL,
   registerPrompt,
-} from "@caisson/prompt-registry";
+} from "@caisson-sh/prompt-registry";
 import {
   localModerator,
   type GuardPolicy,
   type GuardRuntime,
-} from "@caisson/guardrails";
-import { DerivedKeyProvider, derivedContext } from "@caisson/field-crypto";
-import type { AiSettings } from "@caisson/ai-config";
-import { withTenant } from "@caisson/tenancy-rls";
+} from "@caisson-sh/guardrails";
+import { DerivedKeyProvider, derivedContext } from "@caisson-sh/field-crypto";
+import type { AiSettings } from "@caisson-sh/ai-config";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 import { simulateReadableStream } from "ai";
 import type { LanguageModelMiddleware } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
@@ -70,7 +70,7 @@ import {
   createMemoryTrajectoryStore,
   TRAJECTORY_VERSION,
   type TrajectoryEvent,
-} from "@caisson/agent-trajectory";
+} from "@caisson-sh/agent-trajectory";
 
 let tp: TestPg;
 const A = "acct_kit_a";

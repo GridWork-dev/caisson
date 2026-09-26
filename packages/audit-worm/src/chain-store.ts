@@ -44,16 +44,16 @@ import {
   type AuditChainEntry,
   type ChainVerification,
   type JsonValue,
-} from "@caisson/kernel/node";
+} from "@caisson-sh/kernel/node";
 import {
   ANCHOR_SIGNATURE_VERSION,
   anchorSignatureEnvelopeBytes,
-} from "@caisson/kernel/audit-verify";
+} from "@caisson-sh/kernel/audit-verify";
 import {
   withTenant,
   type TenantExecutor,
   type Transactor,
-} from "@caisson/tenancy-rls";
+} from "@caisson-sh/tenancy-rls";
 import {
   ArtifactExistsError,
   assertValidArtifactVersionId,

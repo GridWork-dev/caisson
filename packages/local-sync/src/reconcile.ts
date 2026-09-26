@@ -18,7 +18,7 @@
 // engine (`ChangesetLog.assertApplicable`) before reaching here. The cross-tenant guard below is
 // defense-in-depth: a caller bug that mixed two tenants' files fails closed rather than silently merging.
 import type { Changeset, ChangesetEntry, RowValues } from "./port.ts";
-import { TenancyError } from "@caisson/kernel";
+import { TenancyError } from "@caisson-sh/kernel";
 import { compareStamps, stampFromEntry, type HlcStamp } from "./clock.ts";
 
 /**

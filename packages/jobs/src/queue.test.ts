@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
-import { NotFoundError, strictObject, ValidationError } from "@caisson/kernel";
+import {
+  NotFoundError,
+  strictObject,
+  ValidationError,
+} from "@caisson-sh/kernel";
 import { createInMemoryQueue, defineTask } from "./index.ts";
 
 const grantSchema = strictObject({

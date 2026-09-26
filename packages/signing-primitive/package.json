@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/signing-primitive",
+  "name": "@caisson-sh/signing-primitive",
   "version": "0.4.2",
   "description": "Per-tenant evidence signing: detached Ed25519 signatures over a canonical, chain-anchored manifest body, with an optional RFC-3161 trusted-timestamp countersignature and a fail-closed verify path.",
   "license": "Apache-2.0",
@@ -26,14 +26,14 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/kernel": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
     "@noble/curves": "2.2.0",
     "@noble/ed25519": "^3.1.0",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   },
   "engines": {

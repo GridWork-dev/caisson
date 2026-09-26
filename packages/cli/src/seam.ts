@@ -3,14 +3,14 @@
 // buyer `Selection` schema + type and the engine seam type (`GeneratorEngine`). Kept free of a
 // back-edge into `generate.ts` (the core — that would be a build cycle); the only import is `zod` plus
 // the base file-emit primitive. `generate.ts` re-exports every symbol here, so external importers keep
-// importing from `@caisson/cli` unchanged.
+// importing from `@caisson-sh/cli` unchanged.
 //
 // The file-emit shape (`GeneratedFile`/`GeneratedFileSet`) is the base `EmittedFile`/`EmittedFileSet`
-// hoisted to `@caisson/migrate` (ADR-0090) so the migration assembler/runner and the generator share
+// hoisted to `@caisson-sh/migrate` (ADR-0090) so the migration assembler/runner and the generator share
 // ONE declaration without the base reaching "up" into the cli. We re-export it under the
-// generator-contract names so every `@caisson/cli` importer of `GeneratedFile`/`GeneratedFileSet` is
-// unchanged; `@caisson/migrate` is a down-only base dependency, no cycle.
-import type { EmittedFile, EmittedFileSet } from "@caisson/migrate";
+// generator-contract names so every `@caisson-sh/cli` importer of `GeneratedFile`/`GeneratedFileSet` is
+// unchanged; `@caisson-sh/migrate` is a down-only base dependency, no cycle.
+import type { EmittedFile, EmittedFileSet } from "@caisson-sh/migrate";
 import { z } from "zod";
 
 /** ADR-0268 — the deploy-template targets a generated repo may optionally compose. Each maps to a

@@ -16,9 +16,13 @@
 // the site's compliance poke runs this REAL assembly instead of a hand-ported copy of it. Every
 // name below is also on the `.` barrel; `generate.ts` composes this module rather than duplicating
 // it, so a rule fixed here is fixed for both callers.
-import { CaissonError, ValidationError, type JsonValue } from "@caisson/kernel";
+import {
+  CaissonError,
+  ValidationError,
+  type JsonValue,
+} from "@caisson-sh/kernel";
 import type { z } from "zod";
-import type { CrosswalkReference } from "@caisson/frameworks-pack/browser";
+import type { CrosswalkReference } from "@caisson-sh/frameworks-pack/browser";
 import type { CollectorResult } from "./collector.ts";
 import type { CrosswalkRollup } from "./crosswalk-rollup.ts";
 import {

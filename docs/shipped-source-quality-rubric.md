@@ -55,7 +55,7 @@ triage item, never a merge gate.
 
 - **SS-9 — the README describes the package as shipped, not as planned.** No "on the roadmap",
   "coming soon", or "the token contract only" for a capability that already ships (the v1
-  `@caisson/ui` docs lie). Truthful-to-built, per ADR-0080 and D6.
+  `@caisson-sh/ui` docs lie). Truthful-to-built, per ADR-0080 and D6.
 - **SS-10 — the README has a one-line purpose, an install/usage snippet, and no internal-process
   narrative.** No "rebuilt clean from GridWork repos", no "harvest program", no ADR chain as the
   opening. A buyer wants what it does and how to use it.

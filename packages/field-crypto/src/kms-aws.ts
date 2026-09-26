@@ -29,7 +29,11 @@ import {
   KMSClient,
   ScheduleKeyDeletionCommand,
 } from "@aws-sdk/client-kms";
-import { ConfigError, InternalError, ValidationError } from "@caisson/kernel";
+import {
+  ConfigError,
+  InternalError,
+  ValidationError,
+} from "@caisson-sh/kernel";
 import { withKmsOperationBudget } from "./kms-budget.ts";
 import type {
   KmsClient,

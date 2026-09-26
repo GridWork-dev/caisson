@@ -1,5 +1,5 @@
 // ADR-0176 org account model — SESSION-RESOLUTION half only (ADR-0257 §1.3 carve). This suite is the
-// regression proof that a buyer login resolves accounts with ZERO @caisson/org-controls involvement:
+// regression proof that a buyer login resolves accounts with ZERO @caisson-sh/org-controls involvement:
 // it imports only the open session-resolution surface (`resolveUserAccounts` / `ensurePersonalAccount`
 // / `selectActiveAccount`) — never the carved MANAGE surface — and every assertion is the exact
 // getSession() path (apps/site lib/auth.ts). If org-controls ever became load-bearing on login, this
@@ -15,7 +15,7 @@ import {
 } from "bun:test";
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
-import { newTestPg, type TestPg } from "@caisson/testing";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 
 import {
   ACCOUNT_MEMBER_SCHEMA_SQL,

@@ -1,4 +1,4 @@
-// Server Action example: enqueuing a job (@caisson/jobs `JobQueue.enqueue`) instead of sending
+// Server Action example: enqueuing a job (@caisson-sh/jobs `JobQueue.enqueue`) instead of sending
 // email inline — the caller returns immediately, the queue's driver retries the send on failure.
 "use server";
 

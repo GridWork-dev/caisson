@@ -1,4 +1,4 @@
-// The guardrails poke now drives `@caisson/guardrails/browser`; there is no mirror left to compare.
+// The guardrails poke now drives `@caisson-sh/guardrails/browser`; there is no mirror left to compare.
 // Pin the client graph and the presentation adapter's checkable claims over the shipped primitive.
 import { createElement } from "react";
 import { describe, expect, mock, test } from "bun:test";
@@ -6,8 +6,8 @@ import { join } from "node:path";
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
-} from "@caisson/testing/module-graph";
-import { renderIntoJsdom } from "@caisson/testing";
+} from "@caisson-sh/testing/module-graph";
+import { renderIntoJsdom } from "@caisson-sh/testing";
 import GuardrailsPoke, { evaluateGuard } from "./guardrails-poke";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../../..");

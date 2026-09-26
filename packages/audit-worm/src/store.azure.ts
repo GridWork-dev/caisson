@@ -15,7 +15,7 @@ import {
   ValidationError,
   parseStrict,
   strictObject,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   ArtifactExistsError,
   assertSafeKey,

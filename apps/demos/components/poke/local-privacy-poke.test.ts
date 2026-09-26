@@ -1,9 +1,9 @@
-// The local-privacy poke's checkable claims, now that it drives the REAL @caisson/local-privacy
+// The local-privacy poke's checkable claims, now that it drives the REAL @caisson-sh/local-privacy
 // and the hand-ported mirror (local-privacy-logic.ts) is deleted:
 //
 //   1. The poke's client graph is browser-safe — proven by a STATIC SOURCE-GRAPH WALK, never by a
 //      build (a bundler does not fail on a node builtin, it SUBSTITUTES a polyfill and exits 0).
-//      The mirror's justifying header claimed the package's `@caisson/kernel` edge made this
+//      The mirror's justifying header claimed the package's `@caisson-sh/kernel` edge made this
 //      impossible; the walk below is the retraction, and the positive control shows what the
 //      taint the mirror feared actually looks like (kernel's `./node` entry, one hop away).
 //   2. The component imports the package's public `.` barrel — no `./browser` entry was needed,
@@ -17,10 +17,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { AuthzError, ValidationError } from "@caisson/kernel";
-import { DEFAULT_ONNX_MODEL } from "@caisson/local-inference/browser";
-import { ZERO_EGRESS_POLICY, localOnlyPolicy } from "@caisson/local-privacy";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { AuthzError, ValidationError } from "@caisson-sh/kernel";
+import { DEFAULT_ONNX_MODEL } from "@caisson-sh/local-inference/browser";
+import { ZERO_EGRESS_POLICY, localOnlyPolicy } from "@caisson-sh/local-privacy";
 
 import {
   MODEL_FETCH_HOST,
@@ -61,7 +61,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
   });
 
   test("positive control: the same walker reports real builtins on kernel's ./node entry", () => {
-    // The exact taint the retired mirror's header feared — it lives behind `@caisson/kernel/node`,
+    // The exact taint the retired mirror's header feared — it lives behind `@caisson-sh/kernel/node`,
     // which nothing in local-privacy's graph reaches. A walker gone blind fails HERE rather than
     // greening the assertions above vacuously.
     const tainted = nodeBuiltinTaint(
@@ -74,7 +74,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
 
   test("the component imports the package's public barrel, not a local mirror", () => {
     const src = readFileSync(POKE_ENTRY, "utf8");
-    expect(src).toMatch(/^} from "@caisson\/local-privacy";$/m);
+    expect(src).toMatch(/^} from "@caisson-sh\/local-privacy";$/m);
     // The retired mirror may only be NAMED in prose, never imported again.
     expect(src).not.toMatch(/from "\.\/local-privacy-logic"/);
   });
@@ -84,7 +84,7 @@ describe("the poke's sample host is the real product config, not a fabricated ex
   test("the component imports the safe constant instead of restating its host", () => {
     const source = readFileSync(POKE_ENTRY, "utf8");
     expect(source).toMatch(
-      /^import \{ DEFAULT_ONNX_MODEL \} from "@caisson\/local-inference\/browser";$/m,
+      /^import \{ DEFAULT_ONNX_MODEL \} from "@caisson-sh\/local-inference\/browser";$/m,
     );
     expect(source).toMatch(
       /^export const MODEL_FETCH_HOST = DEFAULT_ONNX_MODEL\.modelHost;$/m,
@@ -94,7 +94,7 @@ describe("the poke's sample host is the real product config, not a fabricated ex
     );
   });
 
-  test("MODEL_FETCH_HOST matches @caisson/local-inference's DEFAULT_ONNX_MODEL.modelHost", () => {
+  test("MODEL_FETCH_HOST matches @caisson-sh/local-inference's DEFAULT_ONNX_MODEL.modelHost", () => {
     expect(MODEL_FETCH_HOST).toBe(DEFAULT_ONNX_MODEL.modelHost);
   });
 

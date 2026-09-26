@@ -1,8 +1,8 @@
 // `caisson describe [name] --json` (ADR-0345 Fork F / SPEC Scope 2). The FREE half of the second
 // `caisson` bin: deterministic, no auth, same data layer as the MCP tools — it reads the committed
-// Apache-base manifest from `@caisson/ds-manifest`. `describe --json` prints the whole manifest;
+// Apache-base manifest from `@caisson-sh/ds-manifest`. `describe --json` prints the whole manifest;
 // `describe <name> --json` prints one component (case-insensitive). JSON is the only v1 output.
-import type { ComponentManifest } from "@caisson/ds-manifest";
+import type { ComponentManifest } from "@caisson-sh/ds-manifest";
 
 /**
  * Render the `describe` command's stdout for the given argv (the tokens AFTER the `describe`

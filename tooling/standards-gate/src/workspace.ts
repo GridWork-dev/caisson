@@ -10,7 +10,7 @@ export interface Pkg {
   name: string;
   version: string | null;
   license: string | null;
-  /** workspace deps (entries whose name starts with @caisson/). */
+  /** workspace deps (entries whose name starts with @caisson-sh/). */
   workspaceDeps: string[];
   manifestPath: string | null;
   /** true once the package ships real code (src/ beyond .gitkeep, OR an entry/main/exports). */
@@ -87,7 +87,7 @@ export function readWorkspace(root = findRoot()): Pkg[] {
       name: pj.name,
       version: typeof pj.version === "string" ? pj.version : null,
       license: typeof pj.license === "string" ? pj.license : null,
-      workspaceDeps: deps.filter((d) => d.startsWith("@caisson/")),
+      workspaceDeps: deps.filter((d) => d.startsWith("@caisson-sh/")),
       manifestPath: existsSync(manifest) ? manifest : null,
       hasCode: shipsCode(dir, pj),
       private: pj.private === true,

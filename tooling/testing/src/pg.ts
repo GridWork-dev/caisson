@@ -43,10 +43,10 @@ export interface TestPg {
  *
  * That cost is the reason every `bun test` script in this repo carries `--timeout 60000` instead of
  * bun's 5s default. Under the full `bun run check` graph, CPU contention pushed a single boot past
- * 5s and failed the enclosing hook: `@caisson/ai-kit` flaked exactly that way while passing
+ * 5s and failed the enclosing hook: `@caisson-sh/ai-kit` flaked exactly that way while passing
  * standalone, reporting `a beforeEach/afterEach hook timed out for this test`. Nothing was hanging
  * — the budget was under 5x the idle cost of real work. The same 5s ceiling independently failed
- * `@caisson/ui`, whose manifest generator takes ~4s for one pass and runs two in the determinism
+ * `@caisson-sh/ui`, whose manifest generator takes ~4s for one pass and runs two in the determinism
  * test, so the flag is repo-wide rather than scoped to PGlite consumers.
  *
  * The bound lives on each package's test script and NOT in the root `bunfig.toml`, because bun does

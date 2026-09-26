@@ -2,7 +2,7 @@
 // mark at low opacity on a --cs-surface-2 field over a hairline grid. Shared by the renderer's
 // `media` section arm and the hand-authored edition pages; the aspect-ratio container is the one
 // contract real media later drops into. Decorative — hidden from the a11y tree.
-import { Icon, type IconName } from "@caisson/ui/components";
+import { Icon, type IconName } from "@caisson-sh/ui/components";
 
 export interface MediaPlaceholderProps {
   /** The mark rendered as placeholder art (decorative). */

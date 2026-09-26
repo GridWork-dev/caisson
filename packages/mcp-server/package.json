@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/mcp-server",
+  "name": "@caisson-sh/mcp-server",
   "version": "0.6.11",
   "description": "MCP server for the Caisson module catalog: timing-safe Bearer auth, catalog read tools, catalog-validated project generation, and opt-in design-system, setup-coach, compliance-prompt and agent-run tools.",
   "license": "Apache-2.0",
@@ -21,22 +21,22 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/ai-config": "workspace:*",
-    "@caisson/ds-manifest": "workspace:*",
-    "@caisson/kernel": "workspace:*",
-    "@caisson/registry-schema": "workspace:*",
-    "@caisson/ui": "workspace:*",
+    "@caisson-sh/ai-config": "workspace:*",
+    "@caisson-sh/ds-manifest": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
+    "@caisson-sh/registry-schema": "workspace:*",
+    "@caisson-sh/ui": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/auth": "workspace:*",
-    "@caisson/billing": "workspace:*",
-    "@caisson/billing-orchestration": "workspace:*",
-    "@caisson/credits": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*",
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/auth": "workspace:*",
+    "@caisson-sh/billing": "workspace:*",
+    "@caisson-sh/billing-orchestration": "workspace:*",
+    "@caisson-sh/credits": "workspace:*",
+    "@caisson-sh/tenancy-rls": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

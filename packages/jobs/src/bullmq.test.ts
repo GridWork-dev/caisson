@@ -7,7 +7,7 @@ import {
   NotFoundError,
   strictObject,
   ValidationError,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import { defineTask } from "./queue.ts";
 import {
   createBullMqJobQueue,

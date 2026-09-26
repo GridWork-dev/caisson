@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/frameworks-pack",
+  "name": "@caisson-sh/frameworks-pack",
   "version": "0.8.2",
   "description": "Compliance framework catalogs as config-as-code: the typed canonical-control model plus own-authored SOC2-TSC, HIPAA-Security, and EU-AI-Act control packs with crosswalk references to each framework's requirement ids.",
   "license": "Apache-2.0",
@@ -31,13 +31,13 @@
     "test": "bun test --timeout 60000 ./src ./scripts"
   },
   "dependencies": {
-    "@caisson/kernel": "workspace:*",
-    "@caisson/oscal-spine": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
+    "@caisson-sh/oscal-spine": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   },
   "engines": {

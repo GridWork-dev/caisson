@@ -1,10 +1,10 @@
-// The browser-safe entry (`@caisson/org-controls/browser`, ADR-0396): the owner-only authz gate,
+// The browser-safe entry (`@caisson-sh/org-controls/browser`, ADR-0396): the owner-only authz gate,
 // and only that. ADDITIVE — the `.` barrel is untouched and stays the full node-capable surface;
 // every name here is also on `.` (the subset test in browser-safety.test.ts pins that direction).
 //
 // DELIBERATELY EXCLUDED, so the next reader does not "complete" this entry:
 //   - membership.ts (`listAccountMembers`/`addAccountMember`/`removeAccountMember`) — every one is
-//     a real `withTenant` Postgres transaction, so the module value-imports @caisson/tenancy-rls
+//     a real `withTenant` Postgres transaction, so the module value-imports @caisson-sh/tenancy-rls
 //     and through it the `pg` driver. A client bundle has no database session to run them in.
 //   - clerk.ts — verifies a session token against Clerk's JWKS through the `@clerk/backend` SDK.
 //   - workos.ts — a live api.workos.com code exchange carrying the WorkOS client secret.

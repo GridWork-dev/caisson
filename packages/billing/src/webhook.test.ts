@@ -1,9 +1,9 @@
 // Stripe webhook signature verification (ADR-0017) — the open verify-only half of the billing seam
 // (carve ADR-0249 G3). Stripe->domain event mapping + the driver + createCheckout are covered in the
-// commercial @caisson/billing-orchestration (src/stripe.test.ts).
+// commercial @caisson-sh/billing-orchestration (src/stripe.test.ts).
 import { createHmac } from "node:crypto";
 import { describe, expect, test } from "bun:test";
-import { AuthnError } from "@caisson/kernel";
+import { AuthnError } from "@caisson-sh/kernel";
 import { verifyStripeWebhook } from "./index.ts";
 
 const SECRET = "whsec_test_secret";

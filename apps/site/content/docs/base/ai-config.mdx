@@ -3,7 +3,7 @@ title: AI config
 description: Provider-agnostic AI configuration with agent-assisted setup.
 ---
 
-`@caisson/ai-config` is one typed configuration surface for AI providers. It is provider-agnostic:
+`@caisson-sh/ai-config` is one typed configuration surface for AI providers. It is provider-agnostic:
 the base depends on the config shape, not on a single vendor's SDK, so the driver is swappable
 without touching call sites.
 
@@ -13,7 +13,7 @@ Configuration is declared once, validated at the boundary, and read everywhere t
 typed accessor, no provider details leak into feature code.
 
 ```ts
-import { parseAiSettings, resolveProvider } from "@caisson/ai-config";
+import { parseAiSettings, resolveProvider } from "@caisson-sh/ai-config";
 
 const settings = parseAiSettings({
   defaultLane: "chat",
@@ -41,7 +41,7 @@ field.
 
 ## API reference
 
-`@caisson/ai-config` exports two functions and their types. It is pure logic, no network calls,
+`@caisson-sh/ai-config` exports two functions and their types. It is pure logic, no network calls,
 no SDK imports, so resolving a lane never touches a provider until your own call site does.
 
 ### Settings shape

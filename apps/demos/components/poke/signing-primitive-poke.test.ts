@@ -1,5 +1,5 @@
 // The signing-primitive poke's checkable claims, now that it drives the REAL package through
-// `@caisson/signing-primitive/browser` (ADR-0396) and the hand-ported mirror
+// `@caisson-sh/signing-primitive/browser` (ADR-0396) and the hand-ported mirror
 // (signing-primitive-logic.ts) is deleted. The verify/countersign parity suite that used to live here
 // is gone because there is no second implementation left to compare against — the browser entry runs
 // the same `@noble/ed25519` primitive the server does, and its one genuine twin (the async
@@ -18,20 +18,20 @@ import { describe, expect, test } from "bun:test";
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
-} from "@caisson/testing/module-graph";
+} from "@caisson-sh/testing/module-graph";
 import {
   Ed25519Signer,
   StubTimestampAuthority,
   signEvidencePack,
   timestampCountersignsSignature,
-} from "@caisson/signing-primitive";
+} from "@caisson-sh/signing-primitive";
 import {
   ED25519_PUBLIC_BYTES,
   ED25519_SIGNATURE_BYTES,
   evidenceSignablePayload,
   hexToBytes,
   verifyEvidenceSignature,
-} from "@caisson/signing-primitive/browser";
+} from "@caisson-sh/signing-primitive/browser";
 
 import {
   FOREIGN_PUBLIC_KEY,

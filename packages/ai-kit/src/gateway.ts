@@ -35,31 +35,35 @@ import type {
   ModelMessage,
 } from "ai";
 import type { LanguageModelV4, ProviderV4 } from "@ai-sdk/provider";
-import type { AiSettings } from "@caisson/ai-config";
-import { resolveProvider } from "@caisson/ai-config";
+import type { AiSettings } from "@caisson-sh/ai-config";
+import { resolveProvider } from "@caisson-sh/ai-config";
 import {
   estimateInputTokens,
   estimateTokens,
   estimateUsage,
   reconcile,
   reserve,
-} from "@caisson/ai-meter";
+} from "@caisson-sh/ai-meter";
 import type {
   MeterConfig,
   ReconcileInput,
   ReconcileResult,
   ReserveResult,
   Usage,
-} from "@caisson/ai-meter";
-import { detokenizePii, guardInput, guardOutput } from "@caisson/guardrails";
-import type { GuardPolicy, GuardRuntime, PiiToken } from "@caisson/guardrails";
-import { CaissonError, InsufficientCreditsError } from "@caisson/kernel";
-import type { EventSink } from "@caisson/kernel";
-import type { TrajectoryEvent } from "@caisson/agent-trajectory";
-import { renderVersion, resolvePrompt } from "@caisson/prompt-registry";
-import type { RenderedMessage } from "@caisson/prompt-registry";
-import { withTenant } from "@caisson/tenancy-rls";
-import type { Transactor } from "@caisson/tenancy-rls";
+} from "@caisson-sh/ai-meter";
+import { detokenizePii, guardInput, guardOutput } from "@caisson-sh/guardrails";
+import type {
+  GuardPolicy,
+  GuardRuntime,
+  PiiToken,
+} from "@caisson-sh/guardrails";
+import { CaissonError, InsufficientCreditsError } from "@caisson-sh/kernel";
+import type { EventSink } from "@caisson-sh/kernel";
+import type { TrajectoryEvent } from "@caisson-sh/agent-trajectory";
+import { renderVersion, resolvePrompt } from "@caisson-sh/prompt-registry";
+import type { RenderedMessage } from "@caisson-sh/prompt-registry";
+import { withTenant } from "@caisson-sh/tenancy-rls";
+import type { Transactor } from "@caisson-sh/tenancy-rls";
 import {
   assertUsageFitsLedger,
   canPersistUsage,
@@ -574,7 +578,7 @@ function deferred<T>(): Deferred<T> {
 /**
  * The usage `inferStream` reconciles against when a stream ends WITHOUT the model's own `finish`
  * part (abandoned — see `inferStream`'s design note). The provider never reports actual usage in
- * that case, so this reuses `reserve()`'s own chars/4 heuristic (`@caisson/ai-meter`): input tokens
+ * that case, so this reuses `reserve()`'s own chars/4 heuristic (`@caisson-sh/ai-meter`): input tokens
  * over the messages actually sent, output tokens over the text actually yielded before the stream
  * ended.
  */

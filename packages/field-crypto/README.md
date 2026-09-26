@@ -1,4 +1,4 @@
-# @caisson/field-crypto
+# @caisson-sh/field-crypto
 
 Per-tenant authenticated field encryption — the floor the Compliance edition's encrypted columns
 stand on. ADR-0043 (per-tenant keys) · ADR-0046 (envelope) · ADR-0045 (cipher) · ADR-0006 (data layer).
@@ -42,7 +42,7 @@ import {
   encryptedColumn,
   withFieldCryptoContext,
   derivedContext,
-} from "@caisson/field-crypto";
+} from "@caisson-sh/field-crypto";
 
 // Derived path for dev/test or an explicitly selected self-hosted deployment:
 const provider = DerivedKeyProvider.fromEnv(); // MASTER_FIELD_KEY + FIELD_CRYPTO_SALT (hex 32B)
@@ -64,7 +64,7 @@ import {
   KmsKeyProvider,
   PgWrappedKeyStore,
   withKmsFieldCryptoContext,
-} from "@caisson/field-crypto";
+} from "@caisson-sh/field-crypto";
 
 await withTenant(db, tenantId, async (tx) => {
   const provider = new KmsKeyProvider(kmsClient, new PgWrappedKeyStore(tx));

@@ -18,7 +18,7 @@ import { randomUUID, generateKeyPairSync, type KeyObject } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { newTestPg, type TestPg } from "@caisson/testing";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import {
   buildChain,
   canonicalize,
@@ -27,8 +27,8 @@ import {
   NotFoundError,
   ValidationError,
   type JsonValue,
-} from "@caisson/kernel/node";
-import { buildTenantPolicySql } from "@caisson/tenancy-rls";
+} from "@caisson-sh/kernel/node";
+import { buildTenantPolicySql } from "@caisson-sh/tenancy-rls";
 import { LocalArtifactStore } from "./store.local.ts";
 import {
   buildArtifactKey,

@@ -7,7 +7,7 @@
  *
  * Provider-SDK reachability is NOT re-implemented here (no allow-set): the confinement of the
  * Vercel AI SDK family — `ai` core + `@ai-sdk/{openai,anthropic,google,openrouter}` — to
- * @caisson/ai-config + @caisson/ai-kit is owned by the eslint denylist (boundaries.js, Gate 2)
+ * @caisson-sh/ai-config + @caisson-sh/ai-kit is owned by the eslint denylist (boundaries.js, Gate 2)
  * and the dependency-cruiser graph (.dependency-cruiser.cjs, authoritative). License-wise the AI
  * SDK family is Apache-2.0, so it passes the Gate 1/1b AGPL tripwire below by construction; its
  * only constraint is composition (ADR-0011/0022), not copyleft.
@@ -32,7 +32,7 @@ import {
 } from "./prose-regex";
 // Type-only — erased at transpile, so it cannot break the pre-install fs-only pass (see
 // checkRlsEquivalence's lazy VALUE import below for the runtime seam).
-import type { buildTenantPolicySql as BuildTenantPolicySqlFn } from "@caisson/tenancy-rls";
+import type { buildTenantPolicySql as BuildTenantPolicySqlFn } from "@caisson-sh/tenancy-rls";
 
 // A registry-module candidate is a `packages/` member. `apps/` are reference applications (the
 // base/edition reference apps + the design studio) — never published to the registry, so they are
@@ -210,7 +210,7 @@ export function checkExternalAgpl(pkgs: Pkg[], root: string): Finding[] {
  */
 const NEVER_PUBLISHED = new Set([
   // The private brand layer (glyphs/wordmark) — apps consume it directly, never a registry module.
-  "@caisson/brand",
+  "@caisson-sh/brand",
 ]);
 
 /**
@@ -398,7 +398,7 @@ export async function checkManifestAgreement(pkgs: Pkg[]): Promise<Finding[]> {
     mismatch("id", manifest.id, p.name);
     mismatch("version", manifest.version, p.version);
     mismatch("license", manifest.license, p.license);
-    // manifest.dependencies (@caisson/*) must match package.json's @caisson deps — else the index
+    // manifest.dependencies (@caisson-sh/*) must match package.json's @caisson-sh deps — else the index
     // (built from the manifest) advertises a dep graph the package doesn't have (down-only runs
     // on package.json deps, so a divergent manifest array escapes it otherwise).
     const md = [...(manifest.dependencies ?? [])].sort().join(",");
@@ -481,7 +481,7 @@ export function checkCopyPaste(root: string): Finding[] {
 
 /**
  * RLS migration-equivalence harness (ADR-0210 hardening #2 / ADR-0005). `buildTenantPolicySql`
- * (@caisson/tenancy-rls) is the canonical RLS-SQL generator; nothing previously checked hand-written
+ * (@caisson-sh/tenancy-rls) is the canonical RLS-SQL generator; nothing previously checked hand-written
  * migration RLS against it — a table can LOOK tenant-isolated but ship undocumented drift
  * (`retention_audit`/`alert_audit_log` already shipped narrower GRANTs than the generator would).
  *
@@ -627,12 +627,12 @@ export async function checkRlsEquivalence(
 ): Promise<Finding[]> {
   // The REAL generator (SPEC-tenancy-rls task 3): gate and generator can't independently drift.
   // Lazily imported — a STATIC workspace import would break the CLI's pre-install fs-only pass
-  // (CI layer 1a runs before `bun install`; @caisson/tenancy-rls itself imports @caisson/kernel).
+  // (CI layer 1a runs before `bun install`; @caisson-sh/tenancy-rls itself imports @caisson-sh/kernel).
   // Mirrors checkManifestAgreement's convention: a resolution failure is a non-blocking warn (the
   // post-install layer-1b run executes the check for real); any other load failure fails closed.
   let buildTenantPolicySql: typeof BuildTenantPolicySqlFn;
   try {
-    ({ buildTenantPolicySql } = await import("@caisson/tenancy-rls"));
+    ({ buildTenantPolicySql } = await import("@caisson-sh/tenancy-rls"));
   } catch (e) {
     const msg = (e as Error).message ?? String(e);
     const isResolutionFailure =
@@ -642,10 +642,10 @@ export async function checkRlsEquivalence(
       {
         severity: isResolutionFailure ? "warn" : "error",
         rule: "rls-equivalence",
-        pkg: "@caisson/tenancy-rls",
+        pkg: "@caisson-sh/tenancy-rls",
         message: isResolutionFailure
-          ? `could not RESOLVE @caisson/tenancy-rls (${msg}) — RLS equivalence check skipped; CI must run post-install.`
-          : `@caisson/tenancy-rls failed to load (${msg}) — the RLS generator is broken (ADR-0005).`,
+          ? `could not RESOLVE @caisson-sh/tenancy-rls (${msg}) — RLS equivalence check skipped; CI must run post-install.`
+          : `@caisson-sh/tenancy-rls failed to load (${msg}) — the RLS generator is broken (ADR-0005).`,
       },
     ];
   }
@@ -873,7 +873,7 @@ export function checkShippedProse(pkgs: Pkg[], root: string): Finding[] {
  * rewriting it at release time, this gate fails the PR the moment an internal-prose leak lands in
  * a changeset body, forcing the author to write buyer-readable prose up front.
  *
- * Frontmatter (the `--- \n "@caisson/x": patch \n ---` package/bump header) is exempt — only the
+ * Frontmatter (the `--- \n "@caisson-sh/x": patch \n ---` package/bump header) is exempt — only the
  * body below it is scanned. An empty changeset (no body) passes trivially. `README.md` and
  * `config.json` inside `.changeset/` are not summaries and are never scanned.
  */

@@ -4,7 +4,7 @@
 // (`apiKeyEnv`); this package resolves which provider/model a lane maps to, and
 // never reads the key itself. Pure logic, no network.
 import { z } from "zod";
-import { NotFoundError, parseStrict, strictObject } from "@caisson/kernel";
+import { NotFoundError, parseStrict, strictObject } from "@caisson-sh/kernel";
 
 /**
  * One provider binding: provider/model for a lane + where its key lives. The provider set is a

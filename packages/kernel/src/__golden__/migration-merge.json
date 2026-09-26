@@ -4,7 +4,7 @@
       "seq": 1,
       "filename": "0001_init.sql",
       "sql": "CREATE TABLE schema_version (\n  version integer PRIMARY KEY,\n  checksum text NOT NULL,\n  applied_at timestamptz NOT NULL DEFAULT now()\n);\n",
-      "sourcePackage": "@caisson/kernel",
+      "sourcePackage": "@caisson-sh/kernel",
       "sourceName": "0001_init.sql",
       "checksum": "9a64d86d4ac164f39653dfa652894f553f0f0b351a48f2256c70a1ffba0d7124"
     },
@@ -12,7 +12,7 @@
       "seq": 2,
       "filename": "0002_accounts.sql",
       "sql": "CREATE TABLE accounts (\n  id uuid PRIMARY KEY,\n  created_at timestamptz NOT NULL DEFAULT now()\n);\n",
-      "sourcePackage": "@caisson/kernel",
+      "sourcePackage": "@caisson-sh/kernel",
       "sourceName": "0002_accounts.sql",
       "checksum": "5c297642c2eb12f0d1f38684f8aa56582898edb9c2c40e6e081883eefce24d6d"
     },
@@ -20,7 +20,7 @@
       "seq": 3,
       "filename": "0003_credit_ledger.sql",
       "sql": "CREATE TABLE credit_event (\n  id uuid PRIMARY KEY,\n  account_id uuid NOT NULL REFERENCES accounts(id),\n  amount integer NOT NULL\n);\n",
-      "sourcePackage": "@caisson/billing",
+      "sourcePackage": "@caisson-sh/billing",
       "sourceName": "0001_credit_ledger.sql",
       "checksum": "914081993efb4245fcd28b15079607771a3e58270147dc61c9d7358c292ec2aa"
     }

@@ -8,7 +8,7 @@ import { SUBPROCESSORS } from "@/lib/subprocessors";
 // The subprocessor table reuses the kit's `cs-matrix` styling (fixed layout, sticky first column,
 // scroll frame). Its stylesheet only ships inside the component module, which tree-shaking drops
 // from this page's graph — own the dependency explicitly, same as the compare page:
-import "@caisson/ui/components/sku-matrix.css";
+import "@caisson-sh/ui/components/sku-matrix.css";
 
 const STATUS_PAGE_URL = "https://caisson.betteruptime.com";
 

@@ -2,14 +2,14 @@ import { describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { matchGolden } from "@caisson/testing";
+import { matchGolden } from "@caisson-sh/testing";
 import {
   defineRegimeCrosswalk,
   exportRegimeCrosswalk,
   nist80053Crosswalk,
   type RegimeCrosswalk,
   type RegimeCrosswalkInput,
-} from "@caisson/oscal-spine";
+} from "@caisson-sh/oscal-spine";
 import {
   gdprCrosswalk,
   iso27001Crosswalk,
@@ -52,7 +52,7 @@ describe("claim posture is encoded in the type + enforced at author time (ADR-02
         claim: "implements",
         control: "CC1.1",
         summary: "s",
-        mechanism: "@caisson/x — mechanism",
+        mechanism: "@caisson-sh/x — mechanism",
         evidence: "e",
         buyerResponsibility: "b",
       },
@@ -66,7 +66,7 @@ describe("claim posture is encoded in the type + enforced at author time (ADR-02
         claim: "implements",
         control: "CC1.1",
         summary: "s",
-        mechanism: "@caisson/x — mechanism",
+        mechanism: "@caisson-sh/x — mechanism",
         evidence: "e",
         buyerResponsibility: "b",
         proof: { kind: "test", path: "packages/x/src/x.test.ts" },
@@ -81,7 +81,7 @@ describe("claim posture is encoded in the type + enforced at author time (ADR-02
         claim: "maps-to",
         control: "CC1.1",
         summary: "s",
-        mechanism: "@caisson/x — mechanism",
+        mechanism: "@caisson-sh/x — mechanism",
         evidence: "e",
         buyerResponsibility: "b",
         proof: { kind: "test", path: "packages/x/src/x.test.ts" },
@@ -97,7 +97,7 @@ describe("claim posture is encoded in the type + enforced at author time (ADR-02
           claim: "implements",
           control: "CC1.1",
           summary: "s",
-          mechanism: "@caisson/x — mechanism",
+          mechanism: "@caisson-sh/x — mechanism",
           evidence: "e",
           buyerResponsibility: "b",
           proof: { kind: "test", path },
@@ -112,7 +112,7 @@ describe("claim posture is encoded in the type + enforced at author time (ADR-02
       claim: "maps-to" as const,
       control: "CC1.1",
       summary: "s",
-      mechanism: "@caisson/x — mechanism",
+      mechanism: "@caisson-sh/x — mechanism",
       evidence: "e",
       buyerResponsibility: "b",
     };
@@ -128,7 +128,7 @@ describe("ADR-0347 Fork G1/G2 -- optional canonicalControlId + crosswalk-level s
           claim: "maps-to",
           control: "CC1.1",
           summary: "s",
-          mechanism: "@caisson/x — mechanism",
+          mechanism: "@caisson-sh/x — mechanism",
           evidence: "e",
           buyerResponsibility: "b",
           canonicalControlId: "ACCESS-CONTROL.LOGICAL",
@@ -146,7 +146,7 @@ describe("ADR-0347 Fork G1/G2 -- optional canonicalControlId + crosswalk-level s
             claim: "maps-to",
             control: "CC1.1",
             summary: "s",
-            mechanism: "@caisson/x — mechanism",
+            mechanism: "@caisson-sh/x — mechanism",
             evidence: "e",
             buyerResponsibility: "b",
             canonicalControlId: "access-control.logical",
@@ -163,7 +163,7 @@ describe("ADR-0347 Fork G1/G2 -- optional canonicalControlId + crosswalk-level s
           claim: "maps-to",
           control: "CC1.1",
           summary: "s",
-          mechanism: "@caisson/x — mechanism",
+          mechanism: "@caisson-sh/x — mechanism",
           evidence: "e",
           buyerResponsibility: "b",
         },
@@ -186,7 +186,7 @@ describe("ADR-0347 Fork G1/G2 -- optional canonicalControlId + crosswalk-level s
             claim: "maps-to",
             control: "CC1.1",
             summary: "s",
-            mechanism: "@caisson/x — mechanism",
+            mechanism: "@caisson-sh/x — mechanism",
             evidence: "e",
             buyerResponsibility: "b",
           },

@@ -3,7 +3,7 @@ title: agent-kernel
 description: The engine-neutral agent kernel, agent/skill/rule schema, seven-act lifecycle FSM, allow/deny/mutate governance, hooks dispatcher, and an opt-in tamper-evident audit chain. No vendor SDK, no LLM call.
 ---
 
-`@caisson/agent-kernel` is the engine-neutral base for governed AI agent work: a Zod schema
+`@caisson-sh/agent-kernel` is the engine-neutral base for governed AI agent work: a Zod schema
 for agent/skill/rule artifacts, a seven-act lifecycle state machine (spec through ship),
 allow/deny/mutate governance guards, a hooks dispatcher, and an opt-in tamper-evident
 audit-chain recorder. It imports no vendor SDK and runs no LLM, composition mechanism
@@ -12,7 +12,7 @@ only, consumed down-only by both the base `cli`/`mcp-server` and the Agentic-Dev
 ## Install
 
 ```bash
-bun add @caisson/agent-kernel
+bun add @caisson-sh/agent-kernel
 ```
 
 ## Quickstart
@@ -23,7 +23,7 @@ import {
   runLifecycle,
   transition,
   HookDispatcher,
-} from "@caisson/agent-kernel";
+} from "@caisson-sh/agent-kernel";
 
 const agent = parseArtifact({ kind: "agent", name: "reviewer" /* … */ });
 const next = transition("plan", "execute"); // "execute"; transition("spec","execute") throws
@@ -47,7 +47,7 @@ await hooks.dispatch("before:execute", { act: "execute", phase: "before" });
 ## Typed agent/skill/rule schema
 
 `AgentArtifact`, `SkillArtifact`, and `RuleArtifact` are a Zod `discriminatedUnion` on
-`kind`, built on `@caisson/kernel`'s `strictObject`: an unknown field is rejected outright,
+`kind`, built on `@caisson-sh/kernel`'s `strictObject`: an unknown field is rejected outright,
 not silently dropped. A bad artifact fails through `parseArtifact` as a redaction-safe
 `ValidationError`: never the rejected values.
 
@@ -81,7 +81,7 @@ guards after it, and a guard that **throws is itself treated as a deny**: a bugg
 can never accidentally admit a transition.
 
 ```ts
-import { predicateGuard, evaluateGuards } from "@caisson/agent-kernel";
+import { predicateGuard, evaluateGuards } from "@caisson-sh/agent-kernel";
 
 const requireReview = predicateGuard(
   (t) => t.context.reviewed === true,

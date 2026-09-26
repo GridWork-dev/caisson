@@ -2,13 +2,13 @@
 // org-controls surfaces (the MANAGE membership surface, WorkOS SSO, and the operator control plane)
 // behind its own access grants.
 //
-// A grant may name the module by its bare slug `org-controls` or by the full `@caisson/org-controls`
+// A grant may name the module by its bare slug `org-controls` or by the full `@caisson-sh/org-controls`
 // module id; the predicate accepts either form so it is correct whichever the host's grant carries.
 
 /** The bare-slug entitlement id a standalone org-controls purchase grants. */
 export const ORG_CONTROLS_ENTITLEMENT_ID = "org-controls";
 /** The full module-id form the same entitlement may also appear as. */
-export const ORG_CONTROLS_MODULE_ID = "@caisson/org-controls";
+export const ORG_CONTROLS_MODULE_ID = "@caisson-sh/org-controls";
 
 /**
  * True only when `activeEntitlementIds` contains the org-controls entitlement (either id form).

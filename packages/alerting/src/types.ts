@@ -2,7 +2,7 @@
 // boundary every stage consumes; `EventTypeRegistry` is a data-only per-event-type policy table
 // (this ships the shape + a small seed — extend with your own event types per real usage).
 import { z } from "zod";
-import { strictObject } from "@caisson/kernel";
+import { strictObject } from "@caisson-sh/kernel";
 
 export const AlertSeveritySchema = z.enum(["info", "warning", "critical"]);
 export type AlertSeverity = z.infer<typeof AlertSeveritySchema>;

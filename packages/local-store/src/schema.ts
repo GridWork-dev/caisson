@@ -4,7 +4,7 @@
 // are bounded, ids are UUIDs, and a parse failure surfaces as a redaction-safe `ValidationError`
 // (never the rejected values). Engine-neutral: this is the record STRUCTURE, never a model binding.
 import { z } from "zod";
-import { parseStrict, strictObject } from "@caisson/kernel";
+import { parseStrict, strictObject } from "@caisson-sh/kernel";
 
 /** Bound the indexed text — no unbounded string reaches the store (ADR-0002 boundary discipline). */
 const MAX_TEXT = 100_000;

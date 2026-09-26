@@ -6,22 +6,22 @@ import {
   GRANT_CONSUMPTION_MIGRATION_SQL,
   balance,
   grant,
-} from "@caisson/credits";
+} from "@caisson-sh/credits";
 import {
   AI_METER_SCHEMA_SQL,
   SPEND_POLICY_TABLE,
   USAGE_EVENT_TABLE,
-} from "@caisson/ai-meter";
-import type { MeterConfig, Usage } from "@caisson/ai-meter";
-import type { AiSettings } from "@caisson/ai-config";
-import { localModerator } from "@caisson/guardrails";
+} from "@caisson-sh/ai-meter";
+import type { MeterConfig, Usage } from "@caisson-sh/ai-meter";
+import type { AiSettings } from "@caisson-sh/ai-config";
+import { localModerator } from "@caisson-sh/guardrails";
 import {
   InMemoryEventSink,
   asCredits,
   asMicroUsdPerCredit,
-} from "@caisson/kernel";
-import { matchGolden, newTestPg, type TestPg } from "@caisson/testing";
-import { withTenant } from "@caisson/tenancy-rls";
+} from "@caisson-sh/kernel";
+import { matchGolden, newTestPg, type TestPg } from "@caisson-sh/testing";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 import { simulateReadableStream } from "ai";
 import { MockEmbeddingModelV4, MockLanguageModelV4 } from "ai/test";
 import type {

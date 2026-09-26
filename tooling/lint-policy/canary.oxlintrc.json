@@ -26,7 +26,7 @@
         "patterns": [
           {
             "group": ["@ai-sdk/openai"],
-            "message": "Provider SDKs may only be imported by @caisson/ai-config and @caisson/ai-kit (ADR-0011)."
+            "message": "Provider SDKs may only be imported by @caisson-sh/ai-config and @caisson-sh/ai-kit (ADR-0011)."
           }
         ]
       }

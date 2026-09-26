@@ -29,7 +29,7 @@ export const NIST_CATALOG_SOURCE_URL = `https://raw.githubusercontent.com/${NIST
 export const NIST_CATALOG_VERSION = "5.2.0";
 
 /** The catalog's own internal `catalog.metadata["oscal-version"]` — must match the ADR-0179
- *  `OSCAL_VERSION` CI pin (`@caisson/oscal-spine`'s `oscal-export.ts`). */
+ *  `OSCAL_VERSION` CI pin (`@caisson-sh/oscal-spine`'s `oscal-export.ts`). */
 export const NIST_CATALOG_OSCAL_VERSION = "1.2.2";
 
 /** SHA-256 (lowercase hex) of the exact committed bytes of the sibling vendored JSON file. */

@@ -1,11 +1,11 @@
 // The Caisson bespoke domain glyphs — the compliance/AI/agent concepts stock icon libraries lack
 // (RLS, WORM, audit-chain, field-crypto, evidence-pack, the caisson cross-section, and the module
 // marks). 24-grid, 2px stroke, currentColor, no fill (matches the Lucide floor). Private brand IP:
-// registered into the @caisson/ui icon surface at app startup via `registerIcons(brandGlyphs)`;
+// registered into the @caisson-sh/ui icon surface at app startup via `registerIcons(brandGlyphs)`;
 // the kit floor ships no bespoke glyphs of its own. Server-safe (plain SVG, no framework import).
-import type { IconGlyph, RegisteredIconName } from "@caisson/ui/components";
+import type { IconGlyph, RegisteredIconName } from "@caisson-sh/ui/components";
 
-/** The 37 bespoke domain glyphs, keyed by the @caisson/ui registry name contract. */
+/** The 37 bespoke domain glyphs, keyed by the @caisson-sh/ui registry name contract. */
 export const brandGlyphs: Record<RegisteredIconName, IconGlyph> = {
   // Row-level security: a table whose locked row admits only the keyed tenant.
   rls: (p) => (

@@ -3,7 +3,7 @@
 // prices, no purchase ids.
 
 /** The module-family ids (ADR-0257 vocabulary). Kept SITE-LOCAL on purpose: this module is
- *  client-reachable, and pulling `@caisson/registry-schema` drags in its `node:fs` disk loader. */
+ *  client-reachable, and pulling `@caisson-sh/registry-schema` drags in its `node:fs` disk loader. */
 export const BUNDLE_IDS = [
   "compliance",
   "ai-production",
@@ -271,7 +271,7 @@ export const MODULES: readonly CatalogModule[] = [
     label: "UI Pro",
     bundles: [],
     blurb:
-      "The extended component layer on the open @caisson/ui base: data-dense matrices, credential strips, and the elevation + glow treatments the brand system ships.",
+      "The extended component layer on the open @caisson-sh/ui base: data-dense matrices, credential strips, and the elevation + glow treatments the brand system ships.",
   },
 ] as const;
 

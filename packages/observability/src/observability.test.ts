@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { ConfigError } from "@caisson/kernel";
+import { ConfigError } from "@caisson-sh/kernel";
 import { ExportResultCode } from "@opentelemetry/core";
 import type { ExportResult } from "@opentelemetry/core";
 import type {

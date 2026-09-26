@@ -1,6 +1,6 @@
 // WebCrypto guard composition. Moderation and metadata-only block emission share the exact core
 // with the Node entry; only PII transforms use their async browser twins.
-import { ConfigError } from "@caisson/kernel/browser";
+import { ConfigError } from "@caisson-sh/kernel/browser";
 import type { GuardPolicyBase, GuardRuntime } from "./guard-core.ts";
 import { moderateGuard } from "./guard-core.ts";
 import type { BrowserPiiCryptoContext } from "./pii-browser.ts";

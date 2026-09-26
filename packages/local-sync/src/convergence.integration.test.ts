@@ -12,8 +12,8 @@
 // local canonical store is the convergence target. Deterministic + offline → CI-safe (no live network).
 import { describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
-import { canonicalize, TenancyError } from "@caisson/kernel";
-import type { JsonValue } from "@caisson/kernel";
+import { canonicalize, TenancyError } from "@caisson-sh/kernel";
+import type { JsonValue } from "@caisson-sh/kernel";
 import { ChangesetLog, parseChangeset } from "./changeset.ts";
 import { reconcileWithTombstones } from "./tombstone.ts";
 import type { Tombstone } from "./tombstone.ts";

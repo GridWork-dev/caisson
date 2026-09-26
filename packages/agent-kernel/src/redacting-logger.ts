@@ -7,7 +7,7 @@
 //
 // No fs/console import: the HOST supplies the write sink (the same read/write-seam DI shape as
 // `AuditLifecycleStore` in `audit-lifecycle.ts`) — this module only redacts + shapes the line.
-import { scrubDeep } from "@caisson/kernel";
+import { scrubDeep } from "@caisson-sh/kernel";
 
 /** A JSONL sink: appends one already-newline-terminated line. Sync or async; the caller awaits both. */
 export type JsonlSink = (line: string) => void | Promise<void>;

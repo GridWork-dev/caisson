@@ -1,6 +1,6 @@
-// @caisson/prompt-registry/ui — the prompt browser (ADR-0250 G2c/G2d). A headless-data-in
+// @caisson-sh/prompt-registry/ui — the prompt browser (ADR-0250 G2c/G2d). A headless-data-in
 // surface: it renders the `PromptVersion` rows the host resolved via `listVersions`/`getVersion` (no
-// tenant executor, no DB). Composes the `@caisson/ui` floor; presentational + SSR-safe.
+// tenant executor, no DB). Composes the `@caisson-sh/ui` floor; presentational + SSR-safe.
 import type { CSSProperties } from "react";
 import {
   DataTable,
@@ -9,8 +9,11 @@ import {
   MetricStat,
   Section,
   StatusChip,
-} from "@caisson/ui/components";
-import type { DataTableColumn, DataTableProps } from "@caisson/ui/components";
+} from "@caisson-sh/ui/components";
+import type {
+  DataTableColumn,
+  DataTableProps,
+} from "@caisson-sh/ui/components";
 import type { PromptVersion } from "../registry.ts";
 
 const MONO: CSSProperties = { fontFamily: "var(--cs-font-mono)" };

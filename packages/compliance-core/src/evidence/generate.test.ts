@@ -6,8 +6,8 @@ import {
   canonicalize,
   ValidationError,
   type JsonValue,
-} from "@caisson/kernel/node";
-import { matchGolden } from "@caisson/testing";
+} from "@caisson-sh/kernel/node";
+import { matchGolden } from "@caisson-sh/testing";
 import {
   flaggedResult,
   passResult,

@@ -4,7 +4,7 @@
 // runs in CI. The runner records checksums but never owns assembly: the kernel computes the sequence +
 // ledger, the runner only applies it. Owned here in the base so every consumer (cli, compliance, any
 // future tier) applies migrations the same way instead of re-forking the loop (ADR-0090).
-import type { MergedMigration, MigrationAssembly } from "@caisson/kernel";
+import type { MergedMigration, MigrationAssembly } from "@caisson-sh/kernel";
 
 /** One row recorded in a target DB's `schema_version` ledger (ADR-0014). */
 export interface AppliedMigration {

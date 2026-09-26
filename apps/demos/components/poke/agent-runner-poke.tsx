@@ -1,23 +1,23 @@
 "use client";
 
 // The agent-runner module's poke (ADR-0378 lock 2) -- a live, deterministic run of the REAL
-// @caisson/agent-runner env scrubber against a fixed sample parent env. The hand-ported mirror
+// @caisson-sh/agent-runner env scrubber against a fixed sample parent env. The hand-ported mirror
 // (agent-runner-logic.ts) is retired per ADR-0396: buildEngineEnv, CLAUDE_CLI_PROFILE and
 // PASSTHROUGH_KEYS come from the package's browser-safe `./browser` entry, which is the same
 // src/engine-env.ts module the runner itself imports (the detached spawn and the on-disk run
 // registry stay behind `.`). Only the sample parent env and the added-key ordering below are
 // poke-local. Nothing here fetches, persists, or measures the visitor.
 import { useId, useMemo, useState } from "react";
-import { Checkbox, DetailList, StatusChip } from "@caisson/ui/components";
-import type { DetailItem } from "@caisson/ui/components";
+import { Checkbox, DetailList, StatusChip } from "@caisson-sh/ui/components";
+import type { DetailItem } from "@caisson-sh/ui/components";
 import {
   CLAUDE_CLI_PROFILE,
   PASSTHROUGH_KEYS,
   buildEngineEnv,
-} from "@caisson/agent-runner/browser";
-import type { ProviderConfig } from "@caisson/agent-runner/browser";
-import { isCaissonError } from "@caisson/kernel";
-import type { CaissonError } from "@caisson/kernel";
+} from "@caisson-sh/agent-runner/browser";
+import type { ProviderConfig } from "@caisson-sh/agent-runner/browser";
+import { isCaissonError } from "@caisson-sh/kernel";
+import type { CaissonError } from "@caisson-sh/kernel";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./agent-runner-poke.module.css";
@@ -176,7 +176,7 @@ export default function AgentRunnerPoke() {
 
   return (
     <PokeShell
-      label="@caisson/agent-runner"
+      label="@caisson-sh/agent-runner"
       title="Toggle a parent env key. Watch it survive the scrub, or never show up."
     >
       <div className={styles.layout}>

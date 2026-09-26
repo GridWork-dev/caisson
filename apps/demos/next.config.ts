@@ -18,10 +18,10 @@ const config: NextConfig = {
   basePath: "/demos",
   reactStrictMode: true,
   images: { unoptimized: true },
-  // @caisson/ui ships raw TS (its "./components" export points straight at src/) so Next has to
+  // @caisson-sh/ui ships raw TS (its "./components" export points straight at src/) so Next has to
   // transpile it — same entry apps/site carries. Every other package a poke drives resolves
   // through its built `dist` entry, so nothing else belongs on this list.
-  transpilePackages: ["@caisson/ui"],
+  transpilePackages: ["@caisson-sh/ui"],
   turbopack: { root: monorepoRoot },
 };
 

@@ -1,5 +1,5 @@
 // src/treatment-plan.ts — the risk-treatment-plan evidence artifact. Same discipline as
-// `@caisson/compliance-core`'s evidence-pack manifest: a typed, canonicalizable body whose summary
+// `@caisson-sh/compliance-core`'s evidence-pack manifest: a typed, canonicalizable body whose summary
 // counts are DERIVED from the rows, never asserted by the caller, so the same register state
 // always canonicalizes to the same bytes. `buildRiskTreatmentPlan` is pure — no I/O, no clock — the
 // caller resolves which override (if any) governs each riskId and injects it.
@@ -9,8 +9,8 @@ import {
   parseStrict,
   strictObject,
   type JsonValue,
-} from "@caisson/kernel";
-import { CrosswalkReference } from "@caisson/frameworks-pack/registry";
+} from "@caisson-sh/kernel";
+import { CrosswalkReference } from "@caisson-sh/frameworks-pack/registry";
 import {
   computeResidual,
   Impact,
@@ -158,7 +158,7 @@ export function buildRiskTreatmentPlan(
     const computed = computeResidual(r.likelihood, r.impact);
     // Conditionally OMIT the key rather than set it to `undefined` — the schema's `overrideOf` is
     // an optional field (present-or-absent), and this tree's `exactOptionalPropertyTypes` rejects
-    // an explicit `undefined` value for one (mirrors @caisson/audit-worm's chain-store convention).
+    // an explicit `undefined` value for one (mirrors @caisson-sh/audit-worm's chain-store convention).
     return {
       riskId: r.riskId,
       subject: r.subject,

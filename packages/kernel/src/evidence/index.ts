@@ -1,5 +1,5 @@
-// The `@caisson/kernel/evidence` subpath (T-E1) — the audit-chain evidence-pack builder. Executable
-// verification deliberately lives out of band in the separate `@caisson/verify-pack` package and is
+// The `@caisson-sh/kernel/evidence` subpath (T-E1) — the audit-chain evidence-pack builder. Executable
+// verification deliberately lives out of band in the separate `@caisson-sh/verify-pack` package and is
 // never embedded into the evidence it vouches for.
 export {
   assertEvidencePackKeyId,

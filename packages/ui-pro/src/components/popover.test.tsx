@@ -1,4 +1,4 @@
-import { expectNoA11yViolationsIn, renderIntoJsdom } from "@caisson/testing";
+import { expectNoA11yViolationsIn, renderIntoJsdom } from "@caisson-sh/testing";
 import { describe, expect, test } from "bun:test";
 import { useState } from "react";
 

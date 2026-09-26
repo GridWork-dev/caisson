@@ -2,7 +2,7 @@
 // the waterline-over-chamber glyph rides beside it in tight contexts. MONOCHROME ALWAYS — the accent
 // never enters the wordmark (protects the ≤10% accent budget). Server-safe (no hook/handler/browser
 // API → no "use client"). Both render a single DOM root, so both forwardRef (matching the kit Button
-// reference). Private brand IP: apps consume `@caisson/brand` directly; the `@caisson/ui` floor no
+// reference). Private brand IP: apps consume `@caisson-sh/brand` directly; the `@caisson-sh/ui` floor no
 // longer ships the mark.
 import { forwardRef } from "react";
 import type { SVGProps } from "react";

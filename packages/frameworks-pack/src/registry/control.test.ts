@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { ValidationError } from "@caisson/kernel";
-import { matchGolden } from "@caisson/testing";
+import { ValidationError } from "@caisson-sh/kernel";
+import { matchGolden } from "@caisson-sh/testing";
 import {
   type CanonicalControl,
   type CrosswalkVerification,

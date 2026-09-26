@@ -1,4 +1,4 @@
-// The browser-safe entry (`@caisson/ai-evals/browser`): the regression gate's pure half — the
+// The browser-safe entry (`@caisson-sh/ai-evals/browser`): the regression gate's pure half — the
 // baseline boundary schema, `compareToBaseline`, the pre-BLESS eligibility check, the BLESS merge,
 // and the Wilson lower bound the gate's opt-in confidence floor is computed from. ADDITIVE — the
 // `.` barrel is untouched and stays the full node-capable surface; every name here is also on `.`

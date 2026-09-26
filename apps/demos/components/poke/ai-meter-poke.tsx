@@ -2,13 +2,13 @@
 
 // The ai-meter module's flagship "poke" (ADR-0378 lock 2, kimi spec F3 "the breaker console"): a
 // deterministic in-browser replay of the estimate -> reserve -> reconcile -> circuit-breaker money
-// path, running on the REAL @caisson/ai-meter (ADR-0396 — the hand-ported ai-meter-logic.ts mirror
+// path, running on the REAL @caisson-sh/ai-meter (ADR-0396 — the hand-ported ai-meter-logic.ts mirror
 // is deleted). Every number on screen comes from the package's own price book, estimator and cost
-// normalizer via `@caisson/ai-meter/browser`, and the blocked call throws the package's own
+// normalizer via `@caisson-sh/ai-meter/browser`, and the blocked call throws the package's own
 // SpendCapError.
 //
 // What stays poke-local, and why: reserve()/reconcile() themselves are async, take a
-// `TenantExecutor`, and move a real credit wallet through @caisson/credits — they cannot and must
+// `TenantExecutor`, and move a real credit wallet through @caisson-sh/credits — they cannot and must
 // not run in a browser. `applyReserve`/`applyReconcile` below are a SAMPLE session ledger, not a
 // second implementation of the money path: they hold demo state and delegate every credit figure to
 // the package. The sample wallet, the fixed window key and the golden actual usage are demo data.
@@ -29,7 +29,7 @@ import {
   resolvePriceEntry,
   type PriceBookEntry,
   type Usage,
-} from "@caisson/ai-meter/browser";
+} from "@caisson-sh/ai-meter/browser";
 
 import { PokeShell, Verdict, type VerdictState } from "./poke-rig";
 import styles from "./ai-meter-poke.module.css";
@@ -78,7 +78,7 @@ function softCapFor(hardCap: number): number {
   return Math.max(1, Math.round(hardCap * SOFT_CAP_RATIO));
 }
 
-/** The ledger event types packages/ai-meter/src/meter.ts writes via @caisson/credits. */
+/** The ledger event types packages/ai-meter/src/meter.ts writes via @caisson-sh/credits. */
 export type LedgerKind = "feature_debit" | "feature_grant";
 
 export interface LedgerEntry {
@@ -462,7 +462,7 @@ export default function AiMeterPoke() {
 
   return (
     <PokeShell
-      label={`@caisson/ai-meter · price book ${PRICE_BOOK_VERSION}`}
+      label={`@caisson-sh/ai-meter · price book ${PRICE_BOOK_VERSION}`}
       title="Reserve before you spend. Reconcile to the cent. Trip before the invoice."
     >
       <div className={styles.grid}>

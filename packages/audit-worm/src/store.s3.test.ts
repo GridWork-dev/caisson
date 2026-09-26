@@ -18,7 +18,11 @@ import {
   type PutObjectCommandInput,
   type PutObjectRetentionCommandInput,
 } from "@aws-sdk/client-s3";
-import { ConfigError, NotFoundError, ValidationError } from "@caisson/kernel";
+import {
+  ConfigError,
+  NotFoundError,
+  ValidationError,
+} from "@caisson-sh/kernel";
 import { ArtifactExistsError, buildArtifactKey } from "./store.ts";
 import {
   COMPLIANCE_ACKNOWLEDGEMENT,

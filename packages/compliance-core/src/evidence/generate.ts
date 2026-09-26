@@ -1,7 +1,7 @@
 // src/evidence/generate.ts — the deterministic, control→evidence pack generator (ADR-0058).
 //
 // This is the convergence point of the compliance leg. It composes, never re-implements:
-//   - `@caisson/kernel` `canonicalize` for the byte-stable signable body (the same bytes the signer signs);
+//   - `@caisson-sh/kernel` `canonicalize` for the byte-stable signable body (the same bytes the signer signs);
 //   - the `EvidenceCollector` results (run at the edge, where the substrate facts live);
 //   - the `pack-format` schema (the determinism + honesty CONTRACT) — every assembled body is
 //     re-validated through `parseEvidencePackManifest`, so the generator cannot regress an invariant
@@ -29,7 +29,7 @@
 //      changes the output.
 import { deflateRawSync } from "node:zlib";
 import { createHash } from "node:crypto";
-import { canonicalize, type JsonValue } from "@caisson/kernel";
+import { canonicalize, type JsonValue } from "@caisson-sh/kernel";
 import {
   assembleEvidenceManifest,
   type AssembleEvidenceManifestInput,

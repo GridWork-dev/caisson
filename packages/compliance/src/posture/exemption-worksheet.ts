@@ -15,10 +15,10 @@
  *
  * Mirrors the `defineControl`/`defineFramework` idiom (`../registry/control.ts`): typed Zod
  * `.strict()` builders that parse-and-validate at author time and fail closed on the first
- * violation. Depends only on `@caisson/kernel` (the down-only floor, ADR-0003).
+ * violation. Depends only on `@caisson-sh/kernel` (the down-only floor, ADR-0003).
  */
 import { z } from "zod";
-import { parseStrict, strictObject } from "@caisson/kernel";
+import { parseStrict, strictObject } from "@caisson-sh/kernel";
 
 /**
  * Fixed disclaimer every worksheet must carry verbatim. A `z.literal` on this constant means an

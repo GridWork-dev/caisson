@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { buildTenantPolicySql } from "@caisson/tenancy-rls";
+import { buildTenantPolicySql } from "@caisson-sh/tenancy-rls";
 import { FIELD_CRYPTO_KEY_SCHEMA_SQL } from "./schema.ts";
 
 test("field-key production schema is append-only and carries the hardened tenant policies", () => {

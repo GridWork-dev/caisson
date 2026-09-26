@@ -1,8 +1,8 @@
-// The browser-safe entry (`@caisson/alerting/browser`, ADR-0396): the event contract, all three
+// The browser-safe entry (`@caisson-sh/alerting/browser`, ADR-0396): the event contract, all three
 // decision stages, the delivery port with its isolation wrapper and capture driver, the audit port
 // with its in-memory driver, and the orchestrator itself. In other words the whole pipeline except
 // the five NETWORK drivers in `channels.ts`, which are irreducibly node-only (`node:crypto` for the
-// webhook HMAC, `@caisson/kernel/node` for the DNS-resolving SSRF re-check) and have no business in
+// webhook HMAC, `@caisson-sh/kernel/node` for the DNS-resolving SSRF re-check) and have no business in
 // a client bundle anyway — a browser cannot hold a webhook signing secret.
 //
 // ADDITIVE: `.` is untouched and keeps the full surface; every name here is also on `.`

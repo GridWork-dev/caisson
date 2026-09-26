@@ -10,8 +10,8 @@ import {
   setDefaultTimeout,
   test,
 } from "bun:test";
-import { ValidationError } from "@caisson/kernel";
-import { type TestPg, newTestPg } from "@caisson/testing";
+import { ValidationError } from "@caisson-sh/kernel";
+import { type TestPg, newTestPg } from "@caisson-sh/testing";
 import {
   PROCESSED_EVENT_SCHEMA_SQL,
   processEvent,

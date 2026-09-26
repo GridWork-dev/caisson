@@ -1,6 +1,6 @@
-# @caisson/kernel — agent usage note
+# @caisson-sh/kernel — agent usage note
 
-Provides the governance kernel: typed config loader, the `CaissonError` hierarchy (ADR-0019), security primitives, and the standards gate (ADR-0016). Every other `@caisson/*` package depends on kernel.
+Provides the governance kernel: typed config loader, the `CaissonError` hierarchy (ADR-0019), security primitives, and the standards gate (ADR-0016). Every other `@caisson-sh/*` package depends on kernel.
 
 ## Key surface
 

@@ -171,7 +171,7 @@ export default function AiKitPage() {
       {/* ===== What it composes ===== */}
       <Section
         title="One package, nine other Caisson packages behind it."
-        lede="The AI-Production bundle composes @caisson/ai-config, @caisson/ai-meter, @caisson/credits, @caisson/field-crypto, @caisson/guardrails, @caisson/kernel, @caisson/prompt-registry, @caisson/tenancy-rls, and @caisson/ai-evals. Together they resolve and render versioned prompts, map lanes to providers, validate inputs and outputs, reserve and reconcile integer credits, isolate tenant data, encrypt sensitive fields, and run the same eval checks in CI. The production safeguards stay in explicit package boundaries instead of being scattered through route handlers."
+        lede="The AI-Production bundle composes @caisson-sh/ai-config, @caisson-sh/ai-meter, @caisson-sh/credits, @caisson-sh/field-crypto, @caisson-sh/guardrails, @caisson-sh/kernel, @caisson-sh/prompt-registry, @caisson-sh/tenancy-rls, and @caisson-sh/ai-evals. Together they resolve and render versioned prompts, map lanes to providers, validate inputs and outputs, reserve and reconcile integer credits, isolate tenant data, encrypt sensitive fields, and run the same eval checks in CI. The production safeguards stay in explicit package boundaries instead of being scattered through route handlers."
         band="tint"
       />
 

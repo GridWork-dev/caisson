@@ -5,7 +5,7 @@
 // real transaction underneath every entry (injected where a driver takes one), so this never
 // opens a socket to a real Postgres/Supabase/Neon.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { newTestPg, type TestPg } from "@caisson/testing";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import { buildTenantPolicySql, withTenant, type Transactor } from "./index.ts";
 import { createSupabaseTransactor } from "./supabase.ts";
 

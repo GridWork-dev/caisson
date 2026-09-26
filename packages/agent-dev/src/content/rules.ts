@@ -4,7 +4,7 @@
 // Caisson-native binding constraints, authored directly against this schema. A rule is a blocking
 // constraint with a severity (never advisory). Authored in stable, deterministic order — the emitter
 // renders this order.
-import { type RuleArtifact, defineRule } from "@caisson/agent-kernel";
+import { type RuleArtifact, defineRule } from "@caisson-sh/agent-kernel";
 
 /** The default rule set a buyer of the agent-dev edition gets out of the box (engine-neutral). */
 export const CAISSON_RULES: readonly RuleArtifact[] = [

@@ -1,5 +1,5 @@
 {
-  "extends": "@caisson/tsconfig/base.json",
+  "extends": "@caisson-sh/tsconfig/base.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
+import { matchGolden } from "@caisson-sh/testing";
 import { computeResidual, defineRiskEntry } from "./model.ts";
 import type { RiskResidualOverrideRecord } from "./override.ts";
 import { buildRiskTreatmentPlan } from "./treatment-plan.ts";

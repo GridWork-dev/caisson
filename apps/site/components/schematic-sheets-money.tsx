@@ -197,7 +197,7 @@ const BILLING_PROVIDERS = [
 
 // ===== billing-orchestration blueprint sheet =====
 // Four factory drivers (createStripeBilling/createPaddleBilling/createLemonSqueezyBilling/
-// createPolarBilling) each satisfy the ONE @caisson/billing BillingProvider port
+// createPolarBilling) each satisfy the ONE @caisson-sh/billing BillingProvider port
 // (verifyAndParse/createCheckout). verifyAndParse() feeds the webhook-idempotency guard:
 // processEvent()/withIdempotentSideEffect() (the outer and per-side-effect layers,
 // idempotency.ts) call the private claim() helper, which INSERTs INTO billing_processed_event

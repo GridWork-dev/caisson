@@ -22,8 +22,8 @@
 // wire schemas; the mapped `RentedEmbedResponse`/`RentedCompleteResponse` is re-validated
 // `.strict()` by `RentedInferenceBackend` on every call. Usage maps to integer token units
 // (`Math.floor`, ADR-0007).
-import { InternalError, ValidationError } from "@caisson/kernel";
-import type { FetchTimeoutOptions } from "@caisson/kernel";
+import { InternalError, ValidationError } from "@caisson-sh/kernel";
+import type { FetchTimeoutOptions } from "@caisson-sh/kernel";
 import { EMBEDDING_DIM } from "./backend.ts";
 import {
   completeWireSchema,
@@ -31,7 +31,7 @@ import {
   tokenQuantity,
 } from "./openrouter-transport.ts";
 import type { RentedTransport } from "./rented-backend.ts";
-import type { EgressGuard } from "@caisson/local-privacy";
+import type { EgressGuard } from "@caisson-sh/local-privacy";
 
 /** The default data-plane `api-version` (the 2024-10-21 GA inference version; overridable). */
 const DEFAULT_API_VERSION = "2024-10-21";

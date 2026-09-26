@@ -1,9 +1,9 @@
-# @caisson/prompt-registry
+# @caisson-sh/prompt-registry
 
 Append-only versioned prompts with `name@version` / `name@alias` addressing and an injection-safe
 templating boundary. A base **primitive** (Apache-2.0) of the AI
-Production Kit (ADR-0061). Built on `@caisson/kernel` (versioning + errors) and
-`@caisson/tenancy-rls` (FORCE-RLS); never depends "up" on an edition (ADR-0003).
+Production Kit (ADR-0061). Built on `@caisson-sh/kernel` (versioning + errors) and
+`@caisson-sh/tenancy-rls` (FORCE-RLS); never depends "up" on an edition (ADR-0003).
 
 ## What it gives you
 
@@ -22,7 +22,7 @@ Production Kit (ADR-0061). Built on `@caisson/kernel` (versioning + errors) and
 ## Entry points
 
 - `.` — the full surface: the schema, the registry API, addressing, and templating (node-capable,
-  reaches `@caisson/tenancy-rls` and the `pg` driver through the schema module).
+  reaches `@caisson-sh/tenancy-rls` and the `pg` driver through the schema module).
 - `./browser` — addressing (`parsePromptRef`) and the injection-safe templating boundary
   (`renderPrompt`, `buildVarSchema`, and the message/var schemas), safe inside a client bundle. The
   registry functions and the schema are deliberately absent: each takes a `TenantExecutor` and runs
@@ -33,14 +33,14 @@ Production Kit (ADR-0061). Built on `@caisson/kernel` (versioning + errors) and
 ## Usage
 
 ```ts
-import { withTenant } from "@caisson/tenancy-rls";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 import {
   PROMPT_REGISTRY_SCHEMA_SQL,
   registerPrompt,
   resolvePrompt,
   setAlias,
   renderVersion,
-} from "@caisson/prompt-registry";
+} from "@caisson-sh/prompt-registry";
 
 // migrate: exec PROMPT_REGISTRY_SCHEMA_SQL once (a numbered migration in prod, ADR-0014/0070).
 

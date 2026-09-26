@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
+import { matchGolden } from "@caisson-sh/testing";
 import type { Framework } from "../registry/control.ts";
 import { euAiAct } from "./eu-ai-act.ts";
 import { hipaaSecurity } from "./hipaa-security.ts";

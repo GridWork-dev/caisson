@@ -34,8 +34,8 @@
 // defensive/fail-closed-to-safe-default layer for it.
 import { z } from "zod";
 import { readString } from "./event-readers.ts";
-import { ValidationError } from "@caisson/kernel";
-import type { DomainBillingEvent } from "@caisson/billing";
+import { ValidationError } from "@caisson-sh/kernel";
+import type { DomainBillingEvent } from "@caisson-sh/billing";
 
 export const PaddleEventSchema = z.object({
   event_id: z.string(),

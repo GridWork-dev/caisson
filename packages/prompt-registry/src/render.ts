@@ -14,7 +14,7 @@
 //
 // The render contract is pinned by the golden fixture `src/__golden__/render.json` (ADR-0013).
 import { z } from "zod";
-import { parseStrict, ValidationError } from "@caisson/kernel";
+import { parseStrict, ValidationError } from "@caisson-sh/kernel";
 
 /** The chat roles a prompt message may carry. */
 export const PROMPT_ROLES = ["system", "user", "assistant"] as const;

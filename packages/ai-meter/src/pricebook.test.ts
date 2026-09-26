@@ -6,7 +6,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
-import { asMicroUsdPerCredit } from "@caisson/kernel";
+import { asMicroUsdPerCredit } from "@caisson-sh/kernel";
 import {
   BUNDLED_PRICE_BOOK,
   computeCost,

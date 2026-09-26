@@ -1,8 +1,8 @@
-// @caisson/ai-meter/ui — the metered-usage chart (ADR-0250 G2c/G2d). A headless-data-in
+// @caisson-sh/ai-meter/ui — the metered-usage chart (ADR-0250 G2c/G2d). A headless-data-in
 // surface: it renders `usage_event` rows the host queried (no DB, no meter call). Aggregates by
 // model (a pure reduce) into credit / cost / token totals, then draws a token-scaled bar chart +
 // a per-model table. Credits/cost stay INTEGER units end to end (ADR-0007); the only float is the
-// display string MoneyCell produces. Composes the `@caisson/ui` floor; presentational + SSR-safe.
+// display string MoneyCell produces. Composes the `@caisson-sh/ui` floor; presentational + SSR-safe.
 import type { CSSProperties } from "react";
 import {
   DataTable,
@@ -10,8 +10,8 @@ import {
   MetricStat,
   MoneyCell,
   Section,
-} from "@caisson/ui/components";
-import type { DataTableColumn } from "@caisson/ui/components";
+} from "@caisson-sh/ui/components";
+import type { DataTableColumn } from "@caisson-sh/ui/components";
 
 const MONO: CSSProperties = { fontFamily: "var(--cs-font-mono)" };
 const STACK: CSSProperties = {

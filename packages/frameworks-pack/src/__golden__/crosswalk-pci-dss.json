@@ -16,7 +16,7 @@
       "claim": "maps-to",
       "control": "Req 3.5.1",
       "summary": "Stored account data is rendered unreadable wherever it is stored, using strong cryptography.",
-      "mechanism": "@caisson/field-crypto — per-field AEAD encryption at rest with row-bound AAD and a self-describing, rotatable key envelope.",
+      "mechanism": "@caisson-sh/field-crypto — per-field AEAD encryption at rest with row-bound AAD and a self-describing, rotatable key envelope.",
       "evidence": "Encryption and key-envelope tests in packages/field-crypto.",
       "buyerResponsibility": "Caisson stores no cardholder data — you scope your cardholder data environment, apply field-crypto to the PAN columns, and run key management per Req 3.6/3.7. Truncation, hashing, or tokenization of the PAN where used are your choices."
     },
@@ -24,7 +24,7 @@
       "claim": "maps-to",
       "control": "Req 7.2.1",
       "summary": "Access is assigned on need-to-know and least privilege through a defined access-control model.",
-      "mechanism": "@caisson/tenancy-rls — fail-closed FORCE ROW LEVEL SECURITY enforcing the tenant boundary at the data layer.",
+      "mechanism": "@caisson-sh/tenancy-rls — fail-closed FORCE ROW LEVEL SECURITY enforcing the tenant boundary at the data layer.",
       "evidence": "RLS force-enforcement tests in packages/tenancy-rls.",
       "buyerResponsibility": "Defining roles and privileges for your environment, the approval workflow, and periodic access reviews (Req 7.2.4)."
     },
@@ -32,7 +32,7 @@
       "claim": "maps-to",
       "control": "Req 8.3.1",
       "summary": "Access is authenticated with at least one strong authentication factor before it is granted.",
-      "mechanism": "@caisson/auth — session and JWT verification gating access at the application boundary.",
+      "mechanism": "@caisson-sh/auth — session and JWT verification gating access at the application boundary.",
       "evidence": "JWT/session verification tests in packages/auth.",
       "buyerResponsibility": "Multi-factor authentication into the cardholder data environment (Req 8.4/8.5), credential and password policy, and account lifecycle management."
     },
@@ -40,7 +40,7 @@
       "claim": "maps-to",
       "control": "Req 10.2.1",
       "summary": "Audit logs capture the events needed to reconstruct who did what to in-scope systems.",
-      "mechanism": "@caisson/audit-worm — the append-only audit chain is the durable, tamper-evident sink those events are written to.",
+      "mechanism": "@caisson-sh/audit-worm — the append-only audit chain is the durable, tamper-evident sink those events are written to.",
       "evidence": "Append/anchor/verify integration tests in packages/audit-worm.",
       "buyerResponsibility": "Emitting the specific events Req 10.2 enumerates (access to cardholder data, privileged actions, log-access, etc.) from your systems into the log — the event coverage is yours."
     },
@@ -48,7 +48,7 @@
       "claim": "implements",
       "control": "Req 10.3.2",
       "summary": "Audit log files are protected so that they cannot be modified after they are written.",
-      "mechanism": "@caisson/audit-worm — an append-only, hash-chained log anchored to a trusted tip, so modification, truncation, or rewriting after the fact is detectable; production deployments back the log with a write-once object store (e.g. S3 Object-Lock in GOVERNANCE mode).",
+      "mechanism": "@caisson-sh/audit-worm — an append-only, hash-chained log anchored to a trusted tip, so modification, truncation, or rewriting after the fact is detectable; production deployments back the log with a write-once object store (e.g. S3 Object-Lock in GOVERNANCE mode).",
       "evidence": "The tamper-evidence integration tests prove modification, truncation, and rewrite are all detected against the trusted tip.",
       "buyerResponsibility": "Routing your cardholder-data-environment audit events into the store, and your log-review process. Configuring and retaining a write-once backing store (e.g. Object-Lock retention on your bucket) is your deployment choice.",
       "proof": {
@@ -61,7 +61,7 @@
       "claim": "maps-to",
       "control": "Req 10.5.1",
       "summary": "Audit trail history is retained for at least twelve months, with recent history readily available.",
-      "mechanism": "@caisson/audit-worm — a fail-closed retention floor: a retain term below the configured minimum is rejected and never auto-extended, so a retention window cannot be silently shortened.",
+      "mechanism": "@caisson-sh/audit-worm — a fail-closed retention floor: a retain term below the configured minimum is rejected and never auto-extended, so a retention window cannot be silently shortened.",
       "evidence": "Retention-floor tests in packages/audit-worm (a term below the floor fails closed).",
       "buyerResponsibility": "Configuring the twelve-month retention term (Caisson enforces that it cannot be shortened below your floor, not that any particular duration is chosen) and your storage lifecycle."
     }

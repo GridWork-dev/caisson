@@ -2,7 +2,7 @@
 // BullMQ): same map construction, same NotFoundError contract on an unregistered task name.
 // Registration, payload parsing, scheduling, and provider worker semantics stay driver-local.
 // Generic over the task shape so this module imports nothing from queue.ts (no-circular gate).
-import { NotFoundError } from "@caisson/kernel";
+import { NotFoundError } from "@caisson-sh/kernel";
 
 export function createTaskRegistry<T extends { readonly name: string }>(
   tasks: readonly T[],

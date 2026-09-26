@@ -11,7 +11,7 @@ import {
   InternalError,
   ValidationError,
   type JsonValue,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   CAISSON_OSCAL_NS,
   OSCAL_VERSION,
@@ -557,7 +557,7 @@ describe("toOscalBundle — determinism + honesty + fail-closed", () => {
 
 // --- createOscalHttpTransport — the live delivery seam ---------------------------------------------
 // `OscalDeliveryConfigSchema` is the https-only + SSRF-literal validation boundary at construction
-// (mirrors @caisson/alerting's `safeHttpsUrl`); `postOscalDocument` ALSO re-runs the resolved SSRF
+// (mirrors @caisson-sh/alerting's `safeHttpsUrl`); `postOscalDocument` ALSO re-runs the resolved SSRF
 // guard immediately before every fetch (the alerting idiom — a config object can be built without
 // parsing the schema). `createOscalHttpTransport`'s second, optional `assertDestinationSafe` param
 // exists purely so these mechanics tests can point a real Bun.serve loopback stub through `deliver`

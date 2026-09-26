@@ -1,13 +1,13 @@
 "use client";
 
-// Flagship "Alias mover" poke for @caisson/prompt-registry (ADR-0378 lock 2), driving the REAL
+// Flagship "Alias mover" poke for @caisson-sh/prompt-registry (ADR-0378 lock 2), driving the REAL
 // package. Four immutable version rows on a fixed sample prompt, append-only, never mutated or
 // removed. `prod` is the ONE mutable pointer: promote it forward, roll it back, or try pointing it
 // at a version that was never minted and watch the write get rejected before it happens.
 //
 // What is real here, not ported:
 //   - every button builds a `name@selector` ref and hands it to the package's own `parsePromptRef`
-//     (@caisson/prompt-registry/browser) — the same parser `resolvePrompt` uses server-side, so the
+//     (@caisson-sh/prompt-registry/browser) — the same parser `resolvePrompt` uses server-side, so the
 //     three addressing kinds below are the package's, not a restatement of them;
 //   - the "current tip" badge is derived by the kernel's own `currentVersions` over the lineage,
 //     never stored;
@@ -19,9 +19,9 @@
 // setAlias, each bound to a tenancy-rls TenantExecutor) is server-only by construction and is not
 // on the `./browser` entry at all. Nothing leaves the page.
 import { useState } from "react";
-import { NotFoundError, currentVersions } from "@caisson/kernel";
-import type { VersionRecord } from "@caisson/kernel";
-import { parsePromptRef } from "@caisson/prompt-registry/browser";
+import { NotFoundError, currentVersions } from "@caisson-sh/kernel";
+import type { VersionRecord } from "@caisson-sh/kernel";
+import { parsePromptRef } from "@caisson-sh/prompt-registry/browser";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./prompt-registry-poke.module.css";
@@ -247,7 +247,7 @@ export default function PromptRegistryPoke() {
   }
 
   return (
-    <PokeShell label="@caisson/prompt-registry" title={TITLE}>
+    <PokeShell label="@caisson-sh/prompt-registry" title={TITLE}>
       <p className={styles.name}>
         <code>{promptRefFor(SAMPLE_ALIAS)}</code>
         <span className={styles.sampleTag}>sample</span>

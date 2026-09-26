@@ -3,10 +3,10 @@
 // generator's output — this is the runtime companion: a `pg_class` introspection that the FORCE
 // flag actually took effect once the SQL runs). Also pins the existence-leak guard: a tenancy
 // denial must surface as `TenancyError`, which is already httpStatus-404/`not_found` in
-// `@caisson/kernel` (never 403 — a 403 would leak that the row exists in another tenant).
+// `@caisson-sh/kernel` (never 403 — a 403 would leak that the row exists in another tenant).
 import { describe, expect, test } from "bun:test";
-import { newTestPg } from "@caisson/testing";
-import { TenancyError } from "@caisson/kernel";
+import { newTestPg } from "@caisson-sh/testing";
+import { TenancyError } from "@caisson-sh/kernel";
 import { buildTenantPolicySql, withTenant } from "./rls.ts";
 
 interface PgClassRow {
@@ -56,7 +56,7 @@ describe("FORCE ROW LEVEL SECURITY — pg_class introspection", () => {
 
 describe("existence-leak guard — tenancy denial is 404, never 403 (ADR-0019/0005)", () => {
   test("TenancyError is pinned to 404/not_found at the class level", () => {
-    // Duplicates one line of @caisson/kernel's own pin deliberately — this file's job is the
+    // Duplicates one line of @caisson-sh/kernel's own pin deliberately — this file's job is the
     // INTEGRATION pin below; this line just documents the invariant the integration test relies on.
     const err = new TenancyError();
     expect(err.httpStatus).toBe(404);

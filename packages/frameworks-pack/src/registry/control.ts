@@ -10,18 +10,18 @@
  *
  * Mirrors the `defineModule` precedent (packages/registry-schema/src/module-manifest.ts): typed Zod `.strict()`
  * builders that parse-and-validate at author time and fail closed on the first violation. Depends
- * only on `@caisson/kernel` (the down-only floor, ADR-0003) -- no edition or sibling-primitive dep.
+ * only on `@caisson-sh/kernel` (the down-only floor, ADR-0003) -- no edition or sibling-primitive dep.
  *
  * This module is ALSO the package's `"./registry"` entry point, and it is browser-safe: it reaches
- * only the node-free `@caisson/kernel` `.` barrel. The package's own `.` barrel is NOT browser-safe
- * — it re-exports `@caisson/oscal-spine`, whose delivery transport and vendored-catalog reader are
+ * only the node-free `@caisson-sh/kernel` `.` barrel. The package's own `.` barrel is NOT browser-safe
+ * — it re-exports `@caisson-sh/oscal-spine`, whose delivery transport and vendored-catalog reader are
  * irreducibly node-only (node:child_process / node:fs in oscal-export-xml.ts and
- * nist-catalog-controls.ts). A bundle consumer imports `@caisson/frameworks-pack/browser` for the
+ * nist-catalog-controls.ts). A bundle consumer imports `@caisson-sh/frameworks-pack/browser` for the
  * model + packs + browser-safe OSCAL surface together (ADR-0396), or `./registry` for the model
  * alone.
  */
 import { z } from "zod";
-import { parseStrict, strictObject } from "@caisson/kernel";
+import { parseStrict, strictObject } from "@caisson-sh/kernel";
 
 /**
  * Canonical control id -- Caisson-authored, framework-agnostic. Uppercase alphanumeric segments

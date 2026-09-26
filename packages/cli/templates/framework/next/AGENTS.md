@@ -10,16 +10,16 @@ working in this repo: the modules you installed and the invariants they ship wit
 ## Wired examples (replace, don't extend blindly)
 
 - `src/lib/auth.ts` / `src/proxy.ts` / `src/app/api/me/route.ts` — account-JWT session
-  verification (Ed25519, `@caisson/auth`), a proxy (Next 16's `middleware.ts` rename) and a Route
+  verification (Ed25519, `@caisson-sh/auth`), a proxy (Next 16's `middleware.ts` rename) and a Route
   Handler using it.
 - `src/lib/db.ts` / `src/app/actions/notes.ts` — a `pg`-backed `Transactor` and a Server Action
-  scoping every query through `withTenant` (`@caisson/tenancy-rls`).
+  scoping every query through `withTenant` (`@caisson-sh/tenancy-rls`).
 - `src/app/api/billing/webhook/route.ts` — a `BillingProvider`-port webhook stub
-  (`@caisson/billing`); the concrete driver is the commercial `@caisson/billing-orchestration`.
+  (`@caisson-sh/billing`); the concrete driver is the commercial `@caisson-sh/billing-orchestration`.
 - `src/lib/jobs.ts` / `src/app/actions/notify.ts` — a `JobQueue` port example
-  (`@caisson/jobs`).
-- `src/lib/email.ts` — an `Emailer` port example (`@caisson/email`).
-- `src/lib/ai.ts` — a provider-agnostic AI lane resolver (`@caisson/ai-config`).
+  (`@caisson-sh/jobs`).
+- `src/lib/email.ts` — an `Emailer` port example (`@caisson-sh/email`).
+- `src/lib/ai.ts` — a provider-agnostic AI lane resolver (`@caisson-sh/ai-config`).
 
 ## Invariants (inherited from Caisson)
 
@@ -36,5 +36,5 @@ working in this repo: the modules you installed and the invariants they ship wit
 
 - `bun install` then `bun test` — the suite is green from clone.
 - Add your product code under `src/`; keep new boundaries Zod-validated.
-- The installed `@caisson/*` modules are versioned dependencies, not vendored source — upgrade
+- The installed `@caisson-sh/*` modules are versioned dependencies, not vendored source — upgrade
   them through `package.json`, never by editing inside `node_modules`.

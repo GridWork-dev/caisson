@@ -17,7 +17,7 @@
 //
 // CANONICAL-CONTROL-ID-JOINED VIEWS (ADR-0347 Fork G1, Option B -- the locked `canonicalControlId`
 // join; generalized by the oscal-spine SPEC, ADR-0363/ADR-0364, from an ISO-only pass into a loop):
-// `@caisson/frameworks-pack`'s `iso27001Crosswalk` and `nist80053Crosswalk` (`RegimeCrosswalk`s, not
+// `@caisson-sh/frameworks-pack`'s `iso27001Crosswalk` and `nist80053Crosswalk` (`RegimeCrosswalk`s, not
 // framework packs) have no `crosswalk[]` pointers of their own -- instead each of their rows carries
 // a `canonicalControlId` pointing at a REAL canonical control already crosswalked from the three
 // shipped packs. A pass below loops every regime crosswalk registered in
@@ -27,7 +27,7 @@
 // that every authored row in these crosswalks is `maps-to`: a canonicalControlId-driven contribution
 // never carries a `verification` record, so condition (b) above can never hold for a cell it fed.
 import { z } from "zod";
-import { parseStrict, strictObject } from "@caisson/kernel";
+import { parseStrict, strictObject } from "@caisson-sh/kernel";
 import {
   isVerificationStale,
   type CrosswalkVerification,
@@ -36,7 +36,7 @@ import {
   // The browser entry, not the `.` barrel (ADR-0396): `isVerificationStale` is the one VALUE
   // import here, and the specifier is what keeps this module (and everything that imports it)
   // free of frameworks-pack's node-only half. Same module behind both specifiers.
-} from "@caisson/frameworks-pack/browser";
+} from "@caisson-sh/frameworks-pack/browser";
 import type { CollectorResult } from "./collector.ts";
 
 /** Per-control coverage status for a single pack run — mirrors the manifest's readiness derivation
@@ -120,7 +120,7 @@ export type CrosswalkRollup = z.infer<typeof crosswalkRollupSchema>;
 
 /**
  * Framework label -> regime id, for the labels that have a buyer-facing regime crosswalk today
- * (`@caisson/frameworks-pack` `regimes.ts`). Only SOC2-TSC and ISO-27001 are mapped in v1;
+ * (`@caisson-sh/frameworks-pack` `regimes.ts`). Only SOC2-TSC and ISO-27001 are mapped in v1;
  * HIPAA-Security and EU-AI-Act have no regime crosswalk, so their cells always default `maps-to`
  * (correct — Fork E condition (c) has no row to satisfy). The ISO-27001 entry matters only if a
  * framework pack ever crosswalks a reference directly at that label (none do today, `iso27001Crosswalk`

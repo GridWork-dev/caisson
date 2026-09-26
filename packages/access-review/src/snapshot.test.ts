@@ -1,6 +1,6 @@
 // src/snapshot.test.ts — the MembershipSnapshot port + adapter parity (ADR-0371).
 import { describe, expect, test } from "bun:test";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   createCsvMembershipSnapshotSource,
   createInMemoryMembershipSnapshotSource,

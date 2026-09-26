@@ -1,18 +1,18 @@
 // Agent-runtime MCP tools (ADR-0360 S5 exposure/publish, ADR-0361/0362), registered through the
 // SAME ADR-0216 `registerTool` seam `coach.ts`/`manifest-tools.ts` use. Two tools:
-//   - `run_start` — open a governed run through the host's own `@caisson/ai-kit` tool loop.
+//   - `run_start` — open a governed run through the host's own `@caisson-sh/ai-kit` tool loop.
 //   - `run_status` — read a run's state + trajectory projection (never the encrypted `parked_state`
 //     column — the injected `runStatus` callback never selects it either, ADR-0361).
 //
-// INJECTED, LIKE `onGenerate`: `@caisson/mcp-server` never imports `@caisson/ai-kit`/
-// `@caisson/agent-trajectory` at runtime. The actual loop/store wiring lives in `@caisson/ai-kit`'s
+// INJECTED, LIKE `onGenerate`: `@caisson-sh/mcp-server` never imports `@caisson-sh/ai-kit`/
+// `@caisson-sh/agent-trajectory` at runtime. The actual loop/store wiring lives in `@caisson-sh/ai-kit`'s
 // `mcp-run-tools.ts` (`buildRunTools`), duck-typed against `RunToolsOptions` below — no reverse
 // workspace dependency needed either direction. This module owns ONLY arg validation; the result
 // payload is whatever the host callback returns (`unknown` — a deliberately opaque passthrough,
 // exactly like `check_usage`'s findings array is opaque to the SEAM even though `manifest-tools.ts`
 // itself knows the concrete shape there).
 import { z } from "zod";
-import { parseStrict, strictObject } from "@caisson/kernel";
+import { parseStrict, strictObject } from "@caisson-sh/kernel";
 
 /** The minimal slice of the ADR-0216 server seam these tools drive — just tool registration, the
  *  session narrowed to `accountId` (the only field a run-tool handler needs). `McpServer` (from

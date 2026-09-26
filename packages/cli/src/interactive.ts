@@ -6,7 +6,7 @@
 // returns (`RawSelection`, seam.ts) — it feeds the identical `generate()`/Zod-`.strict()`/
 // allowlist path, never a second schema. No network calls anywhere in this module (ADR-0093).
 import { cancel, isCancel, multiselect, select, text } from "@clack/prompts";
-import type { RegistryIndex } from "@caisson/registry-schema";
+import type { RegistryIndex } from "@caisson-sh/registry-schema";
 import { DEPLOY_TARGETS, ProjectName } from "./seam.ts";
 import type { RawSelection } from "./seam.ts";
 

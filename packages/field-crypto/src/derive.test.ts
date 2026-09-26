@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
+import { matchGolden } from "@caisson-sh/testing";
 import { TENANT_KEY_BYTES, deriveInfo, deriveTenantKey } from "./derive.ts";
 
 // Fixed, non-secret test vectors (NOT real keys) — deterministic KAT inputs.

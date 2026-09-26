@@ -6,12 +6,12 @@
 // already-committed row and matches zero rows.
 //
 // ENCRYPTED-AT-REST parked_state (ADR-0361, S5 gate): `park()` seals the caller's opaque snapshot
-// through `@caisson/field-crypto`'s row-bound `encryptField`/`decryptField` (the explicit sibling of
+// through `@caisson-sh/field-crypto`'s row-bound `encryptField`/`decryptField` (the explicit sibling of
 // the transparent Drizzle column — encrypt-field.ts) BEFORE it reaches the row; `claimResume()`
 // opens it back. `columnContext` binds the ciphertext to this column; `rowId` is `run_id` — the
 // table's stable PRIMARY KEY, immutable across a re-park of the SAME run (encrypt-field.ts's stable-PK
 // requirement) — so a ciphertext relocated to another run's row fails AEAD auth on decrypt. This
-// mirrors `@caisson/ai-kit`'s `byok-store.ts`: the caller supplies a ready `FieldCryptoContext`
+// mirrors `@caisson-sh/ai-kit`'s `byok-store.ts`: the caller supplies a ready `FieldCryptoContext`
 // (built via `derivedContext(provider, accountId)`), never a bare key-provider — no new key-material
 // shape (ADR-0361's mandate). `null`/`undefined` parkedState stores SQL NULL, never an envelope of
 // "null" — `deny()`/`finish()`'s retention null-out (S3, security audit finding 1) is unaffected and
@@ -21,19 +21,23 @@
 // `RunStateStore` is held for a run's whole life, so non-crypto methods open their OWN short-lived
 // `withTenant` transaction. Crypto methods instead receive BOTH the scoped executor and disposable
 // context from one runner: wrapped-key persistence and parked_state then commit atomically, without
-// a nested `withTenant` deadlock on PGlite's single connection. `@caisson/tenancy-rls` is a REAL
+// a nested `withTenant` deadlock on PGlite's single connection. `@caisson-sh/tenancy-rls` is a REAL
 // runtime dependency.
-import { ConflictError, NotFoundError, ValidationError } from "@caisson/kernel";
+import {
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from "@caisson-sh/kernel";
 import {
   withTenant,
   type TenantExecutor,
   type Transactor,
-} from "@caisson/tenancy-rls";
+} from "@caisson-sh/tenancy-rls";
 import {
   decryptField,
   encryptField,
   type FieldCryptoContext,
-} from "@caisson/field-crypto";
+} from "@caisson-sh/field-crypto";
 import type {
   ParkInput,
   RunResumeMaterial,
@@ -44,7 +48,7 @@ import type {
 } from "./run-state.ts";
 
 /** The stable column identity bound into the crypto AAD (an envelope cannot be moved + opened
- *  elsewhere) — mirrors `@caisson/ai-kit`'s `BYOK_COLUMN_CONTEXT` naming convention. */
+ *  elsewhere) — mirrors `@caisson-sh/ai-kit`'s `BYOK_COLUMN_CONTEXT` naming convention. */
 const PARKED_STATE_COLUMN_CONTEXT = "agent-runtime.parked_state";
 
 /** Seal a caller's opaque `parkedState` into the base64 field-crypto envelope this column stores,
@@ -148,7 +152,7 @@ type RunStateCryptoContext = FieldCryptoContext | RunStateCryptoContextRunner;
  *  lazy runner that acquires one only for `park`/`claimResume`; the runner MUST supply the same
  *  tenant executor used to persist its wrapped keys. Status and terminal bookkeeping never need
  *  plaintext key material. The context tenant MUST equal `accountId`, mirroring
- *  `@caisson/ai-kit`'s `putTenantProviderKey`/`getTenantProviderKey` convention (the RLS scope and
+ *  `@caisson-sh/ai-kit`'s `putTenantProviderKey`/`getTenantProviderKey` convention (the RLS scope and
  *  the crypto AAD tenant binding must agree). */
 export function createPgRunStateStore(
   tx: Transactor,

@@ -1,7 +1,7 @@
 // The browser-safety contract for `./browser` (ADR-0396) — proven by a STATIC SOURCE-GRAPH WALK,
 // never by a build: a bundler does not fail on a node builtin, it SUBSTITUTES one (turbopack swaps
 // in crypto-browserify and the client chunk silently grows ~428KB, exit 0). The shared walker
-// resolves relative specifiers AND workspace @caisson/* specifiers through each package's exports
+// resolves relative specifiers AND workspace @caisson-sh/* specifiers through each package's exports
 // map, so the zero-offender claim covers the whole graph, kernel included.
 //
 // The money-path stake here is sharper than a bundle size: `.` reaches the credit ledger and the
@@ -12,7 +12,7 @@ import { join } from "node:path";
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
-} from "@caisson/testing/module-graph";
+} from "@caisson-sh/testing/module-graph";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../..");
 const BROWSER_ENTRY = join(import.meta.dir, "browser.ts");
@@ -37,9 +37,9 @@ describe("`./browser` is browser-safe", () => {
     ).toEqual([{ file: "packages/kernel/src/config.ts", spec: "process" }]);
   });
 
-  test("guard the guard: the walk really crossed into @caisson/kernel, not just this package", () => {
+  test("guard the guard: the walk really crossed into @caisson-sh/kernel, not just this package", () => {
     // This package contributes only 4 files to the entry graph, so files.length alone cannot prove
-    // the cross-package edge resolved — this assertion is the one that fails if @caisson/*
+    // the cross-package edge resolved — this assertion is the one that fails if @caisson-sh/*
     // resolution goes blind and greens on nothing.
     expect(walk.files.some((f) => f.startsWith("packages/kernel/src/"))).toBe(
       true,

@@ -3,7 +3,7 @@
 // scrub-before-egress (the backend never sees a raw secret), the fail-closed https + dimension gates,
 // and that a failed transport throws a redaction-safe error carrying no secret.
 import { beforeEach, describe, expect, mock, test } from "bun:test";
-import { InternalError, ValidationError } from "@caisson/kernel";
+import { InternalError, ValidationError } from "@caisson-sh/kernel";
 import type { EmbedFetch } from "./embed-scrub-guard.ts";
 import type { Embedder } from "./embedder.ts";
 

@@ -23,7 +23,7 @@ individual module's bundle membership because membership in it is implicit. That
   surface and admin-write RLS layer.
 - **[billing-orchestration](/docs/base/billing-orchestration)**: the multi-provider billing
   engine (Paddle, Stripe, LemonSqueezy, Polar) behind one `BillingProvider` port.
-- **[ui-pro](/docs/base/ui-pro)**: the commercial component tier on the open `@caisson/ui` base:
+- **[ui-pro](/docs/base/ui-pro)**: the commercial component tier on the open `@caisson-sh/ui` base:
   DataTablePro, OpsMatrix, AuditTimeline, CommandPalette, charts, and the interactive primitives.
 
 ## Install
@@ -47,7 +47,7 @@ granted once, not duplicated per bundle.
 ## Composing with the base
 
 Everything sits on the same open-core [base substrate](/docs/base) as every other bundle:
-`@caisson/kernel`, `@caisson/tenancy-rls`, `@caisson/ui`, `@caisson/billing`, and the rest of the
+`@caisson-sh/kernel`, `@caisson-sh/tenancy-rls`, `@caisson-sh/ui`, `@caisson-sh/billing`, and the rest of the
 Apache-2.0 packages, and adds the full commercial layer on top.
 
 ## License

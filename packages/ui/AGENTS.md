@@ -1,10 +1,10 @@
-# @caisson/ui — agent usage note
+# @caisson-sh/ui — agent usage note
 
 Provides the typed OKLCH token floor: palette and type-scale token objects that generate `tokens.css` (the design foundation, later expanded).
 
 ## Key surface
 
-- Import tokens from `@caisson/ui/tokens`; the generated `tokens.css` is at `@caisson/ui/styles/tokens.css`.
+- Import tokens from `@caisson-sh/ui/tokens`; the generated `tokens.css` is at `@caisson-sh/ui/styles/tokens.css`.
 - Tokens are typed TypeScript objects — use them in code; do not hardcode hex/OKLCH values inline.
 - Regenerate `tokens.css` via `bun run gen:tokens` after any token-object change.
 - Regenerate the agent-readable component manifest via `bun run gen:manifest` after a component

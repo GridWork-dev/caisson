@@ -1,4 +1,4 @@
-// @caisson/local-store — local hybrid retrieval (sqlite-vec vec0 + FTS5 + RRF, RRF_K=60) plus the
+// @caisson-sh/local-store — local hybrid retrieval (sqlite-vec vec0 + FTS5 + RRF, RRF_K=60) plus the
 // file-per-tenant isolation floor (ADR-0067 / ADR-0073). A `kind: base` primitive both the
 // Local-first and Agentic-Dev bundles compose DOWN-ONLY — it never imports a bundle
 // (ADR-0022 / ADR-0003).

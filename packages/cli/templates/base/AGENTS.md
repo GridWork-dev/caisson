@@ -20,5 +20,5 @@ modules you installed and the invariants they ship with.
 
 - `bun install` then `bun test` — the suite is green from clone.
 - Add your product code under `src/`; keep new boundaries Zod-validated.
-- The installed `@caisson/*` modules are versioned dependencies, not vendored source — upgrade
+- The installed `@caisson-sh/*` modules are versioned dependencies, not vendored source — upgrade
   them through `package.json`, never by editing inside `node_modules`.

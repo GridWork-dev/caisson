@@ -1,4 +1,4 @@
-// @caisson/ai-meter — the metered-inference money path (ADR-0060): estimate → reserve → reconcile
+// @caisson-sh/ai-meter — the metered-inference money path (ADR-0060): estimate → reserve → reconcile
 // over the credit ledger, a versioned price book, an atomic per-tenant spend window, soft/hard caps
 // and a circuit breaker. A base primitive the AI Production Kit gateway meters through; never imports
 // an edition (ADR-0003).

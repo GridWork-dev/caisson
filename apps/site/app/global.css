@@ -1,6 +1,6 @@
 /* Caisson site stylesheet — kit-first (ADR-0099). The design-system base (reset, layout primitives,
  * type utilities, elevation/glow, tok-* tints, skip-link, reduced-motion) is owned by
- * `@caisson/ui/styles/base.css` (imported in layout.tsx before this file), and every shared
+ * `@caisson-sh/ui/styles/base.css` (imported in layout.tsx before this file), and every shared
  * component (Button/Card/Hero/Section/Terminal/CodeBlock/StatusChip/CredentialStrip/EditionCard/
  * SkuMatrix) ships its own co-located CSS from the kit. This file holds ONLY app-specific concerns:
  * the Tailwind/Fumadocs docs surface + fd-bridge, the reset re-assert (must win over Tailwind
@@ -519,7 +519,7 @@ kbd,
   transform: translate(-50%, -50%);
 }
 
-/* The panel chrome (position/background/shadow/scrim/z-index/enter-exit motion) is `@caisson/ui`'s
+/* The panel chrome (position/background/shadow/scrim/z-index/enter-exit motion) is `@caisson-sh/ui`'s
  * Dialog top-drawer now (ADR-0296/0307) — this lays out the nav's own accordion body (ADR-0312)
  * inside it. */
 .cs-mnav {

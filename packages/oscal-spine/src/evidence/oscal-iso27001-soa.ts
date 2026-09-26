@@ -1,7 +1,7 @@
 // src/evidence/oscal-iso27001-soa.ts — OSCAL expression of the ISO/IEC 27001:2022 Statement of
 // Applicability (SoA). Sibling pattern to `oscal-catalog-export.ts`: a PLAIN, PURE, SEAM-TESTED
 // FUNCTION — no I/O, no network, no file write. Input is `SoaRow[]` from
-// `@caisson/frameworks-pack`'s `computeIso27001SoaRows` (the pure control/applicable/justification/
+// `@caisson-sh/frameworks-pack`'s `computeIso27001SoaRows` (the pure control/applicable/justification/
 // status/evidencePointer computation); this module's only job is the OSCAL shape.
 //
 // MODEL CHOICE: OSCAL has no dedicated "Statement of Applicability" model. The closest fit —
@@ -14,18 +14,22 @@
 // `implemented-requirement` per SoA row.
 //
 // CITATION-ROW RENDERING (SPEC piece 2 item 3): every row is passed through
-// `@caisson/artifact-render`'s `renderCitationRow` before it reaches the OSCAL shape — the same
+// `@caisson-sh/artifact-render`'s `renderCitationRow` before it reaches the OSCAL shape — the same
 // readiness-language gate (ADR-0080) and field bounds the buyer trust page's rows carry, so a
 // justification string can never smuggle a "compliant"/"certified"/"verified" claim into the export.
 //
 // DETERMINISM (mirrors oscal-catalog-export.ts): `now` + `newId` are injected; rows are sorted by
 // control id regardless of input order, so the same row set always produces byte-identical output.
 import { randomUUID } from "node:crypto";
-import { canonicalize, ValidationError, type JsonValue } from "@caisson/kernel";
+import {
+  canonicalize,
+  ValidationError,
+  type JsonValue,
+} from "@caisson-sh/kernel";
 import {
   assertReadinessLanguage,
   renderCitationRow,
-} from "@caisson/artifact-render";
+} from "@caisson-sh/artifact-render";
 import {
   CAISSON_OSCAL_NS,
   OSCAL_VERSION,
@@ -91,7 +95,7 @@ function cmp(a: string, b: string): number {
 
 /**
  * Map ISO/IEC 27001:2022 Statement-of-Applicability rows to an OSCAL `component-definition` document.
- * Every row renders through `@caisson/artifact-render`'s `renderCitationRow` (readiness-language
+ * Every row renders through `@caisson-sh/artifact-render`'s `renderCitationRow` (readiness-language
  * gate + field bounds) before it reaches the OSCAL shape. Sorted by control id for determinism. Fails
  * closed on an invalid clock or an empty `rows` list (an OSCAL export with zero requirements is not
  * a meaningful SoA — the caller's scope was empty, which is a caller bug, not a valid export).

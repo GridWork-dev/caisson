@@ -3,12 +3,12 @@ import { UiProGallery } from "@/components/ui-showcase/registry-gallery";
 import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
 
-// CAISSON-35: the demo grid itself reads @caisson/demo-registry (registry-gallery.tsx, a client
+// CAISSON-35: the demo grid itself reads @caisson-sh/demo-registry (registry-gallery.tsx, a client
 // island), so no second hand-rolled demo implementation of the same 11 UI Pro components can drift.
 // This file stays the server shell: metadata, JSON-LD, and page chrome — none of which the registry
 // needs to supply.
 const GALLERY_DESCRIPTION =
-  "The @caisson/ui-pro component gallery — live, working demos of the data-ops and compliance components: an advanced data grid, a virtualized tree, an operations matrix, a hash-chain audit timeline, a redaction-aware payload viewer, a type-to-confirm dialog, an advanced date-range picker, a dependency-free chart pack, a command palette, a diff viewer, and a Kanban board.";
+  "The @caisson-sh/ui-pro component gallery — live, working demos of the data-ops and compliance components: an advanced data grid, a virtualized tree, an operations matrix, a hash-chain audit timeline, a redaction-aware payload viewer, a type-to-confirm dialog, an advanced date-range picker, a dependency-free chart pack, a command palette, a diff viewer, and a Kanban board.";
 
 export const metadata = buildMetadata({
   title: "UI Pro component gallery",
@@ -83,8 +83,8 @@ export default function UiGalleryPage() {
         lede={
           <>
             Eleven production components for compliance and operations surfaces,
-            layered on the open <code>@caisson/ui</code> token floor. Every demo
-            below is live and interactive.
+            layered on the open <code>@caisson-sh/ui</code> token floor. Every
+            demo below is live and interactive.
           </>
         }
       />

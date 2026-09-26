@@ -6,7 +6,7 @@
 // authored names, then reject any ref not in it BEFORE it can reach a consumer — fail-closed, one ghost
 // rejects the whole set. The validator THROWS (flag-never-guess); it never silently drops or guesses a
 // ref. Engine-neutral: this resolves names, it does not load or run anything.
-import { ValidationError, parseStrict } from "@caisson/kernel";
+import { ValidationError, parseStrict } from "@caisson-sh/kernel";
 import {
   AgentArtifact,
   RuleArtifact,

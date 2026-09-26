@@ -3,9 +3,9 @@
 // reversible-tokenize path round-trips through field-crypto. Independent assertions backstop the
 // golden — proving detection + redaction + restore, not just that a file exists.
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
-import { DerivedKeyProvider } from "@caisson/field-crypto";
-import { derivedContext } from "@caisson/field-crypto";
+import { matchGolden } from "@caisson-sh/testing";
+import { DerivedKeyProvider } from "@caisson-sh/field-crypto";
+import { derivedContext } from "@caisson-sh/field-crypto";
 import {
   PII_KINDS,
   detectPii,

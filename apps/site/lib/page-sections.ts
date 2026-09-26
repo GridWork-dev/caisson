@@ -2,7 +2,7 @@
 // PageSpec: typed SEO meta (feeds `buildMetadata`) + an ORDERED PageSection[] a data file
 // supplies. `<PageSections>` (components/page-sections.tsx) is the ONE renderer that switches on
 // `kind` — this file holds only the shape, no rendering logic. Every variant maps to an existing
-// @caisson/ui / site primitive (ADR-0099) — no new visual component, no plugin registry.
+// @caisson-sh/ui / site primitive (ADR-0099) — no new visual component, no plugin registry.
 //
 // Data files are compile-time-static in-repo TS source, not a runtime boundary — no Zod parse
 // layer (renderer SPEC §4, ADR-0002 carve-out).
@@ -14,7 +14,7 @@ import type {
   SectionProps,
   SkuMatrixRow,
   StatusChipTone,
-} from "@caisson/ui/components";
+} from "@caisson-sh/ui/components";
 
 import type { PageMeta } from "./metadata";
 

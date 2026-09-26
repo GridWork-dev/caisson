@@ -1,13 +1,13 @@
 "use client";
 
 // The prompt-registry module's `component` media slide (ADR-0308 full-depth) — the module's own
-// shipped surface `@caisson/prompt-registry/ui` <PromptBrowser>, rendered live over sample append-
+// shipped surface `@caisson-sh/prompt-registry/ui` <PromptBrowser>, rendered live over sample append-
 // only prompt versions. The component derives the distinct-name / total-version headline, the role
 // chips, the variable count, and the first-message preview. Presentational still-frame — no filter/
 // paging wired. Loaded via next/dynamic (ssr: false) so this commercial-tier tree never lands in the
 // shared client bundle. Source: packages/prompt-registry/src/ui/prompt-browser.tsx.
-import { PromptBrowser } from "@caisson/prompt-registry/ui";
-import type { PromptVersion } from "@caisson/prompt-registry";
+import { PromptBrowser } from "@caisson-sh/prompt-registry/ui";
+import type { PromptVersion } from "@caisson-sh/prompt-registry";
 
 import { MediaFrame } from "./media-frame";
 

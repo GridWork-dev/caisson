@@ -2,7 +2,7 @@
 // (billing carve, ADR-0249 G3 — uniform rule: signature-verify open for all four providers). NO SDK —
 // hand-rolled over the raw request body, mirroring the Stripe/Paddle/Polar verifiers' no-SDK posture.
 import { createHmac } from "node:crypto";
-import { AuthnError, safeEqualFixed } from "@caisson/kernel/node";
+import { AuthnError, safeEqualFixed } from "@caisson-sh/kernel/node";
 
 /** Throws `AuthnError` unless `signatureHeader` is a valid LemonSqueezy `X-Signature`. LemonSqueezy's
  * signature is a bare HMAC-SHA256 hex digest of the raw body — no timestamp, so (unlike Stripe/Paddle)

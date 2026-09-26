@@ -1,5 +1,5 @@
 /* The three primary-nav card-panel disclosures (ADR-0237 F3/F4), built on the kit `Popover`
- * (ADR-0291 — `@caisson/ui-pro`) for the trigger/panel disclosure mechanics; this file re-skins
+ * (ADR-0291 — `@caisson-sh/ui-pro`) for the trigger/panel disclosure mechanics; this file re-skins
  * Popover's default chrome to the nav's plain-text-link trigger + fixed-width card panel via a
  * `:global(.cs-popover*)` compound selector (two-class specificity, so it deterministically wins
  * over the kit's own single-class rule regardless of stylesheet import order — the standard CSS

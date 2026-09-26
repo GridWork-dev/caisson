@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { TenantExecutor } from "@caisson/tenancy-rls";
+import type { TenantExecutor } from "@caisson-sh/tenancy-rls";
 import { advisoryLockId, withAdvisoryXactLock } from "./advisory-lock.ts";
 
 /** A `TenantExecutor` that records every query instead of touching Postgres. */

@@ -1,5 +1,5 @@
 /* apps/demos stylesheet — kit-first (ADR-0099), same as apps/site: the reset, layout primitives,
- * type utilities and elevation live in `@caisson/ui/styles/base.css` (imported in layout.tsx
+ * type utilities and elevation live in `@caisson-sh/ui/styles/base.css` (imported in layout.tsx
  * before this file), and every kit component ships its own co-located CSS. This file holds only
  * what an EMBED document needs that a full page does not. All values are --cs-* tokens. */
 

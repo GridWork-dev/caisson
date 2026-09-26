@@ -1,7 +1,7 @@
 {
-  "name": "@caisson/org-controls",
+  "name": "@caisson-sh/org-controls",
   "version": "0.4.2",
-  "description": "Org & operator controls: WorkOS SSO sign-in, a Clerk session-verification driver, the owner-gated multi-user membership surface, and the cross-tenant admin-write RLS layer the operator control plane mutates through. @caisson/auth keeps user session resolution; @caisson/tenancy-rls keeps tenant isolation.",
+  "description": "Org & operator controls: WorkOS SSO sign-in, a Clerk session-verification driver, the owner-gated multi-user membership surface, and the cross-tenant admin-write RLS layer the operator control plane mutates through. @caisson-sh/auth keeps user session resolution; @caisson-sh/tenancy-rls keeps tenant isolation.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {
@@ -26,15 +26,15 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/auth": "workspace:*",
-    "@caisson/kernel": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*",
+    "@caisson-sh/auth": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
+    "@caisson-sh/tenancy-rls": "workspace:*",
     "@clerk/backend": "^3.0.0",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

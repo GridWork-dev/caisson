@@ -17,7 +17,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
 
 import { POKE_IDS } from "./poke/ids";
 

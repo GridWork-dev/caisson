@@ -3,7 +3,7 @@
 // or reads a key. The consuming EDITION wires a concrete embedder — the seam the egress guard covers,
 // with the cloud-embed path test-doubled in CI. When NO embedder is configured the store runs on the
 // FTS5 floor alone — fully offline, never a silent fallback to some default model.
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 
 /**
  * A vector-embedding backend. `dim` is the FIXED vector width — it MUST equal the `LocalStore` dim

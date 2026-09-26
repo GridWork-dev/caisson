@@ -8,10 +8,10 @@
 //     UPDATE of the pointer alone; the version rows are never touched, so a live prompt swaps with
 //     no redeploy.
 //
-// Both tables are FORCE-RLS via `buildTenantPolicySql` (@caisson/tenancy-rls) so a query that forgets
+// Both tables are FORCE-RLS via `buildTenantPolicySql` (@caisson-sh/tenancy-rls) so a query that forgets
 // its tenant filter — or its `withTenant` scope entirely — sees nothing. In prod this is a numbered
 // forward-only migration (ADR-0014/0070); the DDL is owned here and applied verbatim in tests.
-import { buildTenantPolicySql } from "@caisson/tenancy-rls";
+import { buildTenantPolicySql } from "@caisson-sh/tenancy-rls";
 
 export const PROMPT_VERSION_TABLE = "prompt_version";
 export const PROMPT_ALIAS_TABLE = "prompt_alias";

@@ -30,13 +30,13 @@ import {
   ValidationError,
   scrubDeep,
   scrubForEgress,
-} from "@caisson/kernel";
-import type { FetchTimeoutOptions } from "@caisson/kernel";
+} from "@caisson-sh/kernel";
+import type { FetchTimeoutOptions } from "@caisson-sh/kernel";
 import { z } from "zod";
 import type { RentedTransport } from "./rented-backend.ts";
 import { signSigV4 } from "./sigv4.ts";
 import type { SigV4Credentials } from "./sigv4.ts";
-import type { EgressGuard } from "@caisson/local-privacy";
+import type { EgressGuard } from "@caisson-sh/local-privacy";
 
 /** The bedrock-runtime credential-scope service code. */
 const SERVICE = "bedrock";

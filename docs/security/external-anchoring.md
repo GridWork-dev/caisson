@@ -1,6 +1,6 @@
 # External anchoring — trust grades (buyer-facing source content)
 
-What `@caisson/audit-worm`'s external anchoring feature actually proves, in plain language — the
+What `@caisson-sh/audit-worm`'s external anchoring feature actually proves, in plain language — the
 internal source-of-truth this repo's contributors write from when a buyer's security review, trust
 center, or sales copy needs to describe the feature (the actual buyer-facing surfaces are `apps/site`
 and `services/docs`, per this directory's own routing convention above; this file is not itself
@@ -16,7 +16,7 @@ OpenTimestamps drop-in behind the same port. See the egress + verification secti
 
 ## Why this exists
 
-`@caisson/audit-worm`'s per-tenant hash chain is tamper/truncation/rewrite-evident **to anyone who
+`@caisson-sh/audit-worm`'s per-tenant hash chain is tamper/truncation/rewrite-evident **to anyone who
 trusts Caisson's own WORM store**. That's a real property, but it's self-attested: a privileged actor
 who can rewrite both the chain table and the object-lock store leaves nothing for an outside party to
 catch. External anchoring periodically commits the chain's checkpoint (`{length, tipHash,

@@ -10,7 +10,7 @@
 //
 // The store is constructed with the RAW `tp.pg` and opens its OWN short-lived `withTenant`
 // transaction per call (see run-state.pg.ts's file header) — tests call it directly, no outer
-// `withTenant` wrapping. `cryptoCtxFor` mirrors `@caisson/ai-kit`'s `byok-store.integration.test.ts`
+// `withTenant` wrapping. `cryptoCtxFor` mirrors `@caisson-sh/ai-kit`'s `byok-store.integration.test.ts`
 // helper: a fixed `DerivedKeyProvider` + `derivedContext(provider, accountId)` per account, so two
 // "fresh" store instances constructed for the SAME account (simulating separate processes) derive
 // the SAME key deterministically — no shared in-memory state required.
@@ -24,18 +24,22 @@ import {
 } from "bun:test";
 setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
-import { newTestPg, type TestPg } from "@caisson/testing";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import {
   buildTenantPolicySql,
   type TenantExecutor,
   type Transactor,
-} from "@caisson/tenancy-rls";
-import { ConflictError, NotFoundError, ValidationError } from "@caisson/kernel";
+} from "@caisson-sh/tenancy-rls";
+import {
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from "@caisson-sh/kernel";
 import {
   DerivedKeyProvider,
   derivedContext,
   type FieldCryptoContext,
-} from "@caisson/field-crypto";
+} from "@caisson-sh/field-crypto";
 import { createPgRunStateStore } from "./run-state.pg.ts";
 
 const MASTER = Buffer.alloc(32, 7);

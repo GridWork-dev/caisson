@@ -5,13 +5,13 @@ import { describe, expect, mock, test } from "bun:test";
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
-} from "@caisson/testing/module-graph";
-import { renderIntoJsdom } from "@caisson/testing";
+} from "@caisson-sh/testing/module-graph";
+import { renderIntoJsdom } from "@caisson-sh/testing";
 import {
   DEFAULT_ONNX_MODEL,
   EMBEDDING_DIM,
   StubInferenceBackend,
-} from "@caisson/local-inference/browser";
+} from "@caisson-sh/local-inference/browser";
 
 import LocalInferencePoke, {
   computeSampleEmbedding,
@@ -86,7 +86,7 @@ describe("the local-inference poke runs the package's browser-safe stub", () => 
   test("the mirror is deleted and the component imports only the package browser entry", () => {
     const source = readFileSync(POKE_ENTRY, "utf8");
     expect(existsSync(RETIRED_MIRROR)).toBe(false);
-    expect(source).toMatch(/from "@caisson\/local-inference\/browser";/);
+    expect(source).toMatch(/from "@caisson-sh\/local-inference\/browser";/);
     expect(source).not.toMatch(/from "\.\/local-inference-logic"/);
     expect(source).not.toContain('outcome: "egressed"');
     expect(source).not.toContain("Crossed the boundary");

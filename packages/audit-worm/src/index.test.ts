@@ -8,13 +8,13 @@
 //      exact structure over a fixed chain so any change to the hash discipline surfaces as a
 //      reviewable diff (BLESS-gated), per golden-before-logic (ADR-0013).
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
+import { matchGolden } from "@caisson-sh/testing";
 import {
   anchorChain,
   buildChain,
   verifyChain,
   type JsonValue,
-} from "@caisson/kernel/node";
+} from "@caisson-sh/kernel/node";
 import {
   ArtifactExistsError,
   AuditChainStore,
@@ -31,7 +31,7 @@ import {
   retainUntilFrom,
 } from "./index.ts";
 
-describe("@caisson/audit-worm barrel", () => {
+describe("@caisson-sh/audit-worm barrel", () => {
   test("re-exports the T1–T4 public surface", () => {
     // Artifact store.
     expect(typeof assertSafeKey).toBe("function");

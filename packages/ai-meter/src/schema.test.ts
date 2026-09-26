@@ -4,8 +4,8 @@
 // `spend_breaker` enforce their CHECK invariants. PGlite + the production `withTenant` shape — no
 // live DB, no network (the un-exercised live transport stays out of CI).
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
-import { newTestPg, type TestPg } from "@caisson/testing";
-import { withTenant } from "@caisson/tenancy-rls";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 import {
   AI_METER_SCHEMA_SQL,
   SPEND_BREAKER_TABLE,

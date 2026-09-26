@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { createInMemoryQueue } from "@caisson/jobs";
-import type { EnqueueOptions, JobQueue } from "@caisson/jobs";
+import { createInMemoryQueue } from "@caisson-sh/jobs";
+import type { EnqueueOptions, JobQueue } from "@caisson-sh/jobs";
 import { createCaptureTarget } from "./targets.ts";
 import { createCaptureAuditSink } from "./audit-sink.ts";
 import {

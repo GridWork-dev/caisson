@@ -6,7 +6,7 @@ import "../styles/base.css";
 import type { Decorator, Preview } from "@storybook/react-vite";
 
 /**
- * @caisson/ui themes via a `data-theme="dark"|"light"` attribute on the document root (see
+ * @caisson-sh/ui themes via a `data-theme="dark"|"light"` attribute on the document root (see
  * `src/components/theme-toggle.tsx` + `styles/tokens.css`), not a class or CSS-in-JS branch. This
  * decorator drives that attribute off a Storybook toolbar global so every story is checked in both
  * modes without duplicating story content.
@@ -40,7 +40,7 @@ const preview: Preview = {
   },
   globalTypes: {
     theme: {
-      description: "@caisson/ui data-theme",
+      description: "@caisson-sh/ui data-theme",
       toolbar: {
         title: "Theme",
         icon: "mirror",

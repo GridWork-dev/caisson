@@ -3,7 +3,7 @@
 import { useCallback, useId, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
-import { Button, Select } from "@caisson/ui/components";
+import { Button, Select } from "@caisson-sh/ui/components";
 
 import {
   aggregate,

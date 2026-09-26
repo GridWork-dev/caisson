@@ -1,6 +1,6 @@
 /**
  * Typed reader for the committed component manifest. `base-manifest.json` is generated
- * deterministically from @caisson/ui's authoritative component barrel, prop types, JSDoc, and
+ * deterministically from @caisson-sh/ui's authoritative component barrel, prop types, JSDoc, and
  * co-located styles, then bundled alongside this file.
  */
 import { readFileSync } from "node:fs";

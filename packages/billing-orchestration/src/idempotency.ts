@@ -21,7 +21,7 @@ import {
   TENANT_GUC,
   buildTenantPolicySql,
   type TenantExecutor,
-} from "@caisson/tenancy-rls";
+} from "@caisson-sh/tenancy-rls";
 import { assertValidSourceEventId, sideEffectEventKey } from "./event-keys.ts";
 
 /**

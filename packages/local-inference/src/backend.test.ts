@@ -1,12 +1,12 @@
 // Unit tests for the InferenceBackend port + its deterministic CI stub (ADR-0064: no live model in
 // CI). In-process, deterministic, NO network, NO model: the stub embeds purely from text and the
-// integration leg proves the produced vector feeds @caisson/local-store's vec0 dim-guard without a
+// integration leg proves the produced vector feeds @caisson-sh/local-store's vec0 dim-guard without a
 // dimension mismatch — i.e. the port emits exactly the locked DIM the store is opened with.
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { ValidationError } from "@caisson/kernel";
-import { LocalStore } from "@caisson/local-store";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import { ValidationError } from "@caisson-sh/kernel";
+import { LocalStore } from "@caisson-sh/local-store";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
 import { EMBEDDING_DIM } from "./backend.ts";
 import { StubInferenceBackend } from "./stub.ts";
 

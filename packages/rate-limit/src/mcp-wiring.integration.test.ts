@@ -1,15 +1,15 @@
-// Proves the documented @caisson/rate-limit → @caisson/mcp-server composition: the hook reaches the
+// Proves the documented @caisson-sh/rate-limit → @caisson-sh/mcp-server composition: the hook reaches the
 // store, blocks on a deny, fails OPEN on a store fault, and yields to a caller-supplied override.
 // A fake Transactor keeps the package-seam proof fast and flake-free.
 import { describe, expect, test } from "bun:test";
-import { RateLimitError } from "@caisson/kernel";
-import type { Transactor, TenantExecutor } from "@caisson/tenancy-rls";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+import { RateLimitError } from "@caisson-sh/kernel";
+import type { Transactor, TenantExecutor } from "@caisson-sh/tenancy-rls";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
 import {
   type McpServer,
   type McpServerOptions,
   type RateLimitHook,
-} from "@caisson/mcp-server";
+} from "@caisson-sh/mcp-server";
 import { createRateLimitedMcpServer } from "./account-hook.ts";
 
 const TOKEN = "mcp_tok_acct_a_000000000000000000";

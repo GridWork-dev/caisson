@@ -1,4 +1,4 @@
-# @caisson/ui — the component recipe
+# @caisson-sh/ui — the component recipe
 
 Every primitive in `src/components/` is built the same way; the
 **reference is `button.tsx` + `button.css`** — copy its shape. The kit is **framework-agnostic raw
@@ -38,8 +38,8 @@ Every primitive in `src/components/` is built the same way; the
 
 ## Packaging
 
-- Exports: `@caisson/ui/components` (barrel) + `@caisson/ui/components/*` (deep) + `@caisson/ui/tokens`
-  - `@caisson/ui/styles/tokens.css`. Raw `.tsx`, no bundler/dist.
-- Consumers set `transpilePackages: ["@caisson/ui"]` in `next.config` and import the tokens CSS once at
+- Exports: `@caisson-sh/ui/components` (barrel) + `@caisson-sh/ui/components/*` (deep) + `@caisson-sh/ui/tokens`
+  - `@caisson-sh/ui/styles/tokens.css`. Raw `.tsx`, no bundler/dist.
+- Consumers set `transpilePackages: ["@caisson-sh/ui"]` in `next.config` and import the tokens CSS once at
   the root layout. `react` / `react-dom` / `lucide-react` are **peer** deps.
 - New reusable UI lands here, never inlined on a screen. Build order: tokens → primitives → domain.

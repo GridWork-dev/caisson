@@ -6,7 +6,7 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { loadRegistryIndexFromFile } from "@caisson/registry-schema";
+import { loadRegistryIndexFromFile } from "@caisson-sh/registry-schema";
 import { BUNDLED_INDEX, PACKAGES_DIR } from "./bundle-registry-index.ts";
 
 function workspaceVersions(): Record<string, string> {

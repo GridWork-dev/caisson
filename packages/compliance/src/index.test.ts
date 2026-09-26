@@ -43,7 +43,7 @@ import {
   ERASURE_CRYPTO_SHRED,
 } from "./index.ts";
 
-describe("@caisson/compliance barrel", () => {
+describe("@caisson-sh/compliance barrel", () => {
   test("re-exports the control model surface (T9/T10)", () => {
     expect(typeof defineControl).toBe("function");
     expect(typeof defineFramework).toBe("function");

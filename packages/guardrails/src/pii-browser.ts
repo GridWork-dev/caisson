@@ -8,7 +8,7 @@ import {
   deriveTenantKeyAsync,
   parseEnvelopeBytes,
   serializeEnvelopeBytes,
-} from "@caisson/field-crypto/browser";
+} from "@caisson-sh/field-crypto/browser";
 import {
   PII_COLUMN_CONTEXT,
   assertBoundedGuardText,

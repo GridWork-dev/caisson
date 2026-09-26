@@ -1,6 +1,6 @@
 "use client";
 
-import { Popover } from "@caisson/ui-pro/components";
+import { Popover } from "@caisson-sh/ui-pro/components";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -25,7 +25,7 @@ export interface NavCard {
   href: string;
   label: string;
   note: string;
-  /** Icon name from the @caisson/ui set (bespoke marks land with wave 2). */
+  /** Icon name from the @caisson-sh/ui set (bespoke marks land with wave 2). */
   icon?: IconName;
 }
 

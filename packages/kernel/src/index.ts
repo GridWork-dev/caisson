@@ -1,10 +1,10 @@
-// @caisson/kernel — the foundational shared library every base + edition package depends on.
+// @caisson-sh/kernel — the foundational shared library every base + edition package depends on.
 //
 // THIS BARREL IS BROWSER-SAFE and must stay that way: nothing reachable from here may import a node
-// builtin at module scope, because a bundler resolves the entire graph behind the "@caisson/kernel"
+// builtin at module scope, because a bundler resolves the entire graph behind the "@caisson-sh/kernel"
 // specifier even when the importer only wanted one pure symbol. The node-only surface — constant-time
 // compare (`crypto.ts`), audit-chain hashing (`audit-chain.ts`), migration assembly, and the SSRF
-// guard — lives behind "@caisson/kernel/node" (`node.ts`), which re-exports everything below as well.
+// guard — lives behind "@caisson-sh/kernel/node" (`node.ts`), which re-exports everything below as well.
 // Adding a `node:` import to any module in this graph silently un-bundles every browser consumer.
 export {
   CaissonError,
@@ -38,8 +38,8 @@ export type { EnvSource } from "./config.ts";
 
 // The pure serialization + the chain value types come straight from the node-free `canonical.ts`;
 // the hashing half (`contentHash`/`hashChainLink`/`chainEntry`/`buildChain`/`verifyChain`) needs
-// `node:crypto` and therefore lives on "@caisson/kernel/node". `anchorChain` is pure (no hashing)
-// and is reachable browser-safe on "@caisson/kernel/audit-verify".
+// `node:crypto` and therefore lives on "@caisson-sh/kernel/node". `anchorChain` is pure (no hashing)
+// and is reachable browser-safe on "@caisson-sh/kernel/audit-verify".
 export { canonicalize } from "./canonical.ts";
 export type {
   JsonValue,
@@ -83,7 +83,7 @@ export type {
 } from "./observability.ts";
 
 // `assembleMigrations` / `assembleMigrationsWithPinnedPrefix` need `node:crypto` and live on
-// "@caisson/kernel/node". Their TYPES stay here: a `export type` re-export is erased at emit, so it
+// "@caisson-sh/kernel/node". Their TYPES stay here: a `export type` re-export is erased at emit, so it
 // never puts `migration-assembly.ts` into a bundle graph.
 export type {
   MigrationFile,

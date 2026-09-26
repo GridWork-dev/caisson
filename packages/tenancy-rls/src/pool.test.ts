@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ConfigError } from "@caisson/kernel";
+import { ConfigError } from "@caisson-sh/kernel";
 import { createPgPool, type PgPoolPurpose } from "./pool.ts";
 
 function optionsFor(purpose: PgPoolPurpose): Record<string, unknown> {

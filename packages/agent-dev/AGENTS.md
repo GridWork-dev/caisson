@@ -1,36 +1,36 @@
-# AGENTS — @caisson/agent-dev
+# AGENTS — @caisson-sh/agent-dev
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or a downstream
 consumer must know to wire the Agentic-Dev **edition** correctly.
 
 ## What this is
 
-`@caisson/agent-dev` is `kind: edition` — a **composition**, never a primitive. It binds three shipped
+`@caisson-sh/agent-dev` is `kind: edition` — a **composition**, never a primitive. It binds three shipped
 base seams into ONE import so an app authors agents/skills/rules **once in one typed
 Caisson schema** and gets a governed lifecycle, local hybrid memory, and per-harness config emit:
 
-- **Governed engine-neutral kernel** — `@caisson/agent-kernel`: the agent/skill/rule schema +
+- **Governed engine-neutral kernel** — `@caisson-sh/agent-kernel`: the agent/skill/rule schema +
   `define*()` builders, the reference-integrity validator, the pure lifecycle FSM, governance guards +
   the unified `HookResult`, the hooks dispatcher, and the opt-in **audited lifecycle** (the
   tamper-evident moat that records each governed step into the kernel audit-chain + versioning).
-- **Local hybrid memory** — `@caisson/local-store`: vec0 + FTS5 + RRF (RRF_K=60) with the **FTS-only
+- **Local hybrid memory** — `@caisson-sh/local-store`: vec0 + FTS5 + RRF (RRF_K=60) with the **FTS-only
   offline floor**, the pluggable Embedder port, the cloud-egress secret-scrub guard, and the
   dedup/TTL/GC retention default.
 - **Thin multi-harness emitter** — `./emitter.ts`: renders one schema into `.claude/` (Claude Code),
   `AGENTS.md` (Codex), and Cursor rules.
-- **Governed sandboxed tool-exec gate** — `@caisson/tool-exec`: a default-deny allowlist + execFile
+- **Governed sandboxed tool-exec gate** — `@caisson-sh/tool-exec`: a default-deny allowlist + execFile
   arg-arrays (never a shell), wired live on the composed edition so an app gets the exec gate from
   this one import home.
 
 ## Invariants (do not violate)
 
 - **Edition, down-only (ADR-0003/0022).** This edition imports base packages
-  (`@caisson/{agent-kernel,local-store,ai-config,kernel}`) — it MUST NEVER import another edition, and
+  (`@caisson-sh/{agent-kernel,local-store,ai-config,kernel}`) — it MUST NEVER import another edition, and
   no base package may import it. The composition owns no primitive; it wires the ones the base ships.
 - **No harness is the substrate (ADR-0066).** Claude Code is ONE emit target among several. The same
   schema fans out to every harness shape; nothing in the kernel assumes `.claude/`.
 - **Engine-neutral.** The composition holds NO credential and makes NO LLM/network call. The embedder
-  is a seam (`@caisson/ai-config` lane); with none wired, memory degrades to the FTS-only floor. The
+  is a seam (`@caisson-sh/ai-config` lane); with none wired, memory degrades to the FTS-only floor. The
   live embed transport stays the one un-exercised path — **no live cloud call in CI**.
 - **Fail-closed at the write edge.** `emit` validates every file BEFORE any disk write: a path that is
   absolute, null-byte-bearing, or `..`-escaping the target root is REFUSED, and a credential-shaped

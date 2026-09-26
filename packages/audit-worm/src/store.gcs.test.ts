@@ -7,7 +7,11 @@
 // separate suite proves the RFC 7523 JWT-bearer signing round-trip with no network call.
 import { describe, expect, test } from "bun:test";
 import { createVerify, generateKeyPairSync } from "node:crypto";
-import { ConfigError, NotFoundError, ValidationError } from "@caisson/kernel";
+import {
+  ConfigError,
+  NotFoundError,
+  ValidationError,
+} from "@caisson-sh/kernel";
 import { ArtifactExistsError, buildArtifactKey } from "./store.ts";
 import {
   GcsArtifactStore,

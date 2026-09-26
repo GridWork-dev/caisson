@@ -2,7 +2,7 @@
 // a high-risk AI system runs a documented risk-management system — every identified risk is rated
 // and has a mitigation measure in force, over the system's lifecycle.
 //
-// An instance of the generalized risk model (`@caisson/risk-register`): the register traversed here
+// An instance of the generalized risk model (`@caisson-sh/risk-register`): the register traversed here
 // is a set of scored `RiskEntry` rows. Under that model, being rated (likelihood + impact recorded,
 // residual computed) is a structural property of register membership — you cannot add an entry
 // without scoring it — so "every risk has been assessed" now follows from the register existing at
@@ -14,7 +14,7 @@
 // Fail-closed / flag-never-guess:
 //   - an empty register → `unresolved` (no risk-management system to attest);
 //   - any entry with no treatment plan on record → `flagged` (a real Art. 9 gap).
-import type { RiskEntry } from "@caisson/risk-register";
+import type { RiskEntry } from "@caisson-sh/risk-register";
 import {
   flaggedResult,
   passResult,
@@ -25,7 +25,7 @@ import {
 } from "../collector.ts";
 
 /** The base fact: the AI risk register in scope for the tenant/system — an instance of the
- *  generalized `@caisson/risk-register` model. Kept as a named alias for callers already typed
+ *  generalized `@caisson-sh/risk-register` model. Kept as a named alias for callers already typed
  *  against the collector's original field name. */
 export type AiRiskEntryFact = RiskEntry;
 

@@ -23,7 +23,7 @@
 // walker cannot see it — a bundler answers it with the `buffer/` polyfill, silently. The base64/hex
 // codecs below exist for exactly that reason and are byte-identical to the `Buffer` calls they
 // replace (pinned in browser-parity.test.ts). browser-safety.test.ts scans this graph for the global.
-import { ValidationError } from "@caisson/kernel/browser";
+import { ValidationError } from "@caisson-sh/kernel/browser";
 
 // --- key derivation vocabulary (ADR-0043) ------------------------------------------------------
 

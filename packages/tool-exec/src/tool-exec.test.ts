@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
-import { NotFoundError, ValidationError } from "@caisson/kernel";
+import { NotFoundError, ValidationError } from "@caisson-sh/kernel";
 import {
   createMemoryApprovalStore,
   createToolExec,

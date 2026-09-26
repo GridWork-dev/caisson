@@ -27,10 +27,10 @@ or shared packages, never the reverse ([`ADR-0003`](../knowledge/decisions/ADR-0
 Shared/cross-edition packages (`cli`, `mcp-server`, `license-verify`, `ui`, `email`, `jobs`) are
 composed by multiple bundles and never depend "up" on one.
 
-Not in `packages/` (referenced as `@caisson/*` deps, resolved from sibling workspaces
+Not in `packages/` (referenced as `@caisson-sh/*` deps, resolved from sibling workspaces
 `tooling/*`, `registry`, `services/*`): `tooling/lint-policy` / `tooling/tsconfig` /
 `tooling/testing` (the single standards gate, `ADR-0002`/`0022`), `tooling/standards-gate`
-(dependency-cruiser boundary enforcement, `ADR-0022`/`0016`), `registry/` (`@caisson/registry` —
+(dependency-cruiser boundary enforcement, `ADR-0022`/`0016`), `registry/` (`@caisson-sh/registry` —
 CI-built index + allowlist + Worker read seam + publish ledger, `ADR-0021`/`0047`/`0071`).
 
 `apps/*` and `services/*` are out of scope for this catalog; see

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { KeyWrapAlgorithm } from "@azure/keyvault-keys";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   createAzureKeyVaultKmsClient,
   type AzureKeyVaultClient,

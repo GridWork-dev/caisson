@@ -1,7 +1,7 @@
 "use client";
 
 // The tool-exec module's poke (ADR-0378 lock 2) — a live, deterministic run of the REAL
-// @caisson/tool-exec default-deny gate against a caller-typed argv. The hand-ported mirror
+// @caisson-sh/tool-exec default-deny gate against a caller-typed argv. The hand-ported mirror
 // (tool-exec-logic.ts) is retired per ADR-0396: `createToolProposer` is the same implementation
 // `createToolExec.propose()` runs, imported through the package's browser-safe `./browser` entry
 // (the spawn seam and its node:child_process import stay behind `.`). Only the sample allowlist and
@@ -11,11 +11,14 @@
 import { useId, useMemo, useState } from "react";
 import { z } from "zod";
 import type { ZodType } from "zod";
-import { Button, Radio, StatusChip } from "@caisson/ui/components";
-import { createToolProposer } from "@caisson/tool-exec/browser";
-import type { CommandSpec, ProposedToolCall } from "@caisson/tool-exec/browser";
-import { isCaissonError } from "@caisson/kernel";
-import type { CaissonError } from "@caisson/kernel";
+import { Button, Radio, StatusChip } from "@caisson-sh/ui/components";
+import { createToolProposer } from "@caisson-sh/tool-exec/browser";
+import type {
+  CommandSpec,
+  ProposedToolCall,
+} from "@caisson-sh/tool-exec/browser";
+import { isCaissonError } from "@caisson-sh/kernel";
+import type { CaissonError } from "@caisson-sh/kernel";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./tool-exec-poke.module.css";
@@ -136,7 +139,7 @@ export default function ToolExecPoke() {
 
   return (
     <PokeShell
-      label="@caisson/tool-exec"
+      label="@caisson-sh/tool-exec"
       title="Propose a command. The allowlist decides before anything can spawn."
     >
       <div className={styles.layout}>

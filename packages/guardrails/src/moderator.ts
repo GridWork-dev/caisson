@@ -5,7 +5,7 @@
 // per the kernel floor), and a `custom` hook. The `forge.config` policy block is the serializable
 // selection (`.strict()` — unknown keys rejected); the live `Moderator` instance is built from it.
 import { z } from "zod";
-import { strictObject, ValidationError } from "@caisson/kernel/browser";
+import { strictObject, ValidationError } from "@caisson-sh/kernel/browser";
 import { assertBoundedGuardText } from "./pii-core.ts";
 
 const MAX_MODERATOR_PATTERNS = 256;

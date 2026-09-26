@@ -3,7 +3,7 @@
 // multi-year immutability, so a term below the floor is a fail-closed error — never silently
 // shortened, never guessed. The returned date is what both the DB `retain_until` column AND the S3
 // `RetainUntilDate` are set to, so the row date provably equals the object-lock date (ADR-0054).
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 
 /** Hard legal minimum (years). HIPAA §164.316(b)(2) = 6yr; SEC 17a-4 = 6yr. Below this is rejected. */
 export const MIN_RETENTION_YEARS = 6;

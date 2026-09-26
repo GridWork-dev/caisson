@@ -9,7 +9,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
 import { HELP, parseArgs, resolveSelection, runCli } from "./cli.ts";
 import type { RawSelection } from "./generate.ts";
 import type * as InteractiveModule from "./interactive.ts";
@@ -33,9 +33,9 @@ const INDEX = loadRegistryIndex({
   schemaVersion: 1,
   modules: [
     {
-      id: "@caisson/kernel",
+      id: "@caisson-sh/kernel",
       latest: "0.3.0",
-      versions: [version("0.3.0", "@caisson/kernel")],
+      versions: [version("0.3.0", "@caisson-sh/kernel")],
     },
   ],
 });
@@ -94,8 +94,8 @@ describe("parseArgs — the argv contract", () => {
   });
 
   test("a scoped --module id@version", () => {
-    expect(parseArgs(["--module", "@caisson/x@1.2.3"])).toEqual({
-      modules: [{ id: "@caisson/x", version: "1.2.3" }],
+    expect(parseArgs(["--module", "@caisson-sh/x@1.2.3"])).toEqual({
+      modules: [{ id: "@caisson-sh/x", version: "1.2.3" }],
     });
   });
 
@@ -116,18 +116,18 @@ describe("parseArgs — the argv contract", () => {
   test("repeatable --module, last @ split keeps a scoped id intact", () => {
     const raw: RawSelection = parseArgs([
       "--module",
-      "@caisson/a@1.0.0",
+      "@caisson-sh/a@1.0.0",
       "--module",
-      "@caisson/b@2.0.0",
+      "@caisson-sh/b@2.0.0",
     ]);
     expect(raw.modules).toEqual([
-      { id: "@caisson/a", version: "1.0.0" },
-      { id: "@caisson/b", version: "2.0.0" },
+      { id: "@caisson-sh/a", version: "1.0.0" },
+      { id: "@caisson-sh/b", version: "2.0.0" },
     ]);
   });
 
   test("--module without an @version throws", () => {
-    expect(() => parseArgs(["--module", "@caisson/x"])).toThrow(
+    expect(() => parseArgs(["--module", "@caisson-sh/x"])).toThrow(
       /--module expects/,
     );
   });
@@ -150,9 +150,9 @@ describe("parseArgs — the argv contract", () => {
   });
 
   test("G2: a positional combines with other flags", () => {
-    expect(parseArgs(["my-app", "--module", "@caisson/x@1.2.3"])).toEqual({
+    expect(parseArgs(["my-app", "--module", "@caisson-sh/x@1.2.3"])).toEqual({
       projectName: "my-app",
-      modules: [{ id: "@caisson/x", version: "1.2.3" }],
+      modules: [{ id: "@caisson-sh/x", version: "1.2.3" }],
     });
   });
 
@@ -174,11 +174,11 @@ describe("parseArgs — the argv contract", () => {
 
 describe("runCli — argv → generation plan", () => {
   test("equals generate(index, parseArgs(argv))", () => {
-    const argv = ["--name", "acme-app", "--module", "@caisson/kernel@0.3.0"];
+    const argv = ["--name", "acme-app", "--module", "@caisson-sh/kernel@0.3.0"];
     const { selection, files } = runCli(argv, { index: INDEX });
     expect(selection.projectName).toBe("acme-app");
     expect(selection.modules).toEqual([
-      { id: "@caisson/kernel", version: "0.3.0" },
+      { id: "@caisson-sh/kernel", version: "0.3.0" },
     ]);
     expect(files.length).toBeGreaterThan(0);
   });
@@ -215,7 +215,7 @@ describe("resolveSelection — ADR-0262/ADR-0268 arming rule", () => {
     "--name",
     "acme-app",
     "--module",
-    "@caisson/kernel@0.3.0",
+    "@caisson-sh/kernel@0.3.0",
     ...extra,
   ];
 
@@ -233,7 +233,7 @@ describe("resolveSelection — ADR-0262/ADR-0268 arming rule", () => {
 
   test("non-TTY stdin, even with a gap (missing --name) → zero prompt code", async () => {
     forbiddenImport.mockClear();
-    const partial = ["--module", "@caisson/kernel@0.3.0"];
+    const partial = ["--module", "@caisson-sh/kernel@0.3.0"];
     const resolved = await resolveSelection(
       partial,
       INDEX,
@@ -309,7 +309,7 @@ describe("end-to-end: a real non-interactive invocation never touches a TTY-only
       "--name",
       "acme-app",
       "--module",
-      "@caisson/kernel@0.3.0",
+      "@caisson-sh/kernel@0.3.0",
       "--dry-run",
     ]);
     expect(exitCode).toBe(0);
@@ -325,7 +325,7 @@ describe("end-to-end: a real non-interactive invocation never touches a TTY-only
     const { stdout, stderr, exitCode } = await spawnCli([
       "acme-app", // leading positional — no --name
       "--module",
-      "@caisson/kernel@0.3.0",
+      "@caisson-sh/kernel@0.3.0",
       "--dry-run",
     ]);
     expect(exitCode).toBe(0);

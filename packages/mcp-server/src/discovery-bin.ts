@@ -1,7 +1,7 @@
 // Runnable entry for the local stdio discovery MCP (ADR-0330 Fork A). An agent configures this as a
 // local MCP server (see README "Local design-system discovery MCP"): it loads the committed
 // Apache-base manifest and the kit's real tokens and serves read-only discovery over stdin/stdout —
-// no bearer, no env token, no network. This is the one place the base manifest + `@caisson/ui/tokens`
+// no bearer, no env token, no network. This is the one place the base manifest + `@caisson-sh/ui/tokens`
 // are wired together for production; `discovery-stdio.ts` stays dependency-injected for tests.
 import {
   darkTheme,
@@ -9,8 +9,8 @@ import {
   functionalDark,
   functionalLight,
   lightTheme,
-} from "@caisson/ui/tokens";
-import { loadBaseManifest } from "@caisson/ds-manifest";
+} from "@caisson-sh/ui/tokens";
+import { loadBaseManifest } from "@caisson-sh/ds-manifest";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
@@ -19,7 +19,7 @@ import {
 } from "./discovery-stdio.ts";
 import type { DesignTokens } from "./manifest-tools.ts";
 
-/** Assemble the discovery deps from the committed base manifest + the real `@caisson/ui` tokens. */
+/** Assemble the discovery deps from the committed base manifest + the real `@caisson-sh/ui` tokens. */
 export function discoveryDeps(): DiscoveryServerDeps {
   const tokens: DesignTokens = {
     themes: { dark: darkTheme, light: lightTheme },

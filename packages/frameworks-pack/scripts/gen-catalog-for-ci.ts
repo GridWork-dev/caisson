@@ -7,8 +7,8 @@
 //
 // Usage: bun packages/frameworks-pack/scripts/gen-catalog-for-ci.ts <output-path>
 import { writeFileSync } from "node:fs";
-import { euAiAct, hipaaSecurity, soc2Tsc } from "@caisson/frameworks-pack";
-import { toOscalCatalog } from "@caisson/oscal-spine";
+import { euAiAct, hipaaSecurity, soc2Tsc } from "@caisson-sh/frameworks-pack";
+import { toOscalCatalog } from "@caisson-sh/oscal-spine";
 
 function counterIds(): () => string {
   let n = 0;

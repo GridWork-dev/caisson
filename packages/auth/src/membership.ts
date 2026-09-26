@@ -7,8 +7,8 @@
 // (`resolveUserAccounts` / `ensurePersonalAccount` / `selectActiveAccount`) — it runs on every buyer
 // login (apps/site getSession), so it stays in the open Apache-2.0 substrate. The owner-gated MANAGE
 // half (`listAccountMembers` / `addAccountMember` / `assertCanManageMembers`) moved to the commercial
-// `@caisson/org-controls`, which re-uses `AccountMembership` + `Role` from here.
-import { withTenant, withUser, type Transactor } from "@caisson/tenancy-rls";
+// `@caisson-sh/org-controls`, which re-uses `AccountMembership` + `Role` from here.
+import { withTenant, withUser, type Transactor } from "@caisson-sh/tenancy-rls";
 
 import type { Role } from "./session.ts";
 

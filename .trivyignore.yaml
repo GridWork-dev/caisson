@@ -11,7 +11,7 @@ secrets:
       - "packages/local-store/src/golden.ts"
     statement: >-
       Golden scrub fixtures. The fake GitHub PAT is deliberately-unsafe test input: it is the
-      INPUT to @caisson/local-store's secret-scrubber golden-file regression (the scrubber must
+      INPUT to @caisson-sh/local-store's secret-scrubber golden-file regression (the scrubber must
       redact it). Not a live credential — the security floor's carve-out for test files
       exercising deliberately unsafe input applies.
   - id: private-key

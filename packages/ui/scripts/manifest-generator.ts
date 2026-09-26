@@ -8,7 +8,7 @@ import {
   type Component,
   type ComponentManifest,
   type ComponentProp,
-} from "@caisson/ds-manifest";
+} from "@caisson-sh/ds-manifest";
 
 export interface PrimaryComponentExport {
   name: string;
@@ -353,12 +353,12 @@ function readPackageIdentity(uiRoot: string): {
   if (typeof input !== "object" || input === null)
     fail("package.json is not an object");
   const record = input as Record<string, unknown>;
-  if (record.name !== "@caisson/ui" && record.name !== "@caisson-sh/ui")
-    fail("package.json name is not @caisson/ui or @caisson-sh/ui");
+  if (record.name !== "@caisson-sh/ui" && record.name !== "@caisson-sh/ui")
+    fail("package.json name is not @caisson-sh/ui or @caisson-sh/ui");
   if (typeof record.version !== "string" || record.version.length === 0)
     fail("package.json version is missing");
   // The public mirror renames the npm scope, but manifests retain the canonical product id.
-  return { pkg: "@caisson/ui", version: record.version };
+  return { pkg: "@caisson-sh/ui", version: record.version };
 }
 
 export function discoverPrimaryComponentExports(
@@ -493,6 +493,6 @@ export function assertManifestCurrent(
 ): void {
   if (committed !== generated)
     throw new Error(
-      "component manifest drift: run `bun run --filter @caisson/ui gen:manifest` and commit the generated file",
+      "component manifest drift: run `bun run --filter @caisson-sh/ui gen:manifest` and commit the generated file",
     );
 }

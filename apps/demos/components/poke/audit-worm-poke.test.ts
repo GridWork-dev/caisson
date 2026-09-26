@@ -19,15 +19,15 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { ValidationError } from "@caisson/kernel";
-import { anchorChain, buildChainAsync } from "@caisson/kernel/audit-verify";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { ValidationError } from "@caisson-sh/kernel";
+import { anchorChain, buildChainAsync } from "@caisson-sh/kernel/audit-verify";
 import {
   anchorChain as nodeAnchorChain,
   buildChain as nodeBuildChain,
   verifyChain as nodeVerifyChain,
   type JsonValue,
-} from "@caisson/kernel/node";
+} from "@caisson-sh/kernel/node";
 import {
   DEFAULT_RETENTION_YEARS,
   MIN_RETENTION_YEARS,
@@ -95,10 +95,10 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
     // affirmatively absent.
     const src = readFileSync(POKE_ENTRY, "utf8");
     expect(src).toMatch(
-      /^import type \{[^}]*\} from "@caisson\/audit-worm";$/m,
+      /^import type \{[^}]*\} from "@caisson-sh\/audit-worm";$/m,
     );
     expect(src).not.toMatch(
-      /^import \{[^}]*\btype\b[^}]*\} from "@caisson\/audit-worm";$/m,
+      /^import \{[^}]*\btype\b[^}]*\} from "@caisson-sh\/audit-worm";$/m,
     );
   });
 

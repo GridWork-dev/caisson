@@ -16,7 +16,7 @@
       "claim": "maps-to",
       "control": "CC6.1",
       "summary": "Logical access to protected information assets is restricted to authorized users and processes.",
-      "mechanism": "@caisson/tenancy-rls — Postgres FORCE ROW LEVEL SECURITY with a fail-closed tenant boundary (a missing tenant scope denies as a 404, never widens access).",
+      "mechanism": "@caisson-sh/tenancy-rls — Postgres FORCE ROW LEVEL SECURITY with a fail-closed tenant boundary (a missing tenant scope denies as a 404, never widens access).",
       "evidence": "Tenant-isolation tests and the RLS provisioning generator in packages/tenancy-rls.",
       "buyerResponsibility": "Your identity provider and user-authentication configuration, network and endpoint controls, the authorization/least-privilege model above the data layer, and periodic access recertification."
     },
@@ -24,7 +24,7 @@
       "claim": "maps-to",
       "control": "CC6.6",
       "summary": "The entity implements logical access security measures to protect the system against threats from sources outside its boundaries, including authenticating external access before protected resources are reached.",
-      "mechanism": "@caisson/auth — session and JWT verification (built-auth integration) gating requests at the application boundary.",
+      "mechanism": "@caisson-sh/auth — session and JWT verification (built-auth integration) gating requests at the application boundary.",
       "evidence": "JWT/session verification tests in packages/auth.",
       "buyerResponsibility": "Multi-factor authentication policy, network boundary and WAF/firewall controls, credential lifecycle, and any federation with your own IdP."
     },
@@ -32,7 +32,7 @@
       "claim": "maps-to",
       "control": "CC7.1",
       "summary": "The entity uses detection and monitoring procedures to identify configuration changes that introduce new vulnerabilities and susceptibility to newly discovered vulnerabilities.",
-      "mechanism": "@caisson/alerting — a rule-driven alerting pipeline that raises signals on defined conditions.",
+      "mechanism": "@caisson-sh/alerting — a rule-driven alerting pipeline that raises signals on defined conditions.",
       "evidence": "Alerting pipeline and channel tests in packages/alerting.",
       "buyerResponsibility": "Deciding what to monitor, defining alert thresholds and routing, vulnerability scanning of your own deployment, and acting on the alerts raised."
     },
@@ -40,7 +40,7 @@
       "claim": "maps-to",
       "control": "CC7.2",
       "summary": "The entity monitors system components and their operation for anomalies indicative of malicious acts, natural disasters, and errors, and analyzes anomalies to determine whether they represent security events.",
-      "mechanism": "@caisson/audit-worm provides the tamper-evident, hash-chained record a monitoring and anomaly-analysis program draws on; @caisson/alerting can raise signals against events written to it. Neither package performs the anomaly analysis itself.",
+      "mechanism": "@caisson-sh/audit-worm provides the tamper-evident, hash-chained record a monitoring and anomaly-analysis program draws on; @caisson-sh/alerting can raise signals against events written to it. Neither package performs the anomaly analysis itself.",
       "evidence": "The audit chain in packages/audit-worm and the alerting pipeline in packages/alerting.",
       "buyerResponsibility": "Building and operating the actual monitoring and anomaly-analysis program: defining what counts as an anomaly, analyzing events for security significance, and configuring and reviewing alerting rules."
     },
@@ -48,7 +48,7 @@
       "claim": "maps-to",
       "control": "C1.1",
       "summary": "The entity identifies and maintains confidential information to meet its confidentiality objectives — classifying what counts as confidential and safeguarding it appropriately.",
-      "mechanism": "@caisson/field-crypto — per-field AEAD encryption at rest with row-bound additional authenticated data safeguards confidential fields once identified; a relocated ciphertext fails authentication rather than decrypting elsewhere.",
+      "mechanism": "@caisson-sh/field-crypto — per-field AEAD encryption at rest with row-bound additional authenticated data safeguards confidential fields once identified; a relocated ciphertext fails authentication rather than decrypting elsewhere.",
       "evidence": "Row-bound encryption tests in packages/field-crypto (encrypt-field, envelope, isolation).",
       "buyerResponsibility": "Classifying which data is confidential, selecting which columns are encrypted, and your key-custody and rotation policy."
     },
@@ -56,7 +56,7 @@
       "claim": "implements",
       "control": "C1.2",
       "summary": "Confidential information is disposed of so that it can no longer be recovered.",
-      "mechanism": "@caisson/field-crypto — crypto-shred renders a subject's ciphertext irreversibly unrecoverable by destroying its governing key, selectively (other subjects still decrypt) and irreversibly (re-provisioning a shredded scope is refused), while the append-only audit chain still verifies over the committed ciphertext.",
+      "mechanism": "@caisson-sh/field-crypto — crypto-shred renders a subject's ciphertext irreversibly unrecoverable by destroying its governing key, selectively (other subjects still decrypt) and irreversibly (re-provisioning a shredded scope is refused), while the append-only audit chain still verifies over the committed ciphertext.",
       "evidence": "The crypto-shred tests prove ciphertext becomes unrecoverable, the disposal is selective and irreversible, and the audit record commits the fact of erasure with no PII.",
       "buyerResponsibility": "Defining the retention schedule that triggers disposal, and identifying which records reach end-of-life (the retention-runner schedules the sweep).",
       "proof": {

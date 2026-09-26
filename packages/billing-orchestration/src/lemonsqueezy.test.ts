@@ -1,10 +1,10 @@
 // LemonSqueezy driver + mapper (ADR-0175): LemonSqueezy→domain event mapping, the envelope boundary,
 // hosted-checkout creation, and fail-closed config. The raw-body signature-VERIFY assertions live with
-// the open verifier in @caisson/billing (packages/billing/src/lemonsqueezy.test.ts); this file covers
+// the open verifier in @caisson-sh/billing (packages/billing/src/lemonsqueezy.test.ts); this file covers
 // the commercial parse/driver half (ADR-0249 G3). Synthetic secrets only.
 import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, test } from "bun:test";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   createLemonSqueezyBilling,
   LemonSqueezyEventSchema,

@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/local-sync",
+  "name": "@caisson-sh/local-sync",
   "version": "0.2.2",
   "description": "Local-first sync engine: changeset capture, HLC stamps, LWW reconciliation, and tombstone-aware convergence.",
   "license": "Apache-2.0",
@@ -21,12 +21,12 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/kernel": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   },
   "engines": {

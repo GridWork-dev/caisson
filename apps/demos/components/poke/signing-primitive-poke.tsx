@@ -1,12 +1,12 @@
 "use client";
 
-// The @caisson/signing-primitive "verify workbench" poke (ADR-0378 lock 2). A self-contained,
+// The @caisson-sh/signing-primitive "verify workbench" poke (ADR-0378 lock 2). A self-contained,
 // deterministic, in-browser run of the SHIPPED detached-Ed25519 verify path: a per-tenant signature
 // over a canonical, chain-anchored evidence manifest, plus its RFC-3161 countersign receipt. Verify
 // the good sample (ok verdict), then flip one payload byte or swap the verifying key and watch the
 // verdict flip to fail.
 //
-// The crypto is the PACKAGE'S OWN, imported from @caisson/signing-primitive/browser (ADR-0396) — the
+// The crypto is the PACKAGE'S OWN, imported from @caisson-sh/signing-primitive/browser (ADR-0396) — the
 // hand-ported mirror this file used to drive (signing-primitive-logic.ts) is deleted. The mirror's
 // premise (that the verify path was node-bound) was only ever true of the MODULE: `@noble/ed25519` is
 // dependency-free pure JS, so the package's browser entry now ships the same primitive the server
@@ -28,7 +28,7 @@ import {
   hexToBytes,
   timestampCountersignsSignatureAsync,
   verifyEvidenceSignature,
-} from "@caisson/signing-primitive/browser";
+} from "@caisson-sh/signing-primitive/browser";
 
 import { PokeShell, Verdict, type VerdictState } from "./poke-rig";
 
@@ -383,7 +383,7 @@ export default function SigningPrimitivePoke() {
 
   return (
     <PokeShell
-      label="@caisson/signing-primitive"
+      label="@caisson-sh/signing-primitive"
       title="Verify a detached signature. Break it and watch the verdict flip."
     >
       <div className={styles.zones}>

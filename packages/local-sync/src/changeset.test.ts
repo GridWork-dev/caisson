@@ -4,7 +4,7 @@
 // applicable to a tenant-B file — plus the fail-closed boundary parse for an untrusted peer changeset.
 import { describe, expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
-import { TenancyError, ValidationError } from "@caisson/kernel";
+import { TenancyError, ValidationError } from "@caisson-sh/kernel";
 import { ChangesetLog, parseChangeset } from "./changeset.ts";
 import type { Changeset } from "./port.ts";
 

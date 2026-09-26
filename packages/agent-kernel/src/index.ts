@@ -1,4 +1,4 @@
-// @caisson/agent-kernel — the engine-neutral agent kernel (ADR-0065): agent/skill/rule schema +
+// @caisson-sh/agent-kernel — the engine-neutral agent kernel (ADR-0065): agent/skill/rule schema +
 // the lifecycle act FSM + the hooks dispatcher. No vendor SDK import, no LLM call — composition
 // mechanism only; both base (cli, mcp-server) and the Agentic-Dev bundle consume it down-only.
 export {

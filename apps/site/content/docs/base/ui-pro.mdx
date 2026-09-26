@@ -1,11 +1,11 @@
 ---
 title: UI Pro
-description: The commercial component tier on the open @caisson/ui token floor, an advanced data grid, virtualized tree, ops matrix, audit timeline, and more.
+description: The commercial component tier on the open @caisson-sh/ui token floor, an advanced data grid, virtualized tree, ops matrix, audit timeline, and more.
 ---
 
-`@caisson/ui-pro` layers advanced data-ops and compliance surfaces on the open Apache-2.0
-`@caisson/ui` token floor. It is the components a free kit paywalls, plus domain-composed
-operations views, themed entirely through the same token contract, so re-skinning `@caisson/ui`
+`@caisson-sh/ui-pro` layers advanced data-ops and compliance surfaces on the open Apache-2.0
+`@caisson-sh/ui` token floor. It is the components a free kit paywalls, plus domain-composed
+operations views, themed entirely through the same token contract, so re-skinning `@caisson-sh/ui`
 re-skins these too.
 
 It is Apache-2.0 and installs from public npm.
@@ -28,7 +28,7 @@ It is Apache-2.0 and installs from public npm.
   diff viewer, and a drag-drop board.
 - **Tooltip**, **Popover**, **Menu**: the focus-managed/positioning-hard interactive primitives
   that stay commercial (Tabs/Checkbox/Radio/Switch/Badge/Accordion are the open-base counterparts;
-  the dialog-class primitive is the open `@caisson/ui` `Dialog`, not a ui-pro component).
+  the dialog-class primitive is the open `@caisson-sh/ui` `Dialog`, not a ui-pro component).
 
 Every interactive component ships full keyboard navigation, correct ARIA roles and labels, and
 focus management (trap and restore in overlays), a launch requirement, not a polish item.
@@ -36,16 +36,16 @@ focus management (trap and restore in overlays), a launch requirement, not a pol
 ## Install
 
 ```bash
-bun add @caisson/ui-pro
+bun add @caisson-sh/ui-pro
 ```
 
 Components ship as raw `.tsx` with co-located CSS. In a Next application, add the package to
-`transpilePackages` and import the token stylesheet from `@caisson/ui` once at the root, the same
+`transpilePackages` and import the token stylesheet from `@caisson-sh/ui` once at the root, the same
 delivery model as the open floor it builds on.
 
 ```ts
 // next.config.ts
-transpilePackages: ["@caisson/ui", "@caisson/ui-pro"],
+transpilePackages: ["@caisson-sh/ui", "@caisson-sh/ui-pro"],
 ```
 
 ## Quickstart
@@ -54,7 +54,7 @@ transpilePackages: ["@caisson/ui", "@caisson/ui-pro"],
 import {
   DataTablePro,
   type DataTableProColumn,
-} from "@caisson/ui-pro/components";
+} from "@caisson-sh/ui-pro/components";
 
 interface Row {
   id: string;
@@ -97,7 +97,7 @@ const columns: readonly DataTableProColumn<Row>[] = [
 your async handler through a `busy → ok/warn/err` lifecycle shown as an in-dialog banner:
 
 ```tsx
-import { TypeToConfirm } from "@caisson/ui-pro/components";
+import { TypeToConfirm } from "@caisson-sh/ui-pro/components";
 
 <TypeToConfirm
   open={open}
@@ -115,10 +115,10 @@ import { TypeToConfirm } from "@caisson/ui-pro/components";
 ## An audit-chain timeline
 
 `AuditTimeline` renders `ChainEntry`-shaped rows with per-link verification badges, it takes chain
-entries as props with no runtime coupling to a store, pairing naturally with `@caisson/audit-worm`:
+entries as props with no runtime coupling to a store, pairing naturally with `@caisson-sh/audit-worm`:
 
 ```tsx
-import { AuditTimeline, shortHash } from "@caisson/ui-pro/components";
+import { AuditTimeline, shortHash } from "@caisson-sh/ui-pro/components";
 
 <AuditTimeline entries={chainEntries} />;
 ```
@@ -126,7 +126,7 @@ import { AuditTimeline, shortHash } from "@caisson/ui-pro/components";
 ## Command palette
 
 ```tsx
-import { CommandPalette, type CommandAction } from "@caisson/ui-pro/components";
+import { CommandPalette, type CommandAction } from "@caisson-sh/ui-pro/components";
 
 const actions: readonly CommandAction[] = [
   {
@@ -151,11 +151,11 @@ React.
 
 ## Composing with the base
 
-`@caisson/ui-pro` depends only on `@caisson/ui` (`workspace:*`), every component reads the same
+`@caisson-sh/ui-pro` depends only on `@caisson-sh/ui` (`workspace:*`), every component reads the same
 `--cs-*` token contract, so a brand re-skin at the base floor propagates through the whole tier with
 no forking. `DataTablePro` extends the floor `DataTable`'s column/row contract rather than replacing
 it; `TypeToConfirm` builds on the floor `Dialog` (native `<dialog>`, focus trap, Escape, focus
 return) rather than shipping its own overlay primitive.
 
-`@caisson/ui-pro` is sold as a standalone SKU (not bundled into any of the six persona bundles) and
+`@caisson-sh/ui-pro` is sold as a standalone SKU (not bundled into any of the six persona bundles) and
 included in the Everything bundle.

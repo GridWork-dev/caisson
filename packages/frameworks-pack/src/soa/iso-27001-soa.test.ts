@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
-import { ValidationError } from "@caisson/kernel";
+import { matchGolden } from "@caisson-sh/testing";
+import { ValidationError } from "@caisson-sh/kernel";
 import { iso27001Crosswalk, soc2Crosswalk } from "../crosswalks/regimes.ts";
 import {
   computeIso27001SoaRows,

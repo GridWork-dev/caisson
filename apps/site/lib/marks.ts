@@ -1,7 +1,7 @@
 // Catalog id → bespoke mark (ADR-0237 F6). The single mapping every surface (nav panels, catalog
 // cards, depth-page heroes, media slots) reads so a module never renders two different glyphs.
 // field-crypto and audit-worm predate the F6 set under their original bespoke names.
-import type { IconName } from "@caisson/ui/components";
+import type { IconName } from "@caisson-sh/ui/components";
 
 import type { BundleId } from "./catalog";
 

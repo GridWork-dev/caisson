@@ -74,9 +74,9 @@ Core contracts receive injected clients/config and do not read ambient provider 
 
 ## Design-system surface
 
-`@caisson/ui` and `@caisson/ui-pro` expose 39 components. `@caisson/ds-manifest` is the shared
+`@caisson-sh/ui` and `@caisson-sh/ui-pro` expose 39 components. `@caisson-sh/ds-manifest` is the shared
 schema/reader/contrast authority consumed by CLI and MCP surfaces. The checked-in base manifest is
-deterministically generated from all 39 primary `@caisson/ui` component modules; CI checks its
+deterministically generated from all 39 primary `@caisson-sh/ui` component modules; CI checks its
 barrel bijection and exact bytes. The UI quality gate and agent doctor share one browser-rendered
 contrast implementation, including semantic, functional, and code-syntax colors.
 
