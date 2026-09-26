@@ -135,10 +135,18 @@ jobs:
         env:
           SELECT_RESULT: ${{ needs.runtime-select.result }}
           MATRIX_RESULT: ${{ needs.runtime-images.result }}
+          TARGETS: ${{ needs.runtime-select.outputs.count }}
         run: |
           set -euo pipefail
           test "$SELECT_RESULT" = success
-          test "$MATRIX_RESULT" = success
+          # A tree with no first-party Dockerfile skips the matrix on purpose; say so. Any other
+          # count (including a missing one) needs every matrix member green.
+          if [ "$TARGETS" = 0 ]; then
+            test "$MATRIX_RESULT" = skipped
+            echo "runtime-images-gate: 0 Dockerfiles, no runtime image to scan"
+          else
+            test "$MATRIX_RESULT" = success
+          fi
 
   # Semgrep PRO (interfile / cross-function taint). Dormant until SEMGREP_APP_TOKEN is set. The job
   # ALWAYS runs — a job-level `if` CANNOT reference the `secrets` context (doing so is a parse-time
@@ -241,6 +249,7 @@ jobs:
     runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     outputs:
       matrix: ${{ steps.select.outputs.matrix }}
+      count: ${{ steps.select.outputs.count }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -248,11 +257,15 @@ jobs:
       - id: select
         run: |
           matrix="$(python3 -B tools/security/rescan_runtime_images.py --matrix)"
-          printf 'matrix=%s\n' "$matrix" >> "$GITHUB_OUTPUT"
+          count="$(printf '%s' "$matrix" | python3 -c 'import json, sys; print(len(json.load(sys.stdin)["include"]))')"
+          printf 'matrix=%s\ncount=%s\n' "$matrix" "$count" >> "$GITHUB_OUTPUT"
 
   runtime-images:
     name: runtime image (${{ matrix.name }})
     needs: runtime-select
+    # An empty include list is a hard error in a matrix, so zero targets skips the job instead;
+    # runtime-images-gate turns that skip into a reported "0 Dockerfiles" pass.
+    if: needs.runtime-select.outputs.count != '0'
     runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
     timeout-minutes: 35
     strategy:

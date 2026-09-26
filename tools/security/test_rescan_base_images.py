@@ -45,6 +45,13 @@ class RescanTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "empty scan"):
                     rescan.census(root)
 
+    def test_census_reports_zero_dockerfiles_when_the_tree_has_none(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(rescan, "git", side_effect=["README.md\0packages/cli/templates/Dockerfile\0", "deadbeef\n"]):
+                report = rescan.census(Path(directory))
+            self.assertEqual(report["dockerfiles"], [])
+            self.assertEqual(report["images"], [])
+
     def test_raw_base_findings_report_and_operational_errors_continue(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory)

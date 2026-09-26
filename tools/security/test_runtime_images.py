@@ -132,6 +132,11 @@ class RuntimeImagesTests(unittest.TestCase):
                      "platforms: linux/amd64", "rescan_runtime_images.py --matrix",
                      'rescan_runtime_images.py --image "$IMAGE"', "runtime-rescan-", "if: always()"]:
             self.assertIn(text, workflow)
+        # Zero first-party Dockerfiles skips the matrix and the gate reports it, never a vacuous green.
+        for text in ["count: ${{ steps.select.outputs.count }}",
+                     "if: needs.runtime-select.outputs.count != '0'",
+                     'test "$MATRIX_RESULT" = skipped', "0 Dockerfiles"]:
+            self.assertIn(text, workflow)
         runtime_job = workflow.split("  runtime-images:")[1]
         self.assertNotIn("continue-on-error", runtime_job)
         self.assertNotIn("secrets.", runtime_job)
