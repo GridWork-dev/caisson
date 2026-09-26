@@ -53,6 +53,7 @@ const pack = generateEvidencePack({
   tenantId,
   framework,
   chainAnchor,
+  crosswalkRollup, // computed with computeCrosswalkRollup
   now: new Date(), // injected clock — never hashed into the canonical body
   controls: [
     {

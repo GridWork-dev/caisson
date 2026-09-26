@@ -1,0 +1,119 @@
+---
+title: access-review
+description: Audit-prep access-review campaigns — a WORM-logged, per-reviewee attested approve/revoke record over an imported membership snapshot, opened on a jobs-riding cadence and closed on completion or deadline.
+---
+
+`@caisson-sh/access-review` is Caisson's audit-prep access-review module: a reviewer opens a
+campaign against a frozen membership snapshot, records an approve/revoke decision per reviewee,
+and the campaign closes only once every reviewee has decided or the deadline has passed — any
+reviewee left undecided at close is flagged `unresolved`, never counted as approved.
+
+## What it does
+
+- **A WORM-logged decision record.** `openCampaign`, `recordDecision`, and `closeCampaign` each
+  append a chain record (`access-review.campaign.opened` / `access-review.decision` /
+  `access-review.campaign.closed`) to the tenant's existing audit chain through the injected
+  `CampaignChainStore` port — no new anchoring primitive.
+- **A typed `MembershipSnapshotSource` port.** One shape, `{ reviewerId, reviewees }`, three
+  adapters: `createCsvMembershipSnapshotSource`, `createJsonMembershipSnapshotSource`,
+  `createInMemoryMembershipSnapshotSource`. `read()` is pure — the loader's own I/O stays outside
+  the typed boundary.
+- **Flag-never-guess close.** `closeCampaign` refuses (`ConflictError`) to close before the
+  deadline unless every reviewee has decided; `scanCampaignDecisions` reads the chain for the
+  latest decision per reviewee and reports every undecided reviewee in `unresolved`, never as
+  approved.
+- **A jobs-riding schedule.** `defineCampaignOpenTask` / `defineCampaignCloseTask` are
+  `@caisson-sh/jobs` `TaskDefinition`s; `enqueueCampaignOpen` / `enqueueCampaignClose` set an
+  overlap-safe `singletonKey` per `(accountId, reviewerId)` / `(accountId, campaignId)`.
+
+## Install
+
+```bash
+bun add @caisson-sh/access-review @caisson-sh/jobs
+```
+
+## Quickstart
+
+```ts
+import {
+  createCsvMembershipSnapshotSource,
+  openCampaign,
+  recordDecision,
+  closeCampaign,
+} from "@caisson-sh/access-review";
+
+const snapshot = createCsvMembershipSnapshotSource(csvText, "reviewer-9").read();
+
+const campaign = await openCampaign(deps, {
+  accountId,
+  reviewerId: snapshot.reviewerId,
+  reviewees: snapshot.reviewees,
+  deadlineMs: 30 * 24 * 60 * 60 * 1000, // 30-day review window, must be <= MAX_CAMPAIGN_WINDOW_MS
+});
+
+await recordDecision(deps, {
+  accountId,
+  campaignId: campaign.id,
+  revieweeId: snapshot.reviewees[0],
+  decision: "approve",
+});
+
+// Closes once every reviewee has decided, or once the deadline passes — whichever comes first.
+const closed = await closeCampaign(deps, { accountId, campaignId: campaign.id });
+closed.unresolved; // reviewees with no recorded decision — never treated as approved
+```
+
+`deps` is a `CampaignDeps`: the tenant `db`, a `chain` implementing `CampaignChainStore`
+(`append` + `load` — the real `AuditChainStore` from `@caisson-sh/audit-worm` structurally
+satisfies it), and optional injected `now` / `newId` for deterministic tests.
+
+## Scheduling
+
+```ts
+import { createInMemoryQueue } from "@caisson-sh/jobs";
+import {
+  defineCampaignOpenTask,
+  defineCampaignCloseTask,
+  enqueueCampaignOpen,
+  enqueueCampaignClose,
+} from "@caisson-sh/access-review";
+
+const queue = createInMemoryQueue([
+  defineCampaignOpenTask(deps),
+  defineCampaignCloseTask(deps),
+]);
+
+// A recurring cadence (cron / your own scheduler) enqueues one open per reviewer due for a cycle.
+await enqueueCampaignOpen(queue, {
+  accountId,
+  reviewerId,
+  reviewees,
+  deadlineMs: 30 * 24 * 60 * 60 * 1000,
+});
+
+// A deadline sweep enqueues a close attempt for every open campaign past its window;
+// closeCampaign refuses a premature close, so an eager or redundant poll is harmless.
+await enqueueCampaignClose(queue, { accountId, campaignId });
+```
+
+Which reviewers are due for a fresh cycle, and which open campaigns are past their deadline, is the
+caller's own recurring scheduler's concern — this package only runs the operation once told who.
+
+## Migration
+
+`src/migrations/0001_access_review_campaign.sql` creates the roster table. `closed_at` is the only
+app-updatable column after insert; the decision trail itself lives entirely on the audit chain,
+never in this table.
+
+<Callout type="info" title="No reviewer-facing UI">
+  This package is a data model plus a scheduling task, no reviewer-facing UI or portal, and no live
+  IdP/SaaS connector. Rendering a review queue or an attestation screen, and importing a live
+  roster, are a consuming app's job.
+</Callout>
+
+## Composes with
+
+`@caisson-sh/access-review` depends on `@caisson-sh/tenancy-rls` for the tenant boundary and
+`@caisson-sh/jobs` for scheduling; its `CampaignChainStore` port is structurally satisfied by
+`@caisson-sh/audit-worm`'s `AuditChainStore` without importing it directly. It is a member of the
+Compliance family.

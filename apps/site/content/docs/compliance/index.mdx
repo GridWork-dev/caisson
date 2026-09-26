@@ -10,6 +10,10 @@ is unresolved rather than a silent guess.
 
 ## What's in the family
 
+- **[compliance](/docs/compliance/compliance)**: the compliance evidence kit — the composition
+  package that re-exports the framework catalogs, the evidence engine, and per-tenant signing, and
+  adds its own OSCAL bundle assembler, tenant-crypto composition, support-impersonation audit
+  trail, and regulatory-exemption posture worksheet.
 - **[compliance-core](/docs/compliance/compliance-core)**: the evidence engine: typed collectors
   that flag or resolve a control, a byte-stable evidence pack, and an OSCAL export. Never
   certifies, every summary line is readiness/posture language only.
@@ -28,20 +32,27 @@ is unresolved rather than a silent guess.
   digest, quiet hours, multi-channel send, one audit row), the SOC 2 CC7.2 control.
 - **[field-crypto](/docs/provenance/field-crypto)**: per-tenant field encryption, shared with the
   AI-Production, Local-first, and Provenance families.
-- **oscal-spine**: the complete OSCAL surface — deterministic assessment-plan, assessment-results,
-  POA&M, catalog, XML, and ISO 27001 SoA exports, plus the pinned NIST 800-53 catalog and OLIR
-  relationship mapping.
-- **access-review**: audit-prep access-review campaigns — a WORM-logged, per-reviewee attested
-  approve/revoke record over an imported membership snapshot, opened on a jobs-riding cadence and
-  closed on completion or deadline, with any undecided reviewee flagged unresolved rather than
-  auto-approved.
-- **risk-register**: a framework-agnostic risk register — likelihood × impact scoring with a
-  computed (never freeform) residual, operator overrides recorded as a chained exception rather
-  than an edit, crosswalk pointers into any shipped framework pack, and a risk-treatment-plan
-  evidence artifact.
-- **trust-page**: a customer-facing trust-page generator — a self-contained static HTML + JSON page
-  built from an evidence pack and its crosswalk rollup through allowlist-based redaction, hostable
-  anywhere to show prospects a compliance posture.
+- **[oscal-spine](/docs/compliance/oscal-spine)**: the complete OSCAL surface — deterministic
+  assessment-plan, assessment-results, POA&M, catalog, XML, and ISO 27001 SoA exports, plus the
+  pinned NIST 800-53 catalog and OLIR relationship mapping.
+- **[access-review](/docs/compliance/access-review)**: audit-prep access-review campaigns — a
+  WORM-logged, per-reviewee attested approve/revoke record over an imported membership snapshot,
+  opened on a jobs-riding cadence and closed on completion or deadline, with any undecided
+  reviewee flagged unresolved rather than auto-approved.
+- **[risk-register](/docs/compliance/risk-register)**: a framework-agnostic risk register —
+  likelihood × impact scoring with a computed (never freeform) residual, operator overrides
+  recorded as a chained exception rather than an edit, crosswalk pointers into any shipped
+  framework pack, and a risk-treatment-plan evidence artifact.
+- **[artifact-render](/docs/compliance/artifact-render)**: the shared render primitive for
+  public-facing compliance artifacts — a readiness-language claim filter, allowlist-based field
+  redaction, and citation-row rendering, shared by the ISO 27001 SoA generator and the trust-page
+  generator.
+- **[trust-page](/docs/compliance/trust-page)**: a customer-facing trust-page generator — a
+  self-contained static HTML + JSON page built from an evidence pack and its crosswalk rollup
+  through allowlist-based redaction, hostable anywhere to publish a compliance posture.
+- **[verify-pack](/docs/compliance/verify-pack)**: the out-of-band evidence-pack verifier —
+  validates the signed file manifest, the pack seal, the receipt chain, and every per-row anchor
+  signature, without trusting executable code from inside the pack.
 
 The family also carries the Apache-2.0 base it builds on (`kernel`, `tenancy-rls`, `migrate`).
 
@@ -85,7 +96,8 @@ canonical manifest and the exact bytes the seal signs (`@caisson-sh/kernel/evide
 row's link recompute, its per-length WORM anchor, and its anchor signature
 (`@caisson-sh/kernel/audit-verify`).
 
-The sanctioned runner for that flow is `@caisson-sh/verify-pack`.
+The sanctioned runner for that flow is
+[`@caisson-sh/verify-pack`](/docs/compliance/verify-pack).
 
 ## Composing with the base
 
