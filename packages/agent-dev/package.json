@@ -3,6 +3,11 @@
   "version": "0.6.10",
   "description": "Agentic-Dev edition: the composition of the governed engine-neutral agent kernel + local hybrid memory + a thin multi-harness emitter. Composes base seams down-only — no vendor SDK, no LLM call, no harness substrate.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/agent-dev"
+  },
   "type": "module",
   "exports": {
     ".": {

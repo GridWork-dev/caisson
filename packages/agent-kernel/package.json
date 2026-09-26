@@ -3,6 +3,11 @@
   "version": "0.8.0",
   "description": "Engine-neutral agent kernel: agent/skill/rule Zod schema + lifecycle act FSM + hooks dispatcher. The shared base layer cli/mcp-server and the Agentic-Dev bundle compose down-only — no vendor SDK, no LLM call.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/agent-kernel"
+  },
   "type": "module",
   "exports": {
     ".": {

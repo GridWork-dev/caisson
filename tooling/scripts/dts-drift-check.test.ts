@@ -1,6 +1,6 @@
 // Unit tests for the PURE report-shaping function only — no live tsc/native-tsc binary spawn
 // anywhere in this file (checkPackageDrift is impure, exercised only by the live
-// tsc-native-dts-drift.yml PR job), house style with tsgo-agreement.test.ts.
+// dts-drift job in ci.yml), house style with tsgo-agreement.test.ts.
 import { describe, expect, test } from "bun:test";
 import { summarizeDrift } from "./dts-drift-check";
 import type { PackageDriftResult } from "./dts-drift-check";

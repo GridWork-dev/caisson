@@ -3,6 +3,11 @@
   "version": "0.4.2",
   "description": "Billing orchestration: Stripe/Paddle/LemonSqueezy/Polar checkout drivers + provider->DomainBillingEvent parsers + dual-layer webhook idempotency. Raw-body signature verification lives in @caisson-sh/billing.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/billing-orchestration"
+  },
   "type": "module",
   "exports": {
     ".": {

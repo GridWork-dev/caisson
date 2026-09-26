@@ -3,6 +3,11 @@
   "version": "0.2.1",
   "description": "Local-first inference seam: deterministic stub, guarded ONNX embeddings, and rented transport drivers sharing the local privacy gate.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/local-inference"
+  },
   "type": "module",
   "exports": {
     ".": {

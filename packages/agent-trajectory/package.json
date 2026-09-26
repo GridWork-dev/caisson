@@ -3,6 +3,11 @@
   "version": "0.6.1",
   "description": "Engine-neutral trajectory contract: an append-only, replayable event log (runs, steps, model calls, tool proposals/approvals, usage, checkpoints) with digest-ref payload discipline — the observation substrate the governed agent runtime records into.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/agent-trajectory"
+  },
   "type": "module",
   "exports": {
     ".": {

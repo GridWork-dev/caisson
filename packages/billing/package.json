@@ -3,6 +3,11 @@
   "version": "0.6.9",
   "description": "Billing seam: raw-body HMAC webhook signature verification (Stripe, Paddle, LemonSqueezy, Polar), the BillingProvider port + config-type contracts, and the provider-agnostic DomainBillingEvent schema. Drivers/parsers/idempotency live in @caisson-sh/billing-orchestration.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/billing"
+  },
   "type": "module",
   "exports": {
     ".": {

@@ -3,6 +3,11 @@
   "version": "0.2.14",
   "description": "The base migration assembler + runner: reads each selected package's on-disk migrations/NNNN_*.sql, merges them via the kernel into ONE renumbered sequence + single schema_version ledger, emits the generated-app file set, and applies the sequence forward-only through an injected runner port. Owned here so @caisson-sh/cli and @caisson-sh/compliance import it, never copy it.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/migrate"
+  },
   "type": "module",
   "exports": {
     ".": {
