@@ -58,10 +58,11 @@ const ROUTES: readonly ProdRoute[] = [
   ...MODULE_SAMPLE,
 ];
 
-// The Cloudflare Web Analytics beacon injection (CAISSON-50/51) was disabled at the zone
-// 2026-07-09 (infra/terraform/web-analytics.tf) — the KNOWN_NOISE filter that tolerated its CSP
-// console error came out with it. Any `static.cloudflareinsights.com` (or hydration #418) signal
-// this sweep sees now IS a regression: the injection ruleset has been re-enabled.
+// Cloudflare Web Analytics: the zone's automatic beacon injection stays disabled (it broke
+// hydration, CAISSON-50/51). The site loads the beacon itself through the manual snippet in
+// app/layout.tsx, and the CSP allows its two origins. A `static.cloudflareinsights.com` CSP error
+// or a hydration #418 in this sweep is a regression: either the CSP lost those origins or the
+// injection was switched back on.
 
 let browser: Browser | null = null;
 let context: BrowserContext | null = null;

@@ -28,7 +28,7 @@
 // the "Close Search" accessible name on the dialog's close control. A fumadocs bump that renames
 // either breaks that test with a locator timeout, not a product regression; re-anchor there.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join, normalize } from "node:path";
 import {
   chromium,
@@ -148,6 +148,38 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
     await browser?.close();
     await server?.stop(true);
   });
+
+  test(
+    "Cloudflare Web Analytics: the loader ships in the static HTML and stays silent off caisson.sh",
+    async () => {
+      // The loader is an inline <script> in the exported HTML (never a post-hydration loader,
+      // which a static export would not carry), gated on the registered hostname.
+      for (const file of ["index.html", "docs.html", "marketplace.html"]) {
+        const html = readFileSync(join(OUT_DIR, file), "utf8");
+        expect(html, `${file}: beacon loader missing`).toContain(
+          'if (location.hostname === "caisson.sh")',
+        );
+        expect(html, `${file}: beacon loader missing`).toContain(
+          "32f0acb326dd41ce82d58616cd111026",
+        );
+      }
+      // Off caisson.sh the page never contacts Cloudflare Web Analytics.
+      const { ctx, page } = await newPage(DESKTOP);
+      try {
+        const insights: string[] = [];
+        page.on("request", (req) => {
+          if (req.url().includes("cloudflareinsights.com"))
+            insights.push(req.url());
+        });
+        await goto(page, "/");
+        await page.waitForLoadState("networkidle");
+        expect(insights, "beacon requested off caisson.sh").toEqual([]);
+      } finally {
+        await ctx.close();
+      }
+    },
+    TEST_TIMEOUT,
+  );
 
   test(
     "P1-001 homepage code viewer renders non-zero and swaps panels (desktop)",
