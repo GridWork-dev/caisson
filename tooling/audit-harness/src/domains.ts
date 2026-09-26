@@ -107,8 +107,8 @@ function unitDomain(
 
 /**
  * Derive the complete domain partition for the repo at `root`. One domain per tree unit —
- * `packages/*`, `apps/*`, `services/*`, `tooling/*`, `infra/*`, `tools/*`, the three
- * registry-service units, committed package-manager patches, the workflows dir, the generator's
+ * `packages/*`, `apps/*`, `services/*`, `tooling/*`, `infra/*`, `tools/*`, committed
+ * package-manager patches, the workflows dir, the generator's
  * emitted templates, the docs-content prose aggregate, repo scripts, the root-docs aggregate, and
  * the synthetic oss-mirror export view. ≈67 domains, none hand-typed.
  *
@@ -155,11 +155,6 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
       globs: [`${container}/*`],
       class: "internal-only",
     });
-  }
-
-  // registry/{worker,scripts,schema} — the registry SERVICE (internal), not the re-exported open schema pkg.
-  for (const name of ["worker", "scripts", "schema"]) {
-    domains.push(unitDomain("registry", name, "internal-only"));
   }
 
   // Bun's committed dependency patches are executable package-manager inputs. They are

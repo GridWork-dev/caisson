@@ -6,8 +6,7 @@
     "packages": [
       "tooling/*",
       "packages/*",
-      "apps/*",
-      "registry"
+      "apps/*"
     ],
     "catalog": {
       "zod": "^4.0.0",

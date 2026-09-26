@@ -27,10 +27,6 @@ outputs/streams/
 # MAIN checkout; regenerated on demand, never committed)
 graphify-out/
 
-# registry/index.json IS tracked (ADR-0047): it must be committed so the CI registry-index job can
-# `git diff --exit-code` a fresh rebuild against it and fail on drift. "Never hand-edited" is
-# enforced by that byte-identical check + CODEOWNERS — NOT by gitignoring it (which would hide drift).
-
 # local design / test artifacts + hook session logs
 .playwright-mcp/
 studio-*.png
@@ -54,9 +50,6 @@ outputs/browser-audit/*
 !outputs/browser-audit/2026-07-10-full-01/
 !outputs/browser-audit/2026-07-10-full-01/**
 outputs/browser-audit/2026-07-10-full-01/screenshots/
-
-# ADR-0223: CI-only tarball staging for R2 upload (never committed)
-registry/.tarball-staging/
 
 # ADR-0275 CI build-evidence pack output (assembled fresh each run, uploaded as an artifact)
 evidence-pack/

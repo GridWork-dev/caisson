@@ -32,9 +32,6 @@ describe("deriveDomains — the mechanical tree partition (ADR-0233, Fork A)", (
       "scripts",
       "root-config",
       "oss-mirror",
-      "registry/worker",
-      "registry/scripts",
-      "registry/schema",
     ]) {
       expect(ids.has(id)).toBe(true);
     }

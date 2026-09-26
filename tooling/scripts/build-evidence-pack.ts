@@ -1,7 +1,7 @@
 // tooling/scripts/build-evidence-pack.ts — the CI build-provenance evidence pack (ADR-0275).
 //
 // This aggregates the evidence CI ALREADY produces-and-discards (the standards-gate output, the
-// registry index byte-identity proof, the test run) into ONE versioned, downloadable artifact —
+// generator's module catalog, the test run) into ONE versioned, downloadable artifact —
 // the auditor-facing "here is how this commit of Caisson was built" pack. The CI job runs the cheap
 // producers, this script collects + hashes them + writes a Zod-validated manifest, and
 // actions/upload-artifact ships it (feeds the ADR-0272 evidence page; future: shipped in the tarball).
@@ -236,7 +236,13 @@ export function assembleEvidencePack(
 // ---------------------------------------------------------------------------------------------------
 
 const REPO_ROOT = join(import.meta.dir, "..", "..");
-const REGISTRY_DIR = join(REPO_ROOT, "registry");
+const CATALOG_BUILDER = "packages/cli/scripts/bundle-registry-index.ts";
+const CATALOG_FILE = "packages/cli/registry-index.json";
+const CATALOG_TESTS = [
+  "packages/registry-schema/src",
+  "packages/cli/scripts/bundle-registry-index.test.ts",
+  "tooling/scripts/build-evidence-pack.test.ts",
+] as const;
 
 interface RunResult {
   readonly out: string;
@@ -299,26 +305,24 @@ function evidenceClasses(): ClassSpec[] {
       fileNames: ["standards-gate.txt"],
     },
     {
-      id: "registry-index-provenance",
-      title:
-        "Registry index provenance — byte-identical rebuild from the ledger",
+      id: "module-catalog",
+      title: "Module catalog — derived from the workspace packages",
       claimLevel: "implements",
       proofSource: "verified-in-pack",
-      proof:
-        "registry/scripts/build-index.ts + git diff --exit-code (CI job: registry-index)",
+      proof: CATALOG_BUILDER,
       claim:
-        "registry/index.json is a byte-for-byte rebuild of the git-tracked ledger; a hand-edit or stale rebuild fails the clean-diff check. The rebuild proof and the index itself are included.",
-      fileNames: ["registry-index-proof.txt", "index.json"],
+        "The catalog the generator validates module ids and versions against, derived at this commit from every non-private workspace package: its package.json name and version, and its manifest's description, dependencies and stability. The build output and the catalog itself are included.",
+      fileNames: ["module-catalog-build.txt", "module-catalog.json"],
     },
     {
-      id: "registry-test-suite",
+      id: "catalog-test-suite",
       title:
-        "Registry workspace test suite (schema · index builder · evidence pack)",
+        "Catalog test suite (manifest + catalog schema · catalog parity · evidence pack)",
       claimLevel: "implements",
       proofSource: "verified-in-pack",
-      proof: "bun test registry/schema registry/scripts",
+      proof: `bun test ${CATALOG_TESTS.join(" ")}`,
       claim:
-        "The registry workspace tests (schema, index builder, and this pack's own assembler) ran green at this commit; the captured summary is included. The full 38-package suite is the package-test-suite class.",
+        "The manifest and catalog schema tests, the catalog-parity test (the catalog lists every non-private workspace package at its package.json version, and nothing else), and this pack's own assembler tests ran green at this commit; the captured summary is included. The full package suite is the package-test-suite class.",
       fileNames: ["test-summary.txt"],
     },
     {
@@ -373,34 +377,24 @@ function main(): void {
     ["bun", "run", "tooling/standards-gate/src/cli.ts"],
   );
 
-  // Producer 2 — registry index byte-identity: rebuild from the ledger, then a clean diff proves it.
-  const build = run(["bun", "registry/scripts/build-index.ts"]);
-  const diff = run(["git", "diff", "--exit-code", "registry/index.json"]);
-  writeFileSync(
-    join(stagingDir, "registry-index-proof.txt"),
-    `# Registry index byte-identity proof (ADR-0021/0047)\n` +
-      `# build: bun registry/scripts/build-index.ts (exit ${build.code})\n` +
-      `${build.out}\n` +
-      `# byte-identity: git diff --exit-code registry/index.json (exit ${diff.code})\n` +
-      `${diff.code === 0 ? "CLEAN — index.json is a byte-identical rebuild of the ledger.\n" : diff.out}`,
+  // Producer 2 — the module catalog, derived from the workspace packages at this commit. It runs
+  // before the tests so the catalog-parity test below checks the catalog this pack carries.
+  produce(
+    stagingDir,
+    "module-catalog-build.txt",
+    "Module catalog build — derived from the workspace packages",
+    ["bun", CATALOG_BUILDER],
   );
-  if (build.code !== 0 || diff.code !== 0) {
-    throw new Error(
-      `evidence-pack: registry index is not a byte-identical rebuild (build exit ${build.code}, diff exit ${diff.code}) — cannot attest provenance (ADR-0275: fail loud)`,
-    );
-  }
   copyFileSync(
-    join(REGISTRY_DIR, "index.json"),
-    join(stagingDir, "index.json"),
+    join(REPO_ROOT, CATALOG_FILE),
+    join(stagingDir, "module-catalog.json"),
   );
 
-  // Producer 3 — the registry workspace test suite (fast, hermetic; includes this pack's own tests).
-  produce(stagingDir, "test-summary.txt", "Registry workspace test suite", [
+  // Producer 3 — the catalog test suite (fast, hermetic; includes this pack's own tests).
+  produce(stagingDir, "test-summary.txt", "Catalog test suite", [
     "bun",
     "test",
-    "registry/schema",
-    "registry/scripts",
-    "tooling/scripts/build-evidence-pack.test.ts",
+    ...CATALOG_TESTS,
   ]);
 
   const repository = process.env.GITHUB_REPOSITORY?.trim();

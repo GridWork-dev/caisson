@@ -1,6 +1,6 @@
 name: quality
 # The NON-required quality gates — split out of ci.yml so they can be path-filtered without
-# risking a required check (branch protection only watches standards-gate/check/registry-index,
+# risking a required check (branch protection only watches standards-gate/check/oscal-conformance,
 # which stay unconditional in ci.yml). On PULL REQUESTS each job may skip when its package tree
 # is untouched: skip just means "nothing to validate," never "merge blocked." On MAIN PUSHES AND
 # MANUAL DISPATCHES every job runs unconditionally (operator call 2026-07-09) — main is the
@@ -248,7 +248,7 @@ jobs:
         run: bunx turbo run test:e2e --filter=@caisson/site --no-daemon
 
   # The CI build-provenance evidence pack (ADR-0275). Aggregates the evidence CI already produces —
-  # the standards-gate output, the registry index byte-identity proof, and the registry test run —
+  # the standards-gate output, the workspace-derived module catalog, and the catalog test run —
   # into ONE downloadable, manifest'd artifact for a security reviewer's due diligence (feeds the
   # ADR-0272 evidence page). UNCONDITIONAL (no path-filter): the pack is the provenance for THIS
   # commit, so it must build on every push and pull request. NOT a required check — a failure here

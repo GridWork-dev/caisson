@@ -13,15 +13,15 @@ on:
 # golden-file — map to the steps below; a Neon branch DB is the opt-in escape hatch via
 # TEST_DATABASE_URL, never the default.
 #
-# The 4 REQUIRED STATUS CHECKS here (branch protection matches the job NAME, not the
-# file) are standards-gate · check · registry-index · oscal-conformance. They stay UNCONDITIONAL for
+# The 3 REQUIRED STATUS CHECKS here (branch protection matches the job NAME, not the
+# file) are standards-gate · check · oscal-conformance. They stay UNCONDITIONAL for
 # every non-draft trigger — no `paths:`, and the ONLY permitted `if:` is the draft guard
 # (CAISSON-96): a path-skipped required job never reports and the PR blocks forever, but a DRAFT
 # PR cannot merge anyway, and marking it ready_for_review (in the types list above) fires the full
 # run before merge is possible. (oss-pivot PR1: the ADR-0422 site/demos Docker build smoke is
 # retired — both apps are static exports with no container image.) Other jobs (eval · native-ext · token-drift) have
 # moved to quality.yml, where path-filtering and main-only gating are safe because those jobs are
-# not required checks. The full required set is therefore standards-gate · check · registry-index ·
+# not required checks. The full required set is therefore standards-gate · check ·
 # oscal-conformance (here) · deterministic (security-scan.yml); scripts/release-readiness.ts is the
 # list. (oss-pivot PR2: the commercial fleet's deploy-railway/publish/mirror-sync/release-train/
 # support-bot workflows and the required checks they carried are retired with the services they
@@ -136,10 +136,9 @@ jobs:
         # check` stays full-speed). Tunable if the job runs long.
         run: bunx turbo run build lint typecheck test --no-daemon --concurrency=50% --continue=dependencies-successful && bun run gate
       - name: public-surface + browser-audit skill guards (outside the workspace)
-        # The excerpt secret-scan + source-drift test is a load-bearing gate outside turbo — same
-        # class as the registry job's outside-turbo `bun test registry/...`. (oss-pivot PR1 retired
-        # the Paddle marker-map validator with the site price sheet it read; the /demo build
-        # transcript and its reader contract left with the `create-caisson --demo` flag.)
+        # The excerpt secret-scan + source-drift test is a load-bearing gate outside turbo. (oss-pivot
+        # PR1 retired the Paddle marker-map validator with the site price sheet it read; the /demo
+        # build transcript and its reader contract left with the `create-caisson --demo` flag.)
         # `.agents/` is outside the root `workspaces` globs too, so the browser-audit skill's
         # scripts have no turbo test task. They gained the reconciler that `tooling/browser-audit`
         # used to own (its package was folded in), so they run here or they run nowhere.
@@ -165,32 +164,9 @@ jobs:
       # Slow golden-file / testcontainers matrices land here once the compliance
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
 
-  # registry/ tests also run under turbo (`bun run check`, the `check` job); this job is the
-  # PROVENANCE proof: rebuilding from the git-tracked ledger must reproduce the committed
-  # registry/index.json byte-for-byte (ADR-0021/0047). A hand-edited index (or a stale rebuild) fails
-  # `git diff --exit-code`. This is the machine gate — it DETECTS tampering (goes red); PREVENTION
-  # (blocking the merge) needs this job marked a required check + CODEOWNERS on a real handle +
-  # branch protection (operator GitHub settings; forks board). The ledger APPEND step is publish.yml.
-  registry-index:
-    # CAISSON-96 draft guard — the one permitted `if:` on a required check (header comment).
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: ./.github/actions/setup-bun
-      - run: bun install --frozen-lockfile
-      - name: registry tests (schema · index builder)
-        run: bun test registry/schema registry/scripts
-      - name: index.json is a byte-identical rebuild from the ledger (proves CI-built)
-        run: |
-          bun registry/scripts/build-index.ts
-          git diff --exit-code registry/index.json
-
-  # The registry index (registry/index.json) is BUILT from the ledger by the registry-index job
-  # above — never hand-appended (ADR-0021). Branch protection + CODEOWNERS on registry/index.json +
-  # /registry/ledger.jsonl make CI the sole writer; the gateAttestation records provenance, it is not
-  # the access gate. The PUBLISH step that appends a gated publish to the ledger lives in publish.yml.
+  # (oss-pivot: the registry-index job is retired with registry/. The generator's module catalog is
+  # derived from the workspace packages when @caisson/cli builds, and its catalog-parity test runs
+  # inside the `check` job's turbo tree.)
 
   oscal-conformance:
     # NIST OSCAL v1.2.2 conformance gate (ADR-0179/0180): the JSON→XML→schema-validate round-trip via

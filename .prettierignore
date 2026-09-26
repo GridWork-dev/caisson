@@ -13,9 +13,6 @@ packages/ds-manifest/src/base-manifest.json
 # generated from gridwork-infra/manifests/services.toml by render-app-manifests.ts;
 # formatting it would fight the byte-identical regeneration check (T28/doc 07 §4).
 deploy/services.json
-# CI-built by registry/scripts/build-index.ts (owns its canonical serialization). Prettier must NOT
-# touch it or it would fight the byte-identical rebuild check (ADR-0047).
-registry/index.json
 # Golden fixtures are byte-exact regression artifacts owned by matchGolden (JSON.stringify(,2)+"\n").
 # Prettier would reformat them (e.g. collapse short arrays) and break the golden comparison (ADR-0013).
 **/__golden__/

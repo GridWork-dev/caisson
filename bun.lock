@@ -1009,19 +1009,6 @@
         "typescript": "catalog:",
       },
     },
-    "registry": {
-      "name": "@caisson/registry",
-      "version": "0.0.26",
-      "dependencies": {
-        "@caisson/registry-schema": "workspace:*",
-        "zod": "catalog:",
-      },
-      "devDependencies": {
-        "@caisson/testing": "workspace:*",
-        "@caisson/tsconfig": "workspace:*",
-        "typescript": "catalog:",
-      },
-    },
     "tooling/audit-harness": {
       "name": "@caisson/audit-harness",
       "version": "1.0.3",
@@ -1385,8 +1372,6 @@
     "@caisson/prompt-registry": ["@caisson/prompt-registry@workspace:packages/prompt-registry"],
 
     "@caisson/rate-limit": ["@caisson/rate-limit@workspace:packages/rate-limit"],
-
-    "@caisson/registry": ["@caisson/registry@workspace:registry"],
 
     "@caisson/registry-schema": ["@caisson/registry-schema@workspace:packages/registry-schema"],
 

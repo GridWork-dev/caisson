@@ -10,8 +10,7 @@
     "packages/billing-orchestration": {
       "ignoreDependencies": ["playwright"]
     },
-    "apps/*": {},
-    "registry": {}
+    "apps/*": {}
   },
   "ignore": ["**/dist/**", "**/*.d.ts", "**/CHANGELOG.md"]
 }

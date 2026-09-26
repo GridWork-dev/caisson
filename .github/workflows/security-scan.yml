@@ -2,7 +2,7 @@ name: security-scan
 # The deterministic security layer (SAST + supply-chain), split into its own workflow per the
 # ci.yml convention. REQUIRED since the ADR-0327 scan-gate flip (sequenced after the CAISSON-95
 # pinning in this same change): `deterministic` joins the required-check set — check ·
-# standards-gate · registry-index · oscal-conformance · deterministic. As with the others,
+# standards-gate · oscal-conformance · deterministic. As with the others,
 # "required" is discipline on this free-plan private repo (no enforced branch protection): the
 # convention is enforced by scripts/release-readiness.ts (REQUIRED_CHECKS) and review practice,
 # not a GitHub gate. `semgrep-pro` stays advisory (dormant until its token is provisioned).
