@@ -3,6 +3,11 @@
   "version": "0.2.2",
   "description": "Local-first sync engine: changeset capture, HLC stamps, LWW reconciliation, and tombstone-aware convergence.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/local-sync"
+  },
   "type": "module",
   "exports": {
     ".": {

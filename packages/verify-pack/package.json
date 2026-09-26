@@ -3,6 +3,11 @@
   "version": "0.2.4",
   "description": "Out-of-band verifier for Caisson audit evidence packs: validates the signed complete-file manifest, pack seal, receipt chain, and per-row anchor signatures without trusting executable code from the pack.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/verify-pack"
+  },
   "bin": {
     "verify-pack": "./dist/cli.js"
   },

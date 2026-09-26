@@ -25,7 +25,7 @@
     "enabled": true,
     "schedule": ["* 0-6 1 * *"],
     "automerge": true,
-    "automergeType": "branch"
+    "automergeType": "pr"
   },
   "vulnerabilityAlerts": {
     "enabled": true,
@@ -34,12 +34,12 @@
   },
   "packageRules": [
     {
-      "description": "Every non-major update shares one monthly branch and merges itself when CI is green.",
+      "description": "Every non-major update shares one monthly branch and merges its PR when CI is green.",
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "groupName": "monthly non-major updates",
       "groupSlug": "monthly-non-major",
       "automerge": true,
-      "automergeType": "branch"
+      "automergeType": "pr"
     },
     {
       "description": "Majors never merge on their own; approve them from the Dependency Dashboard.",

@@ -1,0 +1,101 @@
+name: security
+# The deterministic security floor: semgrep (the repo's floor rules + p/security-audit), trivy fs,
+# osv-scanner over the lockfiles, and trufflehog (verified secrets only) through
+# tools/security/scan.sh, plus a zizmor audit of these workflows. Scanner versions and digests
+# are pinned in tools/security/versions.env; every download is verified before it runs.
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Weekly, Monday 06:37 UTC: new advisories land against an unchanged tree.
+    - cron: "37 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: "security-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SEMGREP_JOBS: "1"
+      SEMGREP_SEND_METRICS: "off"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0 # trufflehog scans the git history
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          version: "0.12.2"
+      - name: install scanners (pinned versions, sha256-verified release artifacts)
+        run: |
+          set -eo pipefail
+          source tools/security/versions.env
+          export PATH="$HOME/.local/bin:$PATH"
+          mkdir -p "$HOME/.local/bin"
+          uv tool install "semgrep==${SEMGREP_VERSION}"
+          tmp="$(mktemp -d)"
+          fetch() { curl -sSfL --retry 5 --retry-delay 3 --retry-all-errors -o "$1" "$2"; }
+          fetch "$tmp/trivy.tgz" "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          echo "${TRIVY_SHA256}  $tmp/trivy.tgz" | sha256sum -c -
+          tar -C "$tmp" -xzf "$tmp/trivy.tgz" trivy
+          install -m755 "$tmp/trivy" "$HOME/.local/bin/trivy"
+          fetch "$tmp/trufflehog.tgz" "https://github.com/trufflesecurity/trufflehog/releases/download/v${TRUFFLEHOG_VERSION}/trufflehog_${TRUFFLEHOG_VERSION}_linux_amd64.tar.gz"
+          echo "${TRUFFLEHOG_SHA256}  $tmp/trufflehog.tgz" | sha256sum -c -
+          tar -C "$tmp" -xzf "$tmp/trufflehog.tgz" trufflehog
+          install -m755 "$tmp/trufflehog" "$HOME/.local/bin/trufflehog"
+          fetch "$tmp/osv-scanner" "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64"
+          echo "${OSV_SCANNER_SHA256}  $tmp/osv-scanner" | sha256sum -c -
+          install -m755 "$tmp/osv-scanner" "$HOME/.local/bin/osv-scanner"
+          rm -rf "$tmp"
+          # scan.sh skips a missing tool, so a failed install must fail here instead.
+          for t in semgrep trivy trufflehog osv-scanner; do
+            command -v "$t" >/dev/null || { echo "::error::$t missing after install"; exit 1; }
+          done
+      - name: security scan
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          # Outside the scanned tree, so trivy never re-scans the SARIF it just wrote.
+          export SECURITY_OUT_DIR="$RUNNER_TEMP/security-out"
+          bash tools/security/scan.sh --layer ci
+      - name: upload SARIF
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: security-sarif-${{ github.sha }}
+          path: ${{ runner.temp }}/security-out
+          if-no-files-found: warn
+          retention-days: 30
+
+  # GitHub Actions workflow audit; any finding fails the job.
+  zizmor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: install zizmor (pinned version, sha256-verified release artifact)
+        run: |
+          set -eo pipefail
+          source tools/security/versions.env
+          mkdir -p "$HOME/.local/bin"
+          tmp="$(mktemp -d)"
+          curl -sSfL --retry 5 --retry-delay 3 --retry-all-errors -o "$tmp/zizmor.tgz" "https://github.com/zizmorcore/zizmor/releases/download/v${ZIZMOR_VERSION}/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+          echo "${ZIZMOR_SHA256}  $tmp/zizmor.tgz" | sha256sum -c -
+          tar -C "$tmp" -xzf "$tmp/zizmor.tgz"
+          find "$tmp" -name zizmor -type f -exec install -m755 {} "$HOME/.local/bin/zizmor" \;
+          rm -rf "$tmp"
+          command -v "$HOME/.local/bin/zizmor" >/dev/null || { echo "::error::zizmor missing after install"; exit 1; }
+      - name: zizmor audit
+        env:
+          # Online audits (impostor commits, ref confusion) read public commit graphs.
+          GH_TOKEN: ${{ github.token }}
+        run: $HOME/.local/bin/zizmor --persona=regular .github/workflows/

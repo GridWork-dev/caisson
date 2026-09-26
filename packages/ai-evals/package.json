@@ -3,6 +3,11 @@
   "version": "0.5.2",
   "description": "Eval harness (defineEval) + grader taxonomy (exact / regex / json-shape / schema / model-graded + a fail-closed injection class) + a regression-vs-committed-baseline gate. Offline + deterministic (cassette-replayed judge).",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/ai-evals"
+  },
   "type": "module",
   "exports": {
     ".": {

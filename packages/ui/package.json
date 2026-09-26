@@ -3,6 +3,11 @@
   "version": "0.6.7",
   "description": "Caisson design-system kit — a typed OKLCH token floor plus a consistent component recipe: Radix behavior + co-located CSS + data-* variants, shipped as framework-agnostic raw .tsx.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/ui"
+  },
   "type": "module",
   "sideEffects": [
     "*.css"

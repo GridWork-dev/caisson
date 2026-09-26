@@ -3,6 +3,11 @@
   "version": "0.4.0",
   "description": "Governed tool-call / sandboxed-exec primitive for Agentic-Dev: default-deny allowlist + Zod-strict argument schemas + execFile arg-arrays only (no shell) + structured argument provenance.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/tool-exec"
+  },
   "type": "module",
   "exports": {
     ".": {

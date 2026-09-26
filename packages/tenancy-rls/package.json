@@ -3,6 +3,11 @@
   "version": "0.6.1",
   "description": "Fail-closed multi-tenant Postgres row-level security: FORCE policies, withTenant, and a missing-filter proof.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/tenancy-rls"
+  },
   "type": "module",
   "exports": {
     ".": {

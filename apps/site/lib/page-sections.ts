@@ -123,7 +123,7 @@ export interface StackCompatItem {
 
 /**
  * stackCompat — the "what does this actually work with" badge row (ADR-0263), authored from
- * `docs/state/compatibility-matrix.md`. A flat `<StatusChip>` row under an optional header; no
+ * the 2026-07-06 compatibility snapshot. A flat `<StatusChip>` row under an optional header; no
  * new visual primitive, no data fetch — the items are compile-time-static like every other
  * section (file header note above).
  */

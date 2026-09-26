@@ -1,5 +1,11 @@
 # Caisson — Product Spec & Phased Roadmap
 
+> **2026-09-26 — open-source pivot ([ADR-0428](../knowledge/decisions/ADR-0428-open-source-pivot.md)).**
+> Caisson is now free and open source under Apache-2.0, published as `@caisson-sh/*`, and nothing
+> is sold. This founding spec is kept as written: its editions, pricing, licensing tiers, hosted
+> services and go-to-market sections are historical. The packages and architecture it describes
+> remain.
+
 **Name:** Caisson · `@caisson/*` · `caisson.sh` (locked, ADR-0041 — was working name `stack`/`Forge`)
 **Sources:** `capability-corpus.md` + `market-research.md` + `support-strategy.md` + scoping decisions (`decisions-log.md` D5–D14)
 **Status:** Features + architecture **locked** (Gate 4). **Positioning / hero / voice / name now LOCKED** (positioning session, ADR-0040 + ADR-0041 + `specs/04-voice-and-brand.md`).

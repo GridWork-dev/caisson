@@ -3,6 +3,11 @@
   "version": "0.3.8",
   "description": "Advanced data-ops and compliance UI components layered on the @caisson-sh/ui base: an advanced data grid, a virtualized tree, an operations matrix, a hash-chain audit timeline, a redaction-aware payload viewer, a type-to-confirm dialog, an advanced date-range picker, a dependency-free charts pack, a command palette, a redaction-aware diff viewer, and a kanban board.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/ui-pro"
+  },
   "type": "module",
   "sideEffects": [
     "*.css"

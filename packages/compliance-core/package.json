@@ -3,6 +3,11 @@
   "version": "0.7.2",
   "description": "The compliance evidence engine: typed collectors and a deterministic canonical evidence-pack format and generator with flag-never-guess blocking, with the complete @caisson-sh/oscal-spine surface re-exported for compatibility.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/compliance-core"
+  },
   "type": "module",
   "exports": {
     ".": {

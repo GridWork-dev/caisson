@@ -8,7 +8,7 @@ set -uo pipefail
 export PATH="$HOME/.local/bin:$PATH"
 BIN="$HOME/.local/bin"; mkdir -p "$BIN"
 # Scanner versions + digests come from the shared pin file (CAISSON-95) — CI
-# (.github/workflows/security-scan.yml) sources the SAME file, so box and CI never drift.
+# (.github/workflows/security.yml) sources the SAME file, so box and CI never drift.
 # shellcheck source=versions.env
 source "$(dirname "${BASH_SOURCE[0]}")/versions.env"
 PTAI_V="0.17.2"

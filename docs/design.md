@@ -119,7 +119,7 @@ Caisson **is not** — these boilerplate tells are **banned**:
 - ❌ exclamation-mark hero copy, "🚀 Launch faster", growth-hack voice
 - ❌ "we are SOC 2 certified" (Caisson generates evidence; it is **not** an auditor — never imply
   certification; the honesty boundary is technical-vs-administrative)
-- ❌ a competitor-vs-competitor feature table for the paid hero (ADR-0040 buyer firewall)
+- ❌ a competitor-vs-competitor feature table for the hero (ADR-0040)
 - ❌ rainbow per-bundle colors (one accent; bundles differ by icon + label, ADR-0078 §5)
 
 ## 10. Voice (pointer)

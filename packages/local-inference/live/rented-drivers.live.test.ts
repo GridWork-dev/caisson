@@ -98,7 +98,7 @@ const BEDROCK_LIVE = AWS_KEY_ID !== "" && AWS_SECRET !== "";
 function requireBedrockSetting(value: string, envVar: string): string {
   if (value.trim() === "") {
     throw new Error(
-      `Bedrock live test requires a non-empty ${envVar} in ~/.gridwork/caisson.env`,
+      `Bedrock live test requires a non-empty ${envVar} in the environment`,
     );
   }
   return value;
@@ -135,7 +135,7 @@ function bedrockTransport(): RentedTransport {
 }
 
 // If either live leg returns an AWS service error, check Bedrock model-access grants plus the
-// configured model id/region in ~/.gridwork/caisson.env against the defaults above, then re-run:
+// configured model id/region in the environment against the defaults above, then re-run:
 //   cd packages/local-inference && bun run test:live
 describe("Bedrock rented transport — LIVE (skips without AWS_* creds)", () => {
   test.skipIf(!BEDROCK_LIVE)(

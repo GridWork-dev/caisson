@@ -5,7 +5,7 @@
 // reads the on-disk tree, no synthetic input.
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 
 const ROOT = join(import.meta.dir, "..", "..", "..");
 const PKGS = join(ROOT, "packages");
@@ -18,6 +18,7 @@ interface PkgJson {
   bin?: Record<string, string>;
   files?: string[];
   publishConfig?: { access?: string; registry?: string };
+  repository?: { type?: string; url?: string; directory?: string };
 }
 
 interface Publishable {
@@ -75,6 +76,19 @@ describe("publish readiness (ADR-0111)", () => {
         (p) =>
           p.pj.publishConfig?.access !== "public" ||
           p.pj.publishConfig.registry !== "https://registry.npmjs.org/",
+      )
+      .map((p) => p.pj.name);
+    expect(off).toEqual([]);
+  });
+
+  // npm provenance rejects a publish whose repository.url does not match the publishing repo.
+  test("every published package links its own source directory in the public repo", () => {
+    const off = published
+      .filter(
+        (p) =>
+          p.pj.repository?.url !==
+            "git+https://github.com/GridWork-dev/caisson.git" ||
+          p.pj.repository.directory !== `packages/${basename(p.dir)}`,
       )
       .map((p) => p.pj.name);
     expect(off).toEqual([]);

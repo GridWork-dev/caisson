@@ -3,6 +3,11 @@
   "version": "0.8.1",
   "description": "create-caisson generator: composes a tailored repo from the versioned module catalog; agent-drivable.",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/cli"
+  },
   "bin": {
     "caisson": "./dist/caisson.js",
     "create-caisson": "./dist/cli.js"

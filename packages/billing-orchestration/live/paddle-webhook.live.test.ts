@@ -178,7 +178,7 @@ describe("Paddle webhook verifier live proof (seam 1, ADR-0224 F1=C)", () => {
           expect(() => parsePaddleEvent(event)).not.toThrow();
           process.stderr.write(
             "[live] A1 UNSIGNED: simulator delivery carried no Paddle-Signature — verify leg SKIPPED " +
-              "(covered by leg B + packages/billing/src/paddle.test.ts). Record this in docs/ops/live-harness.md.\n",
+              "(covered by leg B + packages/billing/src/paddle.test.ts).\n",
           );
         }
       } finally {

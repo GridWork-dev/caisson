@@ -5,7 +5,7 @@
 // own `controlId` (ADR-0058). This module does not add a new binding layer or config file -- it is
 // a pure, deterministic PROJECTION of the collectors that already ship, so the binding is visible as
 // one table (a derived artifact, golden-pinned) instead of requiring a reader to open six source
-// files. `docs/compliance/control-traceability.md`'s "the code IS the table" idiom, applied here.
+// files. The code is the table.
 import type { ManualAttachmentSlot } from "./collector.ts";
 import type { Framework } from "@caisson-sh/frameworks-pack";
 

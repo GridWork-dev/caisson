@@ -104,6 +104,10 @@ ai-production,local-first,agentic-dev,provenance,everything}`.
 11. SHIP audits: `gw-code-reviewer` over the diff, and `gw-security-auditor` on `mcp-server` auth
     and the cli template (tags `security`, `auth`).
 
+**PR3b (folded into PR3 as #497, 2026-09-26):** `registry/` leaves the tree. The cli's module
+catalog is derived at build time from the workspace `package.json` + `manifest.ts` files, and the
+`registry-index` CI job retired with it.
+
 **PR4 `chore/oss-scope-rename` — `@caisson/*` becomes `@caisson-sh/*` (runs alone, last in W1).**
 
 1. Mechanical rename of package names, imports, tsconfig paths, docs, MDX, generator templates
@@ -112,6 +116,11 @@ ai-production,local-first,agentic-dev,provenance,everything}`.
    prose keeps its historical names); `bun install && bun run check` green; `create-caisson`
    generates into a temp dir and that app's `bun run check` passes, with workspace packages linked
    through a local `file:` override.
+3. As shipped (#498, 2026-09-26): released `.sql` migrations keep their bytes (the migration
+   ledger checksums them), so they sit in the zero-match exclusions with the other history. The
+   generated app has no `check` script; its gates are `next build`, `oxlint` and `bun test`, run
+   against `bun pm pack` tarballs through `overrides` (a bare `file:` directory cannot resolve
+   `workspace:*`).
 
 ## W2 — Open-source baseline (1 PR, `chore/oss-baseline`)
 
@@ -147,6 +156,25 @@ ai-production,local-first,agentic-dev,provenance,everything}`.
 9. Verify: `bun run check` green; `actionlint` + `zizmor` clean on `.github/`;
    `rg -l '/home/gw|gw-ms-a2' --glob '!knowledge/**' --glob '!outputs/**'` returns nothing.
 
+**As shipped (branch `chore/oss-public-baseline`, 2026-09-26).** Items 1, 2 and 4 landed early
+in #493. Beyond the list above, W2 also:
+
+- deletes `docs/{session-logs,operations.md,adr-index.md}` (not in the SPEC's public docs set), the
+  dead ops scripts (`tooling/scripts/{railway-deploy,railway-env-sync,vault-parity-check,
+aeo-probe}`), the pentest MCP set, and the Docker image scan tooling (zero Dockerfiles remain).
+  W5's strip-path census must add `docs/session-logs/`, `docs/operations.md`, `docs/adr-index.md`.
+- folds `quality.yml`, `tsc-native-dts-drift.yml` and `version-pr.yml` into `ci.yml`/`release.yml`
+  and ends `ci.yml` with one aggregate `ci` job, the single required check. `native-ext` (macOS)
+  runs on `main` only; `knip` and `semgrep-pro` are dropped; zizmor now blocks.
+- `release.yml` runs `changesets/action@v1.9.0` with `tooling/scripts/version-packages.ts` and
+  `publish-packages.ts` (`bun pm pack` then `npm publish <tarball>` over OIDC; `workspace:` ranges
+  refused). It runs only when `github.repository == 'GridWork-dev/caisson'`, and dispatches
+  `ci.yml` on the version PR's branch.
+- adds `repository` (the `GridWork-dev/caisson` URL + package directory) to every published
+  package, pinned by a standards-gate test: npm provenance rejects a publish without it.
+- switches Renovate from branch to PR automerge: a user-owned repo cannot grant the Renovate app
+  a ruleset bypass, so branch automerge would stall once `main` requires PRs.
+
 ## W3 — The OSS copy reframe (1 PR, `feature/oss-site-copy`)
 
 No design options: L10 keeps the current design.
@@ -165,7 +193,10 @@ No design options: L10 keeps the current design.
    `apps/site` or `apps/demos` via `cloudflare/wrangler-action`. The narrow Cloudflare token
    (Workers Scripts:Edit on the account) is minted through the API (L12) and stored as the repo
    secret `CLOUDFLARE_API_TOKEN`, with the account id as a variable. Until W5, the site deploys
-   to its `*.workers.dev` hostname only.
+   to its `*.workers.dev` hostname only. **Shipped early as #496 (2026-09-26):** `site.yml` runs a
+   pinned `bunx wrangler@4.141.0 deploy` on Node 22 instead of `cloudflare/wrangler-action` (the
+   action npm-installs inside the Bun workspace and fails on `workspace:` deps). The token is the
+   account-owned `caisson-site-deploy` (Workers Scripts Write only).
 5. Verify: an `impeccable`/`uiux-audit` pass on the preview; Lighthouse ≥ 0.95 perf and 1.0 a11y
    on home and one docs page; `curl -I` on the preview shows HSTS, `nosniff` and
    `X-Frame-Options`; a responsive srcdoc sweep of every route at 360/768/1280.
@@ -199,13 +230,19 @@ through wrangler and the API.
    `infra/` from the tree (PR `chore/oss-drop-infra`).
 5. **Revocation:** revoke or rotate every credential class in SPEC §Revocation: all six
    OpenRouter keys, the Railway account/project tokens, R2 keys, `MIRROR_PUSH_TOKEN`, Semgrep,
-   DataForSEO, PostHog personal keys, and every Cloudflare token (the one CI uses is re-minted in
-   W3 with the narrow scope). Verify the trufflehog-flagged Railway/Cloudflare strings are dead
+   DataForSEO, PostHog personal keys, and every Cloudflare token except `caisson-site-deploy`
+   (the narrow site token `site.yml` uses, minted in #496). Verify the trufflehog-flagged Railway/Cloudflare strings are dead
    by trying them read-only; a live one is revoked and noted.
 6. **GitHub org apps:** uninstall Blacksmith, Ubicloud, Socket, Arnica and Linear-code from
    `caisson-sh`. Delete `caisson-sh/caisson-oss` **[OP confirms]**.
 7. Verify: every row in `RECEIPTS.md` carries proof; the platform inventory from step 1, re-run,
    shows only the kept rows.
+
+**Hold (2026-09-26):** the GCP/Neon teardown runs through gridwork-infra (#73 lifts protection,
+#74 deletes), but main's plans there carry other lanes' drift: the production plan also strips
+the studio site's out-of-IaC env and scaling, the nonproduction plan unpins the gridwork-dev
+site's revision, and edge #71 is unapplied. The applies wait for the operator to reconcile that
+drift or accept it. The workload-identity bindings that trust this repo must be gone before W5.
 
 ## W5 — Flip day (one operator-gated sitting, main thread, in this order)
 
@@ -223,25 +260,31 @@ Precondition: W1–W4 merged or complete; `main` CI green; zero open PRs; `RECEI
 redactions.txt --replace-message msg-redactions.txt`.
 3. **Gates** (SPEC §Scrub step 3), each with its mutation arm. Any red stops the sitting.
 4. **GitHub cleanup:** delete workflow runs (paged loop until zero), caches, releases, tags,
-   environments, secrets, variables, webhooks, deploy keys, and non-`main` branches. Verify every
-   list endpoint returns empty.
+   environments, secrets, variables, webhooks, deploy keys, and non-`main` branches. **Keep**
+   the `CLOUDFLARE_API_TOKEN` secret and the `CLOUDFLARE_ACCOUNT_ID` variable: `site.yml` deploys
+   with them. Verify every other list endpoint returns empty.
 5. **Transfer [OP confirms]:** `caisson-sh/caisson` → `GridWork-dev`. Verify the old URL
    redirects and that `gh repo view GridWork-dev/caisson` resolves.
 6. **Push [OP authorizes the force-push]:** lift branch protection → `git push --force origin
 main` (the rewritten main; the step 4 cleanup already removed every other branch and tag) →
-   apply a ruleset on `main`: no force-push, no deletion, PR required, `ci` required.
+   apply a ruleset on `main`: no force-push, no deletion, PR required, `ci` (ci.yml's aggregate
+   job) and `deterministic` (security.yml) required.
 7. **Re-verify what GitHub serves:** fresh `git clone` from GitHub, then re-run the Step 3 gates.
 8. **Flip [OP]:** `gh repo edit GridWork-dev/caisson --visibility public
 --accept-visibility-change-consequences`.
 9. **Turn on:** secret scanning + push protection, private vulnerability reporting (**[OP]**
    subscribe to its notifications in the UI), CodeQL default setup, Discussions (Q&A, Ideas,
-   Show and tell), Actions approval required for outside collaborators, description, topics and
-   homepage.
+   Show and tell), Actions approval required for outside collaborators, "Allow auto-merge" (Renovate
+   merges its PRs through it), "Allow GitHub Actions to create and approve pull requests" (the
+   version PR), description, topics and homepage.
 10. **First publish [OP mints token]:** a granular npm token (publish-only, `@caisson-sh`
-    packages, 1-day expiry) as a temporary secret; a one-off `workflow_dispatch` in `release.yml`
-    runs `changeset publish --provenance`. Then `npm trust github` for every package (one 2FA
-    window covers ~80); then delete the secret and revoke the token. Verify every package shows
-    on npm with a provenance badge and a trusted publisher.
+    packages, 1-day expiry) as the temporary secret `NPM_BOOTSTRAP_TOKEN`. The first push to the
+    public `main` makes `release.yml` open the version PR for the pending changesets; merging it
+    runs the publish leg, which uses the token because no package exists yet (a `workflow_dispatch`
+    of `release.yml` retries a partial run; published versions are skipped). Then `npm trust
+github` for every package against `release.yml` (one 2FA window covers ~50); then delete the
+    secret and revoke the token. Verify every package shows on npm with a provenance badge and a
+    trusted publisher.
 11. **DNS cutover:** attach `caisson.sh` + `www` to the site Worker as custom domains → verify
     200 + headers on both → delete the Railway site service and the Railway project → delete the
     old apex/www records from terraform state or the dashboard.
