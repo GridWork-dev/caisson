@@ -9,5 +9,5 @@ export default defineModule({
   license: pkg.license,
   dependencies: ["@caisson/kernel"],
   description:
-    "Shared render primitive for buyer-facing compliance artifacts: a readiness-language claim filter, allowlist-based field redaction, and citation-row rendering.",
+    "Shared render primitive for customer-facing compliance artifacts: a readiness-language claim filter, allowlist-based field redaction, and citation-row rendering.",
 });

@@ -13,5 +13,5 @@ export default defineModule({
     "@caisson/kernel",
   ],
   description:
-    "Buyer trust-page generator: a self-contained static HTML + JSON page, built from an evidence pack + its crosswalk rollup through allowlist-based redaction, that a buyer hosts anywhere to show prospects their compliance posture.",
+    "Trust-page generator: a self-contained static HTML + JSON page, built from an evidence pack + its crosswalk rollup through allowlist-based redaction, that you host anywhere to show prospects your compliance posture.",
 });

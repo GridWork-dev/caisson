@@ -9,5 +9,5 @@ export default defineModule({
   license: pkg.license,
   dependencies: ["@caisson/kernel"],
   description:
-    "Provider-agnostic AI config resolver (OpenAI, Anthropic, Google, OpenRouter, local) + buyer forge.config settings file (ADR-0011).",
+    "Provider-agnostic AI config resolver (OpenAI, Anthropic, Google, OpenRouter, local) + the app's forge.config settings file (ADR-0011).",
 });
