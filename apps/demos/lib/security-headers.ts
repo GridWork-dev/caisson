@@ -1,28 +1,23 @@
-// This app's Content-Security-Policy, extracted from next.config.ts so a test can pin it.
+// This app's Content-Security-Policy. The static export has no server, so the header itself ships
+// from the /demos/* block of apps/site/public/_headers; the test beside this file pins that block to
+// this constant.
 //
-// WHY THIS ONE STRING CARRIES MORE WEIGHT THAN ITS SIZE SUGGESTS: apps/site proxies this app at
-// caisson.sh/demos/* (ADR-0400), and Next does NOT apply the proxying app's configured headers to
-// an externally-rewritten response. So once the rewrite is armed, THIS policy is the only CSP
-// standing between caisson.sh's origin and whatever this image serves — and same-origin means a
-// document served here has script authority over caisson.sh, including the authenticated
-// dashboard. A future loosening of `script-src` or `connect-src` here would be an origin-level
-// change to the site, made from a file that does not look like it touches the site at all.
-//
-// Hence the test beside this file. apps/site's policy got the same treatment in the same PR
-// (apps/site/lib/security-headers.ts); this is that discipline applied to the side that actually
-// governs the framed document.
+// WHY THIS ONE STRING CARRIES MORE WEIGHT THAN ITS SIZE SUGGESTS: this app is served at
+// caisson.sh/demos/* (ADR-0400), same origin as the site, so a document served here has script
+// authority over caisson.sh. A future loosening of `script-src` or `connect-src` here would be an
+// origin-level change to the site, made from a file that does not look like it touches the site at
+// all. Hence the test beside this file.
 
 /**
  * The embed surface's CSP. Two directives are load-bearing and pinned by the test:
  *
  * - `frame-ancestors 'self'` — NOT 'none'. A same-origin iframe is still an iframe, and 'none'
- *   blocks the parent page too. 'self' is evaluated against the DOCUMENT's origin, so proxied
- *   through apps/site the ancestor must be caisson.sh, and hit directly on a Railway URL the
- *   ancestor must be that host. Nobody else can frame either one.
+ *   blocks the parent page too. 'self' is evaluated against the DOCUMENT's origin, so the ancestor
+ *   must be caisson.sh. Nobody else can frame it.
  * - `connect-src 'self'` — every poke prints "Runs entirely in your browser. Nothing leaves this
  *   page." This is that sentence enforced by the browser rather than asserted by the copy. (It
- *   bounds third-party exfiltration, not same-origin reach: under the rewrite 'self' IS
- *   caisson.sh. The site/demos line is a deploy boundary, not a security boundary.)
+ *   bounds third-party exfiltration, not same-origin reach: 'self' IS caisson.sh. The site/demos
+ *   line is a build boundary, not a security boundary.)
  *
  * `frame-src` is deliberately absent — it falls back to `default-src 'self'`, and this app frames
  * nothing. `'unsafe-inline'` on script-src covers Next's hydration bootstrap (no per-request nonce

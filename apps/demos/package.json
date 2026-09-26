@@ -7,7 +7,6 @@
   "scripts": {
     "dev": "next dev -p 3040",
     "build": "next build",
-    "start": "next start -p 3040",
     "lint": "oxlint .",
     "typecheck": "next typegen && tscn -p tsconfig.json",
     "test": "bun test --timeout 60000 ./components ./lib"

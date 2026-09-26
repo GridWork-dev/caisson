@@ -6,8 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3030",
-    "build": "next build",
-    "start": "next start -p 3030",
+    "build": "next build && cp -R ../demos/out out/demos",
     "lint": "oxlint .",
     "typecheck": "fumadocs-mdx && next typegen && tscn -p tsconfig.json",
     "test": "fumadocs-mdx && bun test --timeout 60000 ./lib ./emails ./components ./app ./scripts",
