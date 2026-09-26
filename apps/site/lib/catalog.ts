@@ -1,6 +1,6 @@
 // The module catalog the site demonstrates: five module families plus the whole-catalog
 // Everything composition, and every module with its family membership. Display data only: no
-// prices, no purchase ids. Membership mirrors the registry members maps.
+// prices, no purchase ids.
 
 /** The module-family ids (ADR-0257 vocabulary). Kept SITE-LOCAL on purpose: this module is
  *  client-reachable, and pulling `@caisson/registry-schema` drags in its `node:fs` disk loader. */

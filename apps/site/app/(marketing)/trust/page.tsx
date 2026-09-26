@@ -20,12 +20,7 @@ export const metadata = buildMetadata({
 });
 
 // The public surfaces the status page monitors — all live and unauthenticated.
-const MONITORED = [
-  "The website",
-  "The registry (module resolution)",
-  "The license service",
-  "The docs assistant",
-] as const;
+const MONITORED = ["The website", "The registry (module resolution)"] as const;
 
 // The shipped security surfaces, each a live page on this site — stated at its honest grade.
 const SECURITY_LINKS: readonly { href: string; label: string; note: string }[] =

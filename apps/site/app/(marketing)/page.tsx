@@ -580,17 +580,17 @@ export default function HomePage() {
           </Card>
           <Card>
             <div className="cs-status">
-              <Icon name="users" size="lg" />
-              Be an early reference
+              <Icon name="gauge" size="lg" />
+              Live module demos
             </div>
             <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
-              A limited first cohort of design partners gets discounted access
-              in exchange for a citable case study and a direct line to the
-              engineer. A reference partnership, not a waitlist.
+              Every module in the marketplace links to its docs and a live demo
+              that runs the real component in your browser. Try it before you
+              read the source.
             </p>
             <div style={{ marginTop: "var(--cs-space-5)" }}>
-              <Button href="/partners" variant="ghost">
-                Design partners
+              <Button href="/marketplace" variant="ghost">
+                Open the gallery
               </Button>
             </div>
           </Card>

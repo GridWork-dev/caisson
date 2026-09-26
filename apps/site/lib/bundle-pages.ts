@@ -181,12 +181,12 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       {
         question: "Which packages does the bundle actually compose?",
         answer:
-          "Ten direct workspace dependencies are wired at runtime and re-exported through the bundle's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. compliance-core and frameworks-pack both depend on and re-export oscal-spine, so the OSCAL package is a real shared dependency in that runtime graph. Access reviews, the AI risk register, and the trust-page generator are three further standalone modules in the same purchase. Nothing on this page is a manifest claim without code behind it.",
+          "Ten direct workspace dependencies are wired at runtime and re-exported through the bundle's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. compliance-core and frameworks-pack both depend on and re-export oscal-spine, so the OSCAL package is a real shared dependency in that runtime graph. Access reviews, the AI risk register, and the trust-page generator are three further standalone modules in the same bundle. Nothing on this page is a manifest claim without code behind it.",
       },
       {
         question: "Do I own the source?",
         answer:
-          "Yes. The one-time Compliance license is perpetual, you own the source for the base, the composed packages, and the evidence-pack generator, and it includes 12 months of published framework-mapping updates from your purchase date. An optional Compliance Updates subscription keeps those updates flowing automatically after that; a per-entitlement renewal is the other way to extend the window.",
+          "Yes. The code is Apache-2.0, and framework-mapping updates ship as ordinary npm releases.",
       },
     ],
   },
