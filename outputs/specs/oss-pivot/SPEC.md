@@ -4,7 +4,7 @@ status: locked
 locked_by: ADR-0428
 date: 2026-09-25
 tier: FULL
-tags: [external-system, security, secrets, infra, docs, ui, frontend]
+tags: [external-system, security, secrets, infra, data-migration, ui, frontend]
 supersedes: outputs/specs/oss-launch/SPEC-oss-launch-program.md
 ---
 

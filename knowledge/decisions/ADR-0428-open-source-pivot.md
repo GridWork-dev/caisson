@@ -2,7 +2,7 @@
 
 - Date: 2026-09-25
 - Status: Accepted — operator picker, three rounds (2026-09-25)
-- Tags: `external-system`, `security`, `secrets`, `infra`, `docs`, `ui`, `frontend`
+- Tags: `external-system`, `security`, `secrets`, `infra`, `data-migration`, `ui`, `frontend`
 - Spec: `outputs/specs/oss-pivot/SPEC.md` · Plan: `outputs/plans/oss-pivot/PLAN.md`
 - Supersedes: ADR-0318 (mirror launch program); ADR-0094, ADR-0097, ADR-0136 (open-core split
   and license-keyed gating); ADR-0110 (license issuer); ADR-0223 (self-hosted registry
