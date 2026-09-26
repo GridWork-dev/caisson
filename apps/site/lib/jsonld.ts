@@ -70,7 +70,8 @@ export const rootGraph = {
   ],
 };
 
-/** A page-scoped SoftwareApplication node (no Offer: nothing on the site is for sale). */
+/** A page-scoped SoftwareApplication node. The Offer is price 0: the code is Apache-2.0 and free
+ *  (Google's software rich result wants an Offer, and a zero price states the truth). */
 export function softwareApplication(opts: {
   name: string;
   description: string;
@@ -85,6 +86,7 @@ export function softwareApplication(opts: {
     description: opts.description,
     url: opts.url,
     publisher: { "@id": ORG_ID },
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   };
 }
 

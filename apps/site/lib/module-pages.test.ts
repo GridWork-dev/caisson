@@ -169,7 +169,7 @@ describe("MODULE_PAGES (depth-page records)", () => {
     }
   });
 
-  test("the three completion routes emit Offer-free SoftwareApplication nodes with live URLs", () => {
+  test("the three completion routes emit free-Offer SoftwareApplication nodes with live URLs", () => {
     for (const slug of COMPLETION_SLUGS) {
       const record = completionRecord(slug);
       const mod = MODULES.find((candidate) => candidate.id === slug);
@@ -179,7 +179,11 @@ describe("MODULE_PAGES (depth-page records)", () => {
       });
       expect(node["@type"]).toBe("SoftwareApplication");
       expect(node.url).toBe(`https://caisson.sh/marketplace/modules/${slug}`);
-      expect("offers" in node).toBe(false);
+      expect(node.offers).toEqual({
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+      });
     }
   });
 });
