@@ -20,6 +20,7 @@ import {
   checkExternalAgpl,
   checkDeclarations,
   checkOpenLicense,
+  checkPrivatePackages,
   checkNoSalesCopy,
   checkManifestAgreement,
   checkCopyPaste,
@@ -37,6 +38,7 @@ async function main(): Promise<number> {
     ...checkExternalAgpl(pkgs, root),
     ...checkDeclarations(pkgs),
     ...checkOpenLicense(pkgs), // every published package: Apache-2.0 + a LICENSE naming the holder
+    ...checkPrivatePackages(pkgs), // only packages/brand may be private (and so skip the line above)
     ...checkNoSalesCopy(pkgs), // no "commercial" tier or $ price in a published description/README
     ...(await checkManifestAgreement(pkgs)),
     ...checkCopyPaste(root), // ADR-0101 gate #4: cross-package copy-paste

@@ -12,7 +12,7 @@
  * SDK family is Apache-2.0, so it passes the Gate 1/1b AGPL tripwire below by construction; its
  * only constraint is composition (ADR-0011/0022), not copyleft.
  */
-import { join, relative, sep } from "node:path";
+import { basename, join, relative, sep } from "node:path";
 import {
   existsSync,
   readFileSync,
@@ -275,6 +275,30 @@ export function checkOpenLicense(pkgs: Pkg[]): Finding[] {
       fail(`LICENSE is not the Apache License naming ${LICENSE_HOLDER}.`);
   }
   return findings;
+}
+
+/**
+ * The `packages/*` directories allowed to be `private: true`. checkOpenLicense skips private
+ * packages, so `private: true` must not become a quiet way out of the Apache-2.0 rule.
+ */
+export const PRIVATE_PACKAGE_DIRS: readonly string[] = ["brand"];
+
+/** The set of `private: true` members under `packages/` (by directory name) is exactly the allowlist. */
+export function checkPrivatePackages(pkgs: Pkg[]): Finding[] {
+  const actual = pkgs
+    .filter((p) => isModuleCandidate(p) && p.private)
+    .map((p) => basename(p.dir))
+    .sort();
+  const expected = [...PRIVATE_PACKAGE_DIRS].sort();
+  if (actual.join("\n") === expected.join("\n")) return [];
+  return [
+    {
+      severity: "error",
+      rule: "open-license-private-set",
+      pkg: "(packages)",
+      message: `private packages under packages/ are [${actual.join(", ")}]; only [${expected.join(", ")}] may skip the ${OPEN_LICENSE} check.`,
+    },
+  ];
 }
 
 /** Sales framing a published package's description or README may not carry: a paid tier, a price. */

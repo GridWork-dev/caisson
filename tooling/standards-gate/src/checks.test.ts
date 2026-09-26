@@ -7,6 +7,7 @@ import {
   checkManifestAgreement,
   checkNoSalesCopy,
   checkOpenLicense,
+  checkPrivatePackages,
   checkRlsEquivalence,
   checkShippedProse,
 } from "./checks";
@@ -232,6 +233,39 @@ describe("checkOpenLicense", () => {
     const published = pkgs.filter((p) => !p.private);
     expect(published.length).toBeGreaterThan(40);
     expect(checkOpenLicense(pkgs)).toEqual([]);
+  });
+});
+
+describe("checkPrivatePackages", () => {
+  const priv = (name: string, isPrivate = true): Pkg =>
+    pkg({ name: `@caisson/${name}`, license: APACHE, private: isPrivate });
+
+  test("brand as the only private packages/ member is clean", () => {
+    expect(
+      checkPrivatePackages([priv("brand"), priv("kernel", false)]),
+    ).toEqual([]);
+  });
+
+  test("a second private package, or brand going public, is an error", () => {
+    const extra = checkPrivatePackages([priv("brand"), priv("billing")]);
+    expect(extra).toHaveLength(1);
+    expect(extra[0]).toMatchObject({
+      severity: "error",
+      rule: "open-license-private-set",
+    });
+    expect(extra[0]?.message).toContain("billing");
+    expect(checkPrivatePackages([priv("brand", false)])).toHaveLength(1);
+  });
+
+  test("private members outside packages/ are not counted", () => {
+    const app = { ...priv("site"), dir: "/repo/apps/site" };
+    expect(checkPrivatePackages([priv("brand"), app])).toEqual([]);
+  });
+
+  test("the committed tree's private packages/ set is exactly brand", () => {
+    expect(
+      checkPrivatePackages(readWorkspace(findRoot(import.meta.dir))),
+    ).toEqual([]);
   });
 });
 
