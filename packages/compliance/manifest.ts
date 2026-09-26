@@ -24,17 +24,13 @@ export default defineModule({
   license: pkg.license,
   // Must mirror package.json's @caisson/* deps exactly (the gate fails on drift). @caisson/migrate is
   // the base migration assembler/runner the edition COMPOSES at build/test time (ADR-0090).
-  // @caisson/alerting + @caisson/retention-runner are primitives folded into the bundle (ADR-0178)
-  // and composed at runtime via `createComplianceEdition` (src/edition.ts, ADR-0199 shape).
   dependencies: [
-    "@caisson/alerting",
     "@caisson/audit-worm",
     "@caisson/compliance-core",
     "@caisson/field-crypto",
     "@caisson/frameworks-pack",
     "@caisson/kernel",
     "@caisson/migrate",
-    "@caisson/retention-runner",
     "@caisson/signing-primitive",
     "@caisson/tenancy-rls",
   ],
@@ -62,9 +58,6 @@ export default defineModule({
     "@caisson/field-crypto": "0.3.2",
     "@caisson/tenancy-rls": "0.5.2",
     "@caisson/kernel": "0.5.0",
-    // Operational-compliance primitives folded into the Compliance bundle (ADR-0178).
-    "@caisson/alerting": "0.2.1",
-    "@caisson/retention-runner": "0.1.8",
     // The 2026-07-20 compliance-gap join: the three reserved SKUs enter at their first
     // published version (the two-consume arming — publish first, membership after).
     "@caisson/access-review": "0.2.0",
