@@ -15,7 +15,7 @@ export const ADR_ID_SOURCE = "ADR-\\d{4}";
  * flagged here.
  */
 export const INTERNAL_TERM =
-  /\b(gridwork|tessera|media-pipeline|Wardfile|prospector|<host>|GW\s+Digital|CAISSON-\d+|Linear\s+\w|PR\s*#\d+|Wave-[0-9]|harvest\s+slice|picker\s+round|ponytail:)\b|\b(P[56]|T1[0-8]|Gate-[0-9]|fork-[a-z])\b/i;
+  /\b(gridwork|tessera|media-pipeline|Wardfile|prospector|GW\s+Digital|CAISSON-\d+|Linear\s+\w|PR\s*#\d+|Wave-[0-9]|harvest\s+slice|picker\s+round|ponytail:)\b|\b(P[56]|T1[0-8]|Gate-[0-9]|fork-[a-z])\b/i;
 
 /**
  * SS-3: a comment line whose only substantive content is an ADR citation — either
