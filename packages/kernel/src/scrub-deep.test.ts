@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
+import { matchGolden } from "@caisson-sh/testing";
 import { PHI_KEY, scrubDeep } from "./scrub-deep.ts";
 
 // A representative structured-evidence record: PHI keys (snake + camel), secret-named keys, secret

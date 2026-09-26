@@ -3,7 +3,7 @@ title: UI
 description: A typed token floor, --cs-* OKLCH tokens, one light and one dark theme.
 ---
 
-`@caisson/ui` is the typed token floor and the styled component kit built on it. It ships a set of
+`@caisson-sh/ui` is the typed token floor and the styled component kit built on it. It ships a set of
 `--cs-*` custom properties in **OKLCH**, delivered as exactly two themes (one light, one dark) plus
 a catalog of components (Button, Card, Hero, Terminal, DataTable, and more) that read those tokens.
 This docs site renders on those same tokens and components.
@@ -26,13 +26,13 @@ component tree.
 
 ## API reference
 
-`@caisson/ui` has three entry points: `@caisson/ui/tokens` (the raw token contract),
-`@caisson/ui/theme` (compose and apply a theme at runtime), and `@caisson/ui/components`
-(the styled kit, transpiled from raw `.tsx`: set `transpilePackages: ["@caisson/ui"]` in
+`@caisson-sh/ui` has three entry points: `@caisson-sh/ui/tokens` (the raw token contract),
+`@caisson-sh/ui/theme` (compose and apply a theme at runtime), and `@caisson-sh/ui/components`
+(the styled kit, transpiled from raw `.tsx`: set `transpilePackages: ["@caisson-sh/ui"]` in
 `next.config`). `./styles/tokens.css` and `./styles/base.css` are exported for direct
 `<link>`/`@import` use outside a bundler that resolves `.css` imports.
 
-### Tokens, `@caisson/ui/tokens`
+### Tokens, `@caisson-sh/ui/tokens`
 
 ```ts
 const foundation: Foundation; // type scale, weight, line-height, tracking, 4px space,
@@ -57,7 +57,7 @@ modal/drawer backdrop veil). `semanticThemeToCssVars`/`semanticCssLines` are the
 `--cs-*` mapping consumed by both the build-time CSS generator and the runtime theme API
 below, so the two can't drift apart.
 
-### Theme, `@caisson/ui/theme`
+### Theme, `@caisson-sh/ui/theme`
 
 ```ts
 function createTheme(options?: {
@@ -90,7 +90,7 @@ every consumer already resolved to it. `applyTheme` is a no-op with no `document
 (SSR), render `themeToCssText()` into a `<style>` tag server-side instead for a
 flash-free first paint.
 
-### Components, `@caisson/ui/components`
+### Components, `@caisson-sh/ui/components`
 
 Every component follows one recipe: Radix only where real behavior is needed (`asChild`
 polymorphism in `Button`/`FormField`: `Dialog`'s focus trap comes from the native

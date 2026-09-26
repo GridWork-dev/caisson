@@ -3,7 +3,7 @@ title: Jobs
 description: A Trigger.dev job port with test drivers, billing and credit side-effects are enqueued, not inline.
 ---
 
-`@caisson/jobs` is the background-work port. [Trigger.dev](https://trigger.dev) (self-hostable) is
+`@caisson-sh/jobs` is the background-work port. [Trigger.dev](https://trigger.dev) (self-hostable) is
 the default driver; a test driver runs jobs deterministically under the standards gate, so suites
 assert on job behavior without a queue.
 
@@ -14,7 +14,7 @@ returns fast, and the money-moving work runs as a job, so a dropped connection m
 leaves a half-applied charge or a half-granted credit.
 
 ```ts
-import { createInMemoryQueue, defineTask } from "@caisson/jobs";
+import { createInMemoryQueue, defineTask } from "@caisson-sh/jobs";
 
 const queue = createInMemoryQueue([
   defineTask("grant-credits", grantCreditsPayload, async (payload) => {

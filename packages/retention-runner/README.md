@@ -1,4 +1,4 @@
-# @caisson/retention-runner
+# @caisson-sh/retention-runner
 
 CCPA/GDPR right-to-erasure runner — pluggable multi-store erasure with per-target error isolation
 and a reason-tagged audit row. ADR-0135 (module lock) · ADR-0152 (scheduling).
@@ -15,7 +15,7 @@ and a reason-tagged audit row. ADR-0135 (module lock) · ADR-0152 (scheduling).
   (`auto_90d` | `ccpa_request` | `operator_manual`), every target's outcome, and the run timestamp,
   written once via the injected `RetentionAuditSink`. **Plain Postgres audit-logging — not WORM**
   (ADR-0135 Genericness; see `src/migrations/0001_retention_audit.sql`).
-- **The recurring `auto_90d` sweep rides `@caisson/jobs`.** `defineRetentionTask` returns a
+- **The recurring `auto_90d` sweep rides `@caisson-sh/jobs`.** `defineRetentionTask` returns a
   `TaskDefinition` — register it on a `JobQueue` (the shipped in-memory driver in dev/test,
   Trigger.dev in prod) and enqueue `AUTO_90D_SWEEP_TASK` per subject due for erasure.
   `ccpa_request`/`operator_manual` are one-shot, operator/subject-triggered calls straight into
@@ -23,7 +23,7 @@ and a reason-tagged audit row. ADR-0135 (module lock) · ADR-0152 (scheduling).
 
 ## Entry points
 
-- `.` — the full surface, including the `@caisson/jobs` scheduling half (node-capable).
+- `.` — the full surface, including the `@caisson-sh/jobs` scheduling half (node-capable).
 - `./browser` — the request/result contract, the `ErasureTarget` port with its three reference
   drivers, the audit-sink port with its in-memory driver, and `runErasure` itself: safe inside a
   client bundle. The `auto_90d` scheduling exports are deliberately absent. Every name on
@@ -40,8 +40,8 @@ import {
   runErasure,
   defineRetentionTask,
   enqueueAutoSweep,
-} from "@caisson/retention-runner";
-import { createInMemoryQueue } from "@caisson/jobs";
+} from "@caisson-sh/retention-runner";
+import { createInMemoryQueue } from "@caisson-sh/jobs";
 
 const targets = [
   createObjectStorageTarget({ client: s3Client }), // real client is an injected seam

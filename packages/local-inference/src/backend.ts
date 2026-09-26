@@ -1,5 +1,5 @@
 // src/inference/backend.ts — the edition-side InferenceBackend PORT (ADR-0064). The shared base
-// @caisson/local-store treats the embedding as an INJECTED seam — it stores and fuses vectors but
+// @caisson-sh/local-store treats the embedding as an INJECTED seam — it stores and fuses vectors but
 // never calls a model. This port is where the EDITION wires that seam: `embed(text) → Float32Array`
 // of the locked embedding dimension (which MUST equal the `dim` the local-store vec0 table is opened
 // with — a mismatch throws at the store's dim-guard, never silently pads/truncates) plus a

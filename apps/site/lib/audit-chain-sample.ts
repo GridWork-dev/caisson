@@ -1,10 +1,10 @@
 // The shared REAL sample hash chain (extracted from audit-worm-demo.tsx so the Living Chain
 // moment and the marketplace media slide render the same genuine data). Computed once by
-// @caisson/kernel `buildChain` (each hash is SHA-256 over [prevHash, canonical(payload)]) and
+// @caisson-sh/kernel `buildChain` (each hash is SHA-256 over [prevHash, canonical(payload)]) and
 // `verifyChain` (the verdict), then baked as static data — the kernel is NOT imported at runtime
 // because its barrel pulls node-only code (ssrf → node:dns) that cannot enter the browser bundle.
 // Regenerate with the same payloads if the sample changes.
-import type { AuditChainEntry, ChainVerification } from "@caisson/kernel";
+import type { AuditChainEntry, ChainVerification } from "@caisson-sh/kernel";
 
 export const CHAIN_ENTRIES: readonly AuditChainEntry[] = [
   {
@@ -34,7 +34,7 @@ export const CHAIN_ENTRIES: readonly AuditChainEntry[] = [
       "84a1913b107ee8dfd15a8b9f47fa483f50a14e01acac81e40919cb3a7a51ebd4",
     payload: {
       event: "registry.pull",
-      package: "@caisson/audit-worm",
+      package: "@caisson-sh/audit-worm",
       actor: "acme-co",
     },
     hash: "2462835b846566ae467a81aa816e7bc72443df7c21b75b87888422302bb46643",

@@ -4,8 +4,8 @@ import {
   computeCost,
   estimateTokens,
   resolvePriceEntry,
-} from "@caisson/ai-meter";
-import type { MeterConfig, Usage } from "@caisson/ai-meter";
+} from "@caisson-sh/ai-meter";
+import type { MeterConfig, Usage } from "@caisson-sh/ai-meter";
 
 /** SDK-independent projection of the language usage fields Caisson bills. */
 export interface LanguageUsageLike {

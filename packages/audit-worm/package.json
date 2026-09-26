@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/audit-worm",
+  "name": "@caisson-sh/audit-worm",
   "version": "2.2.4",
   "description": "Write-once (WORM) artifact store with an S3 Object-Lock backend, a SHA-256 append-only audit chain with a trusted WORM anchor, and an append-only locked-version database with a derived current version.",
   "license": "Apache-2.0",
@@ -29,18 +29,18 @@
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
     "@azure/storage-blob": "^12",
-    "@caisson/jobs": "workspace:*",
-    "@caisson/kernel": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*",
+    "@caisson-sh/jobs": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
+    "@caisson-sh/tenancy-rls": "workspace:*",
     "asn1js": "3.0.10",
     "pkijs": "3.4.0",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
-    "@caisson/ui": "workspace:*",
-    "@caisson/ui-pro": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
+    "@caisson-sh/ui": "workspace:*",
+    "@caisson-sh/ui-pro": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "react": "catalog:",
@@ -48,16 +48,16 @@
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@caisson/ui": "workspace:^",
-    "@caisson/ui-pro": "workspace:^",
+    "@caisson-sh/ui": "workspace:^",
+    "@caisson-sh/ui-pro": "workspace:^",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "peerDependenciesMeta": {
-    "@caisson/ui": {
+    "@caisson-sh/ui": {
       "optional": true
     },
-    "@caisson/ui-pro": {
+    "@caisson-sh/ui-pro": {
       "optional": true
     },
     "react": {

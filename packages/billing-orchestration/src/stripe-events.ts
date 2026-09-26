@@ -1,14 +1,14 @@
 // The Stripe->domain event mapper + envelope schema (ADR-0017). Maps a verified Stripe webhook payload
-// to the provider-agnostic DomainBillingEvent union (the open contract in @caisson/billing) — no Stripe
+// to the provider-agnostic DomainBillingEvent union (the open contract in @caisson-sh/billing) — no Stripe
 // type escapes this package: the rest of the base consumes only DomainBillingEvent. `sourceEventId` is
 // the provider event id — it flows straight into the credit wallet's idempotency key (ADR-0007/0023) so
 // a replayed webhook grants exactly once. `accountId` is resolved from the subscription's metadata on a
 // cycle invoice (or the Checkout Session's metadata on a one-time purchase) — both stamped at checkout
 // (ADR-0089). This file (parse + envelope) is the commercial half of the billing carve (ADR-0249 G3);
-// the DomainBillingEvent contract itself stays open in @caisson/billing.
+// the DomainBillingEvent contract itself stays open in @caisson-sh/billing.
 import { z } from "zod";
 import { readInt, readString } from "./event-readers.ts";
-import type { DomainBillingEvent } from "@caisson/billing";
+import type { DomainBillingEvent } from "@caisson-sh/billing";
 
 // The envelope (id/type/data.object) is Zod-validated at the boundary (mirrors PaddleEventSchema /
 // services-hardening MED finding): the raw webhook body used to be trusted via a bare

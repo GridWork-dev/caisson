@@ -4,7 +4,7 @@ import { describe, expect, test } from "bun:test";
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
-} from "@caisson/testing/module-graph";
+} from "@caisson-sh/testing/module-graph";
 
 const PACKAGE_ROOT = join(import.meta.dir, "..");
 const WORKSPACE_ROOT = join(import.meta.dir, "../../..");

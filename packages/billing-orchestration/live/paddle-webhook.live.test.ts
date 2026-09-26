@@ -22,8 +22,8 @@
 //   path never touches it. Run leg B by first `bun add -d @playwright/test` (or `playwright`) and
 //   setting PADDLE_SANDBOX_CHECKOUT_URL.
 import { describe, expect, test } from "bun:test";
-import { AuthnError, fetchWithTimeout, parseStrict } from "@caisson/kernel";
-import { verifyPaddleWebhook } from "@caisson/billing";
+import { AuthnError, fetchWithTimeout, parseStrict } from "@caisson-sh/kernel";
+import { verifyPaddleWebhook } from "@caisson-sh/billing";
 import { PaddleEventSchema, parsePaddleEvent } from "../src/paddle-events.ts";
 
 // --- Leg A env (simulator) --------------------------------------------------------------------

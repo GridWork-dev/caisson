@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { Inngest } from "inngest";
 import { z } from "zod";
-import { strictObject } from "@caisson/kernel";
+import { strictObject } from "@caisson-sh/kernel";
 import { createInngestJobQueue, defineTask } from "../src/index.ts";
 
 const OPT_IN = process.env.CAISSON_INNGEST_LIVE ?? "";

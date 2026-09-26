@@ -3,7 +3,7 @@
 //      (clock at the edge: the emitted timestamp is byte-for-byte the instant the caller passed).
 //   2. The attributes carry ONLY the opaque, non-PII fields — never ciphertext, never a control body.
 import { describe, expect, test } from "bun:test";
-import { InMemoryEventSink } from "@caisson/kernel";
+import { InMemoryEventSink } from "@caisson-sh/kernel";
 import {
   ERASURE_CRYPTO_SHRED,
   EVIDENCE_GENERATED,

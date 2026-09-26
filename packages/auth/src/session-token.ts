@@ -1,5 +1,5 @@
 // Session-token hash-at-rest (ADR-0366, Path B — the better-auth adapter wrap). Pure crypto, NO
-// better-auth import: this file is base-package code (`@caisson/auth`, Apache-2.0) that any
+// better-auth import: this file is base-package code (`@caisson-sh/auth`, Apache-2.0) that any
 // caller may import, while the provider-coupled wrap that knows better-auth's query shape stays
 // confined to `apps/site/lib/session-adapter.ts` (ADR-0015's boundary).
 //

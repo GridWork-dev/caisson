@@ -1,5 +1,5 @@
 // The retention-runner poke's checkable claims, now that it drives the REAL
-// `@caisson/retention-runner/browser` and the hand-ported mirror (retention-runner-logic.ts) is
+// `@caisson-sh/retention-runner/browser` and the hand-ported mirror (retention-runner-logic.ts) is
 // deleted. No parity suite survives because there is nothing left to compare — the isolation and
 // audit-row assertions below exercise the package's own `runErasure`, where the mirror's suite only
 // ever proved a copy of it agreed with the original.
@@ -10,12 +10,12 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { ValidationError } from "@caisson/kernel";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   createCaptureAuditSink,
   runErasure,
-} from "@caisson/retention-runner/browser";
+} from "@caisson-sh/retention-runner/browser";
 import { ERASURE_CRYPTO_SHRED as pkgErasureCryptoShred } from "../../../../packages/field-crypto/src/crypto-shred.ts";
 
 import {
@@ -57,7 +57,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
   test("the walk really crossed into the package, past the first hop", () => {
     // Guard the guard: the UI kit alone contributes dozens of files, so files.length can never
     // prove the retention-runner edges resolved. These files are reachable ONLY through
-    // @caisson/retention-runner/browser's own imports — the entry, then a second hop into kernel —
+    // @caisson-sh/retention-runner/browser's own imports — the entry, then a second hop into kernel —
     // so a resolver that went blind inside a workspace package fails here.
     expect(walk.files).toContain("packages/retention-runner/src/browser.ts");
     expect(walk.files).toContain(
@@ -67,7 +67,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
   });
 
   test("the job-queue half and field-crypto stay out of the bundle graph", () => {
-    // ./browser exists precisely to leave these behind: schedule.ts drags @caisson/jobs, and
+    // ./browser exists precisely to leave these behind: schedule.ts drags @caisson-sh/jobs, and
     // field-crypto is irreducibly node-only (which is why the shred event name is a quoted
     // constant here, pinned below, rather than an import).
     expect(

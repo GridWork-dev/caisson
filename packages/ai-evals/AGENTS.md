@@ -1,4 +1,4 @@
-# AGENTS — @caisson/ai-evals
+# AGENTS — @caisson-sh/ai-evals
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or the AI
 Production Kit must know to wire and gate evals correctly.
@@ -8,7 +8,7 @@ Production Kit must know to wire and gate evals correctly.
 - **Offline + deterministic by construction (ADR-0062).** Model-graded scorers route
   through the `Judge` port; CI uses the **cassette replay** driver (`cassetteJudge`) — recorded
   verdicts, zero network, zero provider secret. A LIVE judge is injected LOCALLY only and is wrapped
-  in `recordingJudge` to mint a reviewable cassette. This package NEVER imports `@caisson/ai-kit` or a
+  in `recordingJudge` to mint a reviewable cassette. This package NEVER imports `@caisson-sh/ai-kit` or a
   provider SDK (down-only, ADR-0003) — the live driver is the caller's, passed in.
 - **The injection grader is its own fail-closed class.** `injectionGrader` is a deterministic
   substring deny-list; a graded input can never talk it into passing, and an empty/malformed rubric
@@ -20,7 +20,7 @@ Production Kit must know to wire and gate evals correctly.
 - **The gate is regression-vs-committed-baseline (ADR-0072), BLESS-style.** `gateAgainstBaseline`
   fails closed: an eval that regresses, misses its `threshold`, lacks a baseline entry, or shrank its
   dataset fails. The baseline is rewritten ONLY through `BLESS` (the same discipline as
-  `@caisson/testing` `matchGolden`). This runs as a DISTINCT turbo `eval` task in the monorepo —
+  `@caisson-sh/testing` `matchGolden`). This runs as a DISTINCT turbo `eval` task in the monorepo —
   **never** a required CI job inside a generated repo.
 - **Two entry points.** `.` is the full node-capable surface; `./browser` is the browser-safe
   subset — the gate's rules only (`baseline-compare.ts` + `wilsonLowerBound`), no file I/O. Those
@@ -72,7 +72,7 @@ importing an edition (down-only, ADR-0003):
   lucky-draw small golden set that a flat mean/`threshold` check alone would pass.
 - **Eval ledger** (`recordEvalSpend`, `InMemoryEvalLedgerSink`) — eval spend on an injected
   `EvalLedgerSink` port, integer `costCents` (ADR-0007). **Isolation by construction**: this module
-  NEVER imports `@caisson/ai-meter` (production budget) or a Postgres dependency.
+  NEVER imports `@caisson-sh/ai-meter` (production budget) or a Postgres dependency.
 - **Reflexivity queue** (`captureDisagreement`, `consolidateReflexivityQueue`) — accumulates
   production judge/human verdict disagreements behind an injected `ReflexivityQueueStore` port.
   Consolidation dedups by `caseId` (latest wins) and caps, returning candidates for OPERATOR REVIEW
@@ -85,7 +85,7 @@ importing an edition (down-only, ADR-0003):
 
 ## Out of scope (this primitive)
 
-No provider call, no token metering (`@caisson/ai-meter`), no prompt storage/addressing
-(`@caisson/prompt-registry`), no guardrail enforcement (`@caisson/guardrails`). This package only
+No provider call, no token metering (`@caisson-sh/ai-meter`), no prompt storage/addressing
+(`@caisson-sh/prompt-registry`), no guardrail enforcement (`@caisson-sh/guardrails`). This package only
 runs cases through scorers and gates the aggregate against a committed baseline. The golden artifacts
 live in `__evals__/` (baseline + cases) and `__cassettes__/` — update the baseline only via `BLESS`.

@@ -1,4 +1,4 @@
-// The local-store poke's checkable claims, now that it drives the REAL @caisson/local-store through
+// The local-store poke's checkable claims, now that it drives the REAL @caisson-sh/local-store through
 // its `./browser` entry and the hand-ported mirror (local-store-logic.ts) is deleted:
 //
 //   1. The poke's client graph is browser-safe — a STATIC SOURCE-GRAPH WALK, never a build (a
@@ -15,10 +15,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
 import { z } from "zod";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { ValidationError } from "@caisson/kernel";
-import { LocalStore, RRF_K as REAL_RRF_K } from "@caisson/local-store";
-import type { StoreDoc } from "@caisson/local-store";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { ValidationError } from "@caisson-sh/kernel";
+import { LocalStore, RRF_K as REAL_RRF_K } from "@caisson-sh/local-store";
+import type { StoreDoc } from "@caisson-sh/local-store";
 
 import {
   SAMPLE_DOCS,

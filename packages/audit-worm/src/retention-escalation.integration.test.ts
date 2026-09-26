@@ -19,8 +19,8 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { newTestPg, type TestPg } from "@caisson/testing";
-import { InternalError, ValidationError } from "@caisson/kernel";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
+import { InternalError, ValidationError } from "@caisson-sh/kernel";
 import { buildArtifactKey, type ArtifactStore } from "./store.ts";
 import { LocalArtifactStore } from "./store.local.ts";
 import {

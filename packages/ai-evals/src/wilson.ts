@@ -1,4 +1,4 @@
-// @caisson/ai-evals — the Wilson score interval (ADR-0214). Closed-form, dependency-free: a small
+// @caisson-sh/ai-evals — the Wilson score interval (ADR-0214). Closed-form, dependency-free: a small
 // golden set at 100% pass isn't the same confidence as a large one at 100% — the lower bound narrows
 // the gap between "we got lucky" and "this is actually reliable". Threaded into `baseline.ts` as an
 // opt-in, additive gate augmentation (see `wilsonFloor` there).

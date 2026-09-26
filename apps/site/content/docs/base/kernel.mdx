@@ -3,7 +3,7 @@ title: Kernel
 description: The typed CaissonError hierarchy, the credit-gate and tenancy-denial error shapes, and the one standards gate.
 ---
 
-`@caisson/kernel` is the shared spine every package imports. It defines a typed `CaissonError`
+`@caisson-sh/kernel` is the shared spine every package imports. It defines a typed `CaissonError`
 hierarchy (each failure has a stable, documented shape instead of an ad-hoc string) and hosts the
 **one standards/conformance gate** every package ships through.
 
@@ -11,10 +11,10 @@ hierarchy (each failure has a stable, documented shape instead of an ad-hoc stri
 
 As of **0.7.0** the kernel ships two entry points, so it can be imported from a browser bundle:
 
-- **`@caisson/kernel`** — browser-safe. The error model, strict-schema helpers, canonical
+- **`@caisson-sh/kernel`** — browser-safe. The error model, strict-schema helpers, canonical
   serialization, the money and version types, the timeout-bounded fetch, the event sink, and the
   redaction helpers. Reaches no Node built-in.
-- **`@caisson/kernel/node`** — everything above **plus** the parts that need Node: constant-time
+- **`@caisson-sh/kernel/node`** — everything above **plus** the parts that need Node: constant-time
   secret comparison, audit-chain hashing, migration assembly, and the SSRF guard.
 
 `/node` is a strict superset, so server code that needs one of the moved functions changes a single
@@ -26,7 +26,7 @@ Upgrading from 0.6.x: if you import `safeEqualFixed`, `safeEqualVariable`, `veri
 `verifyBearer`, `contentHash`, `hashChainLink`, `chainEntry`, `buildChain`, `verifyChain`,
 `anchorChain`, `assembleMigrations`, `assembleMigrationsWithPinnedPrefix`, `isPrivateAddress`,
 `assertSafePublicUrl`, `assertResolvedHostPublic`, `assertSafePublicUrlResolved`, or
-`ssrfGuardedFetch`, point that import at `@caisson/kernel/node`. Type-only imports need no change.
+`ssrfGuardedFetch`, point that import at `@caisson-sh/kernel/node`. Type-only imports need no change.
 
 ## The contract
 
@@ -37,7 +37,7 @@ Two error shapes are load-bearing across the base:
   is no existence leak to probe.
 
 ```ts
-import { InsufficientCreditsError, NotFoundError } from "@caisson/kernel";
+import { InsufficientCreditsError, NotFoundError } from "@caisson-sh/kernel";
 
 // 402 — the credit gate. Documented body, never a bare 500.
 throw new InsufficientCreditsError(1, 0); // (required, balance)
@@ -67,7 +67,7 @@ $ bun run check   # build · lint · test — every package, one gate
 
 ## API reference
 
-The rest of `@caisson/kernel`'s exports, grouped by concern, pure functions, typed errors,
+The rest of `@caisson-sh/kernel`'s exports, grouped by concern, pure functions, typed errors,
 and Zod schemas; none of it touches the network or a database on its own.
 
 ### Errors
@@ -101,14 +101,14 @@ function toErrorResponse(err: unknown): { status: number; body: ErrorEnvelope };
 
 ### Security & redaction
 
-The constant-time compare and SSRF helpers below are imported from `@caisson/kernel/node`, not the
+The constant-time compare and SSRF helpers below are imported from `@caisson-sh/kernel/node`, not the
 main entry — they reach `node:crypto` and `node:dns`, so they live behind the Node-only entry point
-that keeps `@caisson/kernel` itself browser-safe. `@caisson/kernel/node` re-exports the main entry
+that keeps `@caisson-sh/kernel` itself browser-safe. `@caisson-sh/kernel/node` re-exports the main entry
 in full, so a server module that needs one of them changes a single import path and keeps the rest
-of its import list. The redaction helpers further down stay on `@caisson/kernel`.
+of its import list. The redaction helpers further down stay on `@caisson-sh/kernel`.
 
 ```ts
-// from "@caisson/kernel/node"
+// from "@caisson-sh/kernel/node"
 function safeEqualFixed(a: string, b: string): boolean; // fixed-length secrets (tokens, HMACs)
 function safeEqualVariable(a: string, b: string): boolean; // variable-length — hashed before compare
 function verifyAllowlisted(
@@ -127,7 +127,7 @@ variable-length `timingSafeEqual` throws on a length mismatch, itself a timing l
 `verifyBearer` fails closed on a blank `expected` secret.
 
 ```ts
-// from "@caisson/kernel/node"
+// from "@caisson-sh/kernel/node"
 function isPrivateAddress(hostname: string): boolean;
 function assertSafePublicUrl(raw: string): URL; // sync: https-only, no credentials, literal-host check
 function assertResolvedHostPublic(hostname: string): Promise<void>; // async DNS re-check
@@ -174,7 +174,7 @@ function fetchWithTimeout(
   input: string | URL | Request,
   init?: RequestInit,
   opts?: { timeoutMs?: number },
-): Promise<Response>; // default 10s; also at "@caisson/kernel/fetch"
+): Promise<Response>; // default 10s; also at "@caisson-sh/kernel/fetch"
 ```
 
 `loadConfig` validates `process.env` at boot, naming the failing keys, never their values.
@@ -184,15 +184,15 @@ stream-cancellation abort still tears down the connection.
 ### Audit chain & versioning
 
 This block is split across both entry points. `canonicalize` is pure and stays on
-`@caisson/kernel`; everything below it hashes, so it lives on `@caisson/kernel/node`. The
+`@caisson-sh/kernel`; everything below it hashes, so it lives on `@caisson-sh/kernel/node`. The
 `AuditChainEntry` and `AuditChainAnchor` **types** stay on the main entry too — a type-only import
 is erased at build time and never pulls Node into a bundle.
 
 ```ts
-// from "@caisson/kernel"
+// from "@caisson-sh/kernel"
 function canonicalize(value: JsonValue): string; // deterministic: sorted keys
 
-// from "@caisson/kernel/node"
+// from "@caisson-sh/kernel/node"
 function contentHash(value: JsonValue): string; // sha256 hex of canonicalize(value)
 function hashChainLink(prevHash: string | null, payload: JsonValue): string;
 function chainEntry(
@@ -259,13 +259,13 @@ at the sink. `OtelPostgresEventSink` posts one OTLP/HTTP log record per event an
 ### Migration assembly
 
 ```ts
-// from "@caisson/kernel/node"
+// from "@caisson-sh/kernel/node"
 function assembleMigrations(
   packages: readonly PackageMigrations[],
 ): MigrationAssembly;
 ```
 
-`MigrationAssembly` and `PackageMigrations` are types, so they import from `@caisson/kernel`
+`MigrationAssembly` and `PackageMigrations` are types, so they import from `@caisson-sh/kernel`
 unchanged; only the function itself moved, because it hashes.
 
 Pure and deterministic: orders packages by declared `dependsOn`, renumbers every migration

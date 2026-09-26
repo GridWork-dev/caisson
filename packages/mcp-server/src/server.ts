@@ -17,12 +17,12 @@ import {
   parseStrict,
   safeEqualFixed,
   strictObject,
-} from "@caisson/kernel/node";
+} from "@caisson-sh/kernel/node";
 import {
   type RegistryIndex,
   assertKnownModule,
   assertKnownVersion,
-} from "@caisson/registry-schema";
+} from "@caisson-sh/registry-schema";
 import { registerCoachTools, type CoachOptions } from "./coach.ts";
 import {
   registerManifestTools,
@@ -69,7 +69,7 @@ export interface ToolHandlerContext {
  * The per-account abuse-throttle PORT (ADR-0112). An implementation throws `RateLimitError` (429)
  * when the account is over its limit, and resolves to allow. Defined here so the mcp-server
  * package stays DB-free — the host supplies the implementation (for example a token bucket over
- * `@caisson/rate-limit`); this package only declares the seam and awaits it. By contract a thrown error is a DENY; the
+ * `@caisson-sh/rate-limit`); this package only declares the seam and awaits it. By contract a thrown error is a DENY; the
  * implementation owns the fail-OPEN decision (a store fault must resolve, never throw — ADR-0112
  * lock 5), so the server treats a resolving hook as "allowed" without inspecting why.
  */
@@ -222,7 +222,7 @@ export interface McpServerOptions {
   /**
    * Opt-in agent-runtime tools (ADR-0360 S5, ADR-0361/0362). When present, `run_start`/`run_status`
    * are registered through the same seam; when omitted neither tool exists. The actual loop/store
-   * wiring is the HOST's `@caisson/ai-kit` `buildRunTools` callback pair (injected, mirrors
+   * wiring is the HOST's `@caisson-sh/ai-kit` `buildRunTools` callback pair (injected, mirrors
    * `onGenerate` — this package never imports ai-kit at runtime). See `run-tools.ts`.
    */
   runTools?: RunToolsOptions;
@@ -669,7 +669,7 @@ export function createMcpServer(options: McpServerOptions): McpServer {
     arguments: [
       {
         name: "module_id",
-        description: "The @caisson/<slug> module to integrate.",
+        description: "The @caisson-sh/<slug> module to integrate.",
         required: true,
       },
       {

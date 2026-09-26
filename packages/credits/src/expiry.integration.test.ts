@@ -13,10 +13,10 @@ import {
 } from "bun:test";
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
-import { newTestPg, type TestPg } from "@caisson/testing";
-import { InsufficientCreditsError, asCredits } from "@caisson/kernel";
-import { withTenant, type Transactor } from "@caisson/tenancy-rls";
-import { createInMemoryQueue } from "@caisson/jobs";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
+import { InsufficientCreditsError, asCredits } from "@caisson-sh/kernel";
+import { withTenant, type Transactor } from "@caisson-sh/tenancy-rls";
+import { createInMemoryQueue } from "@caisson-sh/jobs";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,

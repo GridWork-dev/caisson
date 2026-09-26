@@ -11,8 +11,12 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import { ConfigError, RateLimitError, fetchWithTimeout } from "@caisson/kernel";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+import {
+  ConfigError,
+  RateLimitError,
+  fetchWithTimeout,
+} from "@caisson-sh/kernel";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
 import {
   createHttpMcpHandler,
   runHttpServer,
@@ -24,13 +28,13 @@ const index = loadRegistryIndex({
   schemaVersion: 1,
   modules: [
     {
-      id: "@caisson/auth",
+      id: "@caisson-sh/auth",
       latest: "0.1.0",
       versions: [
         {
           version: "0.1.0",
           manifest: {
-            id: "@caisson/auth",
+            id: "@caisson-sh/auth",
             version: "0.1.0",
             license: "Apache-2.0",
             description: "Fixture module for the HTTP transport test.",
@@ -270,7 +274,7 @@ describe("HTTP transport binding (ADR-0161)", () => {
       arguments: {},
     });
     expect(result.isError).toBeFalsy();
-    expect(textOf(result)).toEqual({ modules: ["@caisson/auth"] });
+    expect(textOf(result)).toEqual({ modules: ["@caisson-sh/auth"] });
   });
 
   test("a tool-level failure surfaces as an MCP isError result, not a thrown protocol error", async () => {
@@ -283,7 +287,7 @@ describe("HTTP transport binding (ADR-0161)", () => {
 
     const result = await client.callTool({
       name: "describe_module",
-      arguments: { name: "@caisson/billing" },
+      arguments: { name: "@caisson-sh/billing" },
     });
     expect(result.isError).toBe(true);
     expect(textOf(result)).toMatchObject({ error: { code: "not_found" } });
@@ -310,7 +314,7 @@ describe("HTTP transport binding (ADR-0161)", () => {
     const parsed = JSON.parse(contents[0]?.text ?? "{}") as {
       modules: { id: string }[];
     };
-    expect(parsed.modules.map((m) => m.id)).toEqual(["@caisson/auth"]);
+    expect(parsed.modules.map((m) => m.id)).toEqual(["@caisson-sh/auth"]);
 
     await expect(
       client.readResource({ uri: "caisson://nope/missing" }),
@@ -332,11 +336,11 @@ describe("HTTP transport binding (ADR-0161)", () => {
 
     const got = await client.getPrompt({
       name: "integrate_module",
-      arguments: { module_id: "@caisson/auth" },
+      arguments: { module_id: "@caisson-sh/auth" },
     });
     expect(got.messages).toHaveLength(1);
     expect((got.messages[0]!.content as { text: string }).text).toContain(
-      "@caisson/auth",
+      "@caisson-sh/auth",
     );
 
     await expect(
@@ -381,13 +385,13 @@ describe("HTTP transport binding (ADR-0161)", () => {
     // A failing call from B (unknown module) leaves A unaffected — no shared mutable session state.
     const describeB = await clientB.callTool({
       name: "describe_module",
-      arguments: { name: "@caisson/nope" },
+      arguments: { name: "@caisson-sh/nope" },
     });
     expect(describeB.isError).toBe(true);
     expect(textOf(describeB)).toMatchObject({ error: { code: "not_found" } });
     const describeA = await clientA.callTool({
       name: "describe_module",
-      arguments: { name: "@caisson/auth" },
+      arguments: { name: "@caisson-sh/auth" },
     });
     expect(describeA.isError).toBeFalsy();
   });

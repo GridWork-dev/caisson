@@ -181,7 +181,7 @@ describe("happy path — byte-exact materialization", () => {
       { path: "package.json", content: '{"name":"test"}\n' },
       {
         path: ".npmrc",
-        content: "@caisson:registry=https://npm.pkg.github.com\n",
+        content: "@caisson-sh:registry=https://npm.pkg.github.com\n",
       },
       { path: "src/index.ts", content: "export {};\n" },
       { path: "src/lib/util.ts", content: "export const x = 1;\n" },

@@ -9,7 +9,7 @@ import { join } from "node:path";
 import {
   createMemoryTrajectoryStore,
   project,
-} from "@caisson/agent-trajectory";
+} from "@caisson-sh/agent-trajectory";
 import type { AgentRunner, RunStatus } from "./index.ts";
 import { buildTrajectoryEvents, createAgentRunner } from "./index.ts";
 

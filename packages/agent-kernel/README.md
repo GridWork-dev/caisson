@@ -1,4 +1,4 @@
-# @caisson/agent-kernel
+# @caisson-sh/agent-kernel
 
 The engine-neutral agent kernel — the shared base layer both the base packages (`cli`, `mcp-server`)
 and the **Agentic-Dev bundle** compose down-only.
@@ -11,7 +11,7 @@ import an edition (ADR-0022 down-only), so the shared layer sits below the editi
 
 - **Agent / skill / rule schema (Zod `.strict()`).** A discriminated union over `kind`
   (`agent` | `skill` | `rule`); unknown fields are rejected at the boundary, round-trips are exact.
-  `parseArtifact` throws a redaction-safe `ValidationError` (reused from `@caisson/kernel`).
+  `parseArtifact` throws a redaction-safe `ValidationError` (reused from `@caisson-sh/kernel`).
 - **Lifecycle act FSM.** The 7 acts (`spec → plan → execute → verify → sweep → eval → ship`) with the
   legal-transition adjacency only. An illegal transition **throws** (flag-never-guess) — never a silent
   skip. `runLifecycle` produces a deterministic, golden-pinnable transition trace.
@@ -44,7 +44,7 @@ import {
   runLifecycle,
   transition,
   HookDispatcher,
-} from "@caisson/agent-kernel";
+} from "@caisson-sh/agent-kernel";
 
 const agent = parseArtifact({ kind: "agent", name: "reviewer" /* … */ });
 const next = transition("plan", "execute"); // "execute"; transition("spec","execute") throws

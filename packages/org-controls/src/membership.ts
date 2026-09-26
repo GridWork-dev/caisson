@@ -1,13 +1,13 @@
-// The owner-gated multi-user membership surface (ADR-0176), carved out of the open @caisson/auth into
+// The owner-gated multi-user membership surface (ADR-0176), carved out of the open @caisson-sh/auth into
 // this commercial package (ADR-0257 §1.3). Only the MANAGE half moves: listing an account's members,
 // an owner adding a seat, and the owner-only authz gate. The login-critical session-resolution half
-// (`resolveUserAccounts` / `ensurePersonalAccount` / `selectActiveAccount`) STAYS in open @caisson/auth
+// (`resolveUserAccounts` / `ensurePersonalAccount` / `selectActiveAccount`) STAYS in open @caisson-sh/auth
 // — it runs on every buyer login (apps/site getSession), so it must never sit behind the org-controls
-// entitlement. `AccountMembership` + `Role` are re-used from @caisson/auth (their canonical home);
+// entitlement. `AccountMembership` + `Role` are re-used from @caisson-sh/auth (their canonical home);
 // this package composes DOWN onto the open auth + tenancy-rls substrates (commercial → open, allowed).
-import { ValidationError } from "@caisson/kernel";
-import { withTenant, type Transactor } from "@caisson/tenancy-rls";
-import type { AccountMembership, Role } from "@caisson/auth";
+import { ValidationError } from "@caisson-sh/kernel";
+import { withTenant, type Transactor } from "@caisson-sh/tenancy-rls";
+import type { AccountMembership, Role } from "@caisson-sh/auth";
 import { assertCanManageMembers } from "./gate.ts";
 
 // The gate itself lives in gate.ts (ADR-0396) so the browser entry can carry it without this
@@ -20,7 +20,7 @@ interface MemberRow {
   role: string;
 }
 
-// A 3-line mapper duplicated from @caisson/auth's membership.ts rather than widening the open auth
+// A 3-line mapper duplicated from @caisson-sh/auth's membership.ts rather than widening the open auth
 // API with a new export just for it. `role` is DB-constrained to owner|seat (schema.ts CHECK), so
 // the cast is sound.
 function toMembership(r: MemberRow): AccountMembership {

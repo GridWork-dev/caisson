@@ -3,7 +3,7 @@
 // A thin, validated constructor — not a formatter for a specific output format (HTML/JSON stay the
 // caller's job) — so both consumers get the SAME field bounds and the SAME readiness-language gate on
 // `justification` without re-deriving either.
-import { strictObject, parseStrict, type JsonValue } from "@caisson/kernel";
+import { strictObject, parseStrict, type JsonValue } from "@caisson-sh/kernel";
 import { z } from "zod";
 import { assertReadinessLanguage } from "./filter.ts";
 

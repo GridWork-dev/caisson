@@ -3,8 +3,8 @@
 // transaction path is proven by injecting a PGlite-backed `Transactor` (the same double the
 // port-conformance harness in transactor-conformance.test.ts uses).
 import { describe, expect, test } from "bun:test";
-import { ConfigError } from "@caisson/kernel";
-import { newTestPg, type TestPg } from "@caisson/testing";
+import { ConfigError } from "@caisson-sh/kernel";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import { buildTenantPolicySql, withTenant } from "./index.ts";
 import { createSupabaseTransactor } from "./supabase.ts";
 

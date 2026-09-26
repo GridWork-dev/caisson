@@ -4,7 +4,7 @@
 // reservation — `reconcile()` trues the charge to the provider's actual usage — so it deliberately
 // rounds the reservation UP (no cache assumed) rather than risk under-reserving.
 import { z } from "zod";
-import { parseStrict, strictObject } from "@caisson/kernel";
+import { parseStrict, strictObject } from "@caisson-sh/kernel";
 import { computeCost } from "./token-rates.ts";
 import type {
   CostBreakdown,

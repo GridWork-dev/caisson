@@ -1,4 +1,4 @@
-// Buyer tenant-isolation floor only. The admin-WRITE seam moved to @caisson/org-controls (ADR-0257 §1.3).
+// Buyer tenant-isolation floor only. The admin-WRITE seam moved to @caisson-sh/org-controls (ADR-0257 §1.3).
 export {
   TENANT_GUC,
   USER_GUC,

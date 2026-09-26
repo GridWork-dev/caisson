@@ -17,9 +17,9 @@ import styles from "./schematics.module.css";
 // ai-meter/credits (PG-atomic), agent-trajectory's `store.pg.ts` (Postgres), and local-store's
 // `store.ts` (`bun:sqlite` + `sqlite-vec` + FTS5, on-device SQLite). Kernel's base-band presence is
 // verified per bundle, not asserted uniformly: AI-Production, Local-first, and Agentic-Dev pin
-// `@caisson/kernel` directly in their own manifest `members` map (direct pin, no dependency-graph
+// `@caisson-sh/kernel` directly in their own manifest `members` map (direct pin, no dependency-graph
 // reasoning needed). Provenance never pins kernel directly, but each of its three seam members
-// (field-crypto, audit-worm, signing-primitive) carries `@caisson/kernel` as a real `package.json`
+// (field-crypto, audit-worm, signing-primitive) carries `@caisson-sh/kernel` as a real `package.json`
 // workspace dependency (verified per package), so kernel still belongs in its base band. Everything
 // draws no kernel chip at all (see that sheet's own comment below for why).
 //

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ConflictError, NotFoundError } from "@caisson/kernel";
+import { ConflictError, NotFoundError } from "@caisson-sh/kernel";
 import { createMemoryRunStateStore } from "./run-state.ts";
 
 describe("createMemoryRunStateStore — park/approve/deny/claimResume/finish CAS", () => {

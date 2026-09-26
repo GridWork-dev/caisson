@@ -4,7 +4,7 @@
 //     `deriveKey` for the Drizzle column hot-path (toDriver/fromDriver are sync; HKDF is sync).
 //   - KmsKeyProvider (kms.ts) — async envelope encryption behind the same port (network behind it).
 import { z } from "zod";
-import { ConfigError } from "@caisson/kernel";
+import { ConfigError } from "@caisson-sh/kernel";
 import { deriveTenantKey } from "./derive.ts";
 import { KeyVersionRegistry } from "./registry.ts";
 

@@ -15,7 +15,7 @@ import {
   ModuleManifest,
   type RegistryIndex,
   loadRegistryIndex,
-} from "@caisson/registry-schema";
+} from "@caisson-sh/registry-schema";
 import { z } from "zod";
 
 const HERE = dirname(fileURLToPath(import.meta.url)); // packages/cli/scripts

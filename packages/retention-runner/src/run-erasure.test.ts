@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import type { ErasureTarget } from "./targets.ts";
 import { createCaptureTarget } from "./targets.ts";
 import { createCaptureAuditSink } from "./audit-sink.ts";

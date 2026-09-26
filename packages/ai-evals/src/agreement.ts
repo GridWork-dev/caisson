@@ -1,4 +1,4 @@
-// @caisson/ai-evals — multi-rater agreement + counterfactual stability (ADR-0214). `fleissKappa` is
+// @caisson-sh/ai-evals — multi-rater agreement + counterfactual stability (ADR-0214). `fleissKappa` is
 // the standard items×categories count-matrix formula, dependency-free. This package never generates
 // the counterfactual variants themselves (that's an ai-kit/agent-dev concern) — it only scores
 // agreement over verdicts a caller already produced.

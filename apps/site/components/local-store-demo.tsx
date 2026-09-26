@@ -1,12 +1,15 @@
 "use client";
 
 // The local-store module's `component` media slide (ADR-0308 full-depth) — the module's own shipped
-// surface `@caisson/local-store/ui` <StoreSearch>, rendered live over sample RRF-ranked hits. The
+// surface `@caisson-sh/local-store/ui` <StoreSearch>, rendered live over sample RRF-ranked hits. The
 // surface is controlled (the host owns the query); here it's a still-frame — a fixed query with a
 // no-op change handler and static results, so nothing pulls interactive state. Loaded via
 // next/dynamic (ssr: false) so this commercial-tier tree never lands in the shared client bundle.
 // Source: packages/local-store/src/ui/store-search.tsx.
-import { StoreSearch, type StoreSearchResult } from "@caisson/local-store/ui";
+import {
+  StoreSearch,
+  type StoreSearchResult,
+} from "@caisson-sh/local-store/ui";
 
 import { MediaFrame } from "./media-frame";
 

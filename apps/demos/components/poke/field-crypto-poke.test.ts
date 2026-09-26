@@ -1,5 +1,5 @@
 // The field-crypto poke's checkable claims, now that it drives the REAL package through
-// `@caisson/field-crypto/browser` (ADR-0396) and the hand-ported mirror (field-crypto-logic.ts) is
+// `@caisson-sh/field-crypto/browser` (ADR-0396) and the hand-ported mirror (field-crypto-logic.ts) is
 // deleted. The parity suite that used to live here moved INTO the package
 // (packages/field-crypto/src/browser-parity.test.ts) along with the implementation it pins — there is
 // nothing left here to compare a copy against. What remains is what only this file can assert:
@@ -14,20 +14,20 @@ import { describe, expect, test } from "bun:test";
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
-} from "@caisson/testing/module-graph";
+} from "@caisson-sh/testing/module-graph";
 import {
   DerivedKeyProvider,
   decryptField,
   derivedContext,
   encryptField,
   parseEnvelope,
-} from "@caisson/field-crypto";
+} from "@caisson-sh/field-crypto";
 import {
   NONCE_BYTES,
   TAG_BYTES,
   MAX_KEY_VERSION,
   nextKeyVersion,
-} from "@caisson/field-crypto/browser";
+} from "@caisson-sh/field-crypto/browser";
 
 import {
   DEMO_COLUMN_CONTEXT,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ConflictError, parseStrict } from "@caisson/kernel";
+import { ConflictError, parseStrict } from "@caisson-sh/kernel";
 import { TrajectoryEvent, createMemoryTrajectoryStore } from "./index.ts";
 
 const AT = "2026-07-16T10:00:00.000Z";

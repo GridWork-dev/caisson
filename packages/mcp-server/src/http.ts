@@ -44,7 +44,11 @@ import {
   type ReadResourceResult,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import { ConfigError, ValidationError, toErrorResponse } from "@caisson/kernel";
+import {
+  ConfigError,
+  ValidationError,
+  toErrorResponse,
+} from "@caisson-sh/kernel";
 import {
   createMcpServer,
   type McpServerOptions,

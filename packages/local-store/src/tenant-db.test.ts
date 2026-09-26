@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
-import { TenancyError } from "@caisson/kernel";
+import { TenancyError } from "@caisson-sh/kernel";
 import { openTenantDb, tenantDbPath } from "./tenant-db.ts";
 
 /** A real NUL char, built so the SOURCE stays clean ASCII (no raw control byte in the file). */

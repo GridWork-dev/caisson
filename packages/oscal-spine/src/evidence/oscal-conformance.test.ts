@@ -10,8 +10,8 @@
 // suite remains independent of the commercial collectors that can feed those inputs at runtime.
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { matchGolden } from "@caisson/testing";
-import { canonicalize, type JsonValue } from "@caisson/kernel";
+import { matchGolden } from "@caisson-sh/testing";
+import { canonicalize, type JsonValue } from "@caisson-sh/kernel";
 import type {
   OscalEvidencePackManifest,
   OscalManifestEvidenceItem,

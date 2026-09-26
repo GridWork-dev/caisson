@@ -1,4 +1,4 @@
-# AGENTS — @caisson/agent-trajectory
+# AGENTS — @caisson-sh/agent-trajectory
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a producer (a governed run, an
 adapter) or a consumer (an eval, a projection view) must know to record and read trajectories

@@ -3,7 +3,7 @@ title: ai-evals
 description: A regression gate for prompt and model changes, defineEval() scores a dataset through a grader taxonomy, gateAgainstBaseline() fails the build on a real score drop, all offline and deterministic.
 ---
 
-`@caisson/ai-evals` is an eval harness for AI features: define a dataset of cases, score them with
+`@caisson-sh/ai-evals` is an eval harness for AI features: define a dataset of cases, score them with
 a grader, and gate a build on a committed baseline instead of a gut feeling. It runs fully offline
 and deterministic (no live model call, no secret, no flaky network dependency) so the same suite
 produces the same verdict in CI every time.
@@ -11,7 +11,7 @@ produces the same verdict in CI every time.
 ## Install
 
 ```bash
-bun add @caisson/ai-evals
+bun add @caisson-sh/ai-evals
 ```
 
 ## Quickstart
@@ -21,7 +21,7 @@ import {
   defineEval,
   exactGrader,
   gateAgainstBaseline,
-} from "@caisson/ai-evals";
+} from "@caisson-sh/ai-evals";
 
 const run = await defineEval({
   name: "greeting-quality",
@@ -44,7 +44,7 @@ deny-list, so a persuasive input can talk a model judge out of a refusal but can
 deny-list out of one.
 
 ```ts
-import { schemaGrader, judgeGrader, cassetteJudge } from "@caisson/ai-evals";
+import { schemaGrader, judgeGrader, cassetteJudge } from "@caisson-sh/ai-evals";
 import { z } from "zod";
 
 const shapeCheck = schemaGrader(z.object({ ok: z.boolean() }));
@@ -94,7 +94,7 @@ export function compareToBaseline(
 
 `BLESS=1 bun run eval` is the one sanctioned path to rewrite the baseline, it merges into existing
 entries so a partial run never drops other evals, mirroring the golden-fixture discipline in
-`@caisson/testing`.
+`@caisson-sh/testing`.
 
 ## Confidence and agreement statistics
 
@@ -113,7 +113,7 @@ auto-writes a committed dataset, merging a candidate back in stays a human act.
 ## Spend, and how it composes
 
 `recordEvalSpend()` tracks eval-run cost on its own budget-isolated ledger, it never touches the
-production credit wallet or `@caisson/ai-meter`. `ai-evals` is a base primitive: the AI Production
+production credit wallet or `@caisson-sh/ai-meter`. `ai-evals` is a base primitive: the AI Production
 bundle's prompt registry and metering compose on top of it to gate quality in the same CI run that
 gates spend.
 

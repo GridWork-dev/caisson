@@ -1,6 +1,6 @@
 // SSRF guard (ADR-0002 security floor: "resolve-then-pin for SSRF"). ONE home for the outbound-URL
 // safety policy every buyer-/config-supplied destination shares — the alerting webhook/Slack/Telegram
-// transports (@caisson/alerting) and the ai-kit provider baseUrl (@caisson/ai-kit). Both used to carry
+// transports (@caisson-sh/alerting) and the ai-kit provider baseUrl (@caisson-sh/ai-kit). Both used to carry
 // near-identical LITERAL-only denylists that never resolved the hostname, so a public host that resolved
 // (or DNS-rebound) to 127.0.0.1 / a private range / 169.254.169.254 (cloud metadata) sailed through
 // (Strix vuln-0004, CWE-918). This module keeps the cheap literal check AND adds the resolve-time

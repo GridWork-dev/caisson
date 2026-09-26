@@ -9,7 +9,7 @@ import {
 } from "./module-manifest";
 
 const kernel: ModuleManifestInput = {
-  id: "@caisson/kernel",
+  id: "@caisson-sh/kernel",
   version: "0.1.0",
   license: "Apache-2.0",
   dependencies: [],
@@ -26,7 +26,7 @@ describe("module manifest", () => {
         description: kernel.description,
       }),
     ).toEqual({
-      id: "@caisson/kernel",
+      id: "@caisson-sh/kernel",
       version: "0.1.0",
       license: "Apache-2.0",
       dependencies: [],

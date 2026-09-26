@@ -15,9 +15,13 @@ import {
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
-import { newTestPg, type TestPg } from "@caisson/testing";
-import { ConflictError, NotFoundError, ValidationError } from "@caisson/kernel";
-import { buildTenantPolicySql } from "@caisson/tenancy-rls";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
+import {
+  ConflictError,
+  NotFoundError,
+  ValidationError,
+} from "@caisson-sh/kernel";
+import { buildTenantPolicySql } from "@caisson-sh/tenancy-rls";
 import { LockedVersionStore, type Provenance } from "./version-store.ts";
 
 let tp: TestPg;

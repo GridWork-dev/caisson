@@ -1,16 +1,16 @@
 // Billing webhook Route Handler — a STUB wired against the open `BillingProvider` PORT
-// (@caisson/billing, ADR-0017): `verifyAndParse` turns a raw provider payload into the
+// (@caisson-sh/billing, ADR-0017): `verifyAndParse` turns a raw provider payload into the
 // provider-agnostic `DomainBillingEvent`. The port's concrete driver factories (Stripe/Paddle/
-// LemonSqueezy/Polar) are the commercial `@caisson/billing-orchestration` package — swap
+// LemonSqueezy/Polar) are the commercial `@caisson-sh/billing-orchestration` package — swap
 // `getBillingProvider()` for one of those (or your own port implementation, using the open raw
-// verifiers `verifyStripeWebhook`/`verifyPaddleWebhook`/… also exported from `@caisson/billing`).
+// verifiers `verifyStripeWebhook`/`verifyPaddleWebhook`/… also exported from `@caisson-sh/billing`).
 import type { NextRequest } from "next/server";
-import type { BillingProvider } from "@caisson/billing";
-import { toErrorResponse } from "@caisson/kernel";
+import type { BillingProvider } from "@caisson-sh/billing";
+import { toErrorResponse } from "@caisson-sh/kernel";
 
 function getBillingProvider(): BillingProvider {
   throw new Error(
-    "wire a BillingProvider driver here — e.g. @caisson/billing-orchestration's createStripeBilling()",
+    "wire a BillingProvider driver here — e.g. @caisson-sh/billing-orchestration's createStripeBilling()",
   );
 }
 
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     switch (event.type) {
       case "purchase.completed":
       case "subscription.created":
-        // Wire your entitlement/credit grant here (see @caisson/credits for the ledger primitive).
+        // Wire your entitlement/credit grant here (see @caisson-sh/credits for the ledger primitive).
         break;
       case "subscription.updated":
       case "subscription.canceled":

@@ -21,7 +21,7 @@ import {
   parseStrict,
   strictObject,
   canonicalize,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import type {
   Changeset,
   ChangesetCapture,

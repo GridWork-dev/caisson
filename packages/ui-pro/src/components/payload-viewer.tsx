@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { CodeBlock } from "@caisson/ui/components";
+import { CodeBlock } from "@caisson-sh/ui/components";
 
 import {
   DEFAULT_REDACT_KEYS,

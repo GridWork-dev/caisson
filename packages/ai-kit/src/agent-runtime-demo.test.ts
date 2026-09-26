@@ -2,11 +2,11 @@
 // deterministic proof driving start -> park -> approve -> resume -> finish across BOTH the CLI and
 // MCP surfaces against the REAL PG stores (PGlite, mock model, zero network).
 //
-//   start   -> `caisson run start`'s thin MCP client (`@caisson/cli`'s `runStartClient`) calls the
-//              REAL `run_start` MCP tool (`@caisson/mcp-server`'s `createStdioMcpServer`), which
+//   start   -> `caisson run start`'s thin MCP client (`@caisson-sh/cli`'s `runStartClient`) calls the
+//              REAL `run_start` MCP tool (`@caisson-sh/mcp-server`'s `createStdioMcpServer`), which
 //              invokes THIS package's
 //              `buildRunTools` -> `runToolLoop` — a gated tool call parks the run.
-//   approve -> `caisson run approve`'s direct-DB surface (`@caisson/cli`'s `approveRun`, raw SQL, no
+//   approve -> `caisson run approve`'s direct-DB surface (`@caisson-sh/cli`'s `approveRun`, raw SQL, no
 //              MCP round-trip, S3's locked transport decision) — proves the MCP-started run and the
 //              CLI-approved run agree on the SAME `agent_run_state`/`trajectory_event` rows.
 //   resume  -> driven directly via `resumeToolLoop` (the loop-internal seam a real job worker calls;
@@ -16,10 +16,10 @@
 //              the hand-rolled trajectory summary) agree the run finished, never surfacing
 //              `parked_state` on either surface (ADR-0361).
 //
-// `@caisson/cli` and `@caisson/mcp-server` are devDependencies ONLY (never runtime — ai-kit's own
-// manifest.ts dependency list is untouched by this file), mirroring the precedent `@caisson/cli`'s
+// `@caisson-sh/cli` and `@caisson-sh/mcp-server` are devDependencies ONLY (never runtime — ai-kit's own
+// manifest.ts dependency list is untouched by this file), mirroring the precedent `@caisson-sh/cli`'s
 // OWN test suite already sets for a one-directional test-only cross-package import (its
-// `run.test.ts` imports `@caisson/agent-trajectory`'s real Zod schema as a devDependency shape-
+// `run.test.ts` imports `@caisson-sh/agent-trajectory`'s real Zod schema as a devDependency shape-
 // parity check — see that file's header).
 import {
   afterAll,
@@ -30,7 +30,7 @@ import {
   test,
 } from "bun:test";
 setDefaultTimeout(30_000);
-import { newTestPg, type TestPg } from "@caisson/testing";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
@@ -38,35 +38,35 @@ import {
   GRANT_CONSUMPTION_MIGRATION_SQL,
   balance,
   grant,
-} from "@caisson/credits";
+} from "@caisson-sh/credits";
 import {
   InMemoryEventSink,
   asCredits,
   asMicroUsdPerCredit,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   AI_METER_SCHEMA_SQL,
   SPEND_POLICY_TABLE,
   USAGE_EVENT_TABLE,
   type MeterConfig,
-} from "@caisson/ai-meter";
-import { PROMPT_REGISTRY_SCHEMA_SQL } from "@caisson/prompt-registry";
+} from "@caisson-sh/ai-meter";
+import { PROMPT_REGISTRY_SCHEMA_SQL } from "@caisson-sh/prompt-registry";
 import {
   localModerator,
   type GuardPolicy,
   type GuardRuntime,
-} from "@caisson/guardrails";
-import type { AiSettings } from "@caisson/ai-config";
-import { withTenant } from "@caisson/tenancy-rls";
+} from "@caisson-sh/guardrails";
+import type { AiSettings } from "@caisson-sh/ai-config";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 import {
   DerivedKeyProvider,
   derivedContext,
   withFieldCryptoContext,
-} from "@caisson/field-crypto";
+} from "@caisson-sh/field-crypto";
 import {
   createPgRunStateStore,
   createPgTrajectoryStore,
-} from "@caisson/agent-trajectory";
+} from "@caisson-sh/agent-trajectory";
 import { MockLanguageModelV4 } from "ai/test";
 import type {
   LanguageModelV4FinishReason,
@@ -76,17 +76,17 @@ import { z } from "zod";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
 import {
   createStdioMcpServer,
   type McpServerOptions,
-} from "@caisson/mcp-server";
+} from "@caisson-sh/mcp-server";
 import {
   approveRun,
   readRunStatus,
   runStartClient,
   type RunServiceDeps,
-} from "@caisson/cli";
+} from "@caisson-sh/cli";
 import { resumeToolLoop, type LoopTool } from "./agent-loop.ts";
 import { buildRunTools } from "./mcp-run-tools.ts";
 

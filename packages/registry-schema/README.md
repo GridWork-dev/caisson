@@ -1,4 +1,4 @@
-# @caisson/registry-schema
+# @caisson-sh/registry-schema
 
 The open, dependency-light contract for a module registry: the shape of a module manifest, the
 shape of the built catalog index, and pure helpers for checking a module id and version against it.
@@ -26,17 +26,17 @@ import {
   assertKnownVersion,
   defineModule,
   loadRegistryIndexFromFile,
-} from "@caisson/registry-schema";
+} from "@caisson-sh/registry-schema";
 
 const manifest = defineModule({
-  id: "@caisson/example",
+  id: "@caisson-sh/example",
   version: "1.0.0",
   license: "Apache-2.0",
   description: "An example module.",
 });
 
 const index = loadRegistryIndexFromFile("registry/index.json");
-assertKnownVersion(index, "@caisson/kernel", "0.5.0");
+assertKnownVersion(index, "@caisson-sh/kernel", "0.5.0");
 ```
 
 ## Test

@@ -188,11 +188,11 @@ export function LocalInferenceSheet() {
 // ("the sellable logic behind the interactive components lives in these, not the UI") — audit-
 // chain.ts's verifyChain/chainIntact, table-ops.ts's sortRows/toCsv, use-floating-position.ts's
 // wrap of position.ts's computeFloatingPosition, redact.ts's re-export of DEFAULT_REDACT_KEYS from
-// @caisson/kernel. The open @caisson/ui base this tier composes onto is the ADR-0094 Apache-2.0 line.
+// @caisson-sh/kernel. The open @caisson-sh/ui base this tier composes onto is the ADR-0094 Apache-2.0 line.
 export function UiProSheet() {
   return (
     <Sheet
-      title="ui-pro: every interactive component composes onto the open Apache-2.0 @caisson/ui base and calls into its own pure, unit-tested lib function, from AuditTimeline's verifyChain to Tooltip/Popover/Menu's shared computeFloatingPosition"
+      title="ui-pro: every interactive component composes onto the open Apache-2.0 @caisson-sh/ui base and calls into its own pure, unit-tested lib function, from AuditTimeline's verifyChain to Tooltip/Popover/Menu's shared computeFloatingPosition"
       bar="packages/ui-pro · component / pure-lib seam"
     >
       <SNode x={10} y={14} w={98} h={26} head="AuditTimeline" sub="component" />
@@ -229,14 +229,14 @@ export function UiProSheet() {
         y={116}
         w={150}
         h={26}
-        head="@caisson/ui"
+        head="@caisson-sh/ui"
         sub="Apache-2.0 base"
       />
       <text x={10} y={154} className={styles.note}>
         floating position: Tooltip, Popover, Menu
       </text>
       <text x={10} y={166} className={styles.note}>
-        redact keys re-exported from @caisson/kernel
+        redact keys re-exported from @caisson-sh/kernel
       </text>
       <TitleBlock x={188} y={168} w={140} text="UI-PRO · 1/1" />
     </Sheet>

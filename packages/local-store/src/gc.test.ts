@@ -2,7 +2,7 @@
 // GC pass (expired / decayed / over-cap). Pure + deterministic — every case pins an explicit `now`, so
 // there is no clock, randomness, or I/O (no live call anywhere). Offline and engine-neutral.
 import { describe, expect, test } from "bun:test";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   applyTtlDefault,
   contentDigest,

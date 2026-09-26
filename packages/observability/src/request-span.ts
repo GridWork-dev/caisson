@@ -39,7 +39,7 @@ export function withRequestSpan(
     // Resolved per-request (not cached at module scope): `initObservability` registers the global
     // tracer provider at boot, which can run after this module is first imported — caching the
     // tracer would freeze it to the pre-boot no-op delegate.
-    const tracer = trace.getTracer("@caisson/observability");
+    const tracer = trace.getTracer("@caisson-sh/observability");
     return tracer.startActiveSpan(
       `${req.method} ${routeLabel}`,
       async (span) => {

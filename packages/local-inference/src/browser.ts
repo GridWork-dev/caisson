@@ -1,4 +1,4 @@
-// Browser-safe inference port (`@caisson/local-inference/browser`): the framework-free contract,
+// Browser-safe inference port (`@caisson-sh/local-inference/browser`): the framework-free contract,
 // locked embedding/model coordinates, and deterministic zero-network stub. The main `.` barrel is
 // unchanged and remains the full server surface; every runtime value here is also exported there.
 //

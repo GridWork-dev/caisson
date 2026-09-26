@@ -32,7 +32,7 @@ import {
   InternalError,
   NotFoundError,
   ValidationError,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import { type FieldKeyProvider } from "./provider.ts";
 import { aesGcm } from "./cipher.ts";
 import { buildAad } from "./aad.ts";

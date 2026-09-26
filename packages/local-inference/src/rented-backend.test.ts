@@ -5,10 +5,10 @@
 // one integer + idempotent record) — without ever opening a socket. The live transport's wire runs
 // only in the gated live proof (ADR-0201); its construction gate is pinned here.
 import { describe, expect, test } from "bun:test";
-import { AuthzError, InternalError, ValidationError } from "@caisson/kernel";
-import type { UsageMetering } from "@caisson/kernel";
-import { createEgressGuard } from "@caisson/local-privacy";
-import { ZERO_EGRESS_POLICY, localOnlyPolicy } from "@caisson/local-privacy";
+import { AuthzError, InternalError, ValidationError } from "@caisson-sh/kernel";
+import type { UsageMetering } from "@caisson-sh/kernel";
+import { createEgressGuard } from "@caisson-sh/local-privacy";
+import { ZERO_EGRESS_POLICY, localOnlyPolicy } from "@caisson-sh/local-privacy";
 import { EMBEDDING_DIM } from "./backend.ts";
 import {
   RentedInferenceBackend,

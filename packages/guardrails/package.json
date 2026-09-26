@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/guardrails",
+  "name": "@caisson-sh/guardrails",
   "version": "0.5.1",
   "description": "Content-safety layer: swappable Moderator port (local | provider | custom) + TS-native PII engine (mask / hash / reversible-tokenize via field-crypto) behind a fail-closed input/output guard.",
   "license": "Apache-2.0",
@@ -27,14 +27,14 @@
     "eval": "bun test ./src/pii.eval.test.ts"
   },
   "dependencies": {
-    "@caisson/field-crypto": "workspace:*",
-    "@caisson/kernel": "workspace:*",
+    "@caisson-sh/field-crypto": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/ai-evals": "workspace:*",
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/ai-evals": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   },
   "engines": {

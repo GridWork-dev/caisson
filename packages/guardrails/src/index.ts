@@ -1,4 +1,4 @@
-// @caisson/guardrails — the gateway content-safety primitive (ADR-0063): a swappable `Moderator`
+// @caisson-sh/guardrails — the gateway content-safety primitive (ADR-0063): a swappable `Moderator`
 // port + a TS-native PII engine (mask / hash / reversible-tokenize via field-crypto) behind a
 // fail-closed input/output guard that throws `GuardrailError` 422 and emits a metadata-only
 // `guardrail.blocked` event to the kernel `EventSink`. `guard.ts` also runs an unconditional

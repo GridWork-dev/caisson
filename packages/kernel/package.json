@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/kernel",
+  "name": "@caisson-sh/kernel",
   "version": "0.10.0",
   "description": "Governance kernel: typed config loader, the CaissonError model, security primitives (constant-time compare, SSRF guard), and the standards gate.",
   "license": "Apache-2.0",
@@ -62,8 +62,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

@@ -3,7 +3,7 @@
 // depth pages. Pure data (no React): a slide is a DESCRIPTOR; the carousel maps a descriptor to a
 // node. Content preference per item, honest-artifact floor (ADR-0082 — every slide depicts SHIPPED
 // behaviour, never a fabricated screen):
-//   1. `component` — the actual @caisson/ui / @caisson/ui-pro component the item ships, rendered
+//   1. `component` — the actual @caisson-sh/ui / @caisson-sh/ui-pro component the item ships, rendered
 //      live with static sample data (server-safe/presentational only — a slide never pulls
 //      interactive state).
 //   2. `code-artifact` — the item's real depth-page artifact (lib/module-pages.ts, single-sourced),
@@ -14,7 +14,7 @@
 // Where none of those apply, the brand placeholder auto-fills slide 1 — never a fabricated
 // screenshot. All 33 catalog items resolve to real media (ADR-0290/0378) — the placeholder path stays as
 // the defensive fallback for a future catalog item not yet wired in.
-import type { IconName } from "@caisson/ui/components";
+import type { IconName } from "@caisson-sh/ui/components";
 
 import { BUNDLE_MARKS, moduleMark } from "./marks";
 import { MODULE_PAGES } from "./module-pages";
@@ -104,13 +104,13 @@ export type DiagramKey =
 
 /** The live-rendered kit components wired into a media slide (ADR-0308 full-depth, extending
  *  ADR-0290). A catalog module earns a `component` slide only when it genuinely ships a showable
- *  `@caisson/ui`-rendered surface (the honest floor, ADR-0082 — every slide depicts SHIPPED
+ *  `@caisson-sh/ui`-rendered surface (the honest floor, ADR-0082 — every slide depicts SHIPPED
  *  behaviour, and the source is nameable):
- *    - `ui-pro` — the product IS a set of UI components (`@caisson/ui-pro`).
+ *    - `ui-pro` — the product IS a set of UI components (`@caisson-sh/ui-pro`).
  *    - `audit-worm` · `ai-meter` · `prompt-registry` · `local-store` — each ships its OWN embeddable
- *      `@caisson/<mod>/ui` surface (ADR-0250 G2c/G2d): ChainViewer · UsageChart · PromptBrowser ·
+ *      `@caisson-sh/<mod>/ui` surface (ADR-0250 G2c/G2d): ChainViewer · UsageChart · PromptBrowser ·
  *      StoreSearch, presentational + headless-data-in.
- *    - `credits` — the real buyer-dashboard ledger surface (`@caisson/ui` LedgerList/MetricStat,
+ *    - `credits` — the real buyer-dashboard ledger surface (`@caisson-sh/ui` LedgerList/MetricStat,
  *      apps/site/app/dashboard/credits): what the buyer sees when they hold credits.
  *  Every other catalog module is a backend/library package with no showable UI of its own and
  *  legitimately stays diagram(+code-artifact)-only. */

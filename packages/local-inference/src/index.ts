@@ -42,4 +42,4 @@ export {
   type PrivacyPolicy,
   type PrivacyMode,
   type SanctionedSinkKind,
-} from "@caisson/local-privacy";
+} from "@caisson-sh/local-privacy";

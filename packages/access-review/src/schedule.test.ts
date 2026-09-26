@@ -1,9 +1,9 @@
-// src/schedule.test.ts — campaign task wiring on `@caisson/jobs` (ADR-0371). Full open/close
+// src/schedule.test.ts — campaign task wiring on `@caisson-sh/jobs` (ADR-0371). Full open/close
 // execution against a real tenant DB + chain is proven in campaign.integration.test.ts; this file
 // pins the queue-facing contract only — task names + the overlap-safe singleton keys, the same
-// scope @caisson/retention-runner's schedule.test.ts pins for its own sweep task.
+// scope @caisson-sh/retention-runner's schedule.test.ts pins for its own sweep task.
 import { describe, expect, test } from "bun:test";
-import type { EnqueueOptions, JobQueue } from "@caisson/jobs";
+import type { EnqueueOptions, JobQueue } from "@caisson-sh/jobs";
 import type { CampaignDeps } from "./campaign.ts";
 import {
   CAMPAIGN_CLOSE_TASK,

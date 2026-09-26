@@ -3,7 +3,7 @@ title: Tenancy (RLS)
 description: Fail-closed multi-tenant Postgres RLS. A query with no tenant context returns nothing.
 ---
 
-`@caisson/tenancy-rls` is the fail-closed multi-tenant layer. Every tenant table runs Postgres
+`@caisson-sh/tenancy-rls` is the fail-closed multi-tenant layer. Every tenant table runs Postgres
 row-level security with `FORCE`, and `withTenant` is the **sole** entry point that sets the tenant
 context. A query that reaches the database with no context set returns nothing, never another
 tenant's rows.
@@ -34,7 +34,7 @@ DETAIL: RLS policy "tenant_isolation" forbids SELECT
 that reads tenant data without it:
 
 ```ts
-import { withTenant } from "@caisson/tenancy-rls";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 
 await withTenant(tenantId, async (db) => {
   // Inside this scope RLS is enforced. Outside it, queries fail closed.

@@ -17,7 +17,7 @@
 // per-run UUID segment so re-runs never collide with a still-locked WORM key from a prior proof.
 import { describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import { ArtifactExistsError, buildArtifactKey } from "../src/store.ts";
 import {
   GcsArtifactStore,

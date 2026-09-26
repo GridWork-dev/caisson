@@ -1,17 +1,17 @@
 // src/evidence/oscal-catalog-export.test.ts — OSCAL catalog-model export (SPEC oscal-spine (a)).
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
+import { matchGolden } from "@caisson-sh/testing";
 import {
   OSCAL_VERSION,
   toOscalCatalog,
   type OscalCatalogExportOptions,
-} from "@caisson/oscal-spine";
+} from "@caisson-sh/oscal-spine";
 import {
   euAiAct,
   hipaaSecurity,
   soc2Tsc,
   type Framework,
-} from "@caisson/frameworks-pack";
+} from "@caisson-sh/frameworks-pack";
 
 // The exporter and golden belong to oscal-spine; the framework data comes from this parent package.
 const PKG_SRC_META = new URL("../../oscal-spine/src/index.ts", import.meta.url)

@@ -217,7 +217,7 @@ details: { required: <int>, balance: <int> } } }`; clients branch on the `code`.
   HTTP status, and a redaction-safe envelope - never a raw `Error`, stack, or SQL string.
 - **Threat:** a leaked stack/SQL string reaches the client; a tenancy denial returns 403 and
   confirms cross-tenant existence; per-package ad-hoc shapes break client branching.
-- **Mitigation:** one hierarchy in `@caisson/kernel`. `toErrorResponse(err)` ->
+- **Mitigation:** one hierarchy in `@caisson-sh/kernel`. `toErrorResponse(err)` ->
   `{ error: { code, message, details? } }`; `details` is **allowlisted per class** (no SQL, no
   stack, no secret); an unknown throw is coerced to `InternalError` (500, generic message; the
   original is logged server-side, never serialized). Load-bearing rows:

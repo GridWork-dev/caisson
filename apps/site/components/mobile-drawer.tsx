@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSearchContext } from "fumadocs-ui/contexts/search";
 
-import { Dialog, ThemeToggle } from "@caisson/ui/components";
+import { Dialog, ThemeToggle } from "@caisson-sh/ui/components";
 import { Icon, type IconName } from "@/components";
 
 import { trackEvent } from "@/lib/analytics";

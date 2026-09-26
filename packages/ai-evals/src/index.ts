@@ -1,4 +1,4 @@
-// @caisson/ai-evals — eval harness + grader taxonomy + regression-vs-committed-baseline gate
+// @caisson-sh/ai-evals — eval harness + grader taxonomy + regression-vs-committed-baseline gate
 // (ADR-0062). A base primitive: the AI Production Kit gates prompt/agent quality through it. Offline
 // + deterministic by construction (cassette-replayed model graders, no provider call, no secret); a
 // live judge is injected locally only. Never imports an edition (down-only, ADR-0003).
@@ -83,7 +83,7 @@ export type { ExitClass, ExitSignal } from "./exit-classifier.ts";
 // Wilson-CI (ADR-0214) — closed-form confidence-interval statistic, threaded opt-in into the gate.
 export { wilsonLowerBound } from "./wilson.ts";
 
-// Budget-isolated eval-spend ledger (ADR-0214) — never touches @caisson/ai-meter or Postgres.
+// Budget-isolated eval-spend ledger (ADR-0214) — never touches @caisson-sh/ai-meter or Postgres.
 export {
   evalSpendEntrySchema,
   InMemoryEvalLedgerSink,
@@ -118,7 +118,7 @@ export {
 } from "./agreement.ts";
 export type { StabilityResult } from "./agreement.ts";
 
-// Trajectory graders (ADR-0360 U-7) — the one accepted new dependency, on @caisson/agent-trajectory
+// Trajectory graders (ADR-0360 U-7) — the one accepted new dependency, on @caisson-sh/agent-trajectory
 // (primitive->primitive). Deterministic: tool-choice vs allowlist, unnecessary-call detection,
 // approval compliance, and budget adherence, over the agent-runtime bounded loop's own event log.
 export {

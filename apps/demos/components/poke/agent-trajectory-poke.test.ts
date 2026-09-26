@@ -1,5 +1,5 @@
 // The agent-trajectory poke's checkable claims, now that it drives the REAL package through
-// `@caisson/agent-trajectory/browser` (ADR-0396) and the hand-ported mirror
+// `@caisson-sh/agent-trajectory/browser` (ADR-0396) and the hand-ported mirror
 // (agent-trajectory-logic.ts) is deleted:
 //
 //   1. The poke's client graph is browser-safe — proven by a STATIC SOURCE-GRAPH WALK, never by a
@@ -19,14 +19,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { ValidationError } from "@caisson/kernel";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   createMemoryTrajectoryStore,
   EVENT_KINDS,
   project,
   TrajectoryEvent,
-} from "@caisson/agent-trajectory/browser";
+} from "@caisson-sh/agent-trajectory/browser";
 
 import {
   breakInvariant,
@@ -68,7 +68,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
 
   test("the walk really crossed into the package, past the first hop", () => {
     // Guard the guard: `files.length` alone proves nothing. These files are reachable ONLY through
-    // @caisson/agent-trajectory's own imports — the browser entry, then a second hop into the fold
+    // @caisson-sh/agent-trajectory's own imports — the browser entry, then a second hop into the fold
     // and a cross-package hop into kernel — so a resolver gone blind inside a workspace package
     // fails here rather than greening vacuously.
     expect(walk.files).toContain("packages/agent-trajectory/src/browser.ts");
@@ -105,8 +105,8 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
 
   test("the poke imports the browser subpath in source, never the barrel", () => {
     const src = readFileSync(POKE_ENTRY, "utf8");
-    expect(src).toMatch(/from "@caisson\/agent-trajectory\/browser";$/m);
-    expect(src).not.toMatch(/from "@caisson\/agent-trajectory";$/m);
+    expect(src).toMatch(/from "@caisson-sh\/agent-trajectory\/browser";$/m);
+    expect(src).not.toMatch(/from "@caisson-sh\/agent-trajectory";$/m);
   });
 });
 

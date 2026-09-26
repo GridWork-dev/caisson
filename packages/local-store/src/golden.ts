@@ -1,9 +1,9 @@
 // Module golden suite (ADR-0021 §golden / ADR-0013 golden-first). Declares the DETERMINISTIC output
-// @caisson/local-store pins: the fused RRF ranking for a FIXED (vectors, FTS docs, query) input
+// @caisson-sh/local-store pins: the fused RRF ranking for a FIXED (vectors, FTS docs, query) input
 // (RRF_K=60). The fixture lives in `src/__golden__` (the manifest `golden` dir) and is re-blessed via
 // `BLESS=1` only when the output legitimately changes. Golden-first: the fixture is authored, and its
 // assertions land, before the retrieval logic that turns them green.
-import { defineModuleGolden } from "@caisson/testing/golden-module";
+import { defineModuleGolden } from "@caisson-sh/testing/golden-module";
 import { scrubForEgress } from "./embed-scrub-guard.ts";
 import { LocalStore } from "./store.ts";
 import type { HybridSearchOptions, StoreDoc } from "./store.ts";
@@ -132,7 +132,7 @@ const SCRUB_FIXTURE: ScrubFixture = {
 };
 
 export const localStoreGolden = defineModuleGolden({
-  module: "@caisson/local-store",
+  module: "@caisson-sh/local-store",
   goldenDir: "src/__golden__",
   cases: [
     {

@@ -7,13 +7,13 @@
 // token; hashing it into the signed body would break the generator's byte-stability (ADR-0058, the
 // same reason the signature and `generatedAt` sit on the envelope, not in the body).
 //
-// Kept dependency-free of @caisson/audit-worm (compliance-core does not depend on it): only the two
+// Kept dependency-free of @caisson-sh/audit-worm (compliance-core does not depend on it): only the two
 // grade literals are load-bearing here; the receipt is embedded verbatim as evidence, already
 // validated by audit-worm on the WORM write.
 import { z } from "zod";
-import { canonicalize, parseStrict, type JsonValue } from "@caisson/kernel";
+import { canonicalize, parseStrict, type JsonValue } from "@caisson-sh/kernel";
 
-/** The two honestly-distinct trust grades (mirrors @caisson/audit-worm's `AnchorGrade`). */
+/** The two honestly-distinct trust grades (mirrors @caisson-sh/audit-worm's `AnchorGrade`). */
 export const anchorGradeSchema = z.enum([
   "trusted-timestamped",
   "externally-transparent",

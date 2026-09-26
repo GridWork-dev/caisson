@@ -1,4 +1,4 @@
-// The risk-register poke's checkable claims, now that it drives the REAL @caisson/risk-register
+// The risk-register poke's checkable claims, now that it drives the REAL @caisson-sh/risk-register
 // and the hand-ported mirror (risk-register-logic.ts) is deleted:
 //
 //   1. The poke's client graph is browser-safe — proven by a STATIC SOURCE-GRAPH WALK, never by a
@@ -17,15 +17,15 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { InternalError, ValidationError } from "@caisson/kernel";
-import type { AuditChainStore } from "@caisson/audit-worm";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { InternalError, ValidationError } from "@caisson-sh/kernel";
+import type { AuditChainStore } from "@caisson-sh/audit-worm";
 import {
   buildRiskTreatmentPlan,
   computeResidual,
   defineRiskEntry,
   recordResidualOverride,
-} from "@caisson/risk-register";
+} from "@caisson-sh/risk-register";
 
 import {
   IMPACTS,
@@ -81,7 +81,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
   test("the walk really crossed into the package, past the first hop", () => {
     // Guard the guard: the UI kit alone contributes ~40 files, so files.length can never prove
     // the risk-register edges resolved. These files are reachable ONLY through
-    // @caisson/risk-register's own imports — first hop, then two second hops (one per
+    // @caisson-sh/risk-register's own imports — first hop, then two second hops (one per
     // cross-package seam), so a resolver that went blind inside a workspace package fails here.
     expect(walk.files.length).toBeGreaterThan(20);
     expect(walk.files).toContain(
@@ -117,10 +117,10 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
     // deliberately reports as a value edge — is affirmatively absent.
     const src = readFileSync(POKE_ENTRY, "utf8");
     expect(src).toMatch(
-      /^import type \{[^}]*\} from "@caisson\/audit-worm";$/m,
+      /^import type \{[^}]*\} from "@caisson-sh\/audit-worm";$/m,
     );
     expect(src).not.toMatch(
-      /^import \{[^}]*\btype\b[^}]*\} from "@caisson\/audit-worm";$/m,
+      /^import \{[^}]*\btype\b[^}]*\} from "@caisson-sh\/audit-worm";$/m,
     );
   });
 });

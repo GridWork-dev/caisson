@@ -1,4 +1,4 @@
-import { renderIntoJsdom } from "@caisson/testing";
+import { renderIntoJsdom } from "@caisson-sh/testing";
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 

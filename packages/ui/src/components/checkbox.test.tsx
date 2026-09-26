@@ -1,4 +1,4 @@
-import { expectNoA11yViolations } from "@caisson/testing";
+import { expectNoA11yViolations } from "@caisson-sh/testing";
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
 

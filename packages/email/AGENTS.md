@@ -1,4 +1,4 @@
-# @caisson/email — agent usage note
+# @caisson-sh/email — agent usage note
 
 Provides the transactional email port: a provider-agnostic `Emailer` interface with a capture
 driver for tests and production drivers for Resend, Postmark, SMTP, and SES (ADR-0018/ADR-0170).

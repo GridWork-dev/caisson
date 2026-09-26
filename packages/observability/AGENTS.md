@@ -1,4 +1,4 @@
-# @caisson/observability — agent usage note
+# @caisson-sh/observability — agent usage note
 
 Vendor-neutral OpenTelemetry bootstrap for a service's Node surfaces. The instrumentation is
 the asset; the backend is a config swap behind `OTEL_EXPORTER_OTLP_ENDPOINT` — any
@@ -22,7 +22,7 @@ OTLP-compatible sink works.
 - Span attributes are scrubbed on a conservative deny-list (secrets, `Authorization`, cookies,
   tokens, `*-key` headers, and a small PII key set) before they ever leave the process —
   `scrubAttributes` / `isSensitiveAttributeKey` (the raw `SENSITIVE_ATTRIBUTE_KEY` regex is deprecated for direct use) / the `ScrubbingSpanProcessor` decorator in
-  `src/scrub.ts`. An exact OTel semconv attribute name (read from `@opentelemetry/semantic-conventions/incubating`, never hand-copied) skips the credential terms only — `gen_ai.usage.*_tokens`, `session.id` survive; `user.email` / `user.full_name` still redact. This is independent of, and narrower-scoped than, `@caisson/kernel`'s
+  `src/scrub.ts`. An exact OTel semconv attribute name (read from `@opentelemetry/semantic-conventions/incubating`, never hand-copied) skips the credential terms only — `gen_ai.usage.*_tokens`, `session.id` survive; `user.email` / `user.full_name` still redact. This is independent of, and narrower-scoped than, `@caisson-sh/kernel`'s
   `redactEvent` (that one redacts the operational-telemetry `OpsEvent` envelope; this one redacts
   OTel span attributes — two different telemetry paths that never share a write path).
 

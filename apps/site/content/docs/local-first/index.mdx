@@ -47,7 +47,7 @@ Postgres column: a per-tenant derived key, never a shared one.
 
 ## Composing with the base
 
-The tenant boundary is the same one `@caisson/tenancy-rls` enforces server-side: each local SQLite
+The tenant boundary is the same one `@caisson-sh/tenancy-rls` enforces server-side: each local SQLite
 file is scoped to one tenant, so a sync merge or a vector search never crosses into another
 tenant's data even without a network round-trip to check.
 

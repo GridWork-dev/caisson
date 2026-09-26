@@ -3,7 +3,7 @@
 // The agent-kernel module's flagship "poke" (ADR-0378 lock 2, kimi spec: "agent-kernel: click
 // transitions across ACTS, canTransition verdicts, a failed VERIFY reopens PLAN, an illegal skip
 // throws"). A deterministic in-browser replay of the REAL lifecycle act FSM: `ACTS`,
-// `canTransition`, `isTerminal`, and `transition` all come from `@caisson/agent-kernel/browser`,
+// `canTransition`, `isTerminal`, and `transition` all come from `@caisson-sh/agent-kernel/browser`,
 // the package's browser-safe entry (ADR-0396), and an illegal click surfaces the package's own
 // `ValidationError`. The hand-ported mirror this poke used to drive is deleted.
 //
@@ -11,7 +11,7 @@
 // taken) — presentation state the package has no opinion about. No transition rule is restated
 // here. Nothing fetches, persists, or measures the visitor.
 import { useCallback, useState } from "react";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   ACTS,
   canTransition,
@@ -19,7 +19,7 @@ import {
   transition,
   type Act,
   type LifecycleStep,
-} from "@caisson/agent-kernel/browser";
+} from "@caisson-sh/agent-kernel/browser";
 
 import { PokeShell, Verdict, type VerdictState } from "./poke-rig";
 import styles from "./agent-kernel-poke.module.css";
@@ -95,7 +95,7 @@ export default function AgentKernelPoke() {
 
   return (
     <PokeShell
-      label="@caisson/agent-kernel · lifecycle act FSM"
+      label="@caisson-sh/agent-kernel · lifecycle act FSM"
       title="Skip an act. Watch the typed error, not a silent skip."
     >
       <ol className={styles.stepper}>

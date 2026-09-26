@@ -1,4 +1,4 @@
-# @caisson/ai-config
+# @caisson-sh/ai-config
 
 Provider-agnostic AI config resolver: parses an app's `forge.config` settings file and
 resolves a named lane (OpenAI, Anthropic, Google, OpenRouter, local, AWS Bedrock, Azure
@@ -12,7 +12,7 @@ BYOK, defers to encrypted per-tenant storage).
 ## Usage
 
 ```ts
-import { parseAiSettings, resolveProvider } from "@caisson/ai-config";
+import { parseAiSettings, resolveProvider } from "@caisson-sh/ai-config";
 
 const settings = parseAiSettings(rawConfig); // rejects unknown keys
 const lane = resolveProvider(settings); // resolves settings.defaultLane

@@ -5,11 +5,11 @@
 // into the canonical body.
 import { describe, expect, test } from "bun:test";
 import { inflateRawSync } from "node:zlib";
-import { canonicalize } from "@caisson/kernel";
+import { canonicalize } from "@caisson-sh/kernel";
 import {
   computeIso27001SoaRows,
   iso27001Crosswalk,
-} from "@caisson/frameworks-pack";
+} from "@caisson-sh/frameworks-pack";
 import { passResult } from "./collector.ts";
 import {
   generateEvidencePack,
@@ -19,7 +19,7 @@ import {
   buildIso27001SoaArchiveEntry,
   ISO27001_SOA_ARCHIVE_ENTRY,
   toOscalIso27001Soa,
-} from "@caisson/oscal-spine";
+} from "@caisson-sh/oscal-spine";
 
 function baseInput(): GenerateEvidencePackInput {
   return {

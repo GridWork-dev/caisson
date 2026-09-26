@@ -48,7 +48,7 @@ export interface AppShellProps {
    *  viewport. Typically the same or a subset of what `topBar` already renders. */
   mobileNavFooter?: ReactNode;
   /** Brand slot rendered top-left. Optional and brand-neutral — the kit ships no default mark;
-   *  the consumer passes its own (e.g. `<Wordmark />` from `@caisson/brand`). */
+   *  the consumer passes its own (e.g. `<Wordmark />` from `@caisson-sh/brand`). */
   brand?: ReactNode;
   /** Main content region. */
   children: ReactNode;

@@ -1,11 +1,14 @@
 // Trajectory observation (PLAN T3). Map a completed run's stream-json transcript into the append-only
-// `@caisson/agent-trajectory` contract: `run.started` → per-turn `step.started`/`step.finished`
+// `@caisson-sh/agent-trajectory` contract: `run.started` → per-turn `step.started`/`step.finished`
 // (tool calls → `tool.proposed` + `tool.result`, bodies carried ONLY as sha256 digest refs, never raw
 // per AR-4) → `run.finished` → a final `model.usage` with `billingStatus: "unsupported"` (the runner
 // has NO validated usage contract, so it makes no token claims). Pure + deterministic given the
 // transcript; recording is opt-in — absent a recorder the runner behaves byte-identically to today.
 import { createHash } from "node:crypto";
-import { TrajectoryEvent, TRAJECTORY_VERSION } from "@caisson/agent-trajectory";
+import {
+  TrajectoryEvent,
+  TRAJECTORY_VERSION,
+} from "@caisson-sh/agent-trajectory";
 
 /** The subset of run metadata the trajectory mapping reads (structurally satisfied by `RunMeta`). */
 export interface RecordableRun {

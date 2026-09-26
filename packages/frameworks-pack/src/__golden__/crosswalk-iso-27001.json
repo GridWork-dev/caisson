@@ -16,7 +16,7 @@
       "claim": "maps-to",
       "control": "A.5.15",
       "summary": "Logical and physical access to information and other associated assets is governed by rules derived from business and security requirements.",
-      "mechanism": "@caisson/tenancy-rls — Postgres FORCE ROW LEVEL SECURITY with a fail-closed tenant boundary (a missing tenant scope denies as a 404, never widens access).",
+      "mechanism": "@caisson-sh/tenancy-rls — Postgres FORCE ROW LEVEL SECURITY with a fail-closed tenant boundary (a missing tenant scope denies as a 404, never widens access).",
       "evidence": "Tenant-isolation tests and the RLS provisioning generator in packages/tenancy-rls.",
       "buyerResponsibility": "Your identity provider and user-authentication configuration, the authorization/least-privilege model above the data layer, and periodic access recertification.",
       "canonicalControlId": "ACCESS-CONTROL.LOGICAL"
@@ -25,7 +25,7 @@
       "claim": "maps-to",
       "control": "A.8.24",
       "summary": "The use of cryptography to protect information is governed by defined rules, including key management practices.",
-      "mechanism": "@caisson/field-crypto — per-field AEAD encryption at rest with row-bound additional authenticated data, plus a self-describing, rotatable key envelope.",
+      "mechanism": "@caisson-sh/field-crypto — per-field AEAD encryption at rest with row-bound additional authenticated data, plus a self-describing, rotatable key envelope.",
       "evidence": "Encryption and key-envelope tests in packages/field-crypto.",
       "buyerResponsibility": "Selecting which fields hold sensitive information, your key-custody and rotation policy, and encryption in transit at your own network boundary.",
       "canonicalControlId": "DATA-PROTECTION.ENCRYPTION"
@@ -34,7 +34,7 @@
       "claim": "maps-to",
       "control": "A.8.10",
       "summary": "Information held in systems, devices, or storage media is deleted once it is no longer required, so it cannot be recovered.",
-      "mechanism": "@caisson/field-crypto — crypto-shred renders a subject's ciphertext irreversibly unrecoverable by destroying its governing key, selectively (other subjects still decrypt) and irreversibly (a shredded scope cannot be re-provisioned).",
+      "mechanism": "@caisson-sh/field-crypto — crypto-shred renders a subject's ciphertext irreversibly unrecoverable by destroying its governing key, selectively (other subjects still decrypt) and irreversibly (a shredded scope cannot be re-provisioned).",
       "evidence": "The crypto-shred tests prove disposal is selective, irreversible, and leaves the committed-ciphertext audit chain verifiable.",
       "buyerResponsibility": "Defining the retention schedule that triggers disposal, and identifying which records reach end of life (the retention-runner schedules the sweep).",
       "canonicalControlId": "DATA-PROTECTION.DISPOSAL"
@@ -43,7 +43,7 @@
       "claim": "maps-to",
       "control": "A.8.15",
       "summary": "Activity logs are produced, retained, and protected from unauthorized access or alteration so that events remain reviewable.",
-      "mechanism": "@caisson/audit-worm — an append-only, hash-chained log verifiable against a trusted anchor, so tampering, truncation, or rewriting after the fact is detectable.",
+      "mechanism": "@caisson-sh/audit-worm — an append-only, hash-chained log verifiable against a trusted anchor, so tampering, truncation, or rewriting after the fact is detectable.",
       "evidence": "The tamper-evidence integration tests in packages/audit-worm.",
       "buyerResponsibility": "Deciding which application events are written to the log and your own log-review process; a write-once backing store for production is your deployment choice.",
       "canonicalControlId": "AUDIT.IMMUTABLE-LOG"
@@ -52,7 +52,7 @@
       "claim": "maps-to",
       "control": "A.8.16",
       "summary": "Systems are monitored for anomalous behavior so that potential security events are identified and can be acted on.",
-      "mechanism": "@caisson/alerting — a rule-driven alerting pipeline that raises signals on defined conditions, drawing on the audit-worm chain and substrate collector facts.",
+      "mechanism": "@caisson-sh/alerting — a rule-driven alerting pipeline that raises signals on defined conditions, drawing on the audit-worm chain and substrate collector facts.",
       "evidence": "Alerting pipeline and channel tests in packages/alerting.",
       "buyerResponsibility": "Deciding what to monitor, defining alert thresholds and routing, and acting on the alerts raised.",
       "canonicalControlId": "SYSTEM-OPERATIONS.DETECTION"
@@ -61,7 +61,7 @@
       "claim": "maps-to",
       "control": "A.8.5",
       "summary": "Access is granted only after a secure authentication procedure verifies the identity of the person or entity requesting it.",
-      "mechanism": "@caisson/auth — session and JWT verification gating requests at the application boundary before any protected resource is reached.",
+      "mechanism": "@caisson-sh/auth — session and JWT verification gating requests at the application boundary before any protected resource is reached.",
       "evidence": "JWT/session verification tests in packages/auth.",
       "buyerResponsibility": "Multi-factor authentication policy, credential lifecycle, and any federation with your own identity provider.",
       "canonicalControlId": "AUTHENTICATION.ENTITY"
@@ -70,7 +70,7 @@
       "claim": "maps-to",
       "control": "A.5.37",
       "summary": "Operating procedures and records for information-security-relevant processes are documented, retained, and made available to those who need them.",
-      "mechanism": "@caisson/audit-worm — a fail-closed retention floor rejects a retention term configured below the minimum, so operating records and documentation are not disposed of early.",
+      "mechanism": "@caisson-sh/audit-worm — a fail-closed retention floor rejects a retention term configured below the minimum, so operating records and documentation are not disposed of early.",
       "evidence": "Retention-floor tests in packages/audit-worm.",
       "buyerResponsibility": "Authoring and maintaining the operating procedures themselves; Caisson enforces that your configured retention floor cannot be silently shortened, not that any particular procedure exists.",
       "canonicalControlId": "GOVERNANCE.DOCUMENTATION"

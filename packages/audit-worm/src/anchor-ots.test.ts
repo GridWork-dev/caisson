@@ -4,7 +4,7 @@
 // the opt-in guard holds. No network.
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   anchorSubmitReceiptSchema,
   irreversiblePublicityOptIn,

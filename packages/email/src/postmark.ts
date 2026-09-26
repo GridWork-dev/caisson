@@ -2,7 +2,7 @@
 // (ADR-0002), same shape as the Resend driver: the server token is injected config, never a
 // module-level constant, and a non-ok response never echoes the response body (it can carry
 // recipient / token fragments).
-import { fetchWithTimeout, InternalError } from "@caisson/kernel";
+import { fetchWithTimeout, InternalError } from "@caisson-sh/kernel";
 import type { Emailer, EmailMessage } from "./email.ts";
 import { tryRenderEmailTemplate } from "./templates/index.ts";
 

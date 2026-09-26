@@ -25,7 +25,7 @@ const okComponent: Component = {
 
 const validManifest: ComponentManifest = {
   schemaVersion: 1,
-  generatedFor: { pkg: "@caisson/ui", version: "0.6.0" },
+  generatedFor: { pkg: "@caisson-sh/ui", version: "0.6.0" },
   components: [okComponent],
 };
 

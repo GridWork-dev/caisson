@@ -14,7 +14,7 @@
 // NO TRANSPORT, NO FILE WRITE (ADR-0047 seam ethos): the assembler RETURNS the relative-path→bytes map a
 // caller writes to disk / archives to the WORM store (`audit-worm/store.s3.ts`); it never touches a network.
 import { createHash } from "node:crypto";
-import { canonicalize, type JsonValue } from "@caisson/kernel";
+import { canonicalize, type JsonValue } from "@caisson-sh/kernel";
 import {
   toOscalAssessmentPlan,
   toOscalAssessmentResults,
@@ -24,13 +24,13 @@ import {
   type OscalAssessmentResultsDocument,
   type OscalExportOptions,
   type OscalPlanOfActionAndMilestonesDocument,
-} from "@caisson/compliance-core";
+} from "@caisson-sh/compliance-core";
 import {
   signEvidencePack,
   type EvidenceSignature,
   type SignEvidencePackOptions,
   type Signer,
-} from "@caisson/signing-primitive";
+} from "@caisson-sh/signing-primitive";
 
 /** Fixed bundle layout (ADR-0231, sibling-directory sub-fork) — relative to the bundle root. */
 const SAR_PATH = "./sar.json" as const;

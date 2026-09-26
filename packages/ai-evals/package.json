@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/ai-evals",
+  "name": "@caisson-sh/ai-evals",
   "version": "0.5.2",
   "description": "Eval harness (defineEval) + grader taxonomy (exact / regex / json-shape / schema / model-graded + a fail-closed injection class) + a regression-vs-committed-baseline gate. Offline + deterministic (cassette-replayed judge).",
   "license": "Apache-2.0",
@@ -27,12 +27,12 @@
     "eval": "bun run ./src/eval.cli.ts"
   },
   "dependencies": {
-    "@caisson/agent-trajectory": "workspace:*",
+    "@caisson-sh/agent-trajectory": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

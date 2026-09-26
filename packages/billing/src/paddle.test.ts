@@ -1,10 +1,10 @@
 // Paddle webhook signature verification (ADR-0108) — the open verify-only half of the billing seam
 // (carve ADR-0249 G3). Paddle->domain event mapping + the driver + createCheckout are covered in the
-// commercial @caisson/billing-orchestration (src/paddle.test.ts). Synthetic secrets only — live Paddle
+// commercial @caisson-sh/billing-orchestration (src/paddle.test.ts). Synthetic secrets only — live Paddle
 // creds + a live webhook smoke-test are operator/DEPLOY-class, out of scope here.
 import { createHmac } from "node:crypto";
 import { describe, expect, test } from "bun:test";
-import { AuthnError } from "@caisson/kernel";
+import { AuthnError } from "@caisson-sh/kernel";
 import { verifyPaddleWebhook } from "./index.ts";
 
 const SECRET = "pdl_ntfset_test_secret";

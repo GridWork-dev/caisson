@@ -7,7 +7,7 @@
 import { Database } from "bun:sqlite";
 import { existsSync } from "node:fs";
 import * as sqliteVec from "sqlite-vec";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import { fuseByRrf } from "./rrf.ts";
 
 /**

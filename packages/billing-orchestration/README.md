@@ -1,8 +1,8 @@
-# @caisson/billing-orchestration
+# @caisson-sh/billing-orchestration
 
 Billing orchestration for your app (ADR-0249 G3): the checkout drivers, the provider→`DomainBillingEvent`
 parsers, and the dual-layer webhook idempotency. Raw-body HMAC signature verification, the
-`BillingProvider` port, and the `DomainBillingEvent` contract live in `@caisson/billing`.
+`BillingProvider` port, and the `DomainBillingEvent` contract live in `@caisson-sh/billing`.
 
 - **Layer:** base
 - **License:** Apache-2.0
@@ -15,16 +15,16 @@ side-effects).
 
 ## Entry points
 
-- `@caisson/billing-orchestration` — the full node-capable surface, unchanged.
-- `@caisson/billing-orchestration/browser` — browser-safe (ADR-0396): the pure claim-key half,
+- `@caisson-sh/billing-orchestration` — the full node-capable surface, unchanged.
+- `@caisson-sh/billing-orchestration/browser` — browser-safe (ADR-0396): the pure claim-key half,
   `assertValidSourceEventId` + `sideEffectEventKey`. Every name on it is also on the main entry (the
   subset direction is one-way). The claim itself stays server-only: it is an `INSERT … ON CONFLICT`
   against a `TenantExecutor` inside your tenant transaction.
 
 ## Boundary
 
-`@caisson/billing` owns signature verification (`verifyStripeWebhook`,
+`@caisson-sh/billing` owns signature verification (`verifyStripeWebhook`,
 `verifyPaddleWebhook`, `verifyLemonSqueezyWebhook`, `verifyPolarWebhook`) plus the port + config types +
 the `DomainBillingEvent` schema. This package composes those primitives into the full
-verify→parse→checkout→idempotency orchestration. Depends DOWN-ONLY on `@caisson/billing`,
-`@caisson/kernel`, `@caisson/tenancy-rls` (ADR-0003).
+verify→parse→checkout→idempotency orchestration. Depends DOWN-ONLY on `@caisson-sh/billing`,
+`@caisson-sh/kernel`, `@caisson-sh/tenancy-rls` (ADR-0003).

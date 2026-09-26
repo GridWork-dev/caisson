@@ -2,7 +2,7 @@
 // serve. Asserts against loadBaseManifest() directly (the manifest IS the golden — a separate
 // snapshot would just drift when the generator replaces the fixture).
 import { describe, expect, test } from "bun:test";
-import { loadBaseManifest } from "@caisson/ds-manifest";
+import { loadBaseManifest } from "@caisson-sh/ds-manifest";
 import { describeCommand } from "./describe.ts";
 
 const manifest = loadBaseManifest();

@@ -1,4 +1,4 @@
-import type { IconName } from "@caisson/ui/components";
+import type { IconName } from "@caisson-sh/ui/components";
 
 import { Icon } from "@/components";
 import { requireBundlePage } from "@/lib/bundle-pages";

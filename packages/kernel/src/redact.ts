@@ -3,7 +3,7 @@
 // fields BEFORE the payload crosses the wire (H3), never leaving the original for a client to read
 // out of the network response, the copied receipt, or the exported pack. It imports no node builtin,
 // so the browser PayloadViewer (which re-exports from here) and the server proof assembler can name
-// the same redaction semantics. `apps/admin` deps @caisson/kernel but not @caisson/ui-pro, so
+// the same redaction semantics. `apps/admin` deps @caisson-sh/kernel but not @caisson-sh/ui-pro, so
 // the kernel home keeps the endpoint's redaction dependency-clean and aligns with the open-core split.
 import { scrubForEgress } from "./secret-scrub.ts";
 

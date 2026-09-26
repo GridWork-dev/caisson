@@ -1,4 +1,4 @@
-# AGENTS — @caisson/guardrails
+# AGENTS — @caisson-sh/guardrails
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or the AI
 Production Kit gateway must know to enforce content safety correctly (ADR-0063).
@@ -51,6 +51,6 @@ the `tenantId` + `EventSink` (plus injectable `now`/`newId` for deterministic te
 
 ## Out of scope
 
-No provider-SDK import (the gateway `@caisson/ai-kit` owns that boundary, ADR-0011/0059). No live
+No provider-SDK import (the gateway `@caisson-sh/ai-kit` owns that boundary, ADR-0011/0059). No live
 moderation/model/network call — the moderator transport is a port, test-doubled in CI. Presidio/NER
 and a managed moderation backend stay deferred behind these ports (optional add-ons, ADR-0063).

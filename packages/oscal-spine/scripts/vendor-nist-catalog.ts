@@ -25,7 +25,7 @@ import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { fetchWithTimeout } from "@caisson/kernel";
+import { fetchWithTimeout } from "@caisson-sh/kernel";
 import {
   extractControlIds,
   nist80053Crosswalk,

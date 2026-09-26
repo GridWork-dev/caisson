@@ -8,7 +8,7 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 
 const req = createRequire(import.meta.url);
-const policy = req("@caisson/lint-policy/boundary-policy.cjs") as {
+const policy = req("@caisson-sh/lint-policy/boundary-policy.cjs") as {
   PROVIDER_SDKS: readonly string[];
   PROVIDER_SDK_RE: string;
   BUNDLE_META_DIRS: readonly string[];
@@ -16,7 +16,7 @@ const policy = req("@caisson/lint-policy/boundary-policy.cjs") as {
 const REPO_ROOT = join(import.meta.dir, "../../..");
 
 describe("boundary-policy parity (C24)", () => {
-  test("every policy dir exists on disk as packages/<dir> with the matching @caisson name", () => {
+  test("every policy dir exists on disk as packages/<dir> with the matching @caisson-sh name", () => {
     expect(policy.BUNDLE_META_DIRS.length).toBeGreaterThan(0);
     for (const dir of policy.BUNDLE_META_DIRS) {
       const manifestPath = join(REPO_ROOT, "packages", dir, "package.json");
@@ -24,7 +24,7 @@ describe("boundary-policy parity (C24)", () => {
       const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
         name?: string;
       };
-      expect(manifest.name).toBe(`@caisson/${dir}`);
+      expect(manifest.name).toBe(`@caisson-sh/${dir}`);
     }
   });
 

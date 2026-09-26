@@ -1,4 +1,4 @@
-import type { IconName } from "@caisson/ui/components";
+import type { IconName } from "@caisson-sh/ui/components";
 
 // The base substrate — the SINGLE list every surface that names it reads from. Every package is
 // Apache-2.0; this list is the foundation layer the rest compose onto, and the /docs/base page is
@@ -44,9 +44,9 @@ export function baseToolingList(): string {
   return BASE_GENERATOR_TOOLING.join(", ");
 }
 
-/** Scoped, middot-joined list of every base package ("@caisson/kernel · @caisson/auth · …"). */
+/** Scoped, middot-joined list of every base package ("@caisson-sh/kernel · @caisson-sh/auth · …"). */
 export function basePackagesScoped(): string {
-  return BASE_PACKAGES.map((p) => `@caisson/${p}`).join(" · ");
+  return BASE_PACKAGES.map((p) => `@caisson-sh/${p}`).join(" · ");
 }
 
 /**
@@ -72,7 +72,7 @@ export const BASE_CAPABILITIES: readonly BaseCapability[] = [
   {
     icon: "lock",
     title: "Auth and the open component base",
-    body: "Session and credential handling, plus the @caisson/ui component base the marketing site and buyer dashboard both render with — not a bolt-on you wire up later.",
+    body: "Session and credential handling, plus the @caisson-sh/ui component base the marketing site and buyer dashboard both render with — not a bolt-on you wire up later.",
     packages: ["auth", "ui"],
   },
   {
@@ -84,7 +84,7 @@ export const BASE_CAPABILITIES: readonly BaseCapability[] = [
   {
     icon: "server",
     title: "AI config and a governed MCP server",
-    body: "Provider-agnostic AI configuration and a Model Context Protocol server that treats agents as principals: timing-safe Bearer auth on every session, a per-account rate limit on every dispatch. Most kits ship an MCP server now — the question is what it lets an agent do. The design-system contracts an agent reasons over — the component manifest, its typed reader, the contrast and static-usage checkers — are open source too, in @caisson/ds-manifest.",
+    body: "Provider-agnostic AI configuration and a Model Context Protocol server that treats agents as principals: timing-safe Bearer auth on every session, a per-account rate limit on every dispatch. Most kits ship an MCP server now — the question is what it lets an agent do. The design-system contracts an agent reasons over — the component manifest, its typed reader, the contrast and static-usage checkers — are open source too, in @caisson-sh/ds-manifest.",
     packages: ["ai-config", "mcp-server", "ds-manifest"],
   },
   {

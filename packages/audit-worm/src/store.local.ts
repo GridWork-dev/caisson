@@ -7,7 +7,7 @@
 // that cannot collide with a `{account_id}/…` key, since every real key's first segment is a UUID.
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
-import { NotFoundError, ValidationError } from "@caisson/kernel";
+import { NotFoundError, ValidationError } from "@caisson-sh/kernel";
 import {
   ArtifactExistsError,
   assertSafeKey,

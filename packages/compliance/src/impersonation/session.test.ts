@@ -3,7 +3,7 @@
 // `beginImpersonation` against throwing stubs, proving validation precedes every DB/chain touch.
 // The DB-backed lifecycle (expiry, ended, RLS) is proven in `session.integration.test.ts`.
 import { describe, expect, test } from "bun:test";
-import { ValidationError, parseStrict } from "@caisson/kernel";
+import { ValidationError, parseStrict } from "@caisson-sh/kernel";
 import {
   MAX_IMPERSONATION_TTL_MS,
   beginImpersonation,

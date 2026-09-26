@@ -13,7 +13,7 @@ function readUiVersion(): string {
     !("version" in input) ||
     typeof input.version !== "string"
   )
-    throw new Error("@caisson/ui package version is missing");
+    throw new Error("@caisson-sh/ui package version is missing");
   return input.version;
 }
 
@@ -21,7 +21,7 @@ describe("loadBaseManifest", () => {
   test("reads and validates the committed generated base manifest", () => {
     const manifest = loadBaseManifest();
     expect(manifest.schemaVersion).toBe(1);
-    expect(manifest.generatedFor.pkg).toBe("@caisson/ui");
+    expect(manifest.generatedFor.pkg).toBe("@caisson-sh/ui");
     expect(manifest.generatedFor.version).toBe(readUiVersion());
     expect(manifest.components).toHaveLength(39);
   });

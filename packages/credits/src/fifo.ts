@@ -1,7 +1,7 @@
 // The PURE half of the credit wallet (ADR-0396): the event-type vocabulary, the positive-integer
 // money rule, and the FIFO consumption waterfall `debit()` walks. No database, no node builtin —
-// the only non-relative edge is the browser-safe `@caisson/kernel` barrel, so this is the module
-// `@caisson/credits/browser` publishes, and it is the ONE place the FIFO rule is implemented
+// the only non-relative edge is the browser-safe `@caisson-sh/kernel` barrel, so this is the module
+// `@caisson-sh/credits/browser` publishes, and it is the ONE place the FIFO rule is implemented
 // (`credits.ts` calls `planFifoDebit` rather than restating the walk).
 //
 // The DB-bound half deliberately stays in `credits.ts`: reading which grants are unexpired,
@@ -10,7 +10,7 @@
 // credits come off which grant, and whether the remainders cover the charge at all.
 //
 // Integer credit units only (ADR-0007): every amount here is a whole number, never a float.
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 
 // `feature_grant` / `feature_debit` are the generic feature-meter envelopes (ADR-0074): an edition
 // meters a NEW action through these carrying a registered `feature` tag, never by extending this

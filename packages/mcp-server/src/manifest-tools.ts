@@ -1,7 +1,7 @@
 // Agent-ready design-system tools (ADR-0330/ADR-0345), registered through the SAME ADR-0216
 // `registerTool` seam the coach uses, and visible to every authenticated caller:
 //   - `list_components`/`describe_component`/`get_tokens` — read tools over the base kit.
-//   - `check_usage` — the static doctor (`@caisson/ds-manifest` `checkUsage`).
+//   - `check_usage` — the static doctor (`@caisson-sh/ds-manifest` `checkUsage`).
 //   - `describe_pro_component` — pro component metadata, registered ONLY when a pro manifest is
 //     supplied.
 //
@@ -11,20 +11,20 @@
 // (it declares the minimal `ManifestToolRegistrar` slice it needs); `McpServer` is structurally
 // assignable to it, so `server.ts` wires it one-directionally with no import cycle.
 import { z } from "zod";
-import { NotFoundError, parseStrict, strictObject } from "@caisson/kernel";
+import { NotFoundError, parseStrict, strictObject } from "@caisson-sh/kernel";
 import {
   checkUsage,
   type Component,
   type ComponentManifest,
   type ContrastFunctional,
   type ContrastTheme,
-} from "@caisson/ds-manifest";
+} from "@caisson-sh/ds-manifest";
 
 /**
- * The full design-token payload `get_tokens` serves as JSON. Structurally the `@caisson/ui/tokens`
+ * The full design-token payload `get_tokens` serves as JSON. Structurally the `@caisson-sh/ui/tokens`
  * objects (themes + functional + fonts) — NOT a third bespoke format (SPEC/plan P11): when the DTCG
  * `tokens.json` export lands this swaps its serializer to that shape. Keyed by the same structural
- * theme/functional types the contrast checker uses, so `@caisson/ui`'s real tokens assign directly.
+ * theme/functional types the contrast checker uses, so `@caisson-sh/ui`'s real tokens assign directly.
  */
 export interface DesignTokens {
   themes: { dark: ContrastTheme; light: ContrastTheme };
@@ -58,9 +58,9 @@ export interface ManifestToolRegistrar {
 }
 
 export interface ManifestToolsOptions {
-  /** The committed base component manifest (`@caisson/ds-manifest` `loadBaseManifest()`). */
+  /** The committed base component manifest (`@caisson-sh/ds-manifest` `loadBaseManifest()`). */
   readonly baseManifest: ComponentManifest;
-  /** The design tokens `get_tokens` serves (the `@caisson/ui/tokens` objects). */
+  /** The design tokens `get_tokens` serves (the `@caisson-sh/ui/tokens` objects). */
   readonly tokens: DesignTokens;
   /** The pro component manifest. When present, `describe_pro_component` is registered. */
   readonly proManifest?: ComponentManifest;
@@ -133,7 +133,7 @@ export function registerManifestTools(
   server.registerTool({
     name: "list_components",
     description:
-      "List the open @caisson/ui components (name, one-line summary, typed variant props).",
+      "List the open @caisson-sh/ui components (name, one-line summary, typed variant props).",
     version: "1.0.0",
     audit: { logArgs: true },
     handler: async () => listComponents(options.baseManifest),
@@ -142,7 +142,7 @@ export function registerManifestTools(
   server.registerTool({
     name: "describe_component",
     description:
-      "Full metadata for one open @caisson/ui component: props, variants, token deps, a11y + recipe notes.",
+      "Full metadata for one open @caisson-sh/ui component: props, variants, token deps, a11y + recipe notes.",
     version: "1.0.0",
     audit: { logArgs: true },
     handler: async ({ args }) => {
@@ -176,7 +176,7 @@ export function registerManifestTools(
     const proManifest = options.proManifest;
     server.registerTool({
       name: "describe_pro_component",
-      description: "Full metadata for one @caisson/ui-pro component.",
+      description: "Full metadata for one @caisson-sh/ui-pro component.",
       version: "1.0.0",
       audit: { logArgs: true },
       handler: async ({ args }) => {
@@ -194,7 +194,7 @@ export function registerManifestTools(
     uri: "caisson://design-system/components",
     name: "Design-system components",
     description:
-      "The open @caisson/ui component roster (names, summaries, typed variant props) as JSON.",
+      "The open @caisson-sh/ui component roster (names, summaries, typed variant props) as JSON.",
     mimeType: "application/json",
     handler: async () => listComponents(options.baseManifest),
   });
@@ -203,7 +203,7 @@ export function registerManifestTools(
     uri: "caisson://design-system/tokens",
     name: "Design-system tokens",
     description:
-      "The @caisson/ui design tokens (themes, functional colours, fonts) as JSON for agent theming.",
+      "The @caisson-sh/ui design tokens (themes, functional colours, fonts) as JSON for agent theming.",
     mimeType: "application/json",
     handler: async () => getTokens(options.tokens),
   });
@@ -213,7 +213,7 @@ export function registerManifestTools(
     server.registerResource({
       uri: "caisson://design-system/pro-components",
       name: "Pro design-system components",
-      description: "The @caisson/ui-pro component roster as JSON.",
+      description: "The @caisson-sh/ui-pro component roster as JSON.",
       mimeType: "application/json",
       handler: async () => listComponents(proManifest),
     });

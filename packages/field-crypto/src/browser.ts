@@ -1,4 +1,4 @@
-// The browser-safe entry (`@caisson/field-crypto/browser`, ADR-0396): per-tenant HKDF key derivation,
+// The browser-safe entry (`@caisson-sh/field-crypto/browser`, ADR-0396): per-tenant HKDF key derivation,
 // AES-256-GCM seal/open, the row-bound AAD tuple, and the self-describing envelope codec — the real
 // primitive, safe inside a client bundle or any WebCrypto-only runtime. ADDITIVE: the `.` barrel is
 // untouched and stays the full node-capable surface, and every name here is also on `.` (the subset

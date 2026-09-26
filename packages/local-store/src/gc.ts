@@ -12,7 +12,7 @@
 // (`upsert` the kept items, re-materialize without the dropped). Down-only (ADR-0022): no edition import.
 import { z } from "zod";
 import { createHash } from "node:crypto";
-import { parseStrict, strictObject } from "@caisson/kernel";
+import { parseStrict, strictObject } from "@caisson-sh/kernel";
 import type { MemoryItem } from "./schema.ts";
 
 /** Default retention-score floor: below this a (decay-enabled) item is GC-eligible. 0..1. */

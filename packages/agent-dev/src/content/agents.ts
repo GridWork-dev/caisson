@@ -5,7 +5,7 @@
 // Each agent declares a by-name `dependencies` cross-ref to the rules/skills it leans on; every ref
 // names a member of the default set, so the reference-integrity validator resolves the whole graph
 // clean. Caisson-native content, authored directly against this schema.
-import { type AgentArtifact, defineAgent } from "@caisson/agent-kernel";
+import { type AgentArtifact, defineAgent } from "@caisson-sh/agent-kernel";
 
 /** The default agent set a buyer of the agent-dev edition gets out of the box (engine-neutral). */
 export const CAISSON_AGENTS: readonly AgentArtifact[] = [

@@ -781,8 +781,8 @@ describe("check #6 — changeset gate preflight", () => {
     const stdout = [
       "🦋  info Packages to be bumped at patch:",
       "🦋  info ",
-      "🦋  - @caisson/kernel",
-      "🦋  - @caisson/billing",
+      "🦋  - @caisson-sh/kernel",
+      "🦋  - @caisson-sh/billing",
       "🦋  ---",
       "🦋  info NO packages to be bumped at minor",
       "🦋  ---",
@@ -801,14 +801,14 @@ describe("check #6 — changeset gate preflight", () => {
   test("countChangesetBumps keeps each level's members separate", () => {
     const stdout = [
       "🦋  info Packages to be bumped at patch:",
-      "🦋  - @caisson/kernel",
+      "🦋  - @caisson-sh/kernel",
       "🦋  ---",
       "🦋  info Packages to be bumped at minor:",
-      "🦋  - @caisson/ui",
-      "🦋  - @caisson/auth",
+      "🦋  - @caisson-sh/ui",
+      "🦋  - @caisson-sh/auth",
       "🦋  ---",
       "🦋  info Packages to be bumped at major:",
-      "🦋  - @caisson/cli",
+      "🦋  - @caisson-sh/cli",
     ].join("\n");
     expect(countChangesetBumps(stdout)).toEqual({
       patch: 1,

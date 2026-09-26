@@ -1,4 +1,4 @@
-# @caisson/guardrails
+# @caisson-sh/guardrails
 
 A content-safety layer for AI features: moderate input and output text, redact or reversibly
 tokenize PII, and block anything that looks like a leaked credential — all fail-closed by
@@ -30,7 +30,11 @@ default, so an outage blocks a call instead of silently letting it through unche
 ## Usage
 
 ```ts
-import { guardInput, guardOutput, localModerator } from "@caisson/guardrails";
+import {
+  guardInput,
+  guardOutput,
+  localModerator,
+} from "@caisson-sh/guardrails";
 
 const policy = {
   policyName: "default",

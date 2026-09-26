@@ -1,12 +1,12 @@
-// The credit-expiry sweeps as `@caisson/jobs` tasks (ADR-0252 Decisions 5/6b), mirroring
-// `@caisson/retention-runner`'s schedule shape: per-account payloads, `singletonKey` overlap
+// The credit-expiry sweeps as `@caisson-sh/jobs` tasks (ADR-0252 Decisions 5/6b), mirroring
+// `@caisson-sh/retention-runner`'s schedule shape: per-account payloads, `singletonKey` overlap
 // safety, and the queue's `.strict()` boundary validation. A scheduler enqueues one payload per
 // wallet account on its cron tick; both sweeps are idempotent, so a replayed tick is a no-op.
-import { defineTask } from "@caisson/jobs";
-import type { JobQueue, TaskDefinition } from "@caisson/jobs";
-import { strictObject } from "@caisson/kernel";
-import type { Transactor } from "@caisson/tenancy-rls";
-import { withTenant } from "@caisson/tenancy-rls";
+import { defineTask } from "@caisson-sh/jobs";
+import type { JobQueue, TaskDefinition } from "@caisson-sh/jobs";
+import { strictObject } from "@caisson-sh/kernel";
+import type { Transactor } from "@caisson-sh/tenancy-rls";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 import {
   sweepExpiredGrants,
   sweepExpiryNotices,

@@ -1,5 +1,5 @@
 // A node-postgres MigrationApplier (ADR-0090) — the real-Postgres implementation of the DB-touching
-// runner port. Kept out of the main entry (subpath export `@caisson/migrate/pg`) so PGlite-only
+// runner port. Kept out of the main entry (subpath export `@caisson-sh/migrate/pg`) so PGlite-only
 // consumers never pull `pg`'s types: `pg` is an OPTIONAL peer dependency, imported here type-only
 // (the `Pool` is passed IN by the caller, so nothing here requires `pg` at runtime — only @types/pg
 // at compile). Mirrors the PGlite applier shape proven in packages/compliance's integration test:
@@ -11,7 +11,7 @@
 // assert SQL strings is low-value. The assembly + run-once contract is covered against a real
 // Postgres (PGlite) by an integration test in the app that consumes this package; this adapter is
 // exercised end-to-end against a live Postgres instance during deployment.
-import type { MergedMigration } from "@caisson/kernel";
+import type { MergedMigration } from "@caisson-sh/kernel";
 import type { Pool } from "pg";
 import type { AppliedMigration, MigrationApplier } from "./runner.ts";
 

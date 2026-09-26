@@ -1,9 +1,9 @@
 // Polar webhook signature verification (ADR-0175, Standard Webhooks) — the open verify-only half of the
 // billing seam (carve ADR-0249 G3). Polar->domain event mapping + the driver + createCheckout are covered
-// in the commercial @caisson/billing-orchestration (src/polar.test.ts). Synthetic secrets only.
+// in the commercial @caisson-sh/billing-orchestration (src/polar.test.ts). Synthetic secrets only.
 import { createHmac } from "node:crypto";
 import { describe, expect, test } from "bun:test";
-import { AuthnError } from "@caisson/kernel";
+import { AuthnError } from "@caisson-sh/kernel";
 import { verifyPolarWebhook } from "./index.ts";
 
 // A Standard Webhooks secret is base64 (optionally `whsec_`-prefixed).

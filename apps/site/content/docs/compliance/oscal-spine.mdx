@@ -3,7 +3,7 @@ title: oscal-spine
 description: The OSCAL export surface — deterministic assessment-plan, assessment-results, POA&M, catalog and ISO 27001 SoA documents at OSCAL v1.2.2, plus the pinned NIST SP 800-53 rev5 catalog and its OLIR crosswalk.
 ---
 
-`@caisson/oscal-spine` turns a Caisson evidence pack into the machine-readable OSCAL documents a
+`@caisson-sh/oscal-spine` turns a Caisson evidence pack into the machine-readable OSCAL documents a
 GRC platform, an auditor's toolchain, or an agency reviewer actually ingests. Every exporter is a
 pure function with an injected clock and an injected UUID source, so the same input always produces
 byte-identical output — the property a content hash, a golden fixture, or a detached signature
@@ -41,7 +41,7 @@ depends on.
 ## Install
 
 ```bash
-bun add @caisson/oscal-spine
+bun add @caisson-sh/oscal-spine
 ```
 
 ## Quickstart
@@ -53,7 +53,7 @@ output to be reproducible; omit `newId` and each call mints fresh random UUIDs.
 import {
   toOscalBundle,
   type OscalEvidencePackManifest,
-} from "@caisson/oscal-spine";
+} from "@caisson-sh/oscal-spine";
 
 const manifest: OscalEvidencePackManifest = {
   formatVersion: "2",
@@ -120,7 +120,7 @@ An assessment plan is per-framework and carries no tenant data — pass the fram
 clock:
 
 ```ts
-import { toOscalAssessmentPlan } from "@caisson/oscal-spine";
+import { toOscalAssessmentPlan } from "@caisson-sh/oscal-spine";
 
 const plan = toOscalAssessmentPlan(
   { id: "soc2-tsc", title: "SOC 2 — Trust Services Criteria", version: "2024.1" },
@@ -155,7 +155,7 @@ as a document `prop`.
 
 The three framework triples Caisson ships packs for are `soc2-tsc`, `hipaa-security` and
 `eu-ai-act`. The control catalogs behind them (`soc2Tsc`, `hipaaSecurity`, `euAiAct`) live in
-`@caisson/frameworks-pack`; this package consumes their shape, never their text.
+`@caisson-sh/frameworks-pack`; this package consumes their shape, never their text.
 
 ## XML conversion and schema validation
 
@@ -168,7 +168,7 @@ import {
   convertAndValidate,
   convertJsonToXml,
   oscalCliAvailable,
-} from "@caisson/oscal-spine";
+} from "@caisson-sh/oscal-spine";
 
 if (oscalCliAvailable()) {
   // convert, then validate against the locked v1.2.2 schema; throws if either step fails
@@ -191,7 +191,7 @@ OSCAL has no SoA model, so an SoA is expressed as a `component-definition`: one 
 Caisson technical-control mapping) carrying one `implemented-requirement` per row.
 
 ```ts
-import { toOscalIso27001Soa, type OscalSoaRow } from "@caisson/oscal-spine";
+import { toOscalIso27001Soa, type OscalSoaRow } from "@caisson-sh/oscal-spine";
 
 const rows: OscalSoaRow[] = [
   {
@@ -221,14 +221,14 @@ invalid clock, on an empty row set, and on a `title` containing a claim word —
 "ISO 27001 certified Statement of Applicability" throws rather than shipping. Each row's
 justification passes the same readiness-language gate.
 
-`@caisson/frameworks-pack` computes these rows for you from the shipped ISO/IEC 27001:2022
+`@caisson-sh/frameworks-pack` computes these rows for you from the shipped ISO/IEC 27001:2022
 crosswalk via `computeIso27001SoaRows` and `iso27001Crosswalk`.
 
 To attach the document to an evidence pack, `buildIso27001SoaArchiveEntry` returns the canonical
 bytes under the fixed entry name held in `ISO27001_SOA_ARCHIVE_ENTRY`:
 
 ```ts
-import { buildIso27001SoaArchiveEntry } from "@caisson/oscal-spine";
+import { buildIso27001SoaArchiveEntry } from "@caisson-sh/oscal-spine";
 
 const entry = buildIso27001SoaArchiveEntry(soa);
 // entry.name — "soa/iso-27001.json"
@@ -238,8 +238,8 @@ const entry = buildIso27001SoaArchiveEntry(soa);
 ## Merged control catalog
 
 ```ts
-import { toOscalCatalog } from "@caisson/oscal-spine";
-import { euAiAct, hipaaSecurity, soc2Tsc } from "@caisson/frameworks-pack";
+import { toOscalCatalog } from "@caisson-sh/oscal-spine";
+import { euAiAct, hipaaSecurity, soc2Tsc } from "@caisson-sh/frameworks-pack";
 
 const catalog = toOscalCatalog([soc2Tsc, hipaaSecurity, euAiAct], {
   now: new Date(),
@@ -261,7 +261,7 @@ The rev5 catalog is vendored byte-exact and pinned. `NIST_CATALOG_PIN` is the si
 consumer reads — never a second, independently drifting copy:
 
 ```ts
-import { NIST_CATALOG_PIN } from "@caisson/oscal-spine";
+import { NIST_CATALOG_PIN } from "@caisson-sh/oscal-spine";
 
 NIST_CATALOG_PIN.repo;             // "usnistgov/oscal-content"
 NIST_CATALOG_PIN.commitSha;        // the commit the bytes were fetched at
@@ -288,7 +288,7 @@ import { readFileSync } from "node:fs";
 import {
   extractControlIds,
   type NistCatalogDocument,
-} from "@caisson/oscal-spine";
+} from "@caisson-sh/oscal-spine";
 
 const doc = JSON.parse(
   readFileSync("./NIST_SP-800-53_rev5_catalog.json", "utf8"),
@@ -306,7 +306,7 @@ row is `claim: "maps-to"` and carries NIST IR 8278A's relationship vocabulary (`
 mechanism backs the control; families with no mechanism behind them are absent rather than padded.
 
 ```ts
-import { exportRegimeCrosswalk, nist80053Crosswalk } from "@caisson/oscal-spine";
+import { exportRegimeCrosswalk, nist80053Crosswalk } from "@caisson-sh/oscal-spine";
 
 const artifact = exportRegimeCrosswalk(nist80053Crosswalk);
 // artifact.disclaimer travels inside the export — scope language, claim legend,
@@ -334,7 +334,7 @@ If a relying party wants the bundle pushed rather than handed back:
 import {
   createOscalHttpTransport,
   OscalDeliveryConfigSchema,
-} from "@caisson/oscal-spine";
+} from "@caisson-sh/oscal-spine";
 
 const config = OscalDeliveryConfigSchema.parse({
   destinationUrl: "https://grc.example.com/oscal/ingest",
@@ -354,24 +354,24 @@ Errors carry the document label and a coarse cause only, never a response body o
 
 ## Browser entry point
 
-`@caisson/oscal-spine/browser` is the browser-safe subset: the OSCAL vocabulary and contracts, the
+`@caisson-sh/oscal-spine/browser` is the browser-safe subset: the OSCAL vocabulary and contracts, the
 crosswalk model, the catalog pin, and the two pure exporters (`toOscalCatalog` and
 `toOscalAssessmentPlan`), whose default id seam is the WebCrypto global `crypto.randomUUID()`.
 
 ```ts
-import { toOscalAssessmentPlan } from "@caisson/oscal-spine/browser";
+import { toOscalAssessmentPlan } from "@caisson-sh/oscal-spine/browser";
 ```
 
 Reach for it when the module is in a client bundle graph. The delivery transport, the `oscal-cli`
 seam and the vendored-catalog reader are node-only and are absent from that entry by construction —
 a bundler does not fail on a node builtin, it substitutes a polyfill, which is how a client chunk
 silently gains hundreds of kilobytes. Every name on `./browser` is also on the root entry, so
-server-side code can keep importing `@caisson/oscal-spine` and get the full surface.
+server-side code can keep importing `@caisson-sh/oscal-spine` and get the full surface.
 
 ## Composition
 
-Depends on `@caisson/kernel` and `@caisson/artifact-render`, down-only. `@caisson/frameworks-pack`
-and `@caisson/compliance-core` both re-export this package, so an import of `toOscalBundle` from
+Depends on `@caisson-sh/kernel` and `@caisson-sh/artifact-render`, down-only. `@caisson-sh/frameworks-pack`
+and `@caisson-sh/compliance-core` both re-export this package, so an import of `toOscalBundle` from
 either of those resolves to the same function documented here. All three are members of the
 Compliance bundle. Every exported document is authored against OSCAL v1.2.2, the value held in
 `OSCAL_VERSION` and the single `oscal-cli validate` conformance target.

@@ -1,7 +1,7 @@
 import { BASE_PACKAGES } from "@/lib/base-substrate";
 import { CHANGELOG_ENTRIES } from "@/lib/changelog";
 import { source } from "@/lib/source";
-import type { IconName } from "@caisson/ui/components";
+import type { IconName } from "@caisson-sh/ui/components";
 
 // The truthful-signals block (ADR-0374 lock 2, audit Q1) — three real, computed facts shown on
 // the gallery surfaces (the bundle popout + the marketplace page). Never a hand-typed number: every

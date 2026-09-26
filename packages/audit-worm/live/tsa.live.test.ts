@@ -4,7 +4,7 @@
 // This file NEVER runs in the default suite: it lives OUTSIDE ./src (so `bun test ./src` and CI never
 // run it) AND self-skips without a real TSA endpoint (ADR-0201 live-test convention). Run it via
 // `bun run test:live` with CAISSON_TSA_LIVE_URL set to a real RFC-3161 endpoint, e.g.
-//   CAISSON_TSA_LIVE_URL=https://freetsa.org/tsr bun run --filter @caisson/audit-worm test:live
+//   CAISSON_TSA_LIVE_URL=https://freetsa.org/tsr bun run --filter @caisson-sh/audit-worm test:live
 // Egress is imprint-only (a sha256, no payload) — safe against any public TSA.
 import { describe, expect, setDefaultTimeout, test } from "bun:test";
 import { randomUUID } from "node:crypto";

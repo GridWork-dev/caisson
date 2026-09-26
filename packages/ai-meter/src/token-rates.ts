@@ -21,10 +21,10 @@ import {
   parseStrict,
   type RoundedMoney,
   strictObject,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 
-// The credit denomination moved to @caisson/kernel (ADR-0098, SD-3): exactly ONE definition across
-// the codebase, shared by this token-rate COST book (rounds up) and @caisson/pricebook's COMMERCE book (rounds
+// The credit denomination moved to @caisson-sh/kernel (ADR-0098, SD-3): exactly ONE definition across
+// the codebase, shared by this token-rate COST book (rounds up) and @caisson-sh/pricebook's COMMERCE book (rounds
 // down). The schema + parser keep their names on the re-export; the constant was intentionally renamed
 // DEFAULT_CREDIT_CONVERSION -> CREDIT_CONVERSION to match the kernel home (pre-launch, no consumers).
 export { CREDIT_CONVERSION, creditConversionSchema, parseCreditConversion };

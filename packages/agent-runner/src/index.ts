@@ -26,4 +26,4 @@ export {
   type RecordableRun,
   type TranscriptLine,
 } from "./trajectory.ts";
-export type { TrajectoryStore } from "@caisson/agent-trajectory";
+export type { TrajectoryStore } from "@caisson-sh/agent-trajectory";

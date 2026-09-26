@@ -40,7 +40,7 @@ describe("checkChangesetProse", () => {
   test("a clean buyer-readable body passes", () => {
     write(
       "clean.md",
-      '---\n"@caisson/kernel": patch\n---\n\nFixed a bug where the retry helper double-counted attempts under load.\n',
+      '---\n"@caisson-sh/kernel": patch\n---\n\nFixed a bug where the retry helper double-counted attempts under load.\n',
     );
     expect(checkChangesetProse(root)).toEqual([]);
   });
@@ -49,7 +49,7 @@ describe("checkChangesetProse", () => {
     // The frontmatter block itself is never scanned — only the body below the closing `---`.
     write(
       "frontmatter-only.md",
-      '---\n"@caisson/gw-fixture-pkg": patch\n---\n\nRenamed an internal helper for clarity.\n',
+      '---\n"@caisson-sh/gw-fixture-pkg": patch\n---\n\nRenamed an internal helper for clarity.\n',
     );
     expect(checkChangesetProse(root)).toEqual([]);
   });
@@ -63,7 +63,7 @@ describe("checkChangesetProse", () => {
   test("a bare ADR citation in the body fails", () => {
     write(
       "leak-adr.md",
-      '---\n"@caisson/billing": patch\n---\n\nSee ADR-0182 for the rationale.\n',
+      '---\n"@caisson-sh/billing": patch\n---\n\nSee ADR-0182 for the rationale.\n',
     );
     const f = checkChangesetProse(root);
     expect(f).toHaveLength(1);
@@ -74,7 +74,7 @@ describe("checkChangesetProse", () => {
   test("wave-6 jargon in the body fails", () => {
     write(
       "leak-wave.md",
-      '---\n"@caisson/pricebook": patch\n---\n\nPart of the wave-6a compliance sweep.\n',
+      '---\n"@caisson-sh/pricebook": patch\n---\n\nPart of the wave-6a compliance sweep.\n',
     );
     const f = checkChangesetProse(root);
     expect(f).toHaveLength(1);
@@ -84,7 +84,7 @@ describe("checkChangesetProse", () => {
   test("row-number jargon in the body fails", () => {
     write(
       "leak-row.md",
-      '---\n"@caisson/pricebook": patch\n---\n\nDrops row #42 from the catalog.\n',
+      '---\n"@caisson-sh/pricebook": patch\n---\n\nDrops row #42 from the catalog.\n',
     );
     const f = checkChangesetProse(root);
     expect(f).toHaveLength(1);
@@ -94,7 +94,7 @@ describe("checkChangesetProse", () => {
   test("an internal repo path in the body fails", () => {
     write(
       "leak-path.md",
-      '---\n"@caisson/audit-harness": patch\n---\n\nSee docs/archive/harvest-program.md for the full list.\n',
+      '---\n"@caisson-sh/audit-harness": patch\n---\n\nSee docs/archive/harvest-program.md for the full list.\n',
     );
     const f = checkChangesetProse(root);
     expect(f).toHaveLength(1);
@@ -104,7 +104,7 @@ describe("checkChangesetProse", () => {
   test("a session/agent slug in the body fails", () => {
     write(
       "leak-slug.md",
-      '---\n"@caisson/kernel": patch\n---\n\nDrafted by gw-typescript-pro in this session.\n',
+      '---\n"@caisson-sh/kernel": patch\n---\n\nDrafted by gw-typescript-pro in this session.\n',
     );
     const f = checkChangesetProse(root);
     expect(f).toHaveLength(1);
@@ -112,10 +112,13 @@ describe("checkChangesetProse", () => {
   });
 
   test("multiple leaks across files are all reported", () => {
-    write("leak-a.md", '---\n"@caisson/kernel": patch\n---\n\nADR-0100 fix.\n');
+    write(
+      "leak-a.md",
+      '---\n"@caisson-sh/kernel": patch\n---\n\nADR-0100 fix.\n',
+    );
     write(
       "leak-b.md",
-      '---\n"@caisson/ui": patch\n---\n\noutputs/foo.md has the notes.\n',
+      '---\n"@caisson-sh/ui": patch\n---\n\noutputs/foo.md has the notes.\n',
     );
     const f = checkChangesetProse(root);
     expect(f).toHaveLength(2);

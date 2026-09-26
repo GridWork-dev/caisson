@@ -108,7 +108,7 @@ jobs:
       - name: deterministic eval gate (BLESS unset)
         run: bunx turbo run eval --no-daemon
 
-  # tokens.css is GENERATED from the @caisson/ui TS token objects (ADR-0101 design-quality gate #1).
+  # tokens.css is GENERATED from the @caisson-sh/ui TS token objects (ADR-0101 design-quality gate #1).
   # This job proves the committed sheet is a byte-identical rebuild: editing a token without running
   # `bun run gen:tokens`, or hand-editing tokens.css, fails `git diff --exit-code`. Mirrors the
   # registry-index provenance gate; tokens.css is .prettierignore'd so the generator is sole authority.
@@ -129,7 +129,7 @@ jobs:
           bun run packages/ui/scripts/gen-tokens-css.ts
           git diff --exit-code packages/ui/styles/tokens.css
       - name: component manifest is a byte-identical rebuild from the UI source
-        run: bun run --filter @caisson/ui check:manifest
+        run: bun run --filter @caisson-sh/ui check:manifest
 
   # Unused-dep / unused-export gate (repo-improvement-program row #7). ADVISORY lane, same
   # promotion rule as the `sot` gate: detect and report, never block. `--no-exit-code` means a
@@ -169,7 +169,7 @@ jobs:
       - name: anti-slop deterministic UI-slop pre-pass (allowlist-filtered)
         run: bun run apps/site/scripts/anti-slop.ts
 
-  # Exit-gate clause 6 (P4a local-ai): @caisson/local-store loads a PLATFORM-SPECIFIC native
+  # Exit-gate clause 6 (P4a local-ai): @caisson-sh/local-store loads a PLATFORM-SPECIFIC native
   # extension — `db.loadExtension(sqliteVec.getLoadablePath())` in packages/local-store/src/store.ts
   # resolves a `.so` on Linux and a `.dylib` on macOS. The `check`/`standards-gate` jobs run on
   # ubuntu only, so the macOS native binary path would otherwise ship unexercised. This matrix runs
@@ -201,7 +201,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-bun
-      # Workspace deps (@caisson/kernel, @caisson/testing) must be linked before bun test resolves
+      # Workspace deps (@caisson-sh/kernel, @caisson-sh/testing) must be linked before bun test resolves
       # them. This step was missing since the job landed: the self-hosted linux leg masked it with a
       # persistent workspace's stale node_modules, and the hosted macOS leg had simply never fired
       # (path-filtered) until the ADR-0208 consume touched packages/local-store/package.json.
@@ -245,7 +245,7 @@ jobs:
         working-directory: apps/site
         run: bunx playwright install --with-deps chromium
       - name: deterministic browser-audit graduation suite (build + serve + assert)
-        run: bunx turbo run test:e2e --filter=@caisson/site --no-daemon
+        run: bunx turbo run test:e2e --filter=@caisson-sh/site --no-daemon
 
   # The CI build-provenance evidence pack (ADR-0275). Aggregates the evidence CI already produces —
   # the standards-gate output, the workspace-derived module catalog, and the catalog test run —

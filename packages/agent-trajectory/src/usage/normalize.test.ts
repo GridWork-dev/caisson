@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { TrajectoryEvent, TRAJECTORY_VERSION } from "../browser.ts";
-import { PRICE_BOOK_VERSION } from "@caisson/ai-meter";
+import { PRICE_BOOK_VERSION } from "@caisson-sh/ai-meter";
 import { priceUsage } from "./normalize.ts";
 
 /** A valid `model.usage` envelope in this package's additive convention. */

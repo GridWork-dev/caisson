@@ -1,4 +1,4 @@
-// @caisson/demo-registry — public surface. Private/unpublished: apps/admin's catalog consumes this
+// @caisson-sh/demo-registry — public surface. Private/unpublished: apps/admin's catalog consumes this
 // now; apps/site's `/ui` gallery repoints to it later (a separate, out-of-scope wiring change).
 export {
   licenseTierSchema,

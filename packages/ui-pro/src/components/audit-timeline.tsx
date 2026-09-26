@@ -1,8 +1,8 @@
 import { forwardRef } from "react";
 import type { HTMLAttributes, ReactNode } from "react";
 
-import { Icon } from "@caisson/ui/components";
-import type { RowState } from "@caisson/kernel/audit-verify";
+import { Icon } from "@caisson-sh/ui/components";
+import type { RowState } from "@caisson-sh/kernel/audit-verify";
 
 import {
   verifyChain,

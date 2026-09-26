@@ -1,4 +1,4 @@
-# @caisson/tool-exec
+# @caisson-sh/tool-exec
 
 Governed tool-call / sandboxed-exec primitive — the security floor Agentic-Dev's tool layer stands
 on.
@@ -33,7 +33,7 @@ stderr, ok, reason?, at }` — a plain-data audit record (not WORM), with output
 
 ```ts
 import { z } from "zod";
-import { createToolExec } from "@caisson/tool-exec";
+import { createToolExec } from "@caisson-sh/tool-exec";
 
 const toolExec = createToolExec({
   allowlist: [

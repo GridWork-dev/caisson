@@ -21,7 +21,7 @@ const APACHE = "Apache-2.0";
 /** Build a module-candidate Pkg (under packages/) with sane defaults; `over` wins on every field. */
 function pkg(over: Partial<Pkg> & Pick<Pkg, "name" | "license">): Pkg {
   return {
-    dir: `/repo/packages/${over.name.replace("@caisson/", "")}`,
+    dir: `/repo/packages/${over.name.replace("@caisson-sh/", "")}`,
     version: "0.0.0",
     workspaceDeps: [],
     manifestPath: null,
@@ -37,7 +37,7 @@ describe("checkManifestAgreement fail-closed", () => {
   test("a schema-invalid manifest (defineModule throws on load) is an ERROR, not a warn", async () => {
     const f = await checkManifestAgreement([
       pkg({
-        name: "@caisson/fixture-invalid",
+        name: "@caisson-sh/fixture-invalid",
         license: APACHE,
         version: "0.0.0",
         manifestPath: join(fixtureDir, "invalid-manifest.fixture.ts"),
@@ -53,7 +53,7 @@ describe("checkManifestAgreement fail-closed", () => {
   test("an unresolvable manifest path is a WARN (resolution failure, skipped)", async () => {
     const f = await checkManifestAgreement([
       pkg({
-        name: "@caisson/fixture-missing",
+        name: "@caisson-sh/fixture-missing",
         license: APACHE,
         version: "0.0.0",
         manifestPath: join(fixtureDir, "does-not-exist.fixture.ts"),
@@ -89,7 +89,7 @@ describe("checkRlsEquivalence (ADR-0210/0005)", () => {
       join(dir, "src", "migrations", "0001_widget.sql"),
       TABLE_SQL + rlsSql,
     );
-    return pkg({ name: "@caisson/fixture-widget", license: APACHE, dir });
+    return pkg({ name: "@caisson-sh/fixture-widget", license: APACHE, dir });
   }
 
   function narrowGrantSql(): string {
@@ -188,7 +188,7 @@ describe("checkOpenLicense", () => {
     const dir = join(root, name);
     mkdirSync(dir, { recursive: true });
     if (text !== undefined) writeFileSync(join(dir, "LICENSE"), text);
-    return pkg({ name: `@caisson/${name}`, dir, license });
+    return pkg({ name: `@caisson-sh/${name}`, dir, license });
   }
 
   test("Apache-2.0 plus an Apache LICENSE naming the holder is clean", () => {
@@ -201,7 +201,7 @@ describe("checkOpenLicense", () => {
     expect(f[0]).toMatchObject({
       severity: "error",
       rule: "open-license",
-      pkg: "@caisson/mit",
+      pkg: "@caisson-sh/mit",
     });
     expect(f[0]?.message).toContain("MIT");
   });
@@ -217,9 +217,9 @@ describe("checkOpenLicense", () => {
       ),
     ]);
     expect(f.map((x) => x.pkg)).toEqual([
-      "@caisson/none",
-      "@caisson/other-holder",
-      "@caisson/commercial",
+      "@caisson-sh/none",
+      "@caisson-sh/other-holder",
+      "@caisson-sh/commercial",
     ]);
   });
 
@@ -238,7 +238,7 @@ describe("checkOpenLicense", () => {
 
 describe("checkPrivatePackages", () => {
   const priv = (name: string, isPrivate = true): Pkg =>
-    pkg({ name: `@caisson/${name}`, license: APACHE, private: isPrivate });
+    pkg({ name: `@caisson-sh/${name}`, license: APACHE, private: isPrivate });
 
   test("brand as the only private packages/ member is clean", () => {
     expect(
@@ -286,10 +286,10 @@ describe("checkNoSalesCopy", () => {
     mkdirSync(dir, { recursive: true });
     writeFileSync(
       join(dir, "package.json"),
-      JSON.stringify({ name: `@caisson/${name}`, description }),
+      JSON.stringify({ name: `@caisson-sh/${name}`, description }),
     );
     if (readme !== undefined) writeFileSync(join(dir, "README.md"), readme);
-    return pkg({ name: `@caisson/${name}`, dir, license: APACHE });
+    return pkg({ name: `@caisson-sh/${name}`, dir, license: APACHE });
   }
 
   test("a plain description and README pass; `$1` inside code is a placeholder, not a price", () => {
@@ -307,9 +307,9 @@ describe("checkNoSalesCopy", () => {
       listed("tier", "Signing.", "Commercial module. Sits on the kernel.\n"),
     ]);
     expect(f.map((x) => [x.pkg, x.rule])).toEqual([
-      ["@caisson/desc", "no-sales-copy"],
-      ["@caisson/price", "no-sales-copy"],
-      ["@caisson/tier", "no-sales-copy"],
+      ["@caisson-sh/desc", "no-sales-copy"],
+      ["@caisson-sh/price", "no-sales-copy"],
+      ["@caisson-sh/tier", "no-sales-copy"],
     ]);
     expect(f[1]?.message).toContain("$1");
     expect(f[2]?.message).toContain("README.md");
@@ -348,7 +348,7 @@ describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
   }
 
   test("a clean package — README, comment, and description all buyer-readable — passes", () => {
-    const p = fixturePkg("@caisson/fixture-clean", "packages/fixture-clean");
+    const p = fixturePkg("@caisson-sh/fixture-clean", "packages/fixture-clean");
     writeFileSync(
       join(p.dir, "README.md"),
       "# Fixture\n\nInstalls the fixture client and retries once on timeout.\n",
@@ -369,7 +369,7 @@ describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
 
   test("a gridwork-ism in a README is flagged (SS-1)", () => {
     const p = fixturePkg(
-      "@caisson/fixture-gridwork",
+      "@caisson-sh/fixture-gridwork",
       "packages/fixture-gridwork",
     );
     writeFileSync(
@@ -385,7 +385,7 @@ describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
 
   test("a Linear ticket id in a CHANGELOG is flagged (SS-4)", () => {
     const p = fixturePkg(
-      "@caisson/fixture-caisson",
+      "@caisson-sh/fixture-caisson",
       "packages/fixture-caisson",
     );
     writeFileSync(
@@ -398,7 +398,7 @@ describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
   });
 
   test("a Wave-N label in AGENTS.md is flagged (SS-2)", () => {
-    const p = fixturePkg("@caisson/fixture-wave", "packages/fixture-wave");
+    const p = fixturePkg("@caisson-sh/fixture-wave", "packages/fixture-wave");
     writeFileSync(join(p.dir, "AGENTS.md"), "Composes the Wave-0 substrate.\n");
     const f = checkShippedProse([p], root);
     expect(f).toHaveLength(1);
@@ -407,7 +407,7 @@ describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
 
   test("a bare `// see ADR-NNNN` comment is flagged (SS-3)", () => {
     const p = fixturePkg(
-      "@caisson/fixture-bare-adr",
+      "@caisson-sh/fixture-bare-adr",
       "packages/fixture-bare-adr",
     );
     writeFileSync(
@@ -421,7 +421,7 @@ describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
 
   test("a NAKED id-only comment is flagged too — line and block forms (SS-3, review P1)", () => {
     const p = fixturePkg(
-      "@caisson/fixture-naked-adr",
+      "@caisson-sh/fixture-naked-adr",
       "packages/fixture-naked-adr",
     );
     writeFileSync(
@@ -434,7 +434,7 @@ describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
   });
 
   test("a trailing non-parenthetical ADR citation in package.json description is flagged (SS-12)", () => {
-    const p = fixturePkg("@caisson/fixture-desc", "packages/fixture-desc");
+    const p = fixturePkg("@caisson-sh/fixture-desc", "packages/fixture-desc");
     writeFileSync(
       join(p.dir, "package.json"),
       JSON.stringify({
@@ -450,7 +450,7 @@ describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
 
   test("an ADR id cited parenthetically after ≥4 plain-English words in a comment passes (SS-3 allowlist)", () => {
     const p = fixturePkg(
-      "@caisson/fixture-parenthetical",
+      "@caisson-sh/fixture-parenthetical",
       "packages/fixture-parenthetical",
     );
     writeFileSync(
@@ -462,7 +462,7 @@ describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
 
   test("the same parenthetical allowance holds for a package.json description", () => {
     const p = fixturePkg(
-      "@caisson/fixture-desc-parenthetical",
+      "@caisson-sh/fixture-desc-parenthetical",
       "packages/fixture-desc-parenthetical",
     );
     writeFileSync(
@@ -477,7 +477,7 @@ describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
   });
 
   test("tooling/audit-harness is exempt even with a leak", () => {
-    const p = fixturePkg("@caisson/audit-harness", "tooling/audit-harness");
+    const p = fixturePkg("@caisson-sh/audit-harness", "tooling/audit-harness");
     writeFileSync(
       join(p.dir, "README.md"),
       "gridwork-core CAISSON-99 Wave-0\n",
@@ -486,7 +486,7 @@ describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
   });
 
   test("apps/admin is exempt even with a leak", () => {
-    const p = fixturePkg("@caisson/admin", "apps/admin");
+    const p = fixturePkg("@caisson-sh/admin", "apps/admin");
     writeFileSync(
       join(p.dir, "README.md"),
       "gridwork-core internal ops console.\n",
@@ -495,7 +495,7 @@ describe("checkShippedProse (docs/shipped-source-quality-rubric.md)", () => {
   });
 
   test("apps/site is in scope", () => {
-    const p = fixturePkg("@caisson/site", "apps/site");
+    const p = fixturePkg("@caisson-sh/site", "apps/site");
     writeFileSync(
       join(p.dir, "README.md"),
       "The gridwork-core marketing shell.\n",

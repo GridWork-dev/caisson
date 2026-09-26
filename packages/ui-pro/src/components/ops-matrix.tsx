@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import type { HTMLAttributes, ReactNode } from "react";
 
-import { Icon } from "@caisson/ui/components";
+import { Icon } from "@caisson-sh/ui/components";
 
 import "./ops-matrix.css";
 

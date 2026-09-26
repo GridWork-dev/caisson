@@ -4,21 +4,21 @@
 // identities and generate the matching OSCAL v1.2.2 Assessment Plan, or break the injected clock
 // and watch the REAL fail-closed validation the package ships (kernel's ValidationError, not a
 // mirror of it). This component drives the real `toOscalAssessmentPlan` through
-// `@caisson/oscal-spine/browser` (ADR-0396) — the hand-ported mirror (oscal-spine-logic.ts) is
+// `@caisson-sh/oscal-spine/browser` (ADR-0396) — the hand-ported mirror (oscal-spine-logic.ts) is
 // deleted, and the framework identities are derived from the real shipped packs, never copied.
 // Browser-safety is proven by the package's own static source-graph walk, not by a build.
 import { useId, useMemo, useState } from "react";
-import { CodeBlock, Radio, Select } from "@caisson/ui/components";
-import type { SelectOption } from "@caisson/ui/components";
+import { CodeBlock, Radio, Select } from "@caisson-sh/ui/components";
+import type { SelectOption } from "@caisson-sh/ui/components";
 import {
   euAiAct,
   hipaaSecurity,
   soc2Tsc,
-} from "@caisson/frameworks-pack/browser";
+} from "@caisson-sh/frameworks-pack/browser";
 import {
   OSCAL_VERSION,
   toOscalAssessmentPlan,
-} from "@caisson/oscal-spine/browser";
+} from "@caisson-sh/oscal-spine/browser";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./frameworks-pack-poke.module.css";
@@ -79,7 +79,7 @@ export default function OscalSpinePoke() {
 
   return (
     <PokeShell
-      label="@caisson/oscal-spine"
+      label="@caisson-sh/oscal-spine"
       title="Choose a framework. Generate its Assessment Plan, or break the clock."
     >
       <div className={styles.layout}>

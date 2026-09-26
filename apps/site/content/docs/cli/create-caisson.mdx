@@ -5,7 +5,7 @@ description: Scaffold a tailored codebase from the versioned module registry, by
 
 ## What it does
 
-`@caisson/cli` is the generator. You pick the modules you want; it assembles a tailored codebase
+`@caisson-sh/cli` is the generator. You pick the modules you want; it assembles a tailored codebase
 from the versioned module registry. Every module is Apache-2.0 and installs from the public npm
 registry, so a generated project needs no token and no registry configuration.
 
@@ -28,7 +28,7 @@ drifting source.
 Pass `--dry-run` to see exactly what a selection resolves to before anything is written:
 
 ```bash
-$ bunx @caisson-sh/cli@latest my-app --module @caisson/kernel@<version> --dry-run
+$ bunx @caisson-sh/cli@latest my-app --module @caisson-sh/kernel@<version> --dry-run
 create-caisson: dry-run — 9 files for "my-app"
   .github/workflows/ci.yml
   .gitignore
@@ -47,7 +47,7 @@ source, which is why the scaffold itself is small.
 Without `--dry-run` the same command writes the tree and prints the next steps:
 
 ```bash
-$ bunx @caisson-sh/cli@latest my-app --module @caisson/kernel@<version>
+$ bunx @caisson-sh/cli@latest my-app --module @caisson-sh/kernel@<version>
 
 create-caisson: generated "my-app" → my-app
 
@@ -72,7 +72,7 @@ it to your host, which returns the generation's id.
 // version against the registry, then hands the selection to the host's onGenerate hook.
 const result = await caisson.callTool("generate", {
   projectName: "my-app",
-  modules: [{ id: "@caisson/audit-worm", version: "<version>" }],
+  modules: [{ id: "@caisson-sh/audit-worm", version: "<version>" }],
 });
 
 // result.generationId — whatever id the host's onGenerate hook returns
@@ -86,7 +86,7 @@ const result = await caisson.callTool("generate", {
 | ----------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `<name>` (positional)   | slug                                                                                              | Shorthand for `--name <name>`: the advertised `bunx create-caisson my-app` quickstart. An explicit `--name` always wins on conflict.                                                       |
 | `--name <slug>`         | a-z0-9, kebab, max 64 chars                                                                       | Project name; the output directory unless `--out` is set.                                                                                                                                  |
-| `--module <id@version>` | repeatable                                                                                        | An exact `@caisson/<slug>@<version>` pin. Split on the _last_ `@`, so a scoped id keeps its leading `@`.                                                                                   |
+| `--module <id@version>` | repeatable                                                                                        | An exact `@caisson-sh/<slug>@<version>` pin. Split on the _last_ `@`, so a scoped id keeps its leading `@`.                                                                                   |
 | `--deploy <target>`     | `railway` \| `fly` \| `vercel`                                                                    | Layers that deploy target's template directory on top of base.                                                                                                                              |
 | `--framework <target>`  | `next`                                                                                            | Layers a wired Next.js App-Router starter demonstrating auth/tenancy/billing/jobs/email/ai-config wiring on the base substrate.                                                            |
 | `--out <dir>`           | path                                                                                              | Output directory (defaults to the project name).                                                                                                                                           |
@@ -99,7 +99,7 @@ fails closed on a missing required field instead of hanging on a prompt.
 
 ### The registry index schema
 
-`@caisson/registry-schema` owns the index the CLI and the MCP server read against.
+`@caisson-sh/registry-schema` owns the index the CLI and the MCP server read against.
 Every module id **and** version is checked before it reaches a path or a subprocess argument:
 a bad id never gets far enough to matter:
 
@@ -116,7 +116,7 @@ function assertKnownVersion(
 function loadRegistryIndexFromFile(path: string): RegistryIndex;
 ```
 
-`assertKnownModule` re-checks the `@caisson/<slug>` shape and membership in the index;
+`assertKnownModule` re-checks the `@caisson-sh/<slug>` shape and membership in the index;
 `assertKnownVersion` additionally requires that exact version among the module's catalog
 `versions`. Both throw a plain `Error` on a miss, synchronously, before any generation work
 starts. `loadRegistryIndexFromFile` is the one sanctioned read path (`RegistryIndex.parse`
@@ -126,7 +126,7 @@ underneath); a malformed or tampered index file throws rather than yielding a ha
 interface RegistryIndex {
   schemaVersion: 1;
   modules: {
-    id: string; // "@caisson/<slug>"
+    id: string; // "@caisson-sh/<slug>"
     latest: string; // semver
     versions: {
       version: string; // semver
@@ -138,14 +138,14 @@ interface RegistryIndex {
 }
 ```
 
-The CLI's catalog is derived when the CLI is built: every published `@caisson/*` package, at the
+The CLI's catalog is derived when the CLI is built: every published `@caisson-sh/*` package, at the
 version in its `package.json`, with the description, dependencies, and stability from its
 manifest. It is never hand-edited. A generation resolves against this catalog once and pins the
 exact versions it used into `package.json`; nothing re-resolves against `latest` after that.
 
 ### Generation
 
-`@caisson/cli` validates a raw selection against the module catalog, then materializes it:
+`@caisson-sh/cli` validates a raw selection against the module catalog, then materializes it:
 in-memory, no disk write yet:
 
 ```ts

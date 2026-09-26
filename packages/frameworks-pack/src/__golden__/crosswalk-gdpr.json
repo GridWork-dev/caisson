@@ -16,7 +16,7 @@
       "claim": "maps-to",
       "control": "Art. 5(1)(e)",
       "summary": "Personal data is kept in identifiable form no longer than necessary for the purpose (storage limitation).",
-      "mechanism": "@caisson/retention-runner — scheduled, per-target erasure sweeps, backed by the audit-worm retention floor that prevents a window from being silently shortened.",
+      "mechanism": "@caisson-sh/retention-runner — scheduled, per-target erasure sweeps, backed by the audit-worm retention floor that prevents a window from being silently shortened.",
       "evidence": "Erasure-run and schedule tests in packages/retention-runner.",
       "buyerResponsibility": "Defining the retention periods and lawful basis for each data category, and which records are in scope for erasure."
     },
@@ -24,7 +24,7 @@
       "claim": "maps-to",
       "control": "Art. 5(2)",
       "summary": "The controller can demonstrate compliance with the data-protection principles (accountability).",
-      "mechanism": "@caisson/audit-worm — a tamper-evident, hash-chained record, exportable through the signed evidence pack (OSCAL) as demonstrable evidence.",
+      "mechanism": "@caisson-sh/audit-worm — a tamper-evident, hash-chained record, exportable through the signed evidence pack (OSCAL) as demonstrable evidence.",
       "evidence": "The audit chain plus the compliance-bundle evidence-pack export.",
       "buyerResponsibility": "The accountability record for YOUR processing — your policies, DPIAs, lawful-basis documentation, and the demonstration itself to a supervisory authority."
     },
@@ -32,7 +32,7 @@
       "claim": "implements",
       "control": "Art. 17",
       "summary": "A data subject can obtain erasure of their personal data (the right to be forgotten).",
-      "mechanism": "@caisson/field-crypto — crypto-shred destroys a subject's governing key so their ciphertext is irreversibly unrecoverable, selectively (other subjects still decrypt) and irreversibly (re-provisioning a shredded scope is refused); @caisson/retention-runner schedules the erasure sweep across targets.",
+      "mechanism": "@caisson-sh/field-crypto — crypto-shred destroys a subject's governing key so their ciphertext is irreversibly unrecoverable, selectively (other subjects still decrypt) and irreversibly (re-provisioning a shredded scope is refused); @caisson-sh/retention-runner schedules the erasure sweep across targets.",
       "evidence": "The crypto-shred tests prove the field-level erasure primitive is selective, irreversible, and produces a PII-free audit record.",
       "buyerResponsibility": "Identifying the data subject's records, honoring the Art. 17(3) exemptions (legal obligation, freedom of expression, etc.), verifying the request, triggering the erasure, and covering any personal data your system holds outside field-crypto-encrypted columns.",
       "proof": {
@@ -45,7 +45,7 @@
       "claim": "maps-to",
       "control": "Art. 25",
       "summary": "Data protection is built into processing by design and applied by default.",
-      "mechanism": "The compliance bundle's composition — fail-closed tenant RLS (@caisson/tenancy-rls), field-level encryption (@caisson/field-crypto), and an append-only audit chain (@caisson/audit-worm) — provides data-protection-by-design mechanisms.",
+      "mechanism": "The compliance bundle's composition — fail-closed tenant RLS (@caisson-sh/tenancy-rls), field-level encryption (@caisson-sh/field-crypto), and an append-only audit chain (@caisson-sh/audit-worm) — provides data-protection-by-design mechanisms.",
       "evidence": "The tenancy-rls, field-crypto, and audit-worm test suites.",
       "buyerResponsibility": "The design decisions for your processing: your DPIA, the default settings you choose, data minimization, and the technical-and-organizational-measures assessment for your system."
     },
@@ -53,7 +53,7 @@
       "claim": "maps-to",
       "control": "Art. 30",
       "summary": "The controller or processor maintains a record of its processing activities.",
-      "mechanism": "@caisson/audit-worm — the immutable activity chain contributes evidence toward the processing record.",
+      "mechanism": "@caisson-sh/audit-worm — the immutable activity chain contributes evidence toward the processing record.",
       "evidence": "The audit chain and its verify path in packages/audit-worm.",
       "buyerResponsibility": "Maintaining the Article 30 register itself — purposes of processing, categories of data and recipients, transfers, and retention — which is your documentation duty, not a Caisson artifact."
     },
@@ -61,7 +61,7 @@
       "claim": "implements",
       "control": "Art. 32(1)(a)",
       "summary": "Personal data is protected by appropriate measures including pseudonymization and encryption.",
-      "mechanism": "@caisson/field-crypto — per-field AEAD encryption of personal data at rest, bound to its tenant/column/row by additional authenticated data, so a relocated or cross-tenant ciphertext fails to authenticate and an old key version still decrypts after rotation.",
+      "mechanism": "@caisson-sh/field-crypto — per-field AEAD encryption of personal data at rest, bound to its tenant/column/row by additional authenticated data, so a relocated or cross-tenant ciphertext fails to authenticate and an old key version still decrypts after rotation.",
       "evidence": "The encrypt-field tests prove round-trip encryption plus cross-row, cross-column, and cross-tenant relocation failures and tamper detection.",
       "buyerResponsibility": "Selecting which fields hold personal data and are encrypted, your key-custody and rotation policy, and encryption in transit (TLS) at your boundary.",
       "proof": {
@@ -74,7 +74,7 @@
       "claim": "maps-to",
       "control": "Art. 32(1)(b)",
       "summary": "Processing systems maintain the ongoing confidentiality of personal data.",
-      "mechanism": "@caisson/tenancy-rls — fail-closed FORCE ROW LEVEL SECURITY isolating each tenant's data at the database layer.",
+      "mechanism": "@caisson-sh/tenancy-rls — fail-closed FORCE ROW LEVEL SECURITY isolating each tenant's data at the database layer.",
       "evidence": "The force-RLS and tenant-guard tests in packages/tenancy-rls.",
       "buyerResponsibility": "The full confidentiality/integrity/availability/resilience posture Art. 32(1)(b)–(c) require — availability and disaster recovery, resilience, and the regular testing of your measures under Art. 32(1)(d)."
     }

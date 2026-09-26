@@ -22,18 +22,18 @@ function fixture(): string {
   write(root, NEXT, {
     scripts: { build: "next build" },
     dependencies: {
-      "@caisson/kernel": "^1.0.0",
-      "@caisson/auth": "^1.0.0",
+      "@caisson-sh/kernel": "^1.0.0",
+      "@caisson-sh/auth": "^1.0.0",
       next: "^16.0.0",
     },
     devDependencies: { typescript: "^6.0.0" },
   });
   write(root, "packages/kernel/package.json", {
-    name: "@caisson/kernel",
+    name: "@caisson-sh/kernel",
     version: "2.3.4",
   });
   write(root, "packages/auth/package.json", {
-    name: "@caisson/auth",
+    name: "@caisson-sh/auth",
     version: "3.4.5",
   });
   return root;
@@ -49,8 +49,8 @@ test("derives the template's pins, preserving unrelated manifest fields", () => 
   expect(JSON.parse(readFileSync(join(root, NEXT), "utf8"))).toEqual({
     scripts: { build: "next build" },
     dependencies: {
-      "@caisson/kernel": "^2.3.4",
-      "@caisson/auth": "^3.4.5",
+      "@caisson-sh/kernel": "^2.3.4",
+      "@caisson-sh/auth": "^3.4.5",
       next: "^16.0.0",
     },
     devDependencies: { typescript: "^6.0.0" },
@@ -62,7 +62,7 @@ test("derives the template's pins, preserving unrelated manifest fields", () => 
 
 test("a missing workspace fails without writing the template", () => {
   const root = fixture();
-  write(root, NEXT, { dependencies: { "@caisson/missing": "^1.0.0" } });
+  write(root, NEXT, { dependencies: { "@caisson-sh/missing": "^1.0.0" } });
   const before = readFileSync(join(root, NEXT), "utf8");
   expect(() => syncGeneratorTemplatePins(root)).toThrow();
   expect(readFileSync(join(root, NEXT), "utf8")).toBe(before);
@@ -71,14 +71,14 @@ test("a missing workspace fails without writing the template", () => {
 test("rejects a workspace with the wrong identity or version", () => {
   const root = fixture();
   write(root, "packages/kernel/package.json", {
-    name: "@caisson/not-kernel",
+    name: "@caisson-sh/not-kernel",
     version: "2.3.4",
   });
   expect(() => syncGeneratorTemplatePins(root)).toThrow(
     "Workspace name mismatch",
   );
   write(root, "packages/kernel/package.json", {
-    name: "@caisson/kernel",
+    name: "@caisson-sh/kernel",
     version: "workspace:*",
   });
   expect(() => syncGeneratorTemplatePins(root)).toThrow();
@@ -87,7 +87,9 @@ test("rejects a workspace with the wrong identity or version", () => {
 test("rejects dependency traversal and a template with no workspace pins", () => {
   const root = fixture();
   // Deliberately hostile fixture: no dependency name may escape packages/.
-  write(root, NEXT, { dependencies: { "@caisson/../../outside": "^1.0.0" } });
+  write(root, NEXT, {
+    dependencies: { "@caisson-sh/../../outside": "^1.0.0" },
+  });
   expect(() => syncGeneratorTemplatePins(root)).toThrow(
     "Invalid workspace dependency",
   );

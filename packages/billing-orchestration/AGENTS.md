@@ -1,8 +1,8 @@
-# @caisson/billing-orchestration — agent usage note
+# @caisson-sh/billing-orchestration — agent usage note
 
 Billing orchestration for your app: the checkout drivers, the provider→`DomainBillingEvent` parsers, and
 the dual-layer webhook idempotency. Signature verification is NOT here — it lives in
-`@caisson/billing` (`verifyStripeWebhook`, `verifyPaddleWebhook`, `verifyLemonSqueezyWebhook`,
+`@caisson-sh/billing` (`verifyStripeWebhook`, `verifyPaddleWebhook`, `verifyLemonSqueezyWebhook`,
 `verifyPolarWebhook`), which this package composes.
 
 ## Key surface
@@ -26,4 +26,4 @@ the dual-layer webhook idempotency. Signature verification is NOT here — it li
 ## Scope
 
 Checkout-driver construction, event mapping, and webhook idempotency only. Signature verification lives
-in `@caisson/billing`; credit wallet operations belong in `@caisson/credits`.
+in `@caisson-sh/billing`; credit wallet operations belong in `@caisson-sh/credits`.

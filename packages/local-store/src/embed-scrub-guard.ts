@@ -10,7 +10,7 @@
 // `apiKey`, or the rejected value; (3) a live cloud call sneaking into CI — the transport defaults to
 // `fetchWithTimeout` but is an injectable seam tests replace with a double.
 //
-// `scrubForEgress`/`looksLikeSecret` moved to `@caisson/kernel` (`secret-scrub.ts`, ADR-0215) —
+// `scrubForEgress`/`looksLikeSecret` moved to `@caisson-sh/kernel` (`secret-scrub.ts`, ADR-0215) —
 // kernel is the lowest-license, zero-dep home both this package and `guardrails` already depend on,
 // so the scrub predicate has exactly ONE implementation. Re-exported here so this module's public
 // surface (and every existing import of it) stays unchanged. The scrub contract itself is still golden-pinned
@@ -29,14 +29,14 @@ import {
   parseStrict,
   scrubForEgress,
   strictObject,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 // The `/node` subpath, not the root: `ssrf.ts` reaches `node:dns/promises`. Safe here because
 // `createCloudEmbedder` is exported only from the node entry (`index.ts`) — never from
 // `./browser`, whose graph deliberately excludes this module.
 import {
   assertSafePublicUrl,
   assertSafePublicUrlResolved,
-} from "@caisson/kernel/node";
+} from "@caisson-sh/kernel/node";
 import { assertEmbeddingDim } from "./embedder.ts";
 import type { Embedder } from "./embedder.ts";
 

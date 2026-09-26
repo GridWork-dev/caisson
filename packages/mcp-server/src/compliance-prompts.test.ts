@@ -2,8 +2,8 @@
 // authenticated caller, and validates its framework arg — mirroring the coach.test.ts /
 // manifest-tools.test.ts boundary structure.
 import { describe, expect, test } from "bun:test";
-import { NotFoundError, ValidationError } from "@caisson/kernel";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+import { NotFoundError, ValidationError } from "@caisson-sh/kernel";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
 import {
   createMcpServer,
   registerCompliancePrompts,
@@ -33,9 +33,9 @@ function fixtureModule(id: string) {
 }
 
 const COMPLIANCE_MEMBERS = [
-  "@caisson/compliance",
-  "@caisson/audit-worm",
-  "@caisson/field-crypto",
+  "@caisson-sh/compliance",
+  "@caisson-sh/audit-worm",
+  "@caisson-sh/field-crypto",
 ];
 
 const INDEX = loadRegistryIndex({
@@ -100,9 +100,9 @@ describe("compliance_evidence_walkthrough — wiring", () => {
     const text = out.messages[0]?.content.text ?? "";
     expect(text).toContain("generate");
     expect(text).not.toContain('"edition"');
-    expect(text).toContain("@caisson/compliance");
-    expect(text).toContain("@caisson/audit-worm");
-    expect(text).toContain("@caisson/field-crypto");
+    expect(text).toContain("@caisson-sh/compliance");
+    expect(text).toContain("@caisson-sh/audit-worm");
+    expect(text).toContain("@caisson-sh/field-crypto");
     expect(text).toContain("acme");
     expect(text).toContain("SOC2");
     // The recipe must pin CONCRETE versions — the literal "latest" is an index pointer the
@@ -116,7 +116,7 @@ describe("compliance_evidence_walkthrough — wiring", () => {
       tokens: [...TOKENS],
       index: loadRegistryIndex({
         schemaVersion: 1,
-        modules: [fixtureModule("@caisson/compliance")],
+        modules: [fixtureModule("@caisson-sh/compliance")],
       }),
       onGenerate: async () => ({ generationId: "g" }),
       compliancePrompts: {},

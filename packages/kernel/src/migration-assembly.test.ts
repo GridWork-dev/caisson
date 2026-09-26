@@ -1,17 +1,17 @@
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
+import { matchGolden } from "@caisson-sh/testing";
 import {
   type PackageMigrations,
   assembleMigrations,
   assembleMigrationsWithPinnedPrefix,
 } from "./migration-assembly.ts";
 
-// A fixed 2-package input: `@caisson/billing` depends on `@caisson/kernel`, so the kernel's
+// A fixed 2-package input: `@caisson-sh/billing` depends on `@caisson-sh/kernel`, so the kernel's
 // migrations must order first and `billing`'s 0001 renumbers to a global 0003.
 const INPUT: readonly PackageMigrations[] = [
   {
-    slug: "@caisson/billing",
-    dependsOn: ["@caisson/kernel"],
+    slug: "@caisson-sh/billing",
+    dependsOn: ["@caisson-sh/kernel"],
     migrations: [
       {
         name: "0001_credit_ledger.sql",
@@ -20,7 +20,7 @@ const INPUT: readonly PackageMigrations[] = [
     ],
   },
   {
-    slug: "@caisson/kernel",
+    slug: "@caisson-sh/kernel",
     dependsOn: [],
     migrations: [
       {
@@ -49,9 +49,9 @@ describe("migration-assembly (ADR-0070)", () => {
   test("orders by the dep DAG and renumbers globally", () => {
     const { sequence } = assembleMigrations(INPUT);
     expect(sequence.map((s) => s.sourcePackage)).toEqual([
-      "@caisson/kernel",
-      "@caisson/kernel",
-      "@caisson/billing",
+      "@caisson-sh/kernel",
+      "@caisson-sh/kernel",
+      "@caisson-sh/billing",
     ]);
     expect(sequence.map((s) => s.filename)).toEqual([
       "0001_init.sql",
@@ -69,13 +69,13 @@ describe("migration-assembly (ADR-0070)", () => {
     expect(() =>
       assembleMigrations([
         {
-          slug: "@caisson/a",
-          dependsOn: ["@caisson/b"],
+          slug: "@caisson-sh/a",
+          dependsOn: ["@caisson-sh/b"],
           migrations: [{ name: "0001_a.sql", sql: "SELECT 1;" }],
         },
         {
-          slug: "@caisson/b",
-          dependsOn: ["@caisson/a"],
+          slug: "@caisson-sh/b",
+          dependsOn: ["@caisson-sh/a"],
           migrations: [{ name: "0001_b.sql", sql: "SELECT 2;" }],
         },
       ]),
@@ -85,8 +85,8 @@ describe("migration-assembly (ADR-0070)", () => {
   test("a duplicate package slug is rejected", () => {
     expect(() =>
       assembleMigrations([
-        { slug: "@caisson/a", dependsOn: [], migrations: [] },
-        { slug: "@caisson/a", dependsOn: [], migrations: [] },
+        { slug: "@caisson-sh/a", dependsOn: [], migrations: [] },
+        { slug: "@caisson-sh/a", dependsOn: [], migrations: [] },
       ]),
     ).toThrow(/duplicate/);
   });
@@ -95,7 +95,7 @@ describe("migration-assembly (ADR-0070)", () => {
     expect(() =>
       assembleMigrations([
         {
-          slug: "@caisson/a",
+          slug: "@caisson-sh/a",
           dependsOn: [],
           migrations: [{ name: "init.sql", sql: "SELECT 1;" }],
         },
@@ -106,11 +106,11 @@ describe("migration-assembly (ADR-0070)", () => {
   test("a released global prefix stays fixed while new package migrations append", () => {
     const { sequence } = assembleMigrationsWithPinnedPrefix(INPUT, [
       {
-        sourcePackage: "@caisson/kernel",
+        sourcePackage: "@caisson-sh/kernel",
         sourceName: "0001_init.sql",
       },
       {
-        sourcePackage: "@caisson/billing",
+        sourcePackage: "@caisson-sh/billing",
         sourceName: "0001_credit_ledger.sql",
       },
     ]);
@@ -121,9 +121,9 @@ describe("migration-assembly (ADR-0070)", () => {
         migration.sourceName,
       ]),
     ).toEqual([
-      ["@caisson/kernel", "0001_init.sql"],
-      ["@caisson/billing", "0001_credit_ledger.sql"],
-      ["@caisson/kernel", "0002_accounts.sql"],
+      ["@caisson-sh/kernel", "0001_init.sql"],
+      ["@caisson-sh/billing", "0001_credit_ledger.sql"],
+      ["@caisson-sh/kernel", "0002_accounts.sql"],
     ]);
     expect(sequence.map((migration) => migration.seq)).toEqual([1, 2, 3]);
   });
@@ -132,7 +132,7 @@ describe("migration-assembly (ADR-0070)", () => {
     expect(() =>
       assembleMigrationsWithPinnedPrefix(INPUT, [
         {
-          sourcePackage: "@caisson/kernel",
+          sourcePackage: "@caisson-sh/kernel",
           sourceName: "9999_missing.sql",
         },
       ]),
@@ -141,11 +141,11 @@ describe("migration-assembly (ADR-0070)", () => {
     expect(() =>
       assembleMigrationsWithPinnedPrefix(INPUT, [
         {
-          sourcePackage: "@caisson/kernel",
+          sourcePackage: "@caisson-sh/kernel",
           sourceName: "0001_init.sql",
         },
         {
-          sourcePackage: "@caisson/kernel",
+          sourcePackage: "@caisson-sh/kernel",
           sourceName: "0001_init.sql",
         },
       ]),

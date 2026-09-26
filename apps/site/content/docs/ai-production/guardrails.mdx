@@ -3,7 +3,7 @@ title: guardrails
 description: A fail-closed guard around every model call, PII redaction (mask, hash, or tokenize), a swappable moderator, and an unconditional secret-shape gate.
 ---
 
-`@caisson/guardrails` is the chokepoint between your app and a model call. `guardInput`
+`@caisson-sh/guardrails` is the chokepoint between your app and a model call. `guardInput`
 moderates then redacts PII on the way in; `guardOutput` moderates on the way out. Either leg
 throws a `GuardrailError` (422) on a block, a moderator outage never silently lets content
 through.
@@ -20,7 +20,7 @@ through.
   hooks in your own function.
 - **A PII engine**: `detectPii` finds email, SSN, Luhn-validated credit card, and phone spans.
   `redactPii` replaces them irreversibly (`mask` → `[EMAIL]`, `hash` → `[EMAIL:ab12…]`);
-  `tokenizePii` instead seals the original via `@caisson/field-crypto` and swaps in an opaque
+  `tokenizePii` instead seals the original via `@caisson-sh/field-crypto` and swaps in an opaque
   placeholder that `detokenizePii` can restore.
 - **An FTC "4 Ps" dark-pattern evaluator**: `evaluateFtc4P` scores marketing/UI copy across
   prominence, presentation, placement, and proximity; wrap it as a moderator with
@@ -32,13 +32,13 @@ through.
 ## Install
 
 ```sh
-bun add @caisson/guardrails
+bun add @caisson-sh/guardrails
 ```
 
 ## Quickstart
 
 ```ts
-import { guardInput, guardOutput, localModerator } from "@caisson/guardrails";
+import { guardInput, guardOutput, localModerator } from "@caisson-sh/guardrails";
 
 const policy = {
   policyName: "default",
@@ -54,7 +54,7 @@ await guardOutput(modelReply, policy, runtime); // throws GuardrailError if the 
 ## PII redaction modes
 
 ```ts
-import { detectPii, redactPii, tokenizePii, detokenizePii } from "@caisson/guardrails";
+import { detectPii, redactPii, tokenizePii, detokenizePii } from "@caisson-sh/guardrails";
 
 const matches = detectPii(text); // email, ssn, credit_card, phone spans
 
@@ -75,8 +75,8 @@ regex pre-screen, and an optional `pii` mode for the input leg. `GuardRuntime` c
 
 ## Composition
 
-Guardrails is a base primitive, it never imports an edition. It composes `@caisson/kernel`
-for the `EventSink`/`looksLikeSecret` primitives and `@caisson/field-crypto` for reversible
+Guardrails is a base primitive, it never imports an edition. It composes `@caisson-sh/kernel`
+for the `EventSink`/`looksLikeSecret` primitives and `@caisson-sh/field-crypto` for reversible
 PII tokenization; the AI-Production bundle's metered gateway wires `guardInput`/`guardOutput`
 around its `infer()`/`embed()` calls.
 

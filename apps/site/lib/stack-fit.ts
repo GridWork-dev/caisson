@@ -6,7 +6,7 @@
 //
 // The DB-posture map is drift-pinned: stack-fit.test.ts asserts every sellable MODULES id has
 // a posture, so a new module can't ship without an honest DB classification.
-import type { IconName } from "@caisson/ui/components";
+import type { IconName } from "@caisson-sh/ui/components";
 
 /** Whether a module pulls in a database of its own. */
 export type DbPosture = "postgres" | "sqlite" | "none";
@@ -14,11 +14,11 @@ export type DbPosture = "postgres" | "sqlite" | "none";
 /**
  * Per-module database posture, keyed by MODULES id. Verified against each package's deps +
  * imports:
- *   - `postgres`: builds on @caisson/tenancy-rls (fail-closed Postgres RLS) or the pg-boss job queue.
+ *   - `postgres`: builds on @caisson-sh/tenancy-rls (fail-closed Postgres RLS) or the pg-boss job queue.
  *   - `sqlite`:   runs on bun:sqlite / sqlite-vec, on-device — no server database.
  *   - `none`:     ships no database dependency of its own (crypto, in-process logic, on-device ONNX,
  *                 or logic that runs over a handle you inject).
- * retention-runner is `postgres` transitively (it schedules through @caisson/jobs → pg-boss).
+ * retention-runner is `postgres` transitively (it schedules through @caisson-sh/jobs → pg-boss).
  */
 export const MODULE_DB_POSTURE: Record<string, DbPosture> = {
   // Postgres — tenant-isolation / metering / ledger built on tenancy-rls (or the job queue), plus
@@ -37,7 +37,7 @@ export const MODULE_DB_POSTURE: Record<string, DbPosture> = {
   // exist for tests, but the durable posture is Postgres).
   "agent-trajectory": "postgres",
   // access-review ships its own RLS'd Postgres table (access_review_campaign, ENABLE + FORCE
-  // ROW LEVEL SECURITY) and schedules its open/close tasks through @caisson/jobs → pg-boss.
+  // ROW LEVEL SECURITY) and schedules its open/close tasks through @caisson-sh/jobs → pg-boss.
   "access-review": "postgres",
   // SQLite / on-device — no server database.
   "local-store": "sqlite",

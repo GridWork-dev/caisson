@@ -1,7 +1,7 @@
 // The browser-safety contract for `./browser` (ADR-0396) — proven by a STATIC SOURCE-GRAPH WALK,
 // never by a build: a bundler does not fail on a node builtin, it SUBSTITUTES one (turbopack swaps
 // in crypto-browserify and the client chunk silently grows ~428KB, exit 0). The shared walker
-// resolves relative specifiers AND workspace @caisson/* specifiers through each package's exports
+// resolves relative specifiers AND workspace @caisson-sh/* specifiers through each package's exports
 // map, so the zero-offender claim covers the whole graph, kernel included.
 //
 // The walker's own blind spot is node GLOBALS (`Buffer` is not an import), so the second describe
@@ -12,7 +12,7 @@ import { join } from "node:path";
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
-} from "@caisson/testing/module-graph";
+} from "@caisson-sh/testing/module-graph";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../..");
 const BROWSER_ENTRY = join(import.meta.dir, "browser.ts");
@@ -38,7 +38,7 @@ describe("`./browser` is browser-safe", () => {
       globals.filter((o) => o.file.startsWith("packages/signing-primitive/")),
     ).toEqual([]);
     // The single pre-existing hit in the wider graph, NAMED rather than filtered away blind:
-    // @caisson/kernel's `loadConfig(schema, source = process.env)` default parameter, which has been
+    // @caisson-sh/kernel's `loadConfig(schema, source = process.env)` default parameter, which has been
     // on the kernel `.` barrel since its ./node split. A bundler substitutes a static object for it.
     expect(globals).toEqual([
       { file: "packages/kernel/src/config.ts", spec: "process" },

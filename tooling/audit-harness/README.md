@@ -1,4 +1,4 @@
-# @caisson/audit-harness
+# @caisson-sh/audit-harness
 
 The cross-domain audit/validate harness (ADR-0134 · v2: ADR-0233) — the pure library behind the
 whole-repo audit. Internal engineering tooling: **not sellable**, no registry `manifest.ts`,
@@ -49,7 +49,7 @@ import {
   reconcile,
   checkScope,
   validateHighRisk,
-} from "@caisson/audit-harness";
+} from "@caisson-sh/audit-harness";
 
 // derive the domain partition + build the cell list (domain × applicable dimension):
 const domains = deriveDomains();

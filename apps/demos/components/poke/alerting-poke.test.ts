@@ -1,4 +1,4 @@
-// The alerting poke's checkable claims, now that it drives the REAL `@caisson/alerting/browser`
+// The alerting poke's checkable claims, now that it drives the REAL `@caisson-sh/alerting/browser`
 // and the hand-ported mirror (alerting-logic.ts) is deleted. No parity suite survives because there
 // is nothing left to compare — the four control assertions below run the package's own async
 // `processAlert` through the poke's session bookkeeping, where the mirror's suite only ever proved
@@ -10,11 +10,11 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
 import {
   AlertEventSchema,
   DEFAULT_EVENT_TYPE_REGISTRY,
-} from "@caisson/alerting/browser";
+} from "@caisson-sh/alerting/browser";
 
 import {
   FLOOD_BURST_COUNT,
@@ -44,7 +44,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
     // Guard the guard: the poke rig and its stylesheet alone would satisfy files.length, so these
     // named modules are the claim. orchestrator.ts is the load-bearing one — it is the module that
     // used to value-import the node-only channels.ts, and kernel/src/errors.ts is a second hop
-    // reached only by a bare @caisson/* specifier, so a resolver gone blind fails here.
+    // reached only by a bare @caisson-sh/* specifier, so a resolver gone blind fails here.
     expect(walk.files).toContain("packages/alerting/src/browser.ts");
     expect(walk.files).toContain("packages/alerting/src/orchestrator.ts");
     expect(walk.files).toContain("packages/kernel/src/errors.ts");

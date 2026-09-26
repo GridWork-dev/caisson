@@ -2,7 +2,7 @@
 // TEST-DOUBLE here (no live cloud call in CI). Proves the FTS5 floor (`undefined` ⇒ no vector) and
 // the fail-closed dimension contract (a wrong-width vector throws, never corrupts the index).
 import { describe, expect, test } from "bun:test";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import { assertEmbeddingDim, embedOrSkip, type Embedder } from "./embedder.ts";
 
 /** A deterministic test-double embedder — returns a fixed-width vector, never a network call. */

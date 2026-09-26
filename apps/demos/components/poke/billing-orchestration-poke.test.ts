@@ -4,17 +4,17 @@
 //   1. The poke's client graph is browser-safe — proven by a STATIC SOURCE-GRAPH WALK, never by a
 //      build (a bundler does not fail on a node builtin, it SUBSTITUTES a ~428KB polyfill, exit 0).
 //      This poke is the sharpest case for that rule: the package's `.` barrel reaches node:crypto
-//      through @caisson/billing's signature verifiers and `pg` through @caisson/tenancy-rls, so the
+//      through @caisson-sh/billing's signature verifiers and `pg` through @caisson-sh/tenancy-rls, so the
 //      `/browser` subpath is load-bearing and the specifier itself is pinned below.
 //   2. The claim-key decision is the package's, not a copy: the poke's step function rejects a blank
-//      and a colon-bearing key by throwing the shipped @caisson/kernel ValidationError. Be honest
+//      and a colon-bearing key by throwing the shipped @caisson-sh/kernel ValidationError. Be honest
 //      about how that is proven — comparing the thrown message to the shipped guard's own output
 //      cannot fail while the poke delegates, so it catches only a REWORDED re-inline; the re-inline
 //      that copy-pastes a message byte for byte is caught instead by the source bans below, which
 //      cover both of the guard's messages and constructing the error at all. What the poke DOES
 //      author is the em-dash normalization those words pass through on the way to the screen
 //      (`verdictProse`, ADR-0375 lock 1), pinned here too.
-//   3. The chip vocabulary is presentation, pinned against @caisson/billing's real
+//   3. The chip vocabulary is presentation, pinned against @caisson-sh/billing's real
 //      DomainBillingEventSchema (this test runs under bun, so it may import the node-capable barrel).
 //   4. The in-memory claim table is a PORT, not a second implementation: it is replayed against the
 //      REAL processEvent on a real PGlite RLS harness (pg + tenant GUC + ON CONFLICT all resolve
@@ -36,15 +36,15 @@ import {
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
-} from "@caisson/testing/module-graph";
-import { ValidationError } from "@caisson/kernel";
-import { DomainBillingEventSchema } from "@caisson/billing";
+} from "@caisson-sh/testing/module-graph";
+import { ValidationError } from "@caisson-sh/kernel";
+import { DomainBillingEventSchema } from "@caisson-sh/billing";
 import {
   PROCESSED_EVENT_SCHEMA_SQL,
   assertValidSourceEventId,
   processEvent,
-} from "@caisson/billing-orchestration";
-import { type TestPg, newTestPg } from "@caisson/testing";
+} from "@caisson-sh/billing-orchestration";
+import { type TestPg, newTestPg } from "@caisson-sh/testing";
 
 import {
   DOMAIN_BILLING_EVENT_TYPES,
@@ -97,7 +97,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
   test("the walk really crossed into the package, past the first hop", () => {
     // Guard the guard: the UI kit alone contributes dozens of files, so files.length can never
     // prove the billing-orchestration edges resolved. event-keys.ts is reachable only through
-    // @caisson/billing-orchestration/browser, and kernel's errors.ts only through event-keys.ts —
+    // @caisson-sh/billing-orchestration/browser, and kernel's errors.ts only through event-keys.ts —
     // first hop, then second hop, so a resolver gone blind inside a workspace package fails here.
     expect(walk.files).toContain(
       "packages/billing-orchestration/src/event-keys.ts",
@@ -130,21 +130,23 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
     );
   });
 
-  test("the import specifier is the /browser subpath, and @caisson/billing is type-only", () => {
+  test("the import specifier is the /browser subpath, and @caisson-sh/billing is type-only", () => {
     // The subpath is the whole proof — importing the barrel instead would drag the verifiers and
     // pg into the bundle graph, so pin the specifier in source, not just the walk result.
     const src = readFileSync(POKE_ENTRY, "utf8");
     expect(src).toMatch(
-      /^import \{ assertValidSourceEventId \} from "@caisson\/billing-orchestration\/browser";$/m,
+      /^import \{ assertValidSourceEventId \} from "@caisson-sh\/billing-orchestration\/browser";$/m,
     );
-    expect(src).not.toMatch(/from "@caisson\/billing-orchestration";$/m);
+    expect(src).not.toMatch(/from "@caisson-sh\/billing-orchestration";$/m);
     // The erasure claim is checked, not assumed: the DomainBillingEvent import exists in source as
     // the STATEMENT-LEVEL `import type` form (compiler-guaranteed erasure under
     // verbatimModuleSyntax), and the inline `import { type X }` form — which the walker
     // deliberately reports as a value edge — is affirmatively absent.
-    expect(src).toMatch(/^import type \{[^}]*\} from "@caisson\/billing";$/m);
+    expect(src).toMatch(
+      /^import type \{[^}]*\} from "@caisson-sh\/billing";$/m,
+    );
     expect(src).not.toMatch(
-      /^import \{[^}]*\btype\b[^}]*\} from "@caisson\/billing";$/m,
+      /^import \{[^}]*\btype\b[^}]*\} from "@caisson-sh\/billing";$/m,
     );
   });
 

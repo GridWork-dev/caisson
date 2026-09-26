@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { parseComponentManifest } from "@caisson/ds-manifest";
+import { parseComponentManifest } from "@caisson-sh/ds-manifest";
 import {
   assertManifestCurrent,
   buildComponentManifest,
@@ -26,7 +26,7 @@ function readUiVersion(): string {
     !("version" in input) ||
     typeof input.version !== "string"
   )
-    throw new Error("@caisson/ui package version is missing");
+    throw new Error("@caisson-sh/ui package version is missing");
   return input.version;
 }
 
@@ -50,7 +50,7 @@ describe("component-manifest generator", () => {
     const manifest = parseComponentManifest(buildComponentManifest(UI_ROOT));
 
     expect(manifest.generatedFor).toEqual({
-      pkg: "@caisson/ui",
+      pkg: "@caisson-sh/ui",
       version: readUiVersion(),
     });
     expect(manifest.components.map(({ name }) => name)).toEqual(

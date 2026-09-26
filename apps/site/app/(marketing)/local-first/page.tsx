@@ -173,12 +173,12 @@ export default function LocalFirstPage() {
         credentials={<StatusChip tone="muted" label="Own the source" dot />}
         artifact={
           <Terminal
-            label="@caisson/field-crypto"
+            label="@caisson-sh/field-crypto"
             status={<StatusChip tone="success" label="sealed per-tenant" dot />}
           >
             <span className="cs-tok-muted">
               {
-                'import {\n  TenantFieldCrypto,\n} from\n  "@caisson/field-crypto"\n\n'
+                'import {\n  TenantFieldCrypto,\n} from\n  "@caisson-sh/field-crypto"\n\n'
               }
             </span>
             <span className="cs-tok-muted">{"const"}</span>
@@ -205,7 +205,7 @@ export default function LocalFirstPage() {
       {/* ===== The compute seam ===== */}
       <Section
         title="On-device by default, hosted by opt-in."
-        lede="The Local-first bundle composes @caisson/kernel, @caisson/local-store, @caisson/field-crypto, @caisson/local-privacy, @caisson/local-inference, and @caisson/local-sync. @caisson/local-inference provides the InferenceBackend port and runs on-device by default: a MiniLM-class ONNX model via transformers.js, fetched on first use and SHA-256 hash-verified before it touches your data. Hosted inference is explicit opt-in. The same interface offers metered, egress-guarded transports for OpenRouter, Azure OpenAI, and AWS Bedrock, all disabled until configured."
+        lede="The Local-first bundle composes @caisson-sh/kernel, @caisson-sh/local-store, @caisson-sh/field-crypto, @caisson-sh/local-privacy, @caisson-sh/local-inference, and @caisson-sh/local-sync. @caisson-sh/local-inference provides the InferenceBackend port and runs on-device by default: a MiniLM-class ONNX model via transformers.js, fetched on first use and SHA-256 hash-verified before it touches your data. Hosted inference is explicit opt-in. The same interface offers metered, egress-guarded transports for OpenRouter, Azure OpenAI, and AWS Bedrock, all disabled until configured."
         band="tint"
       />
 
@@ -308,7 +308,7 @@ export default function LocalFirstPage() {
       <Reveal>
         <Section
           title="All local."
-          lede="@caisson/local-store gives you hybrid retrieval: sqlite-vec ANN and FTS5 merged by Reciprocal-Rank-Fusion, degrading to an FTS-only path if the vector leg fails, semantic search with nothing indexed by a vector cloud vendor. Isolation is file-per-tenant: the resolved file path is the tenant boundary. On top, the bundle ships a built two-way sync engine (changesets, tombstones, a logical clock, and a reconcile pass with a convergence test) for when a device needs to catch up."
+          lede="@caisson-sh/local-store gives you hybrid retrieval: sqlite-vec ANN and FTS5 merged by Reciprocal-Rank-Fusion, degrading to an FTS-only path if the vector leg fails, semantic search with nothing indexed by a vector cloud vendor. Isolation is file-per-tenant: the resolved file path is the tenant boundary. On top, the bundle ships a built two-way sync engine (changesets, tombstones, a logical clock, and a reconcile pass with a convergence test) for when a device needs to catch up."
           band="surface"
         />
       </Reveal>

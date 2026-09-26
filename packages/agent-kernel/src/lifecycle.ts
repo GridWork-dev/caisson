@@ -1,7 +1,7 @@
 // The lifecycle act FSM (ADR-0065). The 7 acts and the legal-transition adjacency ONLY — an illegal
 // transition throws (flag-never-guess), never a silent skip. Engine-neutral: this models the act
 // ORDERING a governed run moves through; it does not run an act or call an engine.
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 
 /** The 7 acts, in canonical order. */
 export const ACTS = [

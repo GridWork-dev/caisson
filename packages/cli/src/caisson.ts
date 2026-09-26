@@ -8,7 +8,7 @@
 //                                             DB call against the buyer's own Postgres.
 // Bins may print to stdout/stderr (the no-console floor is for library code); errors fail closed
 // with a non-zero exit.
-import { loadBaseManifest } from "@caisson/ds-manifest";
+import { loadBaseManifest } from "@caisson-sh/ds-manifest";
 import { describeCommand } from "./describe.ts";
 import { runDoctorCli } from "./doctor.ts";
 import { runRunCli } from "./run.ts";
@@ -17,14 +17,14 @@ export const CAISSON_HELP = `\
 caisson — agent-facing companion to create-caisson
 
 Usage:
-  caisson describe --json           Print the full @caisson/ui component manifest as JSON
+  caisson describe --json           Print the full @caisson-sh/ui component manifest as JSON
   caisson describe <name> --json    Print one component's metadata as JSON (case-insensitive)
   caisson doctor [dir] [--json]     Verify usage of the kit (via your local MCP server)
   caisson run ...                   Start/approve/deny/status for a governed agent run (see 'caisson run --help')
   caisson --help                    Show this help
 
 describe reads the committed base manifest — no account required. doctor and 'run start' are thin
-clients of your local @caisson/mcp-server (set CAISSON_MCP_COMMAND), authenticated by that
+clients of your local @caisson-sh/mcp-server (set CAISSON_MCP_COMMAND), authenticated by that
 server's own Bearer token. 'run approve/deny/status' talk DIRECTLY to your Postgres
 (DATABASE_URL/CAISSON_ACCOUNT_ID) — see 'caisson run --help'.
 `;

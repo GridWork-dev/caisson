@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/standards-gate",
+  "name": "@caisson-sh/standards-gate",
   "version": "0.1.5",
   "private": true,
   "description": "The ONE standards gate (ADR-0021/0022): license-boundary (AGPL) + down-only dependency + manifest validation. The only registry ingress runs through this.",
@@ -14,12 +14,12 @@
     "gate": "bun run ./src/cli.ts"
   },
   "dependencies": {
-    "@caisson/registry-schema": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*",
+    "@caisson-sh/registry-schema": "workspace:*",
+    "@caisson-sh/tenancy-rls": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "dependency-cruiser": "^18.0.0",
     "typescript": "^6.0.3"
   }

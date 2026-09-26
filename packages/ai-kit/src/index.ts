@@ -1,4 +1,4 @@
-// @caisson/ai-kit — the AI Production Kit edition (ADR-0059). The metered inference gateway: one
+// @caisson-sh/ai-kit — the AI Production Kit edition (ADR-0059). The metered inference gateway: one
 // `infer(lane, input, opts)` chokepoint composing the four base primitives — prompt-registry
 // (resolve + render), ai-meter (reserve/reconcile + caps/breaker), guardrails (input/output
 // moderation + PII redact/restore), ai-config (lane → provider) — behind Vercel AI SDK v7. The ONLY
@@ -82,7 +82,7 @@ export type {
 } from "./byok-resolver.ts";
 
 // The MCP `run_start`/`run_status` host callbacks (ADR-0360, S5 exposure/publish, ADR-0361/0362):
-// the injected wiring `@caisson/mcp-server`'s open-tier `run-tools.ts` seam calls into, since the
+// the injected wiring `@caisson-sh/mcp-server`'s open-tier `run-tools.ts` seam calls into, since the
 // open package can never import this commercial edition at runtime.
 export { buildRunTools } from "./mcp-run-tools.ts";
 export type {

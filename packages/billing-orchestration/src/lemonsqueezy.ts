@@ -1,6 +1,6 @@
 // LemonSqueezy billing driver + event mapper (ADR-0175) — a buyer-facing Merchant-of-Record
 // `BillingProvider` driver. LemonSqueezy->domain event mapping + REST checkout creation. The raw-body
-// HMAC signature verifier (`verifyLemonSqueezyWebhook`) stays OPEN in @caisson/billing (uniform rule:
+// HMAC signature verifier (`verifyLemonSqueezyWebhook`) stays OPEN in @caisson-sh/billing (uniform rule:
 // signature-verify open for all four providers); this commercial file composes it (ADR-0249 G3). NO new
 // dependency — hand-rolled over LemonSqueezy's plain REST API, mirroring the Stripe/Paddle drivers'
 // no-SDK posture. Dormant: only constructed when the buyer supplies credentials (call-site env-gating,
@@ -13,13 +13,13 @@ import {
   fetchWithTimeout,
   parseStrict,
   strictObject,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   verifyLemonSqueezyWebhook,
   type BillingProvider,
   type LemonSqueezyConfig,
   type DomainBillingEvent,
-} from "@caisson/billing";
+} from "@caisson-sh/billing";
 
 // The webhook envelope is exactly `{ meta, data }` (LemonSqueezy's example payloads + a captured
 // real `subscription_payment_success` delivery both show only these two top-level keys) — `.strict()`

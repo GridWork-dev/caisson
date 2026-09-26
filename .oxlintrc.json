@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  // The ONE lint standards source (ADR-0002 + ADR-0022 Gate 2), replacing @caisson/eslint-config
+  // The ONE lint standards source (ADR-0002 + ADR-0022 Gate 2), replacing @caisson-sh/eslint-config
   // and the 72 per-package eslint.config.js files (ADR-0408).
   //
   // SEMANTICS THAT DIFFER FROM ESLINT FLAT CONFIG (ADR-0408 constraint 2): `plugins`,
@@ -88,7 +88,7 @@
               "@ai-sdk/azure",
               "@ai-sdk/azure/*"
             ],
-            "message": "Provider SDKs may only be imported by @caisson/ai-config and @caisson/ai-kit (ADR-0011). Route inference through @caisson/ai-config. (dependency-cruiser backstops dynamic/transitive imports.)"
+            "message": "Provider SDKs may only be imported by @caisson-sh/ai-config and @caisson-sh/ai-kit (ADR-0011). Route inference through @caisson-sh/ai-config. (dependency-cruiser backstops dynamic/transitive imports.)"
           }
         ]
       }

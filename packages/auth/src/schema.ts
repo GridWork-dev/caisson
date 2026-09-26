@@ -12,7 +12,7 @@
 // Writes are account-scoped only (WITH CHECK on the account GUC): a member row can be inserted only by
 // a caller holding the account GUC (an owner via withTenant, or the user themselves for their personal
 // account where account_id == user_id). A seat cannot self-insert into another account.
-import { TENANT_GUC, USER_GUC } from "@caisson/tenancy-rls";
+import { TENANT_GUC, USER_GUC } from "@caisson-sh/tenancy-rls";
 
 export const ACCOUNT_MEMBER_SCHEMA_SQL = `
 CREATE TABLE account_member (

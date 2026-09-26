@@ -3,7 +3,7 @@
 // only prove that each config enum builds a real `ProviderV4` adapter (has `.languageModel`), so a
 // new backend is wired, without any network/model call or provider key.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { parseAiSettings, type AiSettings } from "@caisson/ai-config";
+import { parseAiSettings, type AiSettings } from "@caisson-sh/ai-config";
 import type { LanguageModelV4 } from "@ai-sdk/provider";
 import { defaultProviders, timeoutFetch } from "./providers.ts";
 
@@ -448,7 +448,7 @@ describe("providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2)
 describe("timeoutFetch — the fetch-deadline floor (ADR-0213)", () => {
   // A loopback stub (not external — `assertSafeBaseUrl` blocks any real provider from ever pointing
   // here) that never answers `/slow`, proving `timeoutMs` aborts a hung request instead of letting it
-  // hang the process. Mirrors `@caisson/kernel`'s own `fetchWithTimeout` test pattern.
+  // hang the process. Mirrors `@caisson-sh/kernel`'s own `fetchWithTimeout` test pattern.
   const server = Bun.serve({
     port: 0,
     async fetch(req) {

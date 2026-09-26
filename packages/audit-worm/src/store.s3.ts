@@ -28,7 +28,7 @@ import {
   InternalError,
   NotFoundError,
   ValidationError,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   ArtifactExistsError,
   assertSafeKey,

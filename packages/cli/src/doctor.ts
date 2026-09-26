@@ -1,13 +1,13 @@
 // `caisson doctor` (ADR-0345 Fork F lock). A THIN CLIENT: it does NOT run the doctor logic locally
 // (that lives behind the MCP `check_usage` tool). It collects the project's source, connects to the
-// already-credentialed local `@caisson/mcp-server` over stdio, calls `check_usage`, and renders the
+// already-credentialed local `@caisson-sh/mcp-server` over stdio, calls `check_usage`, and renders the
 // findings. A tool the server does not register surfaces as the seam's 404, reported as a clear error.
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import type { DoctorFile, Finding } from "@caisson/ds-manifest";
+import type { DoctorFile, Finding } from "@caisson-sh/ds-manifest";
 
 export interface DoctorClientInput {
   /** Injectable MCP transport (a StdioClientTransport in the bin; InMemoryTransport in tests). */
@@ -92,7 +92,7 @@ export function buyerMcpTransport(): Transport {
   if (command === undefined || command === "") {
     throw new Error(
       "this command needs your local Caisson MCP server — set CAISSON_MCP_COMMAND " +
-        "(and optional CAISSON_MCP_ARGS) to your local @caisson/mcp-server command.",
+        "(and optional CAISSON_MCP_ARGS) to your local @caisson-sh/mcp-server command.",
     );
   }
   const args = (process.env.CAISSON_MCP_ARGS ?? "")

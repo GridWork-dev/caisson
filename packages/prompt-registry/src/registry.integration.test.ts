@@ -12,9 +12,9 @@ import {
 } from "bun:test";
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
-import { newTestPg, type TestPg } from "@caisson/testing";
-import { NotFoundError } from "@caisson/kernel";
-import { withTenant } from "@caisson/tenancy-rls";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
+import { NotFoundError } from "@caisson-sh/kernel";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 import {
   PROMPT_ALIAS_TABLE,
   PROMPT_REGISTRY_SCHEMA_SQL,

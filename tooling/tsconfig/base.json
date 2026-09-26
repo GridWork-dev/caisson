@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "@caisson/tsconfig base",
+  "display": "@caisson-sh/tsconfig base",
   "compilerOptions": {
     "strict": true,
     "target": "ES2022",

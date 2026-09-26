@@ -18,8 +18,8 @@
 // emitting the operational `EventSink` event are the Compliance edition's job (down-only: field-crypto
 // stays kernel-only, ADR-0043/0003). No live KMS call runs in CI — the KMS is behind the port (TM-G).
 import { z } from "zod";
-import { parseStrict, strictObject } from "@caisson/kernel";
-import type { JsonValue } from "@caisson/kernel";
+import { parseStrict, strictObject } from "@caisson-sh/kernel";
+import type { JsonValue } from "@caisson-sh/kernel";
 import type { KmsKeyProvider } from "./kms.ts";
 import type { KmsDeletionReceipt } from "./kms-port.ts";
 

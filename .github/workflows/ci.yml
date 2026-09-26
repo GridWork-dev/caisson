@@ -165,7 +165,7 @@ jobs:
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
 
   # (oss-pivot: the registry-index job is retired with registry/. The generator's module catalog is
-  # derived from the workspace packages when @caisson/cli builds, and its catalog-parity test runs
+  # derived from the workspace packages when @caisson-sh/cli builds, and its catalog-parity test runs
   # inside the `check` job's turbo tree.)
 
   oscal-conformance:

@@ -5,8 +5,8 @@
 // `failOpen`. A block throws `GuardrailError` (422) and emits a metadata-only `guardrail.blocked`
 // event to the kernel `EventSink` on a typed bus — no up-import of any edition (the Compliance WORM
 // chain is a separate trust model, never this sink).
-import { ConfigError } from "@caisson/kernel";
-import type { FieldCryptoContext } from "@caisson/field-crypto";
+import { ConfigError } from "@caisson-sh/kernel";
+import type { FieldCryptoContext } from "@caisson-sh/field-crypto";
 import type { Moderator } from "./moderator.ts";
 import type { PiiMode, PiiToken } from "./pii.ts";
 import { redactPii, tokenizePii } from "./pii.ts";

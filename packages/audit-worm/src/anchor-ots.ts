@@ -14,7 +14,7 @@
 // target rather than claim a grade it cannot prove offline. The live calendar transport is un-exercised
 // in CI (ADR-0047 ethos); the stub drives the port round-trip.
 import { createHash } from "node:crypto";
-import { fetchWithTimeout, ValidationError } from "@caisson/kernel";
+import { fetchWithTimeout, ValidationError } from "@caisson-sh/kernel";
 import {
   isIrreversiblePublicityOptIn,
   type IrreversiblePublicityOptIn,

@@ -1,4 +1,4 @@
-// The credits poke's checkable claims, now that it drives the REAL @caisson/credits FIFO planner
+// The credits poke's checkable claims, now that it drives the REAL @caisson-sh/credits FIFO planner
 // and the hand-ported mirror (credits-logic.ts) is deleted:
 //
 //   1. The poke's client graph is browser-safe — proven by a STATIC SOURCE-GRAPH WALK, never by a
@@ -29,14 +29,14 @@ setDefaultTimeout(30_000);
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
-} from "@caisson/testing/module-graph";
-import { newTestPg, type TestPg } from "@caisson/testing";
+} from "@caisson-sh/testing/module-graph";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import {
   InsufficientCreditsError,
   ValidationError,
   asCredits,
-} from "@caisson/kernel";
-import { withTenant } from "@caisson/tenancy-rls";
+} from "@caisson-sh/kernel";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
@@ -47,8 +47,8 @@ import {
   balance as realBalanceRead,
   debit as realDebit,
   grant as realGrant,
-} from "@caisson/credits";
-import { planFifoDebit } from "@caisson/credits/browser";
+} from "@caisson-sh/credits";
+import { planFifoDebit } from "@caisson-sh/credits/browser";
 
 import {
   DEBIT_PRESETS,

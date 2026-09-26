@@ -17,7 +17,11 @@ import {
   type HeadObjectCommandInput,
   type PutObjectCommandInput,
 } from "@aws-sdk/client-s3";
-import { ConfigError, NotFoundError, ValidationError } from "@caisson/kernel";
+import {
+  ConfigError,
+  NotFoundError,
+  ValidationError,
+} from "@caisson-sh/kernel";
 import { ArtifactExistsError, buildArtifactKey } from "./store.ts";
 import type { S3Sendable } from "./store.s3.ts";
 import {

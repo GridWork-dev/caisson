@@ -12,10 +12,10 @@
 //   - a flagged input throws `GuardrailError` 422, never calls the model, never spends, and emits a
 //     metadata-only `guardrail.blocked` event to the `EventSink`;
 //   - the render → usage → eval LINKAGE: the immutable `prompt_version_id` threads from the rendered
-//     gateway call, through the recorded `usage_event`, into a `@caisson/ai-evals` run over that same
+//     gateway call, through the recorded `usage_event`, into a `@caisson-sh/ai-evals` run over that same
 //     version — one UUID attributable end-to-end (ADR-0061/0062).
 //
-// `@caisson/ai-evals` is a base PRIMITIVE; the ai-kit edition composing it is the allowed DOWN
+// `@caisson-sh/ai-evals` is a base PRIMITIVE; the ai-kit edition composing it is the allowed DOWN
 // direction (ADR-0003). It is a test-only devDependency — the eval gate is its own package + CI job.
 import { randomUUID } from "node:crypto";
 import {
@@ -28,7 +28,7 @@ import {
 } from "bun:test";
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
-import { newTestPg, type TestPg } from "@caisson/testing";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
@@ -36,34 +36,34 @@ import {
   GRANT_CONSUMPTION_MIGRATION_SQL,
   balance,
   grant,
-} from "@caisson/credits";
+} from "@caisson-sh/credits";
 import {
   GuardrailError,
   InMemoryEventSink,
   InsufficientCreditsError,
   asCredits,
   asMicroUsdPerCredit,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   AI_METER_SCHEMA_SQL,
   SPEND_POLICY_TABLE,
   SpendCapError,
   USAGE_EVENT_TABLE,
   type MeterConfig,
-} from "@caisson/ai-meter";
+} from "@caisson-sh/ai-meter";
 import {
   PROMPT_REGISTRY_SCHEMA_SQL,
   registerPrompt,
-} from "@caisson/prompt-registry";
-import type { PromptVersion } from "@caisson/prompt-registry";
+} from "@caisson-sh/prompt-registry";
+import type { PromptVersion } from "@caisson-sh/prompt-registry";
 import {
   localModerator,
   type GuardPolicy,
   type GuardRuntime,
-} from "@caisson/guardrails";
-import { defineEval, exactGrader } from "@caisson/ai-evals";
-import type { AiSettings } from "@caisson/ai-config";
-import { withTenant } from "@caisson/tenancy-rls";
+} from "@caisson-sh/guardrails";
+import { defineEval, exactGrader } from "@caisson-sh/ai-evals";
+import type { AiSettings } from "@caisson-sh/ai-config";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 import { MockLanguageModelV4 } from "ai/test";
 import type { LanguageModelV4 } from "@ai-sdk/provider";
 import { infer, type InferOptions } from "./gateway.ts";

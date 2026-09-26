@@ -8,17 +8,17 @@
 // persists, or measures the visitor — the "rented" path is a fully local simulation driven by the
 // real local-privacy guard, never a provider transport or network call.
 import { useEffect, useId, useMemo, useState } from "react";
-import { isCaissonError } from "@caisson/kernel/browser";
+import { isCaissonError } from "@caisson-sh/kernel/browser";
 import {
   DEFAULT_ONNX_MODEL,
   EMBEDDING_DIM,
   StubInferenceBackend,
-} from "@caisson/local-inference/browser";
+} from "@caisson-sh/local-inference/browser";
 import {
   createPrivacyDecisionGuard,
   localOnlyPolicy,
-} from "@caisson/local-privacy/browser";
-import { Checkbox, Radio, StatusChip } from "@caisson/ui/components";
+} from "@caisson-sh/local-privacy/browser";
+import { Checkbox, Radio, StatusChip } from "@caisson-sh/ui/components";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import type { VerdictState } from "./poke-rig";
@@ -115,7 +115,7 @@ export default function LocalInferencePoke() {
 
   return (
     <PokeShell
-      label="@caisson/local-inference"
+      label="@caisson-sh/local-inference"
       title="Run inference on-device. Watch the egress meter hold at zero."
     >
       <div className={styles.layout}>

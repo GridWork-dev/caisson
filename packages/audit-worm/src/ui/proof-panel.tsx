@@ -11,9 +11,12 @@
 // server `unverifiable` verdict (missing anchor) renders as an explicitly SERVER-asserted chip, and a
 // redacted row's link-recompute leg reads "not applicable — payload redacted", never a pass (CR-06).
 import { useEffect, useState, type CSSProperties } from "react";
-import type { ChainVerification } from "@caisson/kernel";
-import type { PinnedAnchorKey, RowReceipt } from "@caisson/kernel/audit-verify";
-import { PayloadViewer } from "@caisson/ui-pro";
+import type { ChainVerification } from "@caisson-sh/kernel";
+import type {
+  PinnedAnchorKey,
+  RowReceipt,
+} from "@caisson-sh/kernel/audit-verify";
+import { PayloadViewer } from "@caisson-sh/ui-pro";
 import { RowStateChip, type ChipState } from "./row-state-chip.tsx";
 import { useRowVerify } from "./use-row-verify.ts";
 

@@ -1,4 +1,4 @@
-# @caisson/tenancy-rls
+# @caisson-sh/tenancy-rls
 
 Fail-closed multi-tenant Postgres RLS (FORCE policies + schema test).
 
@@ -16,7 +16,7 @@ hand-writing raw SQL for every tenant-scoped call.
 ### Drizzle — `.toSQL()` bridge
 
 ```ts
-import { withTenant, queryDrizzle, execDrizzle } from "@caisson/tenancy-rls";
+import { withTenant, queryDrizzle, execDrizzle } from "@caisson-sh/tenancy-rls";
 
 const rows = await withTenant(db, accountId, async (tx) => {
   const { rows } = await queryDrizzle(tx, drizzleDb.select().from(documents));
@@ -38,7 +38,7 @@ active tenant (proven in `drizzle.integration.test.ts`).
 ### Prisma — raw-query facade
 
 ```ts
-import { withTenant, createPrismaBridge } from "@caisson/tenancy-rls";
+import { withTenant, createPrismaBridge } from "@caisson-sh/tenancy-rls";
 
 const rows = await withTenant(db, accountId, async (tx) => {
   const prisma = createPrismaBridge(tx);
@@ -78,7 +78,7 @@ of the raw-client surface. **Real-Prisma recipe (do this once, in your app):**
 
 ```ts
 import { PrismaClient } from "@prisma/client";
-import { withTenant } from "@caisson/tenancy-rls";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 
 const prisma = new PrismaClient();
 await withTenant(pool, accountId, async (tx) => {

@@ -1,4 +1,4 @@
-# @caisson/auth
+# @caisson-sh/auth
 
 Provider-agnostic authentication: short-lived EdDSA JWTs for account/session tokens, a
 session contract any auth runtime can implement, and multi-user account membership
@@ -9,7 +9,7 @@ session contract any auth runtime can implement, and multi-user account membersh
 ## Install
 
 ```bash
-bun add @caisson/auth
+bun add @caisson-sh/auth
 ```
 
 ## Use
@@ -19,7 +19,7 @@ import {
   requireSession,
   verifyAccountJwt,
   resolveUserAccounts,
-} from "@caisson/auth";
+} from "@caisson-sh/auth";
 ```
 
 better-auth is the reference session-provider implementation. The resolved `accountId` is

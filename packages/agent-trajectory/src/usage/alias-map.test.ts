@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { BUNDLED_PRICE_BOOK, resolvePriceEntry } from "@caisson/ai-meter";
+import { BUNDLED_PRICE_BOOK, resolvePriceEntry } from "@caisson-sh/ai-meter";
 import { resolveModelAlias } from "./alias-map.ts";
 
 describe("resolveModelAlias", () => {

@@ -1,4 +1,4 @@
-# @caisson/local-sync
+# @caisson-sh/local-sync
 
 The Local-first edition's sync engine: an in-house, application-layer changeset log (`bun:sqlite`
 exposes no `sqlite3session_*` API, so this is the app-layer analog), a hybrid-logical-clock LWW
@@ -20,7 +20,7 @@ onto one canonical local store. A base primitive (Apache-2.0).
 
 ## One entry point, browser-safe
 
-`@caisson/local-sync` has a single `.` entry and it reaches no Node builtin, so the merge, the
+`@caisson-sh/local-sync` has a single `.` entry and it reaches no Node builtin, so the merge, the
 clock, and the changeset types can be imported inside a client bundle as-is. The replica id is
 minted with the runtime's built-in WebCrypto `crypto.randomUUID()` (Node 20.12 or later);
 `bun:sqlite` appears only as an erased type import, so nothing pulls SQLite into a browser graph.
@@ -29,13 +29,13 @@ minted with the runtime's built-in WebCrypto `crypto.randomUUID()` (Node 20.12 o
 ## Install
 
 ```bash
-bun add @caisson/local-sync
+bun add @caisson-sh/local-sync
 ```
 
 ## Use
 
 ```ts
-import { ChangesetLog, reconcileReplicas } from "@caisson/local-sync";
+import { ChangesetLog, reconcileReplicas } from "@caisson-sh/local-sync";
 import { Database } from "bun:sqlite";
 
 const log = ChangesetLog.open(new Database(":memory:"), "tenant-a");

@@ -1,6 +1,6 @@
 "use client";
 
-// @caisson/demo-registry — the 33 @caisson/ui (apache-base) entries. Every demo composes the SHIPPED
+// @caisson-sh/demo-registry — the 33 @caisson-sh/ui (apache-base) entries. Every demo composes the SHIPPED
 // kit component directly (never a re-implementation) with static sample data — the same "what ships
 // is what you see" recipe the absorbed /design/components gallery followed.
 // A handful of components are inherently stateful (Dialog, ConfirmDialog, Select, Toast) — those get
@@ -44,7 +44,7 @@ import {
   ToastRegion,
   type DataTableColumn,
   type IconName,
-} from "@caisson/ui/components";
+} from "@caisson-sh/ui/components";
 import type { CatalogEntry } from "../schema.ts";
 
 const ICONS: IconName[] = [
@@ -188,7 +188,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.app-shell",
     name: "AppShell",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "The buyer-dashboard data-app grid: collapsible sidebar nav, top bar, brand slot, off-canvas mobile drawer.",
@@ -198,7 +198,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.button",
     name: "Button",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "Primary/ghost variants, sm size, disabled, and asChild link composition.",
@@ -221,7 +221,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.card",
     name: "Card",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "The hairline surface primitive — raised one tonal step, no hover.",
@@ -238,7 +238,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.code-block",
     name: "CodeBlock",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "Framed or bare code presentation with an optional label + status slot.",
@@ -255,7 +255,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.confirm-dialog",
     name: "ConfirmDialog",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "A destructive-action confirm modal — danger tone, busy state.",
@@ -265,7 +265,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.copy-field",
     name: "CopyField",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "A labeled, mono-by-default value with a copy-to-clipboard action; `secret` masks it.",
@@ -285,7 +285,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.credential-strip",
     name: "CredentialStrip",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "The certification-scope proof strip (items + a scope-boundary note).",
@@ -300,7 +300,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.data-table",
     name: "DataTable",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "Sortable, dense, filterable rows with a built-in loading/empty state.",
@@ -317,7 +317,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.detail-list",
     name: "DetailList",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description: "A term/description list — stacked or two-column layout.",
     variants: ["stacked", "columns"],
@@ -335,7 +335,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.dialog",
     name: "Dialog",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "Centered modal or edge drawer, native <dialog>-backed, Escape/backdrop close.",
@@ -345,7 +345,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.edition-card",
     name: "BundleCard",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "A bundle marketing card — lead variant, icon, status chip, proof line.",
@@ -367,7 +367,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.empty-state",
     name: "EmptyState",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       'A plain-English "nothing here yet" block with an optional CTA slot.',
@@ -383,7 +383,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.error-state",
     name: "ErrorState",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description: "A failure block — reassurance + one next step.",
     variants: ["default"],
@@ -397,7 +397,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.faq",
     name: "Faq",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "An accessible disclosure list; `defaultOpenFirst` opens the lead question.",
@@ -421,7 +421,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.feature-grid",
     name: "FeatureGrid",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "A 2 or 3-column responsive feature layout — pure composition shell.",
@@ -443,7 +443,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.form-field",
     name: "FormField",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "Label + helper/error text association via Radix Slot, for a single control child.",
@@ -462,7 +462,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.hero",
     name: "Hero",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "The split marketing header — display title, lede, CTAs, credentials, artifact slot.",
@@ -498,7 +498,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.icon",
     name: "Icon",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "The one icon surface (Lucide set + registrable bespoke glyphs), 24-grid, currentColor.",
@@ -517,7 +517,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.ledger-list",
     name: "LedgerList",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "A credit/money delta ledger — one row per entry, running balance.",
@@ -547,7 +547,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.loading-state",
     name: "LoadingState",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "A shape-matched skeleton — table/stat/list/block variants, no layout shift on load.",
@@ -562,7 +562,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.metric-stat",
     name: "MetricStat",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "A caption/value/hint stat block, optional icon, four semantic tones.",
@@ -595,7 +595,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.mobile-buy-bar",
     name: "MobileBuyBar",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "The sticky mobile checkout bar — label, formatted price, and the purchase action slot.",
@@ -611,7 +611,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.money-cell",
     name: "MoneyCell",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "Integer-cents/credits display formatting — signed + sign-toned ledger variants.",
@@ -627,7 +627,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.pagination",
     name: "Pagination",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "A 0-indexed pager with a bounded sibling window around the current page.",
@@ -637,7 +637,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.reveal",
     name: "Reveal",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "Fade-up-once on scroll (IntersectionObserver), honors prefers-reduced-motion.",
@@ -653,7 +653,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.section",
     name: "Section",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "A toned content band — surface or accent-tint background variants.",
@@ -670,7 +670,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.select",
     name: "Select",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "A native <select> with a typed option list, placeholder, and invalid state.",
@@ -680,7 +680,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.sku-matrix",
     name: "SkuMatrix",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description: "A boolean coverage matrix — module × bundle inclusion grid.",
     variants: ["default"],
@@ -697,7 +697,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.status-chip",
     name: "StatusChip",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "A small tone-coded chip — accent/success/muted, dot or icon leading glyph.",
@@ -713,7 +713,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.status-pill",
     name: "StatusPill",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "The entitlement lifecycle pill — active/expired/revoked/pending.",
@@ -730,7 +730,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.terminal",
     name: "Terminal",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "A framed terminal artifact — label, status slot, mono content.",
@@ -750,7 +750,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.theme-toggle",
     name: "ThemeToggle",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "The 3-prong (dark/light/OS-follow) theme control, pre-paint script pinned.",
@@ -760,7 +760,7 @@ export const UI_BASE_ENTRIES: CatalogEntry[] = [
   {
     id: "ui.toast",
     name: "Toast",
-    package: "@caisson/ui",
+    package: "@caisson-sh/ui",
     tier: "apache-base",
     description:
       "A dismissible notification, four tones, stacked in a placement region.",

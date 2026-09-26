@@ -1,4 +1,4 @@
-// @caisson/ai-evals — the grader taxonomy (ADR-0062). Two grader classes:
+// @caisson-sh/ai-evals — the grader taxonomy (ADR-0062). Two grader classes:
 //
 //   - DETERMINISTIC graders (exact / regex / json-shape / schema): pure, no model, fully offline.
 //   - MODEL-GRADED (`judgeGrader`): routes through the `Judge` port (cassette replay in CI).

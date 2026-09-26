@@ -9,8 +9,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { AuthnError } from "@caisson/kernel";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+import { AuthnError } from "@caisson-sh/kernel";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
 import {
   createStdioMcpServer,
   runStdioServer,
@@ -21,13 +21,13 @@ const index = loadRegistryIndex({
   schemaVersion: 1,
   modules: [
     {
-      id: "@caisson/auth",
+      id: "@caisson-sh/auth",
       latest: "0.1.0",
       versions: [
         {
           version: "0.1.0",
           manifest: {
-            id: "@caisson/auth",
+            id: "@caisson-sh/auth",
             version: "0.1.0",
             license: "Apache-2.0",
             description: "Fixture module for the stdio transport test.",
@@ -104,7 +104,7 @@ describe("stdio transport binding", () => {
     expect(result.isError).toBeFalsy();
     const content = result.content as { type: string; text: string }[];
     expect(JSON.parse(content[0]?.text ?? "{}")).toEqual({
-      modules: ["@caisson/auth"],
+      modules: ["@caisson-sh/auth"],
     });
   });
 
@@ -119,10 +119,10 @@ describe("stdio transport binding", () => {
       client.connect(clientTransport),
     ]);
 
-    // @caisson/billing is not in this fixture's catalog, so describe_module 404s.
+    // @caisson-sh/billing is not in this fixture's catalog, so describe_module 404s.
     const result = await client.callTool({
       name: "describe_module",
-      arguments: { name: "@caisson/billing" },
+      arguments: { name: "@caisson-sh/billing" },
     });
     expect(result.isError).toBe(true);
     const content = result.content as { type: string; text: string }[];
@@ -155,7 +155,7 @@ describe("stdio transport binding", () => {
     const parsed = JSON.parse(contents[0]?.text ?? "{}") as {
       modules: { id: string }[];
     };
-    expect(parsed.modules.map((m) => m.id)).toEqual(["@caisson/auth"]);
+    expect(parsed.modules.map((m) => m.id)).toEqual(["@caisson-sh/auth"]);
 
     // A read on an unknown URI surfaces as a rejected JSON-RPC error (the mapped not-found).
     await expect(
@@ -181,12 +181,14 @@ describe("stdio transport binding", () => {
 
     const got = await client.getPrompt({
       name: "integrate_module",
-      arguments: { module_id: "@caisson/auth" },
+      arguments: { module_id: "@caisson-sh/auth" },
     });
     expect(got.messages).toHaveLength(1);
     const msg = got.messages[0];
     expect(msg?.content.type).toBe("text");
-    expect((msg!.content as { text: string }).text).toContain("@caisson/auth");
+    expect((msg!.content as { text: string }).text).toContain(
+      "@caisson-sh/auth",
+    );
 
     // An unknown prompt surfaces as a rejected JSON-RPC error (the mapped not-found).
     await expect(

@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/ds-manifest",
+  "name": "@caisson-sh/ds-manifest",
   "version": "0.3.4",
   "description": "Shared data + analysis layer for the agent-ready design-system surface: a typed component-manifest schema, a reader for the committed base/pro manifests, and pure static-check functions (contrast, usage doctor) any of the CLI, MCP, and build-time generator fronts can import.",
   "license": "Apache-2.0",
@@ -25,8 +25,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "@types/culori": "catalog:",
     "typescript": "catalog:"
   }

@@ -1,4 +1,4 @@
-// @caisson/ai-evals — the reflexivity queue (ADR-0214). Captures
+// @caisson-sh/ai-evals — the reflexivity queue (ADR-0214). Captures
 // production judge/human disagreements so they can be recycled into the golden set — but this module
 // NEVER auto-produces an `EvalCase`: the rubric is scorer-owned, and a human merges a consolidated
 // candidate into a committed dataset (ADR-0061). Storage is an injected port, mirroring `Judge`.

@@ -1,4 +1,4 @@
-# @caisson/rate-limit — agent contract
+# @caisson-sh/rate-limit — agent contract
 
 Shared abuse-throttle primitives, owned once here; consuming services import them — never copy
 them (a re-introduced local token-bucket copy outside this package is the exact regression this
@@ -42,5 +42,5 @@ Two independent limiters for two different trust levels:
 
 ## Scope
 
-Abuse-throttle mechanics only. Authentication and tenant-id derivation belong in `@caisson/auth`
-and `@caisson/tenancy-rls` respectively.
+Abuse-throttle mechanics only. Authentication and tenant-id derivation belong in `@caisson-sh/auth`
+and `@caisson-sh/tenancy-rls` respectively.

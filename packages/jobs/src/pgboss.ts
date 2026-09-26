@@ -31,10 +31,10 @@
 // reports through the optional `JobAlertingDeps` port, THEN re-throws — pg-boss's own retry/
 // dead-letter machinery is untouched, alerting only observes. The underlying `PgBoss` instance's
 // `error` event (undocumented-crash risk if left unhandled — see `wireBossErrorHandler`) is wired
-// the same way. See `JobAlertingDeps`'s doc for why this stays dependency-free of `@caisson/alerting`.
+// the same way. See `JobAlertingDeps`'s doc for why this stays dependency-free of `@caisson-sh/alerting`.
 import { PgBoss } from "pg-boss";
 import { createHash } from "node:crypto";
-import { ConfigError, parseStrict } from "@caisson/kernel";
+import { ConfigError, parseStrict } from "@caisson-sh/kernel";
 import { createTaskRegistry, requireRegisteredTask } from "./task-registry.ts";
 import type {
   EnqueueOptions,
@@ -97,9 +97,9 @@ export interface PgBossStoppable {
 }
 
 /**
- * Job-failure alerting seam. Kept dependency-free of `@caisson/alerting` on purpose: this base
+ * Job-failure alerting seam. Kept dependency-free of `@caisson-sh/alerting` on purpose: this base
  * package never depends "up" on a higher-level one. A host implements this tiny structural port
- * using the real `@caisson/alerting` pipeline; absent = today's behavior, no alert, every existing
+ * using the real `@caisson-sh/alerting` pipeline; absent = today's behavior, no alert, every existing
  * `createPgBossJobQueue` call keeps compiling.
  */
 export interface JobAlertingDeps {

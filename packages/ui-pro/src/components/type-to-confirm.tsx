@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
-import { Button, Dialog, Icon } from "@caisson/ui/components";
+import { Button, Dialog, Icon } from "@caisson-sh/ui/components";
 
 import "./type-to-confirm.css";
 

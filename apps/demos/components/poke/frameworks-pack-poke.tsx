@@ -6,7 +6,7 @@
 // that cite it, exported as a real OSCAL v1.2.2 catalog document.
 //
 // This component drives the REAL packages through their browser-safe entries
-// (`@caisson/frameworks-pack/browser` + `@caisson/oscal-spine/browser`, ADR-0396) -- the
+// (`@caisson-sh/frameworks-pack/browser` + `@caisson-sh/oscal-spine/browser`, ADR-0396) -- the
 // hand-ported mirror (frameworks-pack-logic.ts) is deleted, and SAMPLE_FRAMEWORK is a SELECTION
 // over the real `soc2Tsc` pack, never a copy of it. Browser-safety is proven by each package's
 // own static source-graph walk (browser-safety.test.ts), NOT by a build -- a bundler substitutes
@@ -14,14 +14,14 @@
 // ValidationError on an invalid clock; this poke never renders that path (SAMPLE_NOW is a fixed
 // valid instant). Nothing here fetches, persists, or measures the visitor.
 import { useId, useMemo, useState } from "react";
-import { CodeBlock, Radio, Select } from "@caisson/ui/components";
-import type { SelectOption } from "@caisson/ui/components";
-import { soc2Tsc } from "@caisson/frameworks-pack/browser";
+import { CodeBlock, Radio, Select } from "@caisson-sh/ui/components";
+import type { SelectOption } from "@caisson-sh/ui/components";
+import { soc2Tsc } from "@caisson-sh/frameworks-pack/browser";
 import type {
   CanonicalControl,
   Framework,
-} from "@caisson/frameworks-pack/browser";
-import { OSCAL_VERSION, toOscalCatalog } from "@caisson/oscal-spine/browser";
+} from "@caisson-sh/frameworks-pack/browser";
+import { OSCAL_VERSION, toOscalCatalog } from "@caisson-sh/oscal-spine/browser";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./frameworks-pack-poke.module.css";
@@ -191,7 +191,7 @@ export default function FrameworksPackPoke() {
 
   return (
     <PokeShell
-      label="@caisson/frameworks-pack"
+      label="@caisson-sh/frameworks-pack"
       title="Pick a framework clause. See which control it maps to, if any."
     >
       <div className={styles.layout}>

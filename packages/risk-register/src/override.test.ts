@@ -5,14 +5,14 @@ import {
   verifyChain,
   type AuditChainEntry,
   type JsonValue,
-} from "@caisson/kernel/node";
-import type { AppendResult, AuditChainStore } from "@caisson/audit-worm";
+} from "@caisson-sh/kernel/node";
+import type { AppendResult, AuditChainStore } from "@caisson-sh/audit-worm";
 import { computeResidual } from "./model.ts";
 import { recordResidualOverride } from "./override.ts";
 
 /**
  * A real, verifiable in-memory chain — built from the SAME pure kernel primitives
- * `@caisson/audit-worm`'s `AuditChainStore` composes over a database, minus the DB/WORM I/O. This
+ * `@caisson-sh/audit-worm`'s `AuditChainStore` composes over a database, minus the DB/WORM I/O. This
  * proves an override genuinely chains and verifies without standing up a live Postgres.
  */
 function fakeChain(): Pick<AuditChainStore, "append"> & {

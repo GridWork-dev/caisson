@@ -5,8 +5,12 @@
 // the honest URN import-ssp (no dead HTTP URL), determinism under the injected clock + id seam, fail-closed
 // on a bad clock, and a deterministic golden per framework (soc2 / hipaa / eu-ai-act).
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
-import { canonicalize, ValidationError, type JsonValue } from "@caisson/kernel";
+import { matchGolden } from "@caisson-sh/testing";
+import {
+  canonicalize,
+  ValidationError,
+  type JsonValue,
+} from "@caisson-sh/kernel";
 import type { OscalEvidencePackFramework } from "../contracts.ts";
 import { OSCAL_VERSION } from "../contracts.ts";
 import { toOscalAssessmentPlan } from "./oscal-assessment-plan.ts";

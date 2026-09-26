@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/observability",
+  "name": "@caisson-sh/observability",
   "version": "0.3.9",
   "description": "Vendor-neutral OpenTelemetry bootstrap: env-gated NodeSDK + OTLP/HTTP exporter, HTTP/fetch/pg auto-instrumentation, and span-attribute scrubbing. Inert until OTEL_EXPORTER_OTLP_ENDPOINT is set.",
   "license": "Apache-2.0",
@@ -21,7 +21,7 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/kernel": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/api-logs": "^0.221.0",
     "@opentelemetry/core": "^2.8.0",
@@ -39,8 +39,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

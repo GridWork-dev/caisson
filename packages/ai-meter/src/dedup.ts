@@ -12,7 +12,7 @@
 // candidate. Pure, dependency-free hashing core; the store is an injected port so a caller can swap
 // the bounded in-memory default for a persistent one later without touching this file.
 import { z } from "zod";
-import { parseStrict, strictObject } from "@caisson/kernel";
+import { parseStrict, strictObject } from "@caisson-sh/kernel";
 import { estimateMessageSchema } from "./estimate.ts";
 import type { EstimateMessage } from "./estimate.ts";
 

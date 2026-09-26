@@ -1,7 +1,11 @@
 import { expect, test } from "bun:test";
 import { Inngest } from "inngest";
 import { z } from "zod";
-import { NotFoundError, strictObject, ValidationError } from "@caisson/kernel";
+import {
+  NotFoundError,
+  strictObject,
+  ValidationError,
+} from "@caisson-sh/kernel";
 import { defineTask } from "./queue.ts";
 import {
   createInngestJobQueue,

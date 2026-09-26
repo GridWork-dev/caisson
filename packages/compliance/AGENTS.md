@@ -1,16 +1,16 @@
-# AGENTS — @caisson/compliance
+# AGENTS — @caisson-sh/compliance
 
 Agent-facing authoring/usage contract. What a generation agent or a developer wiring the compliance
 kit must know. This package is a COMPOSITION of base packages (ADR-0003) — it never forks them and
-never re-implements the kernel integrity algebra; it imports DOWN onto `@caisson/audit-worm`,
-`@caisson/field-crypto`, `@caisson/tenancy-rls`, over `@caisson/kernel`.
+never re-implements the kernel integrity algebra; it imports DOWN onto `@caisson-sh/audit-worm`,
+`@caisson-sh/field-crypto`, `@caisson-sh/tenancy-rls`, over `@caisson-sh/kernel`.
 
 ## Invariants (do not violate)
 
 - **Down-only, never up.** This package depends on base/primitive packages; a base package NEVER
-  imports back into `@caisson/compliance` (ADR-0003). `bunx depcruise packages apps tooling` must stay
+  imports back into `@caisson-sh/compliance` (ADR-0003). `bunx depcruise packages apps tooling` must stay
   at zero base→composition / composition→composition edges. Evidence generation meters nothing —
-  there is NO `@caisson/credits` dependency.
+  there is NO `@caisson-sh/credits` dependency.
 - **Crypto boundary == RLS boundary.** Encrypted SEC/HIPAA writes go through `withTenantCrypto`, which
   nests the field-crypto context INSIDE `withTenant` — never encrypt outside the tenant RLS scope
   (fail-closed, ADR-0005).
@@ -33,7 +33,7 @@ never re-implements the kernel integrity algebra; it imports DOWN onto `@caisson
 `src/observe.ts` emits `evidence.generated` + `erasure.crypto-shred` as OPERATIONAL events through the
 base `EventSink` port — mutable, drop-able ops telemetry carrying only opaque ids + posture counts + a
 content digest (never PII, ciphertext, or a secret). The AUTHORITATIVE, immutable record lives in the
-WORM audit chain (`@caisson/audit-worm`) and is NEVER routed through the sink — the two write paths are
+WORM audit chain (`@caisson-sh/audit-worm`) and is NEVER routed through the sink — the two write paths are
 strictly separate. The clock is injected at the edge so emitted timestamps are deterministic.
 
 ## Golden (ADR-0013)
@@ -44,6 +44,6 @@ break and must land as a reviewed diff. Goldens are matched with `BLESS` unset o
 
 ## Dependencies
 
-Down-only (ADR-0003): `@caisson/audit-worm` + `@caisson/field-crypto` + `@caisson/tenancy-rls` +
-`@caisson/kernel`. Never `@caisson/credits` (evidence meters nothing). Never depends "up" on another
+Down-only (ADR-0003): `@caisson-sh/audit-worm` + `@caisson-sh/field-crypto` + `@caisson-sh/tenancy-rls` +
+`@caisson-sh/kernel`. Never `@caisson-sh/credits` (evidence meters nothing). Never depends "up" on another
 composition package.

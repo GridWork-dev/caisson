@@ -20,7 +20,7 @@
 //
 // Unlike `live/` this targets a LOCAL static server over the exported `out/` directory — no CF
 // Access and no network beyond localhost — so it runs deterministically on any PR. How to run:
-// `bunx turbo run test:e2e --filter=@caisson/site` (builds first via the task's dependsOn), or
+// `bunx turbo run test:e2e --filter=@caisson-sh/site` (builds first via the task's dependsOn), or
 // `bun run build && bun run test:e2e` from apps/site.
 //
 // Third-party coupling, named: besides the size-4.5 canary (deliberate), P1-004 rides two
@@ -129,7 +129,7 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
   beforeAll(async () => {
     if (!existsSync(join(OUT_DIR, "index.html"))) {
       throw new Error(
-        "no static export — run `bunx turbo run build --filter=@caisson/site` first " +
+        "no static export — run `bunx turbo run build --filter=@caisson-sh/site` first " +
           "(the test:e2e turbo task does this via dependsOn)",
       );
     }

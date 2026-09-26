@@ -1,6 +1,6 @@
 // Pure privacy-policy decisions. This module deliberately owns no fetch method: it can prove that
 // an endpoint would be allowed without creating a network-capable path in a browser bundle.
-import { AuthzError, ValidationError } from "@caisson/kernel/browser";
+import { AuthzError, ValidationError } from "@caisson-sh/kernel/browser";
 import {
   parsePrivacyPolicy,
   type PrivacyPolicy,

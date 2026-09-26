@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/local-inference",
+  "name": "@caisson-sh/local-inference",
   "version": "0.2.1",
   "description": "Local-first inference seam: deterministic stub, guarded ONNX embeddings, and rented transport drivers sharing the local privacy gate.",
   "license": "Apache-2.0",
@@ -27,14 +27,14 @@
     "test:live": "bun test ./live"
   },
   "dependencies": {
-    "@caisson/kernel": "workspace:*",
-    "@caisson/local-privacy": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
+    "@caisson-sh/local-privacy": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/local-store": "workspace:*",
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/local-store": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   },
   "engines": {

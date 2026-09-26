@@ -1,7 +1,7 @@
 // Self-hosted brand fonts (ADR-0079 §4) — the same two faces apps/site loads, for the same
 // reason: next/font/google downloads and self-hosts the woff2 at build time, so there is NO
 // render-blocking Google Fonts <link> at runtime and the CSP font-src stays 'self'. Each font
-// sets a CSS variable the @caisson/ui token stacks consume (`var(--font-sans, …)` in packages/ui
+// sets a CSS variable the @caisson-sh/ui token stacks consume (`var(--font-sans, …)` in packages/ui
 // theme.ts). An embed that fell back to a system stack would read as a foreign panel inside the
 // site page it is framed in, so this file is a deliberate mirror of apps/site/lib/fonts.ts rather
 // than a shared import — the two apps have no runtime coupling and neither should acquire one.

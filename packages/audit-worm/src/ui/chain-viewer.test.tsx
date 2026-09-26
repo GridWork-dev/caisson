@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { AuditChainEntry, ChainVerification } from "@caisson/kernel";
+import type { AuditChainEntry, ChainVerification } from "@caisson-sh/kernel";
 
 import { ChainViewer, previewPayload } from "./chain-viewer.tsx";
 

@@ -1,4 +1,4 @@
-# @caisson/ai-config — agent usage note
+# @caisson-sh/ai-config — agent usage note
 
 Provides the provider-agnostic AI config resolver and the app `forge.config` settings contract (ADR-0011).
 
@@ -10,8 +10,8 @@ Provides the provider-agnostic AI config resolver and the app `forge.config` set
 - Supported providers: `openai`, `anthropic`, `google`, `openrouter`, `local`, `bedrock` (AWS), `azure-openai`, `ollama`, `groq`, `mistral`, `together`.
 - API keys are resolved from environment variables by name (`apiKeyEnv`/`apiSecretEnv` fields) — never stored in the config file. A lane may instead set `keySource: "tenant"` for per-tenant encrypted BYOK, in which case no `apiKeyEnv` is named and the key is resolved from encrypted per-tenant storage at inference time.
 - `bedrock` lanes carry a `region` + optional two-part credential (`apiKeyEnv`/`apiSecretEnv`, or the AWS default credential chain if both are omitted). `azure-openai` lanes address a deployment via `model` and require `apiVersion` + `baseUrl`.
-- The Vercel AI SDK family (`ai`, `@ai-sdk/*`) is confined to `@caisson/ai-config` and `@caisson/ai-kit` — do not import SDK providers from other packages.
+- The Vercel AI SDK family (`ai`, `@ai-sdk/*`) is confined to `@caisson-sh/ai-config` and `@caisson-sh/ai-kit` — do not import SDK providers from other packages.
 
 ## Scope
 
-AI provider config resolution and the app settings file only. Actual model calls belong in `@caisson/ai-kit`.
+AI provider config resolution and the app settings file only. Actual model calls belong in `@caisson-sh/ai-kit`.

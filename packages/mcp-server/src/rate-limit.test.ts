@@ -4,8 +4,8 @@
 // (the default backward-compatible contract). The store-backed fail-OPEN behaviour belongs to the
 // host's hook implementation (this package is DB-free — it only declares + awaits the seam).
 import { describe, expect, test } from "bun:test";
-import { NotFoundError, RateLimitError } from "@caisson/kernel";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+import { NotFoundError, RateLimitError } from "@caisson-sh/kernel";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
 import {
   createMcpServer,
   type McpServerOptions,
@@ -17,13 +17,13 @@ const index = loadRegistryIndex({
   schemaVersion: 1,
   modules: [
     {
-      id: "@caisson/auth",
+      id: "@caisson-sh/auth",
       latest: "0.1.0",
       versions: [
         {
           version: "0.1.0",
           manifest: {
-            id: "@caisson/auth",
+            id: "@caisson-sh/auth",
             version: "0.1.0",
             license: "Apache-2.0",
             description: "Fixture module.",
@@ -52,7 +52,7 @@ describe("ADR-0112 rate-limit hook (mcp-server seam)", () => {
     // Many calls, no hook → every one runs.
     for (let i = 0; i < 5; i++) {
       expect(await server.handleToolCall(session, "list_modules", {})).toEqual({
-        modules: ["@caisson/auth"],
+        modules: ["@caisson-sh/auth"],
       });
     }
   });
@@ -97,7 +97,7 @@ describe("ADR-0112 rate-limit hook (mcp-server seam)", () => {
     const session = server.authenticate(TOKEN);
     await server.handleToolCall(session, "list_modules", {});
     await server.handleToolCall(session, "describe_module", {
-      name: "@caisson/auth",
+      name: "@caisson-sh/auth",
     });
     await server.handleToolCall(session, "kit_tool", {});
     expect(seen).toEqual(["acct_a", "acct_a", "acct_a"]);
@@ -112,7 +112,7 @@ describe("ADR-0112 rate-limit hook (mcp-server seam)", () => {
     const session = server.authenticate(TOKEN);
     // A known base module → integrate_module resolves and the hook fires exactly once.
     await server.getPrompt(session, "integrate_module", {
-      module_id: "@caisson/auth",
+      module_id: "@caisson-sh/auth",
     });
     expect(seen).toEqual(["acct_a"]);
     // An unknown prompt is a 404 BEFORE the hook — no throttle consumed.

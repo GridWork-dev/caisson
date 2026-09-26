@@ -11,7 +11,7 @@
 //     the transport-level width is asserted FIRST to localize any failure;
 //   - the metered lane stays integer end-to-end against real provider-reported usage (ADR-0007).
 import { describe, expect, test } from "bun:test";
-import type { UsageMetering } from "@caisson/kernel";
+import type { UsageMetering } from "@caisson-sh/kernel";
 import {
   EMBEDDING_DIM,
   RentedInferenceBackend,

@@ -1,13 +1,13 @@
-// @caisson/ai-evals — trajectory graders (ADR-0360 U-7). Scores a governed tool-loop run (the
-// agent-runtime bounded loop, @caisson/ai-kit `runToolLoop`/`resumeToolLoop`) against its own
+// @caisson-sh/ai-evals — trajectory graders (ADR-0360 U-7). Scores a governed tool-loop run (the
+// agent-runtime bounded loop, @caisson-sh/ai-kit `runToolLoop`/`resumeToolLoop`) against its own
 // trajectory contract: did the model stay on its declared tool allowlist, did it repeat an
 // already-successful call, did every gated tool execute only under an authorized approval, and did
 // the run stay inside its credit budget. All four graders are DETERMINISTIC — no model, no
 // cassette, no judge — reading only the two agent-trajectory projections (`project`/
 // `projectToolCalls`) plus the exit-classifier signal this package already ships (ADR-0214).
 //
-// `@caisson/agent-trajectory` is the one accepted new dependency here (primitive->primitive,
-// precedented by `@caisson/ai-meter` -> `@caisson/tenancy-rls`; ADR-0360 U-7 lock). This module
+// `@caisson-sh/agent-trajectory` is the one accepted new dependency here (primitive->primitive,
+// precedented by `@caisson-sh/ai-meter` -> `@caisson-sh/tenancy-rls`; ADR-0360 U-7 lock). This module
 // imports its projection TYPES plus the two pure fold functions — never a store, never anything
 // that touches Postgres or the AI SDK (those stay confined to ai-kit, the down-only consumer).
 import { z } from "zod";
@@ -17,7 +17,7 @@ import {
   type RunProjection,
   type ToolCallProjection,
   type TrajectoryEvent,
-} from "@caisson/agent-trajectory";
+} from "@caisson-sh/agent-trajectory";
 import { classifyExit, type ExitSignal } from "./exit-classifier.ts";
 import type { Grader, GraderResult } from "./graders.ts";
 

@@ -7,7 +7,7 @@
 // one table (a derived artifact, golden-pinned) instead of requiring a reader to open six source
 // files. `docs/compliance/control-traceability.md`'s "the code IS the table" idiom, applied here.
 import type { ManualAttachmentSlot } from "./collector.ts";
-import type { Framework } from "@caisson/frameworks-pack";
+import type { Framework } from "@caisson-sh/frameworks-pack";
 
 /** The minimal collector shape this module reads -- avoids the generic `EvidenceCollector<Fact>`
  *  variance entirely (only `id`/`controlId`/`manualSlots` are ever read). */

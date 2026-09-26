@@ -1,4 +1,4 @@
-// @caisson/demo-registry — registry composition. Combines the three entry files (base
+// @caisson-sh/demo-registry — registry composition. Combines the three entry files (base
 // kit, ui-pro, per-package `./ui` surfaces) into one flat, validated list + lookup helpers. The ONE
 // data source apps/admin's catalog reads now and apps/site's `/ui` gallery repoints to later.
 import {
@@ -28,7 +28,7 @@ function validate(entries: readonly CatalogEntry[]): CatalogEntry[] {
     catalogEntryMetaSchema.parse(meta);
     if (seen.has(entry.id)) {
       throw new Error(
-        `@caisson/demo-registry: duplicate entry id "${entry.id}"`,
+        `@caisson-sh/demo-registry: duplicate entry id "${entry.id}"`,
       );
     }
     seen.add(entry.id);

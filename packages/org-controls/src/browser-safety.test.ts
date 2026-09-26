@@ -4,7 +4,7 @@
 //
 // This package's blocker is NOT a node builtin — the `.` barrel reaches zero of them. It is the
 // EXTERNAL frontier: `@clerk/backend` (a JWKS-verifying SDK) and `pg` (a Postgres driver, reached
-// through @caisson/tenancy-rls). So the walk's `external` set is the load-bearing assertion here,
+// through @caisson-sh/tenancy-rls). So the walk's `external` set is the load-bearing assertion here,
 // alongside the offender/unresolved channels. A walker that only counted `node:` specifiers would
 // have called the whole barrel clean.
 import { describe, expect, test } from "bun:test";
@@ -12,7 +12,7 @@ import { join } from "node:path";
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
-} from "@caisson/testing/module-graph";
+} from "@caisson-sh/testing/module-graph";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../..");
 const BROWSER_ENTRY = join(import.meta.dir, "browser.ts");
@@ -74,7 +74,7 @@ describe("`./browser` is browser-safe", () => {
   });
 
   test("positive control: the walker still flags a known-tainted graph", () => {
-    // @caisson/auth is a real dependency of this package and its barrel IS node:crypto-tainted
+    // @caisson-sh/auth is a real dependency of this package and its barrel IS node:crypto-tainted
     // (jwt.ts, session-token.ts). gate.ts imports `Role` from it as a statement-level `import
     // type`, which is erased — this control proves that erasure is doing real work, and that a
     // walker gone blind fails here instead of greening the entry vacuously.

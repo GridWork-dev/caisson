@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "modules": [
     {
-      "id": "@caisson/auth",
+      "id": "@caisson-sh/auth",
       "latest": "0.1.0",
       "versions": [
         {
@@ -10,10 +10,10 @@
           "publishedAt": "2026-06-27T00:00:00.000Z",
           "gateAttestation": "ci-1042@a1b2c3d",
           "manifest": {
-            "id": "@caisson/auth",
+            "id": "@caisson-sh/auth",
             "version": "0.1.0",
             "license": "Apache-2.0",
-            "dependencies": ["@caisson/kernel"],
+            "dependencies": ["@caisson-sh/kernel"],
             "description": "Authentication (sessions/JWT), provider-agnostic.",
             "stability": "alpha"
           }
@@ -21,7 +21,7 @@
       ]
     },
     {
-      "id": "@caisson/local-ai",
+      "id": "@caisson-sh/local-ai",
       "latest": "0.1.0",
       "versions": [
         {
@@ -29,10 +29,10 @@
           "publishedAt": "2026-06-27T00:00:00.000Z",
           "gateAttestation": "ci-1043@a1b2c3d",
           "manifest": {
-            "id": "@caisson/local-ai",
+            "id": "@caisson-sh/local-ai",
             "version": "0.1.0",
             "license": "Apache-2.0",
-            "dependencies": ["@caisson/kernel", "@caisson/ai-config"],
+            "dependencies": ["@caisson-sh/kernel", "@caisson-sh/ai-config"],
             "description": "Local-first AI kit: compute seam + privacy gate + sqlite-vec ANN.",
             "stability": "alpha"
           }

@@ -9,12 +9,12 @@
 //      actually adds, so the two output panels can never silently mis-split.
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { ValidationError } from "@caisson/kernel";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   CLAUDE_CLI_PROFILE,
   PASSTHROUGH_KEYS,
-} from "@caisson/agent-runner/browser";
+} from "@caisson-sh/agent-runner/browser";
 
 import {
   MALICIOUS_BASE_URL,

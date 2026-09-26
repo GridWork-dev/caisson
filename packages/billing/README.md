@@ -1,4 +1,4 @@
-# @caisson/billing
+# @caisson-sh/billing
 
 The billing seam behind one provider-agnostic `BillingProvider` port — Stripe, Paddle, LemonSqueezy,
 and Polar.
@@ -9,4 +9,4 @@ and Polar.
 Real src + tests: raw-body HMAC webhook signature verification for all four providers, the
 `BillingProvider` port + config-type contracts, and the provider-agnostic `DomainBillingEvent` schema.
 The checkout drivers, provider→domain event parsers, and webhook idempotency live in
-`@caisson/billing-orchestration`.
+`@caisson-sh/billing-orchestration`.

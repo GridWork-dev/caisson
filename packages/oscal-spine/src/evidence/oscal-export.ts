@@ -35,7 +35,7 @@ import {
   InternalError,
   strictObject,
   ValidationError,
-} from "@caisson/kernel/node";
+} from "@caisson-sh/kernel/node";
 import type {
   OscalEvidencePackManifest,
   OscalManifestControl,
@@ -610,7 +610,7 @@ export interface OscalExportTransport {
 
 /**
  * Live delivery config. `destinationUrl` is validated https-only + non-private/non-loopback at
- * construction (`assertSafePublicUrl` — the same kernel SSRF-literal guard `@caisson/alerting`'s
+ * construction (`assertSafePublicUrl` — the same kernel SSRF-literal guard `@caisson-sh/alerting`'s
  * webhook/Slack/Telegram channels use for buyer-supplied destinations) AND re-checked (DNS-resolved)
  * at the fetch seam inside `postOscalDocument`, so `deliver` stays safe even for a config object
  * built directly rather than through this schema — the same "guard at both seams" idiom alerting's

@@ -3,7 +3,7 @@
 // Imports ONLY the node-free canonical.ts, so this module is bundle-safe for the client and the
 // offline pack verifier: SHA-256 runs through WebCrypto (`crypto.subtle`) instead of the node crypto
 // builtin, and no path here reaches the node-tainted audit-chain.ts `.` barrel. It is reached only
-// through the `@caisson/kernel/audit-verify` subpath, never the barrel.
+// through the `@caisson-sh/kernel/audit-verify` subpath, never the barrel.
 //
 // The state a UI chip renders is computed HERE, client-side, from the recompute outcome — NEVER read
 // from a receipt's `checks` block, which is derived/untrusted display material (CR-06, M3). Any leg

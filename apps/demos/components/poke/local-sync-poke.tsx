@@ -1,7 +1,7 @@
 "use client";
 
 // "Converge two devices" (ADR-0378 lock 2). Two replica columns take fixed offline edits; converging
-// them runs the REAL @caisson/local-sync merge — `reconcileWithTombstones` imported straight from
+// them runs the REAL @caisson-sh/local-sync merge — `reconcileWithTombstones` imported straight from
 // the package, whose single `.` entry is browser-safe (ADR-0396, pinned by the package's own
 // src/browser-safety.test.ts). The hand-ported mirror this poke used to drive is deleted.
 //
@@ -16,7 +16,7 @@ import {
   type ReconciledRow,
   type Tombstone,
   type TombstoneReconcileResult,
-} from "@caisson/local-sync";
+} from "@caisson-sh/local-sync";
 
 import { PokeShell, Verdict, type VerdictState } from "./poke-rig";
 import styles from "./local-sync-poke.module.css";
@@ -257,7 +257,7 @@ export default function LocalSyncPoke() {
 
   return (
     <PokeShell
-      label="@caisson/local-sync"
+      label="@caisson-sh/local-sync"
       title="Take two devices offline, edit both, then converge."
     >
       <div className={styles.replicas}>

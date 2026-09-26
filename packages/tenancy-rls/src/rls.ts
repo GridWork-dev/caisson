@@ -3,7 +3,7 @@
 // for the life of the transaction. RLS policies read that GUC, so a query that forgets its
 // `WHERE account_id = …` still returns only the caller's rows — and a code path that forgets
 // `withTenant` entirely has no GUC bound and sees nothing. Fail-closed, by construction.
-import { TenancyError } from "@caisson/kernel";
+import { TenancyError } from "@caisson-sh/kernel";
 
 /** The Postgres GUC that carries the active account id into RLS policies. */
 export const TENANT_GUC = "app.current_account";
@@ -58,7 +58,7 @@ async function assertRoleNotPrivileged(
 /**
  * Runs once per distinct `(Transactor, role)` pair — the guard costs one extra catalog query per
  * role per `Transactor`, not per call. Kept keyed per-ROLE (not just per-db): `withTenant`/`withUser`
- * only ever vet `app` here today (the cross-tenant `admin_write` guard moved to @caisson/org-controls
+ * only ever vet `app` here today (the cross-tenant `admin_write` guard moved to @caisson-sh/org-controls
  * with the admin-write seam, ADR-0257 §1.3, keeping its OWN independent guard), but the per-role shape
  * is the correct general form and costs nothing extra for a single role. A failed check is never
  * cached: fixing the misconfig un-wedges the very next call with no restart.
@@ -167,6 +167,6 @@ export function buildTenantPolicySql(
 
 // The cross-tenant admin-WRITE seam (ADMIN_WRITE_ROLE, ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
 // buildAdminWritePolicySql, buildAdminSelectPolicySql, withAdminWrite, AdminWritePolicyOptions) moved
-// to the commercial @caisson/org-controls (ADR-0257 §1.3). This open package keeps ONLY the buyer
+// to the commercial @caisson-sh/org-controls (ADR-0257 §1.3). This open package keeps ONLY the buyer
 // tenant-isolation floor (withTenant/withUser + buildTenantPolicySql); the operator control plane
 // imports the admin-write layer from org-controls.

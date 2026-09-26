@@ -1,9 +1,9 @@
-// @caisson/ai-evals — the regression-vs-committed-baseline comparator + BLESS re-baseline (ADR-0062).
+// @caisson-sh/ai-evals — the regression-vs-committed-baseline comparator + BLESS re-baseline (ADR-0062).
 //
 // The gate (ADR-0072): an eval suite passes only if it does NOT regress against a committed JSON
 // baseline AND each eval clears its own absolute `threshold`. The baseline is the eval equivalent of
 // a `matchGolden` fixture (ADR-0013): committed, reviewed, and rewritten ONLY through the sanctioned
-// `BLESS` path (mirroring `@caisson/testing` `golden.ts`). This is run as a DISTINCT turbo `eval`
+// `BLESS` path (mirroring `@caisson-sh/testing` `golden.ts`). This is run as a DISTINCT turbo `eval`
 // task in the monorepo — never a required CI job inside a generated buyer repo (ADR-0072).
 //
 // THIS module is the file-I/O half only: load, gate, write. The gate's RULES — the boundary schema,
@@ -35,7 +35,7 @@ export type {
   RegressionKind,
 } from "./baseline-compare.ts";
 
-/** Identical BLESS semantics to `@caisson/testing` `golden.ts` — the one sanctioned rewrite gate. */
+/** Identical BLESS semantics to `@caisson-sh/testing` `golden.ts` — the one sanctioned rewrite gate. */
 function blessEnabled(): boolean {
   const v = process.env.BLESS;
   return (

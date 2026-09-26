@@ -1,4 +1,4 @@
-// The ai-meter poke's checkable claims, now that it drives the REAL @caisson/ai-meter and the
+// The ai-meter poke's checkable claims, now that it drives the REAL @caisson-sh/ai-meter and the
 // hand-ported mirror (ai-meter-logic.ts) is deleted:
 //
 //   1. The poke's client graph is browser-safe — proven by a STATIC SOURCE-GRAPH WALK, never by a
@@ -21,7 +21,7 @@ import { z } from "zod";
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
-} from "@caisson/testing/module-graph";
+} from "@caisson-sh/testing/module-graph";
 import {
   BUNDLED_PRICE_BOOK,
   CREDIT_CONVERSION,
@@ -31,7 +31,7 @@ import {
   creditsForMicroUsd,
   priceKey,
   resolvePriceEntry,
-} from "@caisson/ai-meter";
+} from "@caisson-sh/ai-meter";
 
 import {
   GOLDEN_USAGE,
@@ -68,7 +68,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
 
   test("the walk really crossed into the package, past the first hop", () => {
     // Guard the guard: files.length alone proves nothing. These two are reachable ONLY through
-    // @caisson/ai-meter/browser's own imports — first hop (the package), then a second hop across
+    // @caisson-sh/ai-meter/browser's own imports — first hop (the package), then a second hop across
     // the kernel seam — so a resolver gone blind inside a workspace package fails here.
     expect(walk.files).toContain("packages/ai-meter/src/token-rates.ts");
     expect(walk.files).toContain("packages/kernel/src/schema.ts");
@@ -97,11 +97,11 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
   });
 
   test("the poke imports the ./browser entry, never the node-capable barrel", () => {
-    // The specifier itself is pinned: `@caisson/ai-meter` (bare) would walk clean today only by
+    // The specifier itself is pinned: `@caisson-sh/ai-meter` (bare) would walk clean today only by
     // accident of what the barrel happens to re-export, and it does not — it reaches node:crypto.
     const src = readFileSync(POKE_ENTRY, "utf8");
-    expect(src).toMatch(/from "@caisson\/ai-meter\/browser";$/m);
-    expect(src).not.toMatch(/from "@caisson\/ai-meter";$/m);
+    expect(src).toMatch(/from "@caisson-sh\/ai-meter\/browser";$/m);
+    expect(src).not.toMatch(/from "@caisson-sh\/ai-meter";$/m);
   });
 
   test("the unwalked external frontier is exactly the known browser-safe set", () => {
@@ -184,7 +184,7 @@ describe("the poke reproduces the package's shipped cost golden", () => {
     ),
   );
 
-  // `expect<number>(...)` on every branded receiver, the same widening @caisson/kernel's own
+  // `expect<number>(...)` on every branded receiver, the same widening @caisson-sh/kernel's own
   // money.test.ts uses: the package's money values carry MicroUsd/Credits/MicroUsdPerCredit brands,
   // the golden fixture is plain parsed JSON, and bun:test infers the matcher's type from the
   // receiver. Without the widening this file is six tsc errors that `bun test` cannot see.

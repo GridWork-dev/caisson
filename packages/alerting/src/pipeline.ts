@@ -1,7 +1,7 @@
 // Stages 1-3 of the alerting pipeline (ADR-0135): dedup -> rate-cap+digest -> quiet-hours. Pure
 // functions — no fetch, no Date.now() (time is always injected), so every branch is a one-line
 // unit test.
-import { ConfigError } from "@caisson/kernel";
+import { ConfigError } from "@caisson-sh/kernel";
 import type { AlertEvent, RateCapPolicy } from "./types.ts";
 
 export interface OpenIncident {

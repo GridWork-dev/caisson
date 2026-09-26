@@ -1,4 +1,4 @@
-// @caisson/jobs — provider-agnostic background-job queue PORT (ADR-0018). Billing/credit
+// @caisson-sh/jobs — provider-agnostic background-job queue PORT (ADR-0018). Billing/credit
 // side-effects are ENQUEUED through this port, never called inline: the credit/ledger write stays
 // synchronous + transactional while email/downstream side-effects run as durable retried jobs
 // (e.g. `credit.granted` → `send-receipt` task → Emailer.send). Payloads are Zod-`.strict()` typed.
@@ -10,7 +10,7 @@
 // documented here, wired in a later phase. It implements the same `JobQueue` port, so enqueuing
 // callers never change when the driver is swapped.
 import type { ZodType } from "zod";
-import { parseStrict } from "@caisson/kernel";
+import { parseStrict } from "@caisson-sh/kernel";
 import { createTaskRegistry, requireRegisteredTask } from "./task-registry.ts";
 
 /** A typed task: a name, the `.strict()` payload schema, and the handler that runs the work. */

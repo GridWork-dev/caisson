@@ -1,5 +1,5 @@
 // The metered-inference money path (ADR-0060): estimate → reserve → reconcile, over the append-only
-// credit ledger (@caisson/credits, ADR-0074 generic `feature_debit`/`feature_grant` carrying the
+// credit ledger (@caisson-sh/credits, ADR-0074 generic `feature_debit`/`feature_grant` carrying the
 // registered `inference_call` tag) plus the per-tenant spend window + circuit breaker.
 //
 //   reserve()  — checked breaker FIRST (open → 402, no provider call); estimate the cost; debit the
@@ -15,9 +15,9 @@
 // `INSERT … ON CONFLICT DO UPDATE … RETURNING`, so concurrent reserves can't lose an increment.
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { balance, debit, grant } from "@caisson/credits";
-import { asCredits, parseStrict, strictObject } from "@caisson/kernel";
-import type { TenantExecutor } from "@caisson/tenancy-rls";
+import { balance, debit, grant } from "@caisson-sh/credits";
+import { asCredits, parseStrict, strictObject } from "@caisson-sh/kernel";
+import type { TenantExecutor } from "@caisson-sh/tenancy-rls";
 import { estimateCost, estimateMessageSchema } from "./estimate.ts";
 import type { EstimateMessage } from "./estimate.ts";
 import {

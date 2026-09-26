@@ -10,11 +10,11 @@ import {
   type AuditChainAnchor,
   type AuditChainEntry,
   type JsonValue,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   verifyEntryAgainstAnchor,
   type LegResult,
-} from "@caisson/kernel/audit-verify";
+} from "@caisson-sh/kernel/audit-verify";
 import {
   EVIDENCE_PACK_FORMAT_VERSION,
   EVIDENCE_PACK_KEY_ID_MAX_LENGTH,
@@ -24,7 +24,7 @@ import {
   isEvidencePackKeyId,
   type EvidencePack,
   type EvidencePackManifest,
-} from "@caisson/kernel/evidence";
+} from "@caisson-sh/kernel/evidence";
 
 const SHA256 = /^[0-9a-f]{64}$/u;
 const BASE64 =

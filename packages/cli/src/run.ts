@@ -6,15 +6,15 @@
 //   - `start` — a THIN MCP CLIENT (S5, the `doctor.ts` pattern): opening a governed run needs the
 //     full agent loop (models, metering, guardrails, agent-trajectory) that the generator keeps out
 //     of its runtime dependency graph — so, exactly like `caisson doctor`, it calls the already-
-//     credentialed local `@caisson/mcp-server` `run_start` tool over stdio and renders the result.
+//     credentialed local `@caisson-sh/mcp-server` `run_start` tool over stdio and renders the result.
 //     A server without the tool answers the seam's 404, surfaced here as a clear error.
 //
-// WHY RAW SQL FOR approve/deny/status, NOT @caisson/agent-trajectory: the generator keeps the agent
+// WHY RAW SQL FOR approve/deny/status, NOT @caisson-sh/agent-trajectory: the generator keeps the agent
 // runtime out of its dependency graph. The CAS/append SQL below is therefore a DELIBERATE, SMALL,
 // hand-kept mirror of agent-trajectory's canonical `agent_run_state`/`trajectory_event` shapes
 // (`run-state.pg.ts`/`store.pg.ts`) — same table/column names, same CAS semantics, same idempotency
 // rule — covered by its own test suite so drift is caught, never silent. `RESUME_TASK_NAME` mirrors
-// `@caisson/ai-kit`'s `approval.ts` constant for the same reason. `status`'s trajectory summary is
+// `@caisson-sh/ai-kit`'s `approval.ts` constant for the same reason. `status`'s trajectory summary is
 // the SAME kind of small hand-kept mirror (never `project()`, never `parked_state` — see
 // `readTrajectoryProjection` below).
 //
@@ -25,19 +25,22 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import { ConfigError, ValidationError, parseStrict } from "@caisson/kernel";
+import { ConfigError, ValidationError, parseStrict } from "@caisson-sh/kernel";
 import {
   createPgPool,
   createPgTransactor,
   withTenant,
   type TenantExecutor,
-} from "@caisson/tenancy-rls";
-import { createPgBossJobQueue, type PgBossJobQueueConfig } from "@caisson/jobs";
+} from "@caisson-sh/tenancy-rls";
+import {
+  createPgBossJobQueue,
+  type PgBossJobQueueConfig,
+} from "@caisson-sh/jobs";
 import { buyerMcpTransport } from "./doctor.ts";
 
-/** Mirrors `@caisson/agent-trajectory`'s `TRAJECTORY_VERSION` (schema.ts) — see the file header. */
+/** Mirrors `@caisson-sh/agent-trajectory`'s `TRAJECTORY_VERSION` (schema.ts) — see the file header. */
 const TRAJECTORY_VERSION = 1;
-/** Mirrors `@caisson/ai-kit`'s `approval.ts` `RESUME_TASK_NAME` — see the file header. */
+/** Mirrors `@caisson-sh/ai-kit`'s `approval.ts` `RESUME_TASK_NAME` — see the file header. */
 const RESUME_TASK_NAME = "agent-run.resume";
 
 type RunStatus = "running" | "parked" | "finished";
@@ -51,7 +54,7 @@ interface RunStateRow {
 }
 
 /** A minimal, hand-rolled trajectory summary (mirrors this file's own house style: a deliberate,
- *  small mirror of `@caisson/agent-trajectory`'s canonical logic, never an import of that package
+ *  small mirror of `@caisson-sh/agent-trajectory`'s canonical logic, never an import of that package
  *  — see the file header). This is NOT the full
  *  `project()` fold (step tree, usage totals, checkpoints) — just the ONE field a `caisson run
  *  status` operator actually wants: has the LOOP itself declared the run running/completed/failed/
@@ -134,7 +137,7 @@ async function readRunState(
 }
 
 /** Exported for the cross-package shape-assertion test only (run.test.ts): validates the exact
- *  objects this file inserts actually parse against @caisson/agent-trajectory's REAL Zod
+ *  objects this file inserts actually parse against @caisson-sh/agent-trajectory's REAL Zod
  *  TrajectoryEvent schema (a devDependency there, never a runtime one — see the file header). */
 export function appendedEvent(
   runId: string,
@@ -332,7 +335,7 @@ export interface RunStartClientInput {
 
 /**
  * Call the MCP `run_start` tool over `transport` and return its result (opaque JSON — the governed
- * `ToolLoopResult` shape `@caisson/ai-kit`'s host wiring returns, unknown to this package by
+ * `ToolLoopResult` shape `@caisson-sh/ai-kit`'s host wiring returns, unknown to this package by
  * construction). A missing tool surfaces as the MCP `isError` envelope — rethrown as a clear Error
  * so the caller sees why, never a silent no-op.
  * Mirrors `doctor.ts`'s `runDoctorClient` exactly.
@@ -428,7 +431,7 @@ Usage:
   caisson run status  <runId>
 
 start is a THIN MCP CLIENT: it needs your local Caisson MCP server — set CAISSON_MCP_COMMAND
-(and optional CAISSON_MCP_ARGS) to your local @caisson/mcp-server command.
+(and optional CAISSON_MCP_ARGS) to your local @caisson-sh/mcp-server command.
 approve/deny/status read DATABASE_URL and CAISSON_ACCOUNT_ID from the environment —
 direct DB access against your own deployment (no MCP round-trip). --actor is required on
 approve/deny.

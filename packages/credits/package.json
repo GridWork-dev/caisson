@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/credits",
+  "name": "@caisson-sh/credits",
   "version": "0.6.3",
   "description": "Integer credit wallet with an append-only ledger, debit-before-spend (HTTP 402), and idempotent credit grants.",
   "license": "Apache-2.0",
@@ -26,15 +26,15 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/jobs": "workspace:*",
-    "@caisson/kernel": "workspace:*",
-    "@caisson/registry-schema": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*",
+    "@caisson-sh/jobs": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
+    "@caisson-sh/registry-schema": "workspace:*",
+    "@caisson-sh/tenancy-rls": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

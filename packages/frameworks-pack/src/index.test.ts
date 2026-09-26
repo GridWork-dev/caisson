@@ -3,7 +3,7 @@
 // JSON copy) — it must stay a package-internal test/re-vendor-script helper, never part of the
 // published barrel (SHIP-audit P2 fix, oscal-spine). This catches a future accidental re-widening.
 import { describe, expect, test } from "bun:test";
-import * as oscalSpine from "@caisson/oscal-spine";
+import * as oscalSpine from "@caisson-sh/oscal-spine";
 import type {
   NistCatalogDocument as SpineNistCatalogDocument,
   OscalAssessmentPlan as SpineOscalAssessmentPlan,
@@ -13,7 +13,7 @@ import type {
   OscalExportBundle as SpineOscalExportBundle,
   OscalIso27001SoaDocument as SpineOscalIso27001SoaDocument,
   RegimeCrosswalk as SpineRegimeCrosswalk,
-} from "@caisson/oscal-spine";
+} from "@caisson-sh/oscal-spine";
 import type {
   NistCatalogDocument as ParentNistCatalogDocument,
   OscalAssessmentPlan as ParentOscalAssessmentPlan,

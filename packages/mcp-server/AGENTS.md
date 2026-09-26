@@ -1,4 +1,4 @@
-# @caisson/mcp-server — setup-coach fallback (coach-by-docs)
+# @caisson-sh/mcp-server — setup-coach fallback (coach-by-docs)
 
 The MCP server ships an **agent-assisted setup coach**: four secrets-safe tools that walk an
 `ai-kit` user from "no AI config" to a validated `forge.config`. When you have **no MCP agent**

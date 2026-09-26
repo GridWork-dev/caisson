@@ -8,8 +8,8 @@ import {
   GuardrailError,
   InMemoryEventSink,
   ValidationError,
-} from "@caisson/kernel";
-import { DerivedKeyProvider, derivedContext } from "@caisson/field-crypto";
+} from "@caisson-sh/kernel";
+import { DerivedKeyProvider, derivedContext } from "@caisson-sh/field-crypto";
 import {
   guardInput,
   guardOutput,

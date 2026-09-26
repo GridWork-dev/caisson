@@ -8,15 +8,15 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { canonicalize, type JsonValue } from "@caisson/kernel";
+import { canonicalize, type JsonValue } from "@caisson-sh/kernel";
 import {
   parseEvidencePackManifest,
   type EvidencePackManifest,
-} from "@caisson/compliance-core";
+} from "@caisson-sh/compliance-core";
 import {
   Ed25519Signer,
   verifyEvidenceSignature,
-} from "@caisson/signing-primitive";
+} from "@caisson-sh/signing-primitive";
 import { assembleOscalEvidenceBundle } from "./oscal-bundle.ts";
 
 const TENANT_SEED = Uint8Array.from(Buffer.from("42".repeat(32), "hex"));

@@ -1,14 +1,14 @@
-// src/schedule.ts — the access-review campaign as `@caisson/jobs` tasks (ADR-0371).
+// src/schedule.ts — the access-review campaign as `@caisson-sh/jobs` tasks (ADR-0371).
 //
-// Two tasks ride the SAME `JobQueue` port `@caisson/retention-runner`'s recurring sweep uses
+// Two tasks ride the SAME `JobQueue` port `@caisson-sh/retention-runner`'s recurring sweep uses
 // (`defineRetentionTask`): OPEN (mint a fresh campaign on a recurring cadence) and CLOSE (attempt
 // to close one campaign — a no-op-safe refusal if it's neither complete nor past its deadline, per
 // `closeCampaign`'s own guard). WHICH tenants/reviewers are due to open, and which open campaigns
 // are due for a close attempt, is the caller's own scheduler's concern — this package only runs
 // the operation once told who, exactly like the auto_90d sweep only runs the erasure once told
 // which subject.
-import { defineTask } from "@caisson/jobs";
-import type { JobQueue, TaskDefinition } from "@caisson/jobs";
+import { defineTask } from "@caisson-sh/jobs";
+import type { JobQueue, TaskDefinition } from "@caisson-sh/jobs";
 import { closeCampaign, openCampaign, type CampaignDeps } from "./campaign.ts";
 import {
   closeCampaignSchema,

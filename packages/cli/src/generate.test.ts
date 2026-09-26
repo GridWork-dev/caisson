@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { loadRegistryIndex } from "@caisson/registry-schema";
-import { matchGolden } from "@caisson/testing";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
+import { matchGolden } from "@caisson-sh/testing";
 import {
   type GeneratorEngine,
   generate,
@@ -28,16 +28,16 @@ const INDEX = loadRegistryIndex({
   schemaVersion: 1,
   modules: [
     {
-      id: "@caisson/field-crypto",
+      id: "@caisson-sh/field-crypto",
       latest: "0.1.0",
-      versions: [version("0.1.0", "@caisson/field-crypto")],
+      versions: [version("0.1.0", "@caisson-sh/field-crypto")],
     },
     {
-      id: "@caisson/credits",
+      id: "@caisson-sh/credits",
       latest: "0.2.0",
       versions: [
-        version("0.1.0", "@caisson/credits"),
-        version("0.2.0", "@caisson/credits"),
+        version("0.1.0", "@caisson-sh/credits"),
+        version("0.2.0", "@caisson-sh/credits"),
       ],
     },
   ],
@@ -47,8 +47,8 @@ const INDEX = loadRegistryIndex({
 const BASE = {
   projectName: "acme-app",
   modules: [
-    { id: "@caisson/field-crypto", version: "0.1.0" },
-    { id: "@caisson/credits", version: "0.2.0" },
+    { id: "@caisson-sh/field-crypto", version: "0.1.0" },
+    { id: "@caisson-sh/credits", version: "0.2.0" },
   ],
 };
 
@@ -107,7 +107,7 @@ describe("generate — allowlist gate (ADR-0021/0048)", () => {
     expect(() =>
       generate(
         INDEX,
-        { ...BASE, modules: [{ id: "@caisson/nope", version: "0.1.0" }] },
+        { ...BASE, modules: [{ id: "@caisson-sh/nope", version: "0.1.0" }] },
         engine,
       ),
     ).toThrow(/unknown module id/);
@@ -121,7 +121,7 @@ describe("generate — allowlist gate (ADR-0021/0048)", () => {
         INDEX,
         {
           ...BASE,
-          modules: [{ id: "@caisson/field-crypto", version: "9.9.9" }],
+          modules: [{ id: "@caisson-sh/field-crypto", version: "9.9.9" }],
         },
         engine,
       ),
@@ -169,8 +169,8 @@ describe("generate — allowlist gate (ADR-0021/0048)", () => {
         {
           ...BASE,
           modules: [
-            { id: "@caisson/credits", version: "0.1.0" },
-            { id: "@caisson/credits", version: "0.2.0" },
+            { id: "@caisson-sh/credits", version: "0.1.0" },
+            { id: "@caisson-sh/credits", version: "0.2.0" },
           ],
         },
         engine,
@@ -273,13 +273,13 @@ describe("generate — framework templates (ADR-0287)", () => {
     const workspacePins: Record<string, string> = {};
     const generatedPins: Record<string, string> = {};
     for (const name of Object.keys(template.dependencies)) {
-      if (!name.startsWith("@caisson/")) continue;
+      if (!name.startsWith("@caisson-sh/")) continue;
       const workspace = JSON.parse(
         readFileSync(
           join(
             import.meta.dir,
             "../../",
-            name.slice("@caisson/".length),
+            name.slice("@caisson-sh/".length),
             "package.json",
           ),
           "utf8",
@@ -330,10 +330,10 @@ describe("generate — framework templates (ADR-0287)", () => {
       ) as { version: string }
     ).version;
     expect(parsed.dependencies).toMatchObject({
-      "@caisson/credits": "0.2.0",
-      "@caisson/field-crypto": "0.1.0",
+      "@caisson-sh/credits": "0.2.0",
+      "@caisson-sh/field-crypto": "0.1.0",
       next: "^16.3.3",
-      "@caisson/kernel": `^${kernelVersion}`,
+      "@caisson-sh/kernel": `^${kernelVersion}`,
     });
     expect(parsed.devDependencies).toMatchObject({
       typescript: "^5.6.0",

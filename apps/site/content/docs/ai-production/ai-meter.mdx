@@ -3,7 +3,7 @@ title: ai-meter
 description: PG-atomic reserve/reconcile token metering for LLM calls, per-tenant spend caps, a circuit breaker, and a MinHash dedup gate. Integer credits only, no floats.
 ---
 
-`@caisson/ai-meter` is the money path for metered AI inference: estimate a call's cost
+`@caisson-sh/ai-meter` is the money path for metered AI inference: estimate a call's cost
 before it runs, reserve that amount up front, then true the charge to the provider's
 actual usage once the call completes. Built on the integer credit ledger, so a charge is
 never a float and never drifts.
@@ -33,8 +33,8 @@ never a float and never drifts.
 ## Quickstart
 
 ```ts
-import { withTenant } from "@caisson/tenancy-rls";
-import { reserve, reconcile } from "@caisson/ai-meter";
+import { withTenant } from "@caisson-sh/tenancy-rls";
+import { reserve, reconcile } from "@caisson-sh/ai-meter";
 
 await withTenant(db, accountId, async (tx) => {
   const reserved = await reserve(tx, {
@@ -69,7 +69,7 @@ await withTenant(db, accountId, async (tx) => {
 can't spend past the cap on the next retry.
 
 ```ts
-import { assertBreakerClosed, resetBreaker } from "@caisson/ai-meter";
+import { assertBreakerClosed, resetBreaker } from "@caisson-sh/ai-meter";
 
 await assertBreakerClosed(tx, accountId, "default"); // throws SpendCapError if open
 // ... after investigating a tripped breaker ...
@@ -92,8 +92,8 @@ invalid override fails closed rather than metering silently at zero.
 ## Composing with the base
 
 `ai-meter` is a base primitive, it never imports an edition. It runs on the same
-Postgres-atomic accounting as `@caisson/credits` and is scoped per tenant through
-`@caisson/tenancy-rls`'s `withTenant`. The AI Production Kit's inference gateway composes
+Postgres-atomic accounting as `@caisson-sh/credits` and is scoped per tenant through
+`@caisson-sh/tenancy-rls`'s `withTenant`. The AI Production Kit's inference gateway composes
 `reserve()`/`reconcile()` around the provider call site; `ai-meter` itself never talks to
 a provider.
 

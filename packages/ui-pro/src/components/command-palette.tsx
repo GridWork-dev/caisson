@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
-import { Dialog } from "@caisson/ui/components";
+import { Dialog } from "@caisson-sh/ui/components";
 
 import { fuzzyFilter } from "../lib/fuzzy";
 

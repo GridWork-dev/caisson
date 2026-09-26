@@ -6,7 +6,7 @@
 // namespace) — every network driver tries the React-Email registry
 // (`./templates/index.ts#tryRenderEmailTemplate`) first and falls back to the original honest
 // template/data mapping when `template` isn't one of the branded ids.
-import { fetchWithTimeout, InternalError } from "@caisson/kernel";
+import { fetchWithTimeout, InternalError } from "@caisson-sh/kernel";
 import { tryRenderEmailTemplate } from "./templates/index.ts";
 export {
   EMAIL_TEMPLATE_IDS,

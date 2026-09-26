@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Button } from "@caisson/ui/components";
+import { Button } from "@caisson-sh/ui/components";
 
 import {
   previousPeriod,

@@ -2,16 +2,19 @@
 // get_tokens), check_usage, and describe_pro_component are visible to every authenticated caller;
 // describe_pro_component exists only when a pro manifest is supplied.
 import { describe, expect, test } from "bun:test";
-import { NotFoundError } from "@caisson/kernel";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+import { NotFoundError } from "@caisson-sh/kernel";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
 import {
   darkTheme,
   functionalDark,
   functionalLight,
   fonts,
   lightTheme,
-} from "@caisson/ui/tokens";
-import { loadBaseManifest, type ComponentManifest } from "@caisson/ds-manifest";
+} from "@caisson-sh/ui/tokens";
+import {
+  loadBaseManifest,
+  type ComponentManifest,
+} from "@caisson-sh/ds-manifest";
 import { createMcpServer, type DesignTokens } from "./index.ts";
 
 const INDEX = loadRegistryIndex({ schemaVersion: 1, modules: [] });
@@ -23,11 +26,11 @@ const TOKENS: DesignTokens = {
   fonts: { sans: fonts.sans, mono: fonts.mono },
 };
 
-// A minimal but valid pro manifest — a real pro component slug (@caisson/ui-pro ships DataTablePro).
+// A minimal but valid pro manifest — a real pro component slug (@caisson-sh/ui-pro ships DataTablePro).
 // Its ONLY reachable path is the authed describe_pro_component; the discovery server never sees it.
 const PRO_MANIFEST: ComponentManifest = {
   schemaVersion: 1,
-  generatedFor: { pkg: "@caisson/ui-pro", version: "0.1.0" },
+  generatedFor: { pkg: "@caisson-sh/ui-pro", version: "0.1.0" },
   components: [
     {
       name: "DataTablePro",
@@ -62,7 +65,7 @@ function makeServer() {
   });
 }
 
-const BROKEN = `import { Button, Frobnicate } from "@caisson/ui";\n<Frobnicate />`;
+const BROKEN = `import { Button, Frobnicate } from "@caisson-sh/ui";\n<Frobnicate />`;
 
 describe("base read tools — open to every authenticated buyer", () => {
   const server = makeServer();

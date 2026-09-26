@@ -4,8 +4,8 @@ import {
   verify as cryptoVerify,
   type KeyObject,
 } from "node:crypto";
-import { ConfigError, ValidationError } from "@caisson/kernel";
-import { EVIDENCE_PACK_KEY_ID_MAX_LENGTH } from "@caisson/kernel/evidence";
+import { ConfigError, ValidationError } from "@caisson-sh/kernel";
+import { EVIDENCE_PACK_KEY_ID_MAX_LENGTH } from "@caisson-sh/kernel/evidence";
 import {
   ANCHOR_SIGNING_KEY_ENV,
   DEFAULT_ANCHOR_SIGNING_KEY_ID,

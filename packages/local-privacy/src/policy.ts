@@ -14,7 +14,7 @@
 //
 // `.strict()` everywhere (ADR-0002): an unknown top-level key or an unknown sink key fails closed —
 // a typo'd or smuggled field never silently widens the egress surface.
-import { parseStrict, strictObject } from "@caisson/kernel/browser";
+import { parseStrict, strictObject } from "@caisson-sh/kernel/browser";
 import { z } from "zod";
 
 /**

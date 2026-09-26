@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseEvidencePackManifest } from "@caisson/compliance-core";
+import { parseEvidencePackManifest } from "@caisson-sh/compliance-core";
 import { DEFAULT_TRUST_PAGE_ALLOWLIST, flattenManifestFacts } from "./facts.ts";
 
 function manifest() {

@@ -13,8 +13,8 @@ import {
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
 import { createHash, randomUUID } from "node:crypto";
-import { newTestPg, type TestPg } from "@caisson/testing";
-import { ConflictError } from "@caisson/kernel";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
+import { ConflictError } from "@caisson-sh/kernel";
 import { ANCHOR_OUTBOX_SCHEMA_SQL, AnchorOutbox } from "./anchor-outbox.ts";
 import type { AnchorOutboxKey } from "./anchor-transparency.ts";
 

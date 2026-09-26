@@ -1,4 +1,4 @@
-# AGENTS — @caisson/tool-exec
+# AGENTS — @caisson-sh/tool-exec
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or a governed
 agent run must know to wire tool execution correctly.
@@ -43,4 +43,4 @@ filesystem.
 
 No sandboxing beyond `execFile`'s own process isolation (no container/VM boundary), no output
 streaming, no interactive stdin. This package is the governed CALL gate; the agent RUN loop lives in
-`@caisson/agent-kernel`.
+`@caisson-sh/agent-kernel`.

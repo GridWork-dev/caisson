@@ -2,7 +2,7 @@
 // documented seam), so there's no DB harness to run a live cross-tenant SELECT against. This is the
 // minimum fail-closed check: 0002 exists alongside 0001, and it actually enables + forces RLS with
 // a tenant_id-keyed policy bound to the same GUC the rest of the tenant-scoped surface uses
-// (@caisson/tenancy-rls TENANT_GUC) — the ADR-0005 finding this migration closes.
+// (@caisson-sh/tenancy-rls TENANT_GUC) — the ADR-0005 finding this migration closes.
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";

@@ -7,7 +7,7 @@
 // buyer trust page) reuses it instead of re-deriving the regex. FAIL CLOSED: a caller that skips this
 // check ships un-filtered prose, which is why every render primitive in this package (citation rows)
 // routes free-text fields through it before they reach an artifact.
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 
 /**
  * The banned claim words (case-insensitive, word-bounded) — the union of every existing guard in the

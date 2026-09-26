@@ -3,8 +3,8 @@ import {
   DerivedKeyProvider,
   derivedContext,
   openField,
-} from "@caisson/field-crypto";
-import { MAX_KEY_VERSION } from "@caisson/field-crypto/browser";
+} from "@caisson-sh/field-crypto";
+import { MAX_KEY_VERSION } from "@caisson-sh/field-crypto/browser";
 import { detectPii, detokenizePii, redactPii, tokenizePii } from "./pii.ts";
 import {
   detokenizePiiAsync,

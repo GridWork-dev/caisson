@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { parseStrict, strictObject, ValidationError } from "@caisson/kernel";
+import { parseStrict, strictObject, ValidationError } from "@caisson-sh/kernel";
 
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 const CANONICAL_CONTROL_ID = /^[A-Z0-9]+(?:[.-][A-Z0-9]+)*$/;

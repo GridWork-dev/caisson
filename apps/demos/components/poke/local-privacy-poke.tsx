@@ -4,9 +4,9 @@
 // fail-closed egress decision against the two real policy shapes the module ships: the air-gap
 // default (`ZERO_EGRESS_POLICY`) and a policy with the on-device model-fetch host allowlisted.
 //
-// This component drives the REAL @caisson/local-privacy (ADR-0396): the hand-ported mirror
+// This component drives the REAL @caisson-sh/local-privacy (ADR-0396): the hand-ported mirror
 // (local-privacy-logic.ts) is deleted, and `EgressGuard.assertAllowed` / `sinkKindFor` make every
-// decision rendered below. The mirror's justifying header — that the package's `@caisson/kernel`
+// decision rendered below. The mirror's justifying header — that the package's `@caisson-sh/kernel`
 // import drags node builtins into a client bundle — is retracted: that barrel has been browser-safe
 // since the ./node split, so the package's whole `.` barrel walks clean and needs no `./browser`
 // entry. Proven by the STATIC SOURCE-GRAPH WALK in local-privacy-poke.test.ts, never by a build —
@@ -15,22 +15,25 @@
 // What stays poke-local: the sample hosts, the two policy choices, and the render-shape adapter
 // around a THROWING guard. Nothing here fetches, persists, or measures the visitor.
 import { Fragment, useId, useMemo, useState } from "react";
-import { Radio, StatusChip } from "@caisson/ui/components";
-import { InternalError, isCaissonError } from "@caisson/kernel";
-import { DEFAULT_ONNX_MODEL } from "@caisson/local-inference/browser";
+import { Radio, StatusChip } from "@caisson-sh/ui/components";
+import { InternalError, isCaissonError } from "@caisson-sh/kernel";
+import { DEFAULT_ONNX_MODEL } from "@caisson-sh/local-inference/browser";
 import {
   SANCTIONED_SINK_KINDS,
   ZERO_EGRESS_POLICY,
   createEgressGuard,
   localOnlyPolicy,
-} from "@caisson/local-privacy";
-import type { EgressGuard, SanctionedSinkKind } from "@caisson/local-privacy";
+} from "@caisson-sh/local-privacy";
+import type {
+  EgressGuard,
+  SanctionedSinkKind,
+} from "@caisson-sh/local-privacy";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./local-privacy-poke.module.css";
 
 /**
- * The real sanctioned model-fetch host (@caisson/local-inference's `DEFAULT_ONNX_MODEL.modelHost`)
+ * The real sanctioned model-fetch host (@caisson-sh/local-inference's `DEFAULT_ONNX_MODEL.modelHost`)
  * — the actual first-run download host the on-device backend allowlists, not a fabricated example.
  * Imported through the narrow browser entry so product config has one owner without admitting the
  * inference package's node-bound main barrel.
@@ -123,7 +126,7 @@ export default function LocalPrivacyPoke() {
 
   return (
     <PokeShell
-      label="@caisson/local-privacy"
+      label="@caisson-sh/local-privacy"
       title="Nothing egresses unless the allowlist names it. Try a host."
     >
       <div className={styles.layout}>

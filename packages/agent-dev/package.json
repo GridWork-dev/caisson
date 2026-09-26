@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/agent-dev",
+  "name": "@caisson-sh/agent-dev",
   "version": "0.6.10",
   "description": "Agentic-Dev edition: the composition of the governed engine-neutral agent kernel + local hybrid memory + a thin multi-harness emitter. Composes base seams down-only — no vendor SDK, no LLM call, no harness substrate.",
   "license": "Apache-2.0",
@@ -21,16 +21,16 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/agent-kernel": "workspace:*",
-    "@caisson/agent-runner": "workspace:*",
-    "@caisson/ai-config": "workspace:*",
-    "@caisson/kernel": "workspace:*",
-    "@caisson/local-store": "workspace:*",
-    "@caisson/tool-exec": "workspace:*"
+    "@caisson-sh/agent-kernel": "workspace:*",
+    "@caisson-sh/agent-runner": "workspace:*",
+    "@caisson-sh/ai-config": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
+    "@caisson-sh/local-store": "workspace:*",
+    "@caisson-sh/tool-exec": "workspace:*"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

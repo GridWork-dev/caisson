@@ -4,7 +4,7 @@
 // and a parse failure surfaces as a redaction-safe `ValidationError` (never the rejected values).
 // Engine-neutral: this is the artifact STRUCTURE, never an engine/model binding.
 import { z } from "zod";
-import { parseStrict, strictObject } from "@caisson/kernel";
+import { parseStrict, strictObject } from "@caisson-sh/kernel";
 
 /** kebab-case slug — the stable id a generated file/registry entry is keyed on. */
 const slug = z

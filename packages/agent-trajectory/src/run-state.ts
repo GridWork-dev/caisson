@@ -18,7 +18,7 @@
 //   claimResume   the execution-claim: clears the pending marker so a second concurrent resume of
 //                 the SAME approval can never also claim it
 //   finish        terminal, from any current status
-import { ConflictError, NotFoundError } from "@caisson/kernel";
+import { ConflictError, NotFoundError } from "@caisson-sh/kernel";
 
 export type RunStatus = "running" | "parked" | "finished";
 

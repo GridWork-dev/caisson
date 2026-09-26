@@ -5,8 +5,8 @@
 // LemonSqueezy, Polar) so a future 5th driver has one place to plug into instead of a new bespoke suite.
 import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, test } from "bun:test";
-import { AuthnError } from "@caisson/kernel";
-import type { BillingProvider } from "@caisson/billing";
+import { AuthnError } from "@caisson-sh/kernel";
+import type { BillingProvider } from "@caisson-sh/billing";
 import {
   createLemonSqueezyBilling,
   createPaddleBilling,

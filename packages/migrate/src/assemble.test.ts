@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { MergedMigration } from "@caisson/kernel";
-import { matchGolden } from "@caisson/testing";
+import type { MergedMigration } from "@caisson-sh/kernel";
+import { matchGolden } from "@caisson-sh/testing";
 import {
   type SelectedPackage,
   assembleSelected,

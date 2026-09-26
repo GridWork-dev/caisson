@@ -3,7 +3,7 @@
 // so it proves the guard ROUTES through the kernel `fetchWithTimeout` without opening a socket, and the
 // block-path tests assert no stubbed fetch is ever called (the block fires before the network).
 import { afterEach, describe, expect, test } from "bun:test";
-import { AuthzError, ValidationError } from "@caisson/kernel";
+import { AuthzError, ValidationError } from "@caisson-sh/kernel";
 import { EgressGuard, createEgressGuard } from "./egress-guard.ts";
 import {
   ZERO_EGRESS_POLICY,

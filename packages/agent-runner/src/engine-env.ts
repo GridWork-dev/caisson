@@ -1,10 +1,10 @@
-// The provider profile + the env scrub — the pure half of @caisson/agent-runner (ADR-0186 §4),
+// The provider profile + the env scrub — the pure half of @caisson-sh/agent-runner (ADR-0186 §4),
 // carved out of agent-runner.ts so it can be imported without dragging the spawn/run-registry
 // machinery (node:child_process, node:fs, node:path) behind it. Nothing here reaches a node
-// builtin: it is zod, the kernel barrel, `URL`, and string work. `@caisson/agent-runner/browser`
+// builtin: it is zod, the kernel barrel, `URL`, and string work. `@caisson-sh/agent-runner/browser`
 // is exactly this module (ADR-0396); the `.` barrel re-exports every name below unchanged.
 import { z } from "zod";
-import { ValidationError, strictObject } from "@caisson/kernel";
+import { ValidationError, strictObject } from "@caisson-sh/kernel";
 
 // ---------------------------------------------------------------------------
 // Provider config (ADR-0186 F2) — provider-agnostic { binary, baseUrlEnv, authEnv, model }.

@@ -20,7 +20,7 @@
 import type { Changeset, ChangeOp, ChangesetEntry } from "./port.ts";
 import { reconcileReplicas, type ReconciledRow } from "./reconcile.ts";
 import { compareStamps, stampFromEntry, type HlcStamp } from "./clock.ts";
-import { TenancyError } from "@caisson/kernel";
+import { TenancyError } from "@caisson-sh/kernel";
 
 /**
  * A durable record that `(table, pk)` was deleted at HLC `stamp`. Persisted across sync rounds (one per

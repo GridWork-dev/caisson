@@ -1,4 +1,4 @@
-# @caisson/local-store
+# @caisson-sh/local-store
 
 The shared **local hybrid-retrieval** primitive — sqlite-vec (`vec0`) for vectors, FTS5 for
 keyword, and a Reciprocal-Rank-Fusion merge over the two — that both local-editions compose
@@ -42,7 +42,11 @@ curated content.
 ## Use
 
 ```ts
-import { LocalStore, openTenantDb, tenantDbPath } from "@caisson/local-store";
+import {
+  LocalStore,
+  openTenantDb,
+  tenantDbPath,
+} from "@caisson-sh/local-store";
 
 // Per-tenant file is the isolation boundary (tenantId comes from authenticated context).
 const db = openTenantDb("/var/lib/caisson/tenants", tenantId);

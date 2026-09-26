@@ -1,9 +1,9 @@
-# @caisson/local-inference
+# @caisson-sh/local-inference
 
 The Local-first edition's inference seam: one `InferenceBackend` port (`embed` / `complete`) with
 three implementations sharing it — a deterministic offline stub, a guarded on-device ONNX backend,
 and metered rented-backend transports (OpenRouter, Azure OpenAI, Bedrock) — all routed through the
-`@caisson/local-privacy` egress gate. A base primitive (Apache-2.0).
+`@caisson-sh/local-privacy` egress gate. A base primitive (Apache-2.0).
 
 ## What it gives you
 
@@ -14,22 +14,25 @@ and metered rented-backend transports (OpenRouter, Azure OpenAI, Bedrock) — al
   `RentedTransport` (`createOpenRouterRentedTransport`, `createAzureOpenAIRentedTransport`,
   `createBedrockRentedTransport`) behind the same port.
 - **`EMBEDDING_DIM` is the locked contract.** Every backend's `embed()` result is exactly this many
-  floats — the width the shared `@caisson/local-store` vec0 table is opened with; a mismatch throws
+  floats — the width the shared `@caisson-sh/local-store` vec0 table is opened with; a mismatch throws
   at the store's dim-guard rather than silently padding or truncating.
 - **Egress stays purpose-bound.** Both the ONNX and rented backends route their outbound calls
-  through a `@caisson/local-privacy` `EgressGuard`, re-exported here so a consumer never needs a
+  through a `@caisson-sh/local-privacy` `EgressGuard`, re-exported here so a consumer never needs a
   second import for the same policy.
 
 ## Install
 
 ```bash
-bun add @caisson/local-inference
+bun add @caisson-sh/local-inference
 ```
 
 ## Use
 
 ```ts
-import { StubInferenceBackend, EMBEDDING_DIM } from "@caisson/local-inference";
+import {
+  StubInferenceBackend,
+  EMBEDDING_DIM,
+} from "@caisson-sh/local-inference";
 
 // the deterministic, offline backend every CI test exercises — no model, no socket
 const backend = new StubInferenceBackend({ dim: EMBEDDING_DIM });

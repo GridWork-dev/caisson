@@ -3,7 +3,7 @@
 // Composes, never re-implements: `RowReceipt`s are built elsewhere (T-K2's `buildRowReceipt`) and
 // handed in already-assembled; this module only bundles them + a README stating the trust claim
 // verbatim into an exportable, self-describing pack. Verification is deliberately OUT OF BAND via
-// `@caisson/verify-pack`: executable verifier code never travels inside the evidence it vouches for.
+// `@caisson-sh/verify-pack`: executable verifier code never travels inside the evidence it vouches for.
 // Deterministic: receipts are seq-sorted before serialization, so the same input always canonicalizes
 // to the same bytes (the pack is itself hashable — `sha256` below).
 //
@@ -182,14 +182,14 @@ export function evidencePackManifest(
 
 /**
  * Render the auditor-facing README. The trust claim is stated VERBATIM and matches what
- * `@caisson/verify-pack` actually checks — never overclaiming (SPEC copy law).
+ * `@caisson-sh/verify-pack` actually checks — never overclaiming (SPEC copy law).
  *
- * It names NO install command, deliberately. `@caisson/verify-pack` is commercial and is not
+ * It names NO install command, deliberately. `@caisson-sh/verify-pack` is commercial and is not
  * distributed through a package registry, so an `npx` line would be a copy-pasteable command that
  * cannot resolve; and the in-repo `bun run packages/verify-pack/...` path this README used to offer
  * as the fallback pointed an external auditor at a private repository they have no way to obtain.
  * What it names instead is the route that genuinely does not depend on the issuer: the Apache-2.0
- * `@caisson/kernel`, which is publicly installable and carries every primitive the checks rest on.
+ * `@caisson-sh/kernel`, which is publicly installable and carries every primitive the checks rest on.
  */
 function renderReadme(meta: EvidencePackMeta, rowCount: number): string {
   const provenanceSection =
@@ -213,7 +213,7 @@ function renderReadme(meta: EvidencePackMeta, rowCount: number): string {
         ]
       : [
           "This pack does not include both an anchor-signing public key and a complete-snapshot seal.",
-          "`@caisson/verify-pack` therefore refuses an authenticated PASS. The embedded rows can still be",
+          "`@caisson-sh/verify-pack` therefore refuses an authenticated PASS. The embedded rows can still be",
           "inspected, but internal consistency alone does not rule out a compromised export process",
           "substituting a forged row, changing the declared terminal length, or removing signature metadata.",
         ];
@@ -233,14 +233,14 @@ function renderReadme(meta: EvidencePackMeta, rowCount: number): string {
     "supply — a verifier obtained separately from it, and the issuer's key fingerprint obtained",
     "through a separate trusted channel and supplied as `CAISSON_VERIFY_PACK_KEY_SHA256`.",
     "",
-    "**How to obtain a verifier.** The sanctioned runner is the commercial `@caisson/verify-pack`,",
+    "**How to obtain a verifier.** The sanctioned runner is the commercial `@caisson-sh/verify-pack`,",
     "licensed from Caisson. It is not distributed through a package registry, so there is no public",
     "install command for it; request it from Caisson directly.",
     "",
     "**The format is inspectable rather than proprietary,** which is the path that does not depend on",
-    "the issuer at all. The Apache-2.0 `@caisson/kernel` is publicly installable and carries every",
-    "primitive the checks below rest on: `@caisson/kernel/evidence` rebuilds the canonical file",
-    "manifest and the exact bytes the seal signs, and `@caisson/kernel/audit-verify` recomputes each",
+    "the issuer at all. The Apache-2.0 `@caisson-sh/kernel` is publicly installable and carries every",
+    "primitive the checks below rest on: `@caisson-sh/kernel/evidence` rebuilds the canonical file",
+    "manifest and the exact bytes the seal signs, and `@caisson-sh/kernel/audit-verify` recomputes each",
     "row's hash link, checks its per-length write-once anchor, and verifies the anchor signature.",
     "",
     "Whichever route is taken, verification refuses PASS unless the embedded key matches that independently supplied",
@@ -270,7 +270,7 @@ function renderReadme(meta: EvidencePackMeta, rowCount: number): string {
     "",
     "A redacted row's `raw.payload` in `receipts.json` is the MASKED payload — the original never left",
     "the server that produced this pack. Its hash commits to content this pack cannot show you;",
-    '`@caisson/verify-pack` reports leg 1 as "not applicable" for that row (never a pass or a fail) and checks',
+    '`@caisson-sh/verify-pack` reports leg 1 as "not applicable" for that row (never a pass or a fail) and checks',
     "leg 2 (anchor equality) only.",
     "",
     "## External (checkpoint-level) anchoring — chain level only, never per row",
@@ -285,7 +285,7 @@ function renderReadme(meta: EvidencePackMeta, rowCount: number): string {
     "",
     "This pack reflects cryptographic consistency checks over the material it embeds. It is not a",
     "compliance attestation, an audit opinion, or a certification, and its claims never exceed what",
-    "`@caisson/verify-pack` actually recomputes above.",
+    "`@caisson-sh/verify-pack` actually recomputes above.",
     "",
   ];
   return `${lines.join("\n")}\n`;

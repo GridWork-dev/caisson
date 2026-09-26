@@ -1,7 +1,7 @@
-// @caisson/ai-evals — the budget-isolated eval-spend ledger (ADR-0214). Eval spend is tracked through
-// an injected port, mirroring the `Judge` port and `@caisson/kernel` `EventSink` — NEVER through
-// `@caisson/ai-meter` (production budget) or a Postgres dependency. This module imports nothing from
-// `@caisson/ai-meter`; isolation is by construction, not convention (grep-checkable, asserted below).
+// @caisson-sh/ai-evals — the budget-isolated eval-spend ledger (ADR-0214). Eval spend is tracked through
+// an injected port, mirroring the `Judge` port and `@caisson-sh/kernel` `EventSink` — NEVER through
+// `@caisson-sh/ai-meter` (production budget) or a Postgres dependency. This module imports nothing from
+// `@caisson-sh/ai-meter`; isolation is by construction, not convention (grep-checkable, asserted below).
 import { z } from "zod";
 import { systemClock, type Clock } from "./clock.ts";
 

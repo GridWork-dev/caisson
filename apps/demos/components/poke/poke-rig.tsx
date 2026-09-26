@@ -19,7 +19,7 @@ export function PokeShell({
   title,
   children,
 }: {
-  /** MediaFrame chrome-bar label (the package name, e.g. "@caisson/field-crypto"). */
+  /** MediaFrame chrome-bar label (the package name, e.g. "@caisson-sh/field-crypto"). */
   label: string;
   /** One-line poke title in the imperative register (e.g. "Seal a value as one tenant."). */
   title: string;

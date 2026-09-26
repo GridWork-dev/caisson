@@ -1,7 +1,7 @@
 "use client";
 
 import { lazy, Suspense, useEffect, useRef, useState, type JSX } from "react";
-import { StatusChip } from "@caisson/ui/components";
+import { StatusChip } from "@caisson-sh/ui/components";
 
 import {
   CHAIN_ENTRIES,

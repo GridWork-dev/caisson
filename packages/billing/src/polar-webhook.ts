@@ -3,7 +3,7 @@
 // — hand-rolled over the raw request body + the Standard Webhooks scheme (https://www.standardwebhooks.com),
 // mirroring the Stripe/Paddle/LemonSqueezy verifiers' no-SDK posture.
 import { createHmac } from "node:crypto";
-import { AuthnError, safeEqualFixed } from "@caisson/kernel/node";
+import { AuthnError, safeEqualFixed } from "@caisson-sh/kernel/node";
 import type { VerifyOptions } from "./webhook.ts";
 
 /**

@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/tenancy-rls",
+  "name": "@caisson-sh/tenancy-rls",
   "version": "0.6.1",
   "description": "Fail-closed multi-tenant Postgres row-level security: FORCE policies, withTenant, and a missing-filter proof.",
   "license": "Apache-2.0",
@@ -21,12 +21,12 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/kernel": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
     "pg": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "@types/pg": "catalog:",
     "drizzle-orm": "catalog:",
     "typescript": "catalog:"

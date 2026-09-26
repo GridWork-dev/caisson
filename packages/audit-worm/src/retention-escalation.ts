@@ -7,7 +7,7 @@
 // request against a store that cannot harden a mode is refused (never silently downgraded to a
 // plain extend); and a chain-append failure fails the WHOLE operation loudly — see
 // `escalateRetention` for the evidence-gap semantics.
-import { InternalError, ValidationError } from "@caisson/kernel";
+import { InternalError, ValidationError } from "@caisson-sh/kernel";
 import {
   assertSafeKey,
   type ArtifactMeta,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   NOT_LEGAL_ADVICE,
   type ExemptionOutputRule,

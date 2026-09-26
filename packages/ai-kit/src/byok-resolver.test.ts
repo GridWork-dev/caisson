@@ -2,7 +2,7 @@
 // per-tenant lane pulls the caller's key via the injected port, builds a provider, and caches the built
 // client (TTL) so a repeat resolve skips the port. Error paths are fail-closed. No live model call.
 import { describe, expect, test } from "bun:test";
-import { parseAiSettings } from "@caisson/ai-config";
+import { parseAiSettings } from "@caisson-sh/ai-config";
 import {
   buildByokResolver,
   laneKeySource,

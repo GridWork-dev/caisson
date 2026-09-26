@@ -1,7 +1,7 @@
 {
-  "name": "@caisson/compliance-core",
+  "name": "@caisson-sh/compliance-core",
   "version": "0.7.2",
-  "description": "The compliance evidence engine: typed collectors and a deterministic canonical evidence-pack format and generator with flag-never-guess blocking, with the complete @caisson/oscal-spine surface re-exported for compatibility.",
+  "description": "The compliance evidence engine: typed collectors and a deterministic canonical evidence-pack format and generator with flag-never-guess blocking, with the complete @caisson-sh/oscal-spine surface re-exported for compatibility.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {
@@ -26,18 +26,18 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/field-crypto": "workspace:*",
-    "@caisson/frameworks-pack": "workspace:*",
-    "@caisson/kernel": "workspace:*",
-    "@caisson/oscal-spine": "workspace:*",
-    "@caisson/risk-register": "workspace:*",
+    "@caisson-sh/field-crypto": "workspace:*",
+    "@caisson-sh/frameworks-pack": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
+    "@caisson-sh/oscal-spine": "workspace:*",
+    "@caisson-sh/risk-register": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/alerting": "workspace:*",
-    "@caisson/jobs": "workspace:*",
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/alerting": "workspace:*",
+    "@caisson-sh/jobs": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

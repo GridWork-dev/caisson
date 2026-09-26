@@ -15,7 +15,7 @@
 // wants evidenced; a still-OPEN session (`endedAt: null`) legitimately has no end pair yet.
 // Flag-never-guess: an unverifiable chain (`chainValid: null`) → `unresolved`; a failed
 // verification, a missing/torn dual record, an empty reason, or an unbounded lifetime → `flagged`.
-import type { JsonValue } from "@caisson/kernel";
+import type { JsonValue } from "@caisson-sh/kernel";
 import {
   flaggedResult,
   passResult,

@@ -18,8 +18,8 @@ import {
   type CreditConversion,
   type PriceBook,
   type Usage,
-} from "@caisson/ai-meter";
-import { parseStrict } from "@caisson/kernel";
+} from "@caisson-sh/ai-meter";
+import { parseStrict } from "@caisson-sh/kernel";
 import { TrajectoryEvent } from "../browser.ts";
 import { resolveModelAlias } from "./alias-map.ts";
 

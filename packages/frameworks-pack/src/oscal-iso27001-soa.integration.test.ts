@@ -5,8 +5,8 @@ import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { matchGolden } from "@caisson/testing";
-import { ValidationError } from "@caisson/kernel";
+import { matchGolden } from "@caisson-sh/testing";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   buildValidateArgs,
   ISO27001_SOA_SOURCE_URN,
@@ -14,12 +14,12 @@ import {
   oscalCliAvailable,
   toOscalIso27001Soa,
   type OscalIso27001SoaOptions,
-} from "@caisson/oscal-spine";
+} from "@caisson-sh/oscal-spine";
 import {
   computeIso27001SoaRows,
   iso27001Crosswalk,
   type SoaRow,
-} from "@caisson/frameworks-pack";
+} from "@caisson-sh/frameworks-pack";
 
 const PKG_SRC_META = new URL("../../oscal-spine/src/index.ts", import.meta.url)
   .href;

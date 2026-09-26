@@ -10,9 +10,9 @@
 //      proposal's args are always an argv array, never a concatenated shell string.
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { NotFoundError, ValidationError } from "@caisson/kernel";
-import { createToolExec } from "@caisson/tool-exec";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { NotFoundError, ValidationError } from "@caisson-sh/kernel";
+import { createToolExec } from "@caisson-sh/tool-exec";
 
 import {
   SAMPLE_ALLOWED,

@@ -1,15 +1,15 @@
 "use client";
 
 // The retention-runner module's poke (ADR-0378 lock 2) — a live, deterministic run of the REAL
-// `@caisson/retention-runner` erasure fan-out against a fixed sample subject. The hand-ported
+// `@caisson-sh/retention-runner` erasure fan-out against a fixed sample subject. The hand-ported
 // mirror this used to drive is deleted (ADR-0396): `runErasure`, the three reference target
 // factories, the capture audit sink, and the reason vocabulary all come from
-// `@caisson/retention-runner/browser`, the package's browser-safe entry (`.` minus the
-// `@caisson/jobs` scheduling half). Only the sample identifiers, the reason labels, and the
+// `@caisson-sh/retention-runner/browser`, the package's browser-safe entry (`.` minus the
+// `@caisson-sh/jobs` scheduling half). Only the sample identifiers, the reason labels, and the
 // break-a-store controls are poke-local. Nothing here fetches, persists, or measures the visitor,
 // and the clock is injected — `runErasure` never reaches for `Date.now` on a rendered path.
 import { useId, useMemo, useState } from "react";
-import { Button, Checkbox, Radio } from "@caisson/ui/components";
+import { Button, Checkbox, Radio } from "@caisson-sh/ui/components";
 import {
   ERASURE_REASONS,
   createCascadeDbTarget,
@@ -17,12 +17,12 @@ import {
   createObjectStorageTarget,
   createOrphanSweepTarget,
   runErasure,
-} from "@caisson/retention-runner/browser";
+} from "@caisson-sh/retention-runner/browser";
 import type {
   ErasureReason,
   ErasureTarget,
   RetentionRunResult,
-} from "@caisson/retention-runner/browser";
+} from "@caisson-sh/retention-runner/browser";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./retention-runner-poke.module.css";
@@ -39,7 +39,7 @@ const REASON_LABELS: Record<ErasureReason, string> = {
 };
 
 /**
- * Cited-only vocabulary: `@caisson/field-crypto`'s `ERASURE_CRYPTO_SHRED`, the audit event minted
+ * Cited-only vocabulary: `@caisson-sh/field-crypto`'s `ERASURE_CRYPTO_SHRED`, the audit event minted
  * into the WORM chain when field-encrypted PII is erased by destroying its KEK instead of by a
  * target delete. Restated here rather than imported because field-crypto is irreducibly node-only
  * (its cipher/KMS/derive modules all reach `node:crypto`) and offers no browser entry — retiring
@@ -140,7 +140,7 @@ export default function RetentionRunnerPoke() {
 
   return (
     <PokeShell
-      label="@caisson/retention-runner"
+      label="@caisson-sh/retention-runner"
       title="Erase a subject everywhere it lives. Break one target, watch isolation hold."
     >
       <div className={styles.layout}>
@@ -239,7 +239,7 @@ export default function RetentionRunnerPoke() {
         <p className={styles.note}>
           Field-encrypted columns are not erased by these targets. They are
           erased by destroying the key: ERASURE_CRYPTO_SHRED = &quot;
-          {ERASURE_CRYPTO_SHRED}&quot;, the event @caisson/field-crypto mints
+          {ERASURE_CRYPTO_SHRED}&quot;, the event @caisson-sh/field-crypto mints
           into the WORM chain when a crypto-shred runs instead.
         </p>
       </div>

@@ -1,10 +1,10 @@
-// The prompt-registry poke's checkable claims, now that it drives the REAL @caisson/prompt-registry
+// The prompt-registry poke's checkable claims, now that it drives the REAL @caisson-sh/prompt-registry
 // and the hand-ported mirror (prompt-registry-logic.ts) is deleted:
 //
 //   1. The poke's client graph is browser-safe — proven by a STATIC SOURCE-GRAPH WALK, never by a
 //      build (a bundler does not fail on a node builtin, it SUBSTITUTES a ~428KB polyfill, exit 0).
 //      The load-bearing exclusion here is not a builtin at all: the package's `.` barrel reaches
-//      @caisson/tenancy-rls through schema.ts and puts the `pg` driver on the graph, so the walk
+//      @caisson-sh/tenancy-rls through schema.ts and puts the `pg` driver on the graph, so the walk
 //      asserts the external frontier exactly, not just an empty offender list.
 //   2. Every move addresses a real `name@selector` ref parsed by the package's own parsePromptRef —
 //      the three addressing kinds are the package's, not restated here.
@@ -31,10 +31,10 @@ import {
 } from "bun:test";
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { newTestPg, type TestPg } from "@caisson/testing";
-import { NotFoundError, currentVersions } from "@caisson/kernel";
-import { withTenant } from "@caisson/tenancy-rls";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
+import { NotFoundError, currentVersions } from "@caisson-sh/kernel";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 import {
   PROMPT_ALIAS_TABLE,
   PROMPT_REGISTRY_SCHEMA_SQL,
@@ -43,7 +43,7 @@ import {
   parsePromptRef as realParsePromptRef,
   registerPrompt as realRegisterPrompt,
   setAlias as realSetAlias,
-} from "@caisson/prompt-registry";
+} from "@caisson-sh/prompt-registry";
 
 import {
   INITIAL_ALIAS_VERSION_ID,
@@ -84,7 +84,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
   test("the walk really crossed into the packages, past the first hop", () => {
     expect(walk.files).toContain("packages/prompt-registry/src/browser.ts");
     expect(walk.files).toContain("packages/prompt-registry/src/refs.ts");
-    // Second hop: refs.ts imports @caisson/kernel, so a resolver that went blind inside a
+    // Second hop: refs.ts imports @caisson-sh/kernel, so a resolver that went blind inside a
     // workspace package fails here rather than reporting a vacuously clean graph.
     expect(walk.files).toContain("packages/kernel/src/schema.ts");
   });
@@ -104,9 +104,9 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
   test("the poke imports the browser entry, not the barrel", () => {
     const src = readFileSync(POKE_ENTRY, "utf8");
     expect(src).toMatch(
-      /^import \{ parsePromptRef \} from "@caisson\/prompt-registry\/browser";$/m,
+      /^import \{ parsePromptRef \} from "@caisson-sh\/prompt-registry\/browser";$/m,
     );
-    expect(src).not.toMatch(/from "@caisson\/prompt-registry";$/m);
+    expect(src).not.toMatch(/from "@caisson-sh\/prompt-registry";$/m);
   });
 
   test("positive control: the same walker reports real builtins on a tainted entry", () => {

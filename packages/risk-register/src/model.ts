@@ -5,12 +5,12 @@
 // cannot satisfy, so a freeform residual is rejected by the type checker before any validator runs
 // (a Zod cross-check backstops it at the value layer too, but the type system is the primary gate).
 //
-// Reuses `@caisson/frameworks-pack`'s `CrosswalkReference` for the crosswalk[] pointer pattern
+// Reuses `@caisson-sh/frameworks-pack`'s `CrosswalkReference` for the crosswalk[] pointer pattern
 // rather than inventing a second one — a risk entry points into a shipped framework pack's
 // canonical controls exactly the way a canonical control points at an external framework.
 import { z } from "zod";
-import { strictObject, parseStrict } from "@caisson/kernel";
-import { CrosswalkReference } from "@caisson/frameworks-pack/registry";
+import { strictObject, parseStrict } from "@caisson-sh/kernel";
+import { CrosswalkReference } from "@caisson-sh/frameworks-pack/registry";
 
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 

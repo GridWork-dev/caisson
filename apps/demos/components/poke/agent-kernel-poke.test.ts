@@ -1,4 +1,4 @@
-// The agent-kernel poke's checkable claims, now that it drives the REAL @caisson/agent-kernel and
+// The agent-kernel poke's checkable claims, now that it drives the REAL @caisson-sh/agent-kernel and
 // the hand-ported mirror (agent-kernel-logic.ts) is deleted:
 //
 //   1. The poke's client graph is browser-safe — proven by a STATIC SOURCE-GRAPH WALK, never by a
@@ -16,8 +16,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { ValidationError } from "@caisson/kernel";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   ACTS,
   CANONICAL_LIFECYCLE,
@@ -26,7 +26,7 @@ import {
   runLifecycle,
   transition,
   type Act,
-} from "@caisson/agent-kernel";
+} from "@caisson-sh/agent-kernel";
 
 import { attemptTransition, initLifecycleSession } from "./agent-kernel-poke";
 
@@ -56,7 +56,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
 
   test("the walk really crossed into the package, past the first hop", () => {
     // Guard the guard: files.length alone proves nothing. These files are reachable ONLY through
-    // @caisson/agent-kernel/browser's own imports — the browser entry (first hop), a module behind
+    // @caisson-sh/agent-kernel/browser's own imports — the browser entry (first hop), a module behind
     // it (second hop), and one behind the kernel seam (a second cross-package hop), so a resolver
     // that went blind inside a workspace package fails here.
     expect(walk.files).toContain("packages/agent-kernel/src/browser.ts");
@@ -86,11 +86,11 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
   });
 
   test("the poke imports ./browser, never the node-capable barrel", () => {
-    // The specifier itself is the contract: swapping it back to "@caisson/agent-kernel" would
+    // The specifier itself is the contract: swapping it back to "@caisson-sh/agent-kernel" would
     // still typecheck, still build, and quietly pull node:child_process into the client chunk.
     const src = readFileSync(POKE_ENTRY, "utf8");
-    expect(src).toMatch(/ from "@caisson\/agent-kernel\/browser";$/m);
-    expect(src).not.toMatch(/ from "@caisson\/agent-kernel";$/m);
+    expect(src).toMatch(/ from "@caisson-sh\/agent-kernel\/browser";$/m);
+    expect(src).not.toMatch(/ from "@caisson-sh\/agent-kernel";$/m);
   });
 });
 

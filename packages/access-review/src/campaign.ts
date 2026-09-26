@@ -1,15 +1,15 @@
 // src/campaign.ts — the access-review campaign kernel (ADR-0371).
 //
 // An AccessReviewCampaign is a mutable roster row (who's reviewing whom, by when) PLUS an
-// immutable decision trail on the tenant's existing WORM audit chain (`@caisson/audit-worm`, no
-// new anchoring primitive) — the same split @caisson/compliance's impersonation kernel uses
+// immutable decision trail on the tenant's existing WORM audit chain (`@caisson-sh/audit-worm`, no
+// new anchoring primitive) — the same split @caisson-sh/compliance's impersonation kernel uses
 // (src/impersonation/session.ts): lifecycle state (open/closed) lives in Postgres because it is
 // queried and mutated; the evidentiary record (who decided what, when) lives ONLY on the chain,
 // so a dropped or patched decision is tamper-evident, never a plain log row silently edited.
 //
 // Boundary discipline: this module depends on `CampaignChainStore`, a NARROW port structurally
 // satisfied by the real `AuditChainStore` (`append` + `load`) — it never imports
-// `@caisson/audit-worm` itself, so a unit test can stub the chain with no DB/WORM store, exactly
+// `@caisson-sh/audit-worm` itself, so a unit test can stub the chain with no DB/WORM store, exactly
 // like `ImpersonationChainStore`. The integration test wires the real store.
 //
 // Flag-never-guess: `closeCampaign` NEVER marks an undecided reviewee as approved. It refuses to
@@ -24,12 +24,12 @@ import {
   parseStrict,
   type AuditChainEntry,
   type JsonValue,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   withTenant,
   type TenantExecutor,
   type Transactor,
-} from "@caisson/tenancy-rls";
+} from "@caisson-sh/tenancy-rls";
 import {
   closeCampaignSchema,
   openCampaignSchema,

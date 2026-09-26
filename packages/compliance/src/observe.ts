@@ -2,18 +2,18 @@
 // compliance actions — evidence-pack generation and crypto-shred erasure — through the base
 // `EventSink` port. These are mutable, drop-able operational events on the OTel→Postgres spine; they
 // are NOT the evidentiary record. The authoritative, immutable record of an evidence pack / erasure
-// lives in the WORM audit chain (`@caisson/audit-worm`), which is NEVER routed through this sink —
+// lives in the WORM audit chain (`@caisson-sh/audit-worm`), which is NEVER routed through this sink —
 // the kernel keeps the two write paths strictly separate (event-sink invariant 2). This boundary
 // carries only OPAQUE ids + posture counts + a content digest — never PII, ciphertext, or a secret;
 // the kernel sink redacts once more at the edge as a belt (ADR-0019). The clock is injected at the
 // edge (the caller passes the ISO-8601 instant) so emitted timestamps are deterministic + testable.
-import type { EventSink, OpsEvent } from "@caisson/kernel";
+import type { EventSink, OpsEvent } from "@caisson-sh/kernel";
 import {
   ERASURE_CRYPTO_SHRED,
   type KmsDeletionReceipt,
-} from "@caisson/field-crypto";
+} from "@caisson-sh/field-crypto";
 
-// Single-source the erasure event name from `@caisson/field-crypto` (the same name minted into the
+// Single-source the erasure event name from `@caisson-sh/field-crypto` (the same name minted into the
 // WORM chain) so the operational mirror can never drift from the evidentiary record.
 export { ERASURE_CRYPTO_SHRED };
 

@@ -17,7 +17,7 @@
 //   - SHAPE: each returned row is `{ table, pk, values }` (the winning upsert's `RowValues`), the set
 //     sorted ascending by `table` then `pk` — so two replicas serialize byte-equal.
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
+import { matchGolden } from "@caisson-sh/testing";
 import { reconcileReplicas } from "./reconcile.ts";
 import type { Changeset } from "./port.ts";
 

@@ -80,17 +80,17 @@ Ed25519 key fingerprint, obtained through a separately trusted issuer channel. A
 the candidate key from the pack itself proves nothing, so verification refuses PASS when that
 fingerprint is absent or differs from the key inside the pack.
 
-The format is inspectable rather than proprietary. The Apache-2.0 `@caisson/kernel` builds the
-canonical manifest and the exact bytes the seal signs (`@caisson/kernel/evidence`), and checks each
+The format is inspectable rather than proprietary. The Apache-2.0 `@caisson-sh/kernel` builds the
+canonical manifest and the exact bytes the seal signs (`@caisson-sh/kernel/evidence`), and checks each
 row's link recompute, its per-length WORM anchor, and its anchor signature
-(`@caisson/kernel/audit-verify`).
+(`@caisson-sh/kernel/audit-verify`).
 
-The sanctioned runner for that flow is the commercial `@caisson/verify-pack`. Caisson does not
+The sanctioned runner for that flow is the commercial `@caisson-sh/verify-pack`. Caisson does not
 distribute it through a package registry, and it is not part of any bundle or module purchase.
 
 ## Composing with the base
 
-Every collector reads facts gathered at the tenant boundary `@caisson/tenancy-rls` enforces:
+Every collector reads facts gathered at the tenant boundary `@caisson-sh/tenancy-rls` enforces:
 `compliance-core` never infers a passing RLS control it can't evidence from a live posture
 snapshot.
 

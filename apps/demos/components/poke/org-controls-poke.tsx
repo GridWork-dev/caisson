@@ -2,17 +2,17 @@
 
 // The org-controls module's poke (ADR-0378 lock 2) — a live run of the package's REAL owner-only
 // membership gate. The hand-ported mirror (org-controls-logic.ts) is deleted (ADR-0396):
-// `assertCanManageMembers` is imported from `@caisson/org-controls/browser`, the entry point that
+// `assertCanManageMembers` is imported from `@caisson-sh/org-controls/browser`, the entry point that
 // exists precisely so a client bundle can hold the gate without the package's `pg`-bound member
 // writes or its `@clerk/backend` verifier. The audit hash is likewise the real
 // `hashChainLinkAsync`. What stays local below is sample data and presentation composition only —
 // nothing here fetches, persists, measures the visitor, or reads the clock in a rendered path.
 import { useEffect, useId, useMemo, useState } from "react";
-import { Radio, StatusChip } from "@caisson/ui/components";
-import { AuthzError } from "@caisson/kernel";
-import { hashChainLinkAsync } from "@caisson/kernel/audit-verify";
-import { assertCanManageMembers } from "@caisson/org-controls/browser";
-import type { Role } from "@caisson/auth";
+import { Radio, StatusChip } from "@caisson-sh/ui/components";
+import { AuthzError } from "@caisson-sh/kernel";
+import { hashChainLinkAsync } from "@caisson-sh/kernel/audit-verify";
+import { assertCanManageMembers } from "@caisson-sh/org-controls/browser";
+import type { Role } from "@caisson-sh/auth";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./org-controls-poke.module.css";
@@ -120,7 +120,7 @@ export default function OrgControlsPoke() {
 
   return (
     <PokeShell
-      label="@caisson/org-controls"
+      label="@caisson-sh/org-controls"
       title="Switch the role. Only an owner is allowed to add a seat."
     >
       <div className={styles.layout}>
@@ -190,7 +190,7 @@ export default function OrgControlsPoke() {
               <p className={styles.note}>
                 org-controls does not wire a live audit table for account_member
                 yet. This row runs the real hashChainLinkAsync, the same
-                primitive @caisson/audit-worm uses client-side, over Row 1,
+                primitive @caisson-sh/audit-worm uses client-side, over Row 1,
                 showing the tamper-evident link a real audit-trail entry would
                 carry.
               </p>

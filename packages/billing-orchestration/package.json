@@ -1,7 +1,7 @@
 {
-  "name": "@caisson/billing-orchestration",
+  "name": "@caisson-sh/billing-orchestration",
   "version": "0.4.2",
-  "description": "Billing orchestration: Stripe/Paddle/LemonSqueezy/Polar checkout drivers + provider->DomainBillingEvent parsers + dual-layer webhook idempotency. Raw-body signature verification lives in @caisson/billing.",
+  "description": "Billing orchestration: Stripe/Paddle/LemonSqueezy/Polar checkout drivers + provider->DomainBillingEvent parsers + dual-layer webhook idempotency. Raw-body signature verification lives in @caisson-sh/billing.",
   "license": "Apache-2.0",
   "type": "module",
   "exports": {
@@ -27,14 +27,14 @@
     "test:live": "bun test ./live"
   },
   "dependencies": {
-    "@caisson/billing": "workspace:*",
-    "@caisson/kernel": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*",
+    "@caisson-sh/billing": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
+    "@caisson-sh/tenancy-rls": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

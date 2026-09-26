@@ -9,7 +9,7 @@
 //
 // WHAT IS REAL vs WHAT IS A PORT. The hand-ported mirror (billing-orchestration-logic.ts) is deleted:
 // the claim-key decision now runs the shipped `assertValidSourceEventId` from
-// @caisson/billing-orchestration/browser, and the failure is the shipped @caisson/kernel
+// @caisson-sh/billing-orchestration/browser, and the failure is the shipped @caisson-sh/kernel
 // ValidationError — its identity (name, code, httpStatus) and its words rendered as thrown, with only
 // the em-dash clause break swapped for a comma so a package message stays inside the site's copy law
 // (ADR-0375 lock 1, which the deleted mirror satisfied by rewording the same string). See
@@ -21,14 +21,14 @@
 // processEvent on a real PGlite RLS harness, sequence for sequence. The provider roster, its sample
 // ids, and the type chips are sample data and presentation composition, poke-local by design.
 import { useCallback, useState } from "react";
-import { ValidationError } from "@caisson/kernel";
-import { assertValidSourceEventId } from "@caisson/billing-orchestration/browser";
-import type { DomainBillingEvent } from "@caisson/billing";
+import { ValidationError } from "@caisson-sh/kernel";
+import { assertValidSourceEventId } from "@caisson-sh/billing-orchestration/browser";
+import type { DomainBillingEvent } from "@caisson-sh/billing";
 
 import { PokeShell, Verdict, type VerdictState } from "./poke-rig";
 import styles from "./billing-orchestration-poke.module.css";
 
-/** The DomainBillingEvent discriminant, owned by @caisson/billing (the OPEN contract). Type-only, so
+/** The DomainBillingEvent discriminant, owned by @caisson-sh/billing (the OPEN contract). Type-only, so
  *  the real union governs at compile time and nothing is restated. */
 export type DomainBillingEventType = DomainBillingEvent["type"];
 
@@ -328,7 +328,7 @@ export default function BillingOrchestrationPoke() {
 
   return (
     <PokeShell
-      label="@caisson/billing-orchestration · billing_processed_event"
+      label="@caisson-sh/billing-orchestration · billing_processed_event"
       title="Redeliver the same webhook. It fulfills exactly once."
     >
       <div className={styles.tabs} role="group" aria-label="Billing provider">

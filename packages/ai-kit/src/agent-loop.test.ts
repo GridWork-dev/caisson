@@ -6,7 +6,7 @@
 // enforced caller-side, exactly-once settlement under a restart-shaped retry, and a projection
 // whose metered totals equal the ledger's settled actuals.
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
-import { newTestPg, type TestPg } from "@caisson/testing";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
@@ -14,28 +14,28 @@ import {
   GRANT_CONSUMPTION_MIGRATION_SQL,
   balance,
   grant,
-} from "@caisson/credits";
+} from "@caisson-sh/credits";
 import {
   GuardrailError,
   InMemoryEventSink,
   asCredits,
   asMicroUsdPerCredit,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   AI_METER_SCHEMA_SQL,
   DEFAULT_OUTPUT_TOKENS,
   SPEND_POLICY_TABLE,
   USAGE_EVENT_TABLE,
   type MeterConfig,
-} from "@caisson/ai-meter";
-import { PROMPT_REGISTRY_SCHEMA_SQL } from "@caisson/prompt-registry";
+} from "@caisson-sh/ai-meter";
+import { PROMPT_REGISTRY_SCHEMA_SQL } from "@caisson-sh/prompt-registry";
 import {
   localModerator,
   type GuardPolicy,
   type GuardRuntime,
-} from "@caisson/guardrails";
-import type { AiSettings } from "@caisson/ai-config";
-import { withTenant } from "@caisson/tenancy-rls";
+} from "@caisson-sh/guardrails";
+import type { AiSettings } from "@caisson-sh/ai-config";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 import { MockLanguageModelV4 } from "ai/test";
 import type {
   LanguageModelV4CallOptions,
@@ -47,7 +47,7 @@ import {
   createMemoryTrajectoryStore,
   project,
   type TrajectoryStore,
-} from "@caisson/agent-trajectory";
+} from "@caisson-sh/agent-trajectory";
 import { runToolLoop, type RunToolLoopOptions } from "./agent-loop.ts";
 
 let tp: TestPg;

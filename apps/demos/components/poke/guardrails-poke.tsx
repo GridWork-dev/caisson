@@ -6,7 +6,7 @@
 // Nothing here fetches, persists, or measures the visitor.
 import { useEffect, useId, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { Checkbox, Radio, StatusChip } from "@caisson/ui/components";
+import { Checkbox, Radio, StatusChip } from "@caisson-sh/ui/components";
 import {
   PII_COLUMN_CONTEXT,
   PII_KINDS,
@@ -14,7 +14,7 @@ import {
   guardInputAsync,
   guardOutput,
   localModerator,
-} from "@caisson/guardrails/browser";
+} from "@caisson-sh/guardrails/browser";
 import type {
   BrowserGuardPolicy,
   BrowserPiiCryptoContext,
@@ -23,7 +23,7 @@ import type {
   PiiKind,
   PiiMatch,
   PiiMode,
-} from "@caisson/guardrails/browser";
+} from "@caisson-sh/guardrails/browser";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./guardrails-poke.module.css";
@@ -192,7 +192,7 @@ export default function GuardrailsPoke() {
 
   return (
     <PokeShell
-      label="@caisson/guardrails"
+      label="@caisson-sh/guardrails"
       title="Every call crosses the same gate. Type something it should stop."
     >
       <div className={styles.layout}>

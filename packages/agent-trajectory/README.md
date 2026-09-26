@@ -1,4 +1,4 @@
-# @caisson/agent-trajectory
+# @caisson-sh/agent-trajectory
 
 The engine-neutral **trajectory contract** — one append-only, replayable event schema every governed
 agent run records into: `run → step → model call → tool proposal → approval → tool result →

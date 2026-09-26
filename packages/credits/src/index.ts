@@ -20,7 +20,7 @@ export {
   sweepExpiredGrants,
   sweepExpiryNotices,
 } from "./credits.ts";
-// The pure half, also published as `@caisson/credits/browser` (ADR-0396) — same names, same
+// The pure half, also published as `@caisson-sh/credits/browser` (ADR-0396) — same names, same
 // values; `.` keeps the complete surface.
 export { GRANT_EVENT_TYPES, DEBIT_EVENT_TYPES, planFifoDebit } from "./fifo.ts";
 export type {

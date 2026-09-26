@@ -23,12 +23,12 @@ import {
   type TenantExecutor,
   type Transactor,
   withTenant,
-} from "@caisson/tenancy-rls";
+} from "@caisson-sh/tenancy-rls";
 import {
   derivedContext,
   type SyncFieldKeyProvider,
   withFieldCryptoContext,
-} from "@caisson/field-crypto";
+} from "@caisson-sh/field-crypto";
 
 /**
  * Run `fn` inside a transaction that is BOTH tenant-RLS-scoped and field-crypto-scoped to

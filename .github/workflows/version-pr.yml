@@ -57,10 +57,10 @@ jobs:
           echo "[version-pr] $pending pending changeset(s)"
       - name: changeset version (consume)
         run: bunx changeset version
-      # The generated component manifest embeds @caisson/ui's package version. Refresh it after
+      # The generated component manifest embeds @caisson-sh/ui's package version. Refresh it after
       # Changesets bumps package.json so the version PR cannot ship stale design metadata.
       - name: regenerate version-coupled design manifest
-        run: bun run --filter @caisson/ui gen:manifest
+        run: bun run --filter @caisson-sh/ui gen:manifest
       # Template pins and their generated starter golden carry workspace versions too.
       # Refresh before packing so this version PR records the final generator bytes.
       - name: refresh generator template pins and Next starter golden

@@ -1,6 +1,6 @@
 "use client";
 
-// @caisson/demo-registry — the 11 @caisson/ui-pro (commercial) entries. Sample data
+// @caisson-sh/demo-registry — the 11 @caisson-sh/ui-pro (commercial) entries. Sample data
 // mirrors each component's own test fixtures (already-vetted minimal-render shapes) rather than
 // inventing new ones — one fewer place a demo can drift from what the component actually renders.
 import { useState } from "react";
@@ -22,8 +22,8 @@ import {
   type BoardCard,
   type CommandAction,
   type DataTableProColumn,
-} from "@caisson/ui-pro/components";
-import { Button } from "@caisson/ui/components";
+} from "@caisson-sh/ui-pro/components";
+import { Button } from "@caisson-sh/ui/components";
 import type { CatalogEntry } from "../schema.ts";
 
 const AUDIT_ENTRIES: AuditEntry[] = [
@@ -172,7 +172,7 @@ export const UI_PRO_ENTRIES: CatalogEntry[] = [
   {
     id: "ui-pro.audit-timeline",
     name: "AuditTimeline",
-    package: "@caisson/ui-pro",
+    package: "@caisson-sh/ui-pro",
     tier: "ui-pro",
     description:
       "A hash-chain-verified activity log — badges each entry's link to its predecessor.",
@@ -184,7 +184,7 @@ export const UI_PRO_ENTRIES: CatalogEntry[] = [
   {
     id: "ui-pro.charts",
     name: "Charts (Line / Area / Bar / Sparkline)",
-    package: "@caisson/ui-pro",
+    package: "@caisson-sh/ui-pro",
     tier: "ui-pro",
     description:
       "A dependency-free themed charts pack — line, area, bar, and a compact sparkline.",
@@ -222,7 +222,7 @@ export const UI_PRO_ENTRIES: CatalogEntry[] = [
   {
     id: "ui-pro.command-palette",
     name: "CommandPalette",
-    package: "@caisson/ui-pro",
+    package: "@caisson-sh/ui-pro",
     tier: "ui-pro",
     description:
       "A ⌘K action launcher — grouped, fuzzy-filterable, keyboard-navigable.",
@@ -232,7 +232,7 @@ export const UI_PRO_ENTRIES: CatalogEntry[] = [
   {
     id: "ui-pro.data-table-pro",
     name: "DataTablePro",
-    package: "@caisson/ui-pro",
+    package: "@caisson-sh/ui-pro",
     tier: "ui-pro",
     description:
       "Sort, filter, group, virtualize, and CSV-export — the MUI-X-Pro/AG-Grid-Enterprise line.",
@@ -248,7 +248,7 @@ export const UI_PRO_ENTRIES: CatalogEntry[] = [
   {
     id: "ui-pro.date-range-picker",
     name: "DateRangePicker",
-    package: "@caisson/ui-pro",
+    package: "@caisson-sh/ui-pro",
     tier: "ui-pro",
     description:
       "Fiscal-quarter + billing-cycle presets, an optional comparison range, timezone context.",
@@ -258,7 +258,7 @@ export const UI_PRO_ENTRIES: CatalogEntry[] = [
   {
     id: "ui-pro.diff-viewer",
     name: "DiffViewer",
-    package: "@caisson/ui-pro",
+    package: "@caisson-sh/ui-pro",
     tier: "ui-pro",
     description:
       "Redaction-aware text or JSON diffs — split or unified layout.",
@@ -275,7 +275,7 @@ export const UI_PRO_ENTRIES: CatalogEntry[] = [
   {
     id: "ui-pro.kanban-board",
     name: "KanbanBoard",
-    package: "@caisson/ui-pro",
+    package: "@caisson-sh/ui-pro",
     tier: "ui-pro",
     description:
       "Drag-and-drop columns with a keyboard move fallback, optional swimlanes.",
@@ -285,7 +285,7 @@ export const UI_PRO_ENTRIES: CatalogEntry[] = [
   {
     id: "ui-pro.ops-matrix",
     name: "OpsMatrix",
-    package: "@caisson/ui-pro",
+    package: "@caisson-sh/ui-pro",
     tier: "ui-pro",
     description:
       "A domain-composed compliance/ops coverage grid — boolean, tri-state, or note cells.",
@@ -306,7 +306,7 @@ export const UI_PRO_ENTRIES: CatalogEntry[] = [
   {
     id: "ui-pro.payload-viewer",
     name: "PayloadViewer",
-    package: "@caisson/ui-pro",
+    package: "@caisson-sh/ui-pro",
     tier: "ui-pro",
     description:
       "A typed, expandable JSON tree with automatic secret-key redaction.",
@@ -326,7 +326,7 @@ export const UI_PRO_ENTRIES: CatalogEntry[] = [
   {
     id: "ui-pro.tree-pro",
     name: "TreePro",
-    package: "@caisson/ui-pro",
+    package: "@caisson-sh/ui-pro",
     tier: "ui-pro",
     description:
       "A virtualized, keyboard-navigable tree with lazy-load support.",
@@ -349,7 +349,7 @@ export const UI_PRO_ENTRIES: CatalogEntry[] = [
   {
     id: "ui-pro.type-to-confirm",
     name: "TypeToConfirm",
-    package: "@caisson/ui-pro",
+    package: "@caisson-sh/ui-pro",
     tier: "ui-pro",
     description:
       "A retype-the-phrase destructive-action confirm — arms only on an exact match.",

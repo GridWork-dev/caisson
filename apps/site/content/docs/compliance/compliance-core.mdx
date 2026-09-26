@@ -3,18 +3,18 @@ title: compliance-core
 description: The compliance evidence engine, typed collectors, a deterministic byte-stable evidence pack that hard-blocks on any unresolved control, and OSCAL exports.
 ---
 
-`@caisson/compliance-core` runs typed collectors over already-gathered substrate facts, assembles
+`@caisson-sh/compliance-core` runs typed collectors over already-gathered substrate facts, assembles
 the results into a deterministic, byte-stable evidence pack, and exports the pack through the OSCAL
 seam. It never certifies or attests, every summary line is readiness/posture language only.
 
 ## Install
 
 ```bash
-bun add @caisson/compliance-core
+bun add @caisson-sh/compliance-core
 ```
 
 Apache-2.0. Part of the Compliance family; consumes
-`@caisson/kernel`, `@caisson/frameworks-pack`, and `@caisson/field-crypto`: down-only, never the
+`@caisson-sh/kernel`, `@caisson-sh/frameworks-pack`, and `@caisson-sh/field-crypto`: down-only, never the
 reverse.
 
 ## Flag-never-guess
@@ -27,7 +27,7 @@ three verdicts:
 - `unresolved`: the evidence needed to decide was absent; the collector refuses to guess.
 
 ```ts
-import { flaggedResult, passResult, unresolvedResult } from "@caisson/compliance-core";
+import { flaggedResult, passResult, unresolvedResult } from "@caisson-sh/compliance-core";
 ```
 
 If **any** control has an `unresolved` result, `generateEvidencePack` throws
@@ -40,7 +40,7 @@ chain anchor, an RLS posture snapshot, a WORM retention term) are gathered at th
 depends on `audit-worm`/`tenancy-rls`, then handed to the collector.
 
 ```ts
-import { rlsForceCollector, generateEvidencePack } from "@caisson/compliance-core";
+import { rlsForceCollector, generateEvidencePack } from "@caisson-sh/compliance-core";
 
 const collector = rlsForceCollector();
 const result = collector.collect({
@@ -85,7 +85,7 @@ each scoped to one canonical control id.
 ## OSCAL export
 
 ```ts
-import { toOscalBundle, toOscalAssessmentPlan } from "@caisson/compliance-core";
+import { toOscalBundle, toOscalAssessmentPlan } from "@caisson-sh/compliance-core";
 
 const bundle = toOscalBundle(pack.manifest, { newId: crypto.randomUUID });
 // bundle.assessmentResults          — OSCAL Security Assessment Results
@@ -101,5 +101,5 @@ port (`OscalExportTransport`), no network call ships in v1.
 ## Composition
 
 `compliance-core` is the evidence-engine carve-out of the Compliance bundle: the bundle composes
-this engine with the framework catalogs (`@caisson/frameworks-pack`) and evidence signing, never
+this engine with the framework catalogs (`@caisson-sh/frameworks-pack`) and evidence signing, never
 the reverse.

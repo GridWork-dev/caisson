@@ -11,8 +11,8 @@ import {
   computeIso27001SoaRows,
   iso27001Crosswalk,
   type ControlEvidenceStatus,
-} from "@caisson/frameworks-pack";
-import { toOscalIso27001Soa } from "@caisson/oscal-spine";
+} from "@caisson-sh/frameworks-pack";
+import { toOscalIso27001Soa } from "@caisson-sh/oscal-spine";
 
 function counterIds(): () => string {
   let n = 0;

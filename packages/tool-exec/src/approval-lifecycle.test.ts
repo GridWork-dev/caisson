@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { z } from "zod";
-import { NotFoundError, ValidationError } from "@caisson/kernel";
+import { NotFoundError, ValidationError } from "@caisson-sh/kernel";
 import {
   APPROVAL_TTL_MS,
   createMemoryApprovalStore,

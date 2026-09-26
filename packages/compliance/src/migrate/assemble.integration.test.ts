@@ -5,7 +5,7 @@
 // RLS, SET ROLE, plpgsql triggers, advisory locks) to prove the ordered apply is idempotent, the
 // ledger is stamped, every composed tenant table still ships its RLS policy, and a tampered ledger
 // fails closed. No network, no live cloud — PGlite only. The apply loop is the SHARED `runMigrations`
-// from @caisson/migrate (ADR-0090) — this test re-implements NOTHING; it injects a PGlite-backed
+// from @caisson-sh/migrate (ADR-0090) — this test re-implements NOTHING; it injects a PGlite-backed
 // `MigrationApplier` port, proving the edition's assembled output is consumable by the canonical
 // forward-only runner (skip already-recorded versions; checksum drift on a recorded version is fatal,
 // ADR-0006).
@@ -20,13 +20,13 @@ import {
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
-import type { MergedMigration, MigrationAssembly } from "@caisson/kernel";
+import type { MergedMigration, MigrationAssembly } from "@caisson-sh/kernel";
 import {
   type MigrationApplier,
   type MigrationRunResult,
   runMigrations,
-} from "@caisson/migrate";
-import { type TestPg, newTestPg } from "@caisson/testing";
+} from "@caisson-sh/migrate";
+import { type TestPg, newTestPg } from "@caisson-sh/testing";
 import {
   assembleComplianceMigrations,
   complianceMigrationPackages,
@@ -60,49 +60,49 @@ const COMPOSED_TABLES = [
 const RELEASED_GLOBAL_PREFIX = [
   {
     version: 1,
-    sourcePackage: "@caisson/field-crypto",
+    sourcePackage: "@caisson-sh/field-crypto",
     sourceName: "0001_field_keys.sql",
     checksum:
       "e23c8bc5449c43e4a2f81e07ed6a13b1f9c357db4fa6692a542e9da61b9203da",
   },
   {
     version: 2,
-    sourcePackage: "@caisson/field-crypto",
+    sourcePackage: "@caisson-sh/field-crypto",
     sourceName: "0002_field_keys_rls_nullif.sql",
     checksum:
       "cbd5e935f744529a866fd7800458996897ca75e424c5bad723f1c2c918863ae3",
   },
   {
     version: 3,
-    sourcePackage: "@caisson/audit-worm",
+    sourcePackage: "@caisson-sh/audit-worm",
     sourceName: "0001_audit_chain.sql",
     checksum:
       "1661369f117e83e80f1301bfb60073c06d6fd9fcc5445da11402e189bb001aa2",
   },
   {
     version: 4,
-    sourcePackage: "@caisson/audit-worm",
+    sourcePackage: "@caisson-sh/audit-worm",
     sourceName: "0002_versions.sql",
     checksum:
       "7591464b2c1055dca3165cfb2a127ee78ddb13193eeb5575312bdbf3fd1fc964",
   },
   {
     version: 5,
-    sourcePackage: "@caisson/audit-worm",
+    sourcePackage: "@caisson-sh/audit-worm",
     sourceName: "0003_rls_nullif.sql",
     checksum:
       "c2a180d8d4fcb06f7c190883b974b2b18f0ba3fa9646a227bd5dc9b33a75460b",
   },
   {
     version: 6,
-    sourcePackage: "@caisson/compliance",
+    sourcePackage: "@caisson-sh/compliance",
     sourceName: "0001_impersonation_session.sql",
     checksum:
       "da2e9bac7b168db5e317d85816e8317fd819d0b0a5a2989d28e90c62c0a39066",
   },
   {
     version: 7,
-    sourcePackage: "@caisson/compliance",
+    sourcePackage: "@caisson-sh/compliance",
     sourceName: "0002_impersonation_session_rls_nullif.sql",
     checksum:
       "30c970d6680a3527abe1dbadd612762e3e83d08f3c7979555f20464b58eedb83",
@@ -111,7 +111,7 @@ const RELEASED_GLOBAL_PREFIX = [
 
 /**
  * A PGlite-backed `MigrationApplier` (ADR-0090) — the ONLY thing this test supplies. The forward-only
- * apply/skip/checksum-drift loop is the SHARED `runMigrations` from @caisson/migrate; this port just
+ * apply/skip/checksum-drift loop is the SHARED `runMigrations` from @caisson-sh/migrate; this port just
  * wires it to a real DB: `applied()` reads the `schema_version` ledger, `apply()` runs the migration
  * SQL and records its ledger row inside ONE transaction. Forward-only idempotency + fail-closed on
  * checksum drift (ADR-0006) are proven here against a true Postgres, not re-implemented.
@@ -166,14 +166,14 @@ describe("assembled sequence (ADR-0070, TM-O)", () => {
       "0008_artifact_versions.sql",
     ]);
     expect(assembly.sequence.map((m) => m.sourcePackage)).toEqual([
-      "@caisson/field-crypto",
-      "@caisson/field-crypto",
-      "@caisson/audit-worm",
-      "@caisson/audit-worm",
-      "@caisson/audit-worm",
-      "@caisson/compliance",
-      "@caisson/compliance",
-      "@caisson/audit-worm",
+      "@caisson-sh/field-crypto",
+      "@caisson-sh/field-crypto",
+      "@caisson-sh/audit-worm",
+      "@caisson-sh/audit-worm",
+      "@caisson-sh/audit-worm",
+      "@caisson-sh/compliance",
+      "@caisson-sh/compliance",
+      "@caisson-sh/audit-worm",
     ]);
     expect(assembly.sequence.map((m) => m.seq)).toEqual([
       1, 2, 3, 4, 5, 6, 7, 8,

@@ -1,4 +1,4 @@
-// @caisson/agent-runner — sandboxed governed agent runner (ADR-0186). Spawns a HEADLESS agent CLI
+// @caisson-sh/agent-runner — sandboxed governed agent runner (ADR-0186). Spawns a HEADLESS agent CLI
 // as a detached subprocess in an isolated worktree, streams its stream-json transcript to a durable
 // `.jsonl`, and parses that transcript into a structured, auditable run report.
 //
@@ -33,8 +33,8 @@ import {
   ValidationError,
   parseStrict,
   strictObject,
-} from "@caisson/kernel";
-import type { TrajectoryStore } from "@caisson/agent-trajectory";
+} from "@caisson-sh/kernel";
+import type { TrajectoryStore } from "@caisson-sh/agent-trajectory";
 import { buildTrajectoryEvents } from "./trajectory.ts";
 import { ProviderConfig, buildEngineEnv } from "./engine-env.ts";
 
@@ -231,7 +231,7 @@ export interface AgentRunnerConfig {
   /** Caller-supplied run-registry root (ADR-0186 decoupling seam — no home-dir default). */
   readonly runsRoot: string;
   /**
-   * OPTIONAL trajectory recorder (the `@caisson/agent-trajectory` store port). When present,
+   * OPTIONAL trajectory recorder (the `@caisson-sh/agent-trajectory` store port). When present,
    * `record(runId)` emits an append-only trajectory for the run; when absent the runner behaves
    * byte-identically to today (observation is strictly opt-in and off the hot path).
    */

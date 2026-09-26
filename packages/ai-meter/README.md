@@ -1,4 +1,4 @@
-# @caisson/ai-meter
+# @caisson-sh/ai-meter
 
 The money path for metered AI inference: estimate a call's cost before it runs, reserve that
 amount up front, then true the charge to the provider's actual usage once the call completes.
@@ -39,8 +39,8 @@ model` price book and debits the wallet BEFORE the provider is ever called — a
 ## Usage
 
 ```ts
-import { withTenant } from "@caisson/tenancy-rls";
-import { reserve, reconcile } from "@caisson/ai-meter";
+import { withTenant } from "@caisson-sh/tenancy-rls";
+import { reserve, reconcile } from "@caisson-sh/ai-meter";
 
 await withTenant(db, accountId, async (tx) => {
   const reserved = await reserve(tx, {

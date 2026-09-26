@@ -3,7 +3,7 @@ title: agent-runner
 description: Spawn a headless coding agent in an isolated worktree with a scrubbed, from-scratch env, zero secret leak by construction, an auditable .jsonl transcript, and a structured run report.
 ---
 
-`@caisson/agent-runner` spawns a headless AI coding agent CLI as a detached subprocess in a
+`@caisson-sh/agent-runner` spawns a headless AI coding agent CLI as a detached subprocess in a
 caller-supplied worktree. It streams the run's `stream-json` output to a durable `.jsonl`
 transcript that survives the launcher process exiting, then parses that transcript into a
 structured report, tool calls, files touched, final result.
@@ -31,13 +31,13 @@ structured report, tool calls, files touched, final result.
 ## Install
 
 ```bash
-bun add @caisson/agent-runner
+bun add @caisson-sh/agent-runner
 ```
 
 ## Quickstart
 
 ```ts
-import { CLAUDE_CLI_PROFILE, createAgentRunner } from "@caisson/agent-runner";
+import { CLAUDE_CLI_PROFILE, createAgentRunner } from "@caisson-sh/agent-runner";
 
 const runner = createAgentRunner({ runsRoot: "/var/lib/caisson/agent-runs" });
 
@@ -91,13 +91,13 @@ opening the PR, and deploying stay the caller's job, one call site away.
 
 ## Composing with agent-kernel
 
-`@caisson/agent-runner` is the sandboxed execution primitive; `@caisson/agent-kernel` is the
+`@caisson-sh/agent-runner` is the sandboxed execution primitive; `@caisson-sh/agent-kernel` is the
 schema/FSM/governance/hooks/audit-chain base each run is accountable to. The Agentic-Dev bundle
 wires the two together with local hybrid memory, the sandboxed tool-exec gate, and a
 multi-harness emitter into one governed loop, buy the module alone to run agents from your own
 tooling, or the bundle for the assembled loop.
 
 <Callout type="info" title="Standalone">
-  `@caisson/agent-runner` works on its own, or included in the Agentic-Dev bundle alongside
-  `@caisson/agent-kernel`.
+  `@caisson-sh/agent-runner` works on its own, or included in the Agentic-Dev bundle alongside
+  `@caisson-sh/agent-kernel`.
 </Callout>
