@@ -1,22 +1,3 @@
-# CODEOWNERS — the registry catalog + the locked decision artifacts have a real owner on record.
-# This is the ownership half of ADR-0021's trust model: registry/index.json is CI-built, and the
-# `registry-index` byte-identical rebuild (a REQUIRED status check on `main`) blocks a hand-edit.
-#
-# ENFORCEMENT (live): branch protection on `main` requires the `check`, `standards-gate`, and
-# `registry-index` status checks + blocks force-push/deletion. "Require review from Code Owners" is
-# intentionally NOT enabled — this is a single-owner account, so a code-owner-review gate would block
-# self-merge with no second approver. Re-enable it the moment a second collaborator joins.
-
-# The generator allowlist — CI-built from the ledger; no hand-edits without owner review (ADR-0021).
-/registry/index.json            @GridWork-dev
-# The version ledger — the index's sole source of truth; a gated publish appends here (CI, P5).
-/registry/ledger.jsonl          @GridWork-dev
-
-# Locked decision artifacts (CLAUDE.md source-of-truth #1 + #2).
-/knowledge/decisions/           @GridWork-dev
-/docs/state/decisions-and-forks.md  @GridWork-dev
-
-# The standards gate itself — changing the gate changes what's enforceable.
-/tooling/                       @GridWork-dev
-/.dependency-cruiser.cjs        @GridWork-dev
-/.github/                       @GridWork-dev
+# Single-maintainer project: every path is owned by the maintainer account.
+# "Require review from Code Owners" stays off so the maintainer can merge their own PRs.
+*   @GridWork-dev

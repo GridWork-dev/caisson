@@ -1054,7 +1054,14 @@ export function buildPackageCountEditSuggestions(
 // Convention: docs/README.md §Docs-surface conventions.
 // ============================================================================================
 
-export const ROOT_MD_ALLOWLIST = ["AGENTS.md", "CLAUDE.md", "README.md"];
+export const ROOT_MD_ALLOWLIST = [
+  "AGENTS.md",
+  "CLAUDE.md",
+  "CODE_OF_CONDUCT.md",
+  "CONTRIBUTING.md",
+  "README.md",
+  "SECURITY.md",
+];
 
 // docs/state/ = live boards/ledgers ONLY (state-folder reorg 2026-07-11): procedures live
 // in docs/ops/, dated one-offs + tombstone stubs in docs/archive/. A new board lands here
