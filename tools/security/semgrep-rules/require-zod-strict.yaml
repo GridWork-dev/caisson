@@ -21,8 +21,6 @@ rules:
       include:
         - "**/app/api/**/route.ts"
         - "**/services/license/src/app.ts"
-        - "**/services/docs/src/app.ts"
-        - "**/registry/worker/npm-routes.ts"
         # test-fixture path so `semgrep test` fires (real scans exclude this dir via .semgrepignore)
         - "**/semgrep-rules/require-zod-strict.ts"
       exclude:
