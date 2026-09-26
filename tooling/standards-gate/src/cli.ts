@@ -8,7 +8,7 @@
  * node_modules) actually execute; a pre-install run leaves those two skipped with a warn.
  *
  * This Bun script is the SPDX/license authority: AGPL boundary (workspace + external tree),
- * declarations, manifest↔package.json agreement, and hand-written-migration-RLS-vs-generator
+ * declarations, the Apache-2.0 + LICENSE rule for every published package, manifest↔package.json agreement, and hand-written-migration-RLS-vs-generator
  * equivalence (ADR-0210/0005). Run ALONGSIDE in CI (ADR-0022, all three layers): oxlint
  * `no-restricted-imports` (fast static source signal) + dependency-cruiser (the real module graph —
  * dynamic import()/require + transitive provider-SDK reachability) + the golden-file regression
@@ -19,6 +19,7 @@ import {
   checkAgplBoundary,
   checkExternalAgpl,
   checkDeclarations,
+  checkOpenLicense,
   checkManifestAgreement,
   checkCopyPaste,
   checkRlsEquivalence,
@@ -34,6 +35,7 @@ async function main(): Promise<number> {
     ...checkAgplBoundary(pkgs),
     ...checkExternalAgpl(pkgs, root),
     ...checkDeclarations(pkgs),
+    ...checkOpenLicense(pkgs), // every published package: Apache-2.0 + a LICENSE naming the holder
     ...(await checkManifestAgreement(pkgs)),
     ...checkCopyPaste(root), // ADR-0101 gate #4: cross-package copy-paste
     ...(await checkRlsEquivalence(pkgs, root)), // ADR-0210/0005: hand-written RLS vs the generator

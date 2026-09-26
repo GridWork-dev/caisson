@@ -146,7 +146,7 @@ export function deriveDomains(root: string = REPO_ROOT): Domain[] {
     for (const name of readDirs(join(root, container))) {
       domains.push(unitDomain(container, name, "internal-only"));
     }
-    // Loose files at the container root (e.g. tools/paddle-catalog-recreate.ts) — the per-dir unit
+    // Loose files at the container root (e.g. a one-file script under tools/) — the per-dir unit
     // derivation above never sees them; swept by a container-root domain. Longest-root match keeps
     // each unit's own domain owning its subtree.
     domains.push({

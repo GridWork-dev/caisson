@@ -5,13 +5,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   checkManifestAgreement,
+  checkOpenLicense,
   checkRlsEquivalence,
   checkShippedProse,
 } from "./checks";
 // Same relative import checks.ts itself uses (SPEC-tenancy-rls task 3: no workspace specifier —
 // this build session cannot `bun install` a new dependency edge).
 import { buildTenantPolicySql } from "../../../packages/tenancy-rls/src/rls.ts";
-import type { Pkg } from "./workspace";
+import { findRoot, readWorkspace, type Pkg } from "./workspace";
 
 const APACHE = "Apache-2.0";
 
@@ -23,6 +24,7 @@ function pkg(over: Partial<Pkg> & Pick<Pkg, "name" | "license">): Pkg {
     workspaceDeps: [],
     manifestPath: null,
     hasCode: true,
+    private: false,
     ...over,
   };
 }
@@ -163,6 +165,72 @@ describe("checkRlsEquivalence (ADR-0210/0005)", () => {
       ]),
     );
     expect(await checkRlsEquivalence([p], root)).toEqual([]);
+  });
+});
+
+describe("checkOpenLicense", () => {
+  const APACHE_TEXT =
+    "Apache License\nVersion 2.0\n...\nCopyright 2026 Caisson Software LLC\n";
+  let root: string;
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), "standards-gate-license-"));
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  /** A package dir under the temp root, optionally with a LICENSE body. */
+  function licensed(name: string, license: string, text?: string): Pkg {
+    const dir = join(root, name);
+    mkdirSync(dir, { recursive: true });
+    if (text !== undefined) writeFileSync(join(dir, "LICENSE"), text);
+    return pkg({ name: `@caisson/${name}`, dir, license });
+  }
+
+  test("Apache-2.0 plus an Apache LICENSE naming the holder is clean", () => {
+    expect(checkOpenLicense([licensed("ok", APACHE, APACHE_TEXT)])).toEqual([]);
+  });
+
+  test("a non-Apache license is an error naming the package", () => {
+    const f = checkOpenLicense([licensed("mit", "MIT", APACHE_TEXT)]);
+    expect(f).toHaveLength(1);
+    expect(f[0]).toMatchObject({
+      severity: "error",
+      rule: "open-license",
+      pkg: "@caisson/mit",
+    });
+    expect(f[0]?.message).toContain("MIT");
+  });
+
+  test("a missing LICENSE, or one that is not Apache naming the holder, is an error", () => {
+    const f = checkOpenLicense([
+      licensed("none", APACHE),
+      licensed("other-holder", APACHE, "Apache License\nCopyright Someone\n"),
+      licensed(
+        "commercial",
+        APACHE,
+        "Commercial License\nCopyright (c) Caisson Software LLC.\n",
+      ),
+    ]);
+    expect(f.map((x) => x.pkg)).toEqual([
+      "@caisson/none",
+      "@caisson/other-holder",
+      "@caisson/commercial",
+    ]);
+  });
+
+  test("a private package is out of scope", () => {
+    const p = { ...licensed("internal", "UNLICENSED"), private: true };
+    expect(checkOpenLicense([p])).toEqual([]);
+  });
+
+  test("the committed tree is clean, and the check really walked the published set", () => {
+    const pkgs = readWorkspace(findRoot(import.meta.dir));
+    const published = pkgs.filter((p) => !p.private);
+    expect(published.length).toBeGreaterThan(40);
+    expect(checkOpenLicense(pkgs)).toEqual([]);
   });
 });
 

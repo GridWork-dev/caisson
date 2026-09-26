@@ -243,6 +243,40 @@ export function checkDeclarations(pkgs: Pkg[]): Finding[] {
   return findings;
 }
 
+export const OPEN_LICENSE = "Apache-2.0";
+export const LICENSE_HOLDER = "Caisson Software LLC";
+
+/**
+ * Every published (non-private) workspace package is Apache-2.0: package.json says so, and the
+ * package ships an Apache LICENSE file naming the copyright holder. The "Apache License" check is
+ * load-bearing — the retired commercial LICENSE also named the holder.
+ */
+export function checkOpenLicense(pkgs: Pkg[]): Finding[] {
+  const findings: Finding[] = [];
+  for (const p of pkgs) {
+    if (p.private) continue;
+    const fail = (message: string) =>
+      findings.push({
+        severity: "error",
+        rule: "open-license",
+        pkg: p.name,
+        message,
+      });
+    if (p.license !== OPEN_LICENSE)
+      fail(
+        `package.json license is ${p.license ?? "absent"}; every published package must be ${OPEN_LICENSE}.`,
+      );
+    const licenseFile = join(p.dir, "LICENSE");
+    const text = existsSync(licenseFile)
+      ? readFileSync(licenseFile, "utf8")
+      : null;
+    if (text === null) fail(`no LICENSE file next to package.json.`);
+    else if (!text.includes("Apache License") || !text.includes(LICENSE_HOLDER))
+      fail(`LICENSE is not the Apache License naming ${LICENSE_HOLDER}.`);
+  }
+  return findings;
+}
+
 /**
  * manifest↔package.json agreement (ADR-0020/0021). Loads each manifest.ts (needs zod, so it is
  * best-effort: if the import fails — e.g. deps not installed — it WARNs rather than passing
