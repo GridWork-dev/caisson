@@ -32,7 +32,7 @@ export * from "@caisson-sh/local-store";
 export * from "@caisson-sh/tool-exec";
 
 // The sandboxed governed agent-runner primitive (@caisson-sh/agent-runner, ADR-0186) — folded into the
-// edition's paid bundle exactly like tool-exec above, but NOT wired to a live instance here: `spawn()`
+// edition exactly like tool-exec above, but NOT wired to a live instance here: `spawn()`
 // takes a per-call provider credential + endpoint (`authKey`/`baseUrl`) that this factory, like the
 // ai-config embedder lane below, never resolves or holds (ADR-0066 no-credential/engine-neutral
 // floor). The adopter constructs `createAgentRunner({ runsRoot })` themselves and supplies its own

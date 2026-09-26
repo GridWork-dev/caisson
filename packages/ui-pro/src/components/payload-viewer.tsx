@@ -132,7 +132,7 @@ function JsonNode({
  * collapsible tree with typed, syntax-tinted leaves; masks secret-bearing keys everywhere in the
  * tree; and copies the REDACTED payload (never the raw secrets). A raw view is offered through the
  * floor `CodeBlock`, replacing the bare `<pre>{JSON.stringify}` dumps. The domain composition —
- * redaction plus the collapsible tree — is the sellable unit; a bare JSON tree is commodity.
+ * redaction plus the collapsible tree — is the point; a bare JSON tree is commodity.
  */
 export function PayloadViewer({
   value,
