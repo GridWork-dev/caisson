@@ -40,11 +40,11 @@ function recordingWriter() {
 
 const TOKENS = [
   {
-    token: "tok_acct_a_000000000000",
+    token: "tok_acct_a_000000000000000000000000",
     accountId: "acct_a",
   },
   {
-    token: "tok_acct_b_111111111111",
+    token: "tok_acct_b_111111111111111111111111",
     accountId: "acct_b",
   },
 ];
@@ -78,8 +78,8 @@ describe("setup coach — wiring (ADR-0076)", () => {
 
   test("coach tools are registered through the seam and visible to every authenticated caller", () => {
     for (const token of [
-      "tok_acct_a_000000000000",
-      "tok_acct_b_111111111111",
+      "tok_acct_a_000000000000000000000000",
+      "tok_acct_b_111111111111111111111111",
     ]) {
       const names = server
         .listTools(server.authenticate(token))
@@ -101,7 +101,7 @@ describe("setup coach — wiring (ADR-0076)", () => {
       index: INDEX,
       onGenerate: async () => ({ generationId: "g" }),
     });
-    const s = bare.authenticate("tok_acct_b_111111111111");
+    const s = bare.authenticate("tok_acct_b_111111111111111111111111");
     expect(bare.listTools(s).map((reg) => reg.name)).not.toContain(
       "inspect_env",
     );
@@ -114,7 +114,7 @@ describe("setup coach — wiring (ADR-0076)", () => {
 describe("inspect_env — presence only, never values", () => {
   const env = envWith(["ANTHROPIC_API_KEY"]);
   const server = makeServer({ env });
-  const session = server.authenticate("tok_acct_b_111111111111");
+  const session = server.authenticate("tok_acct_b_111111111111111111111111");
 
   test("reports set/unset per NAME without exposing a value", async () => {
     const out = (await server.handleToolCall(session, "inspect_env", {
@@ -149,7 +149,7 @@ describe("inspect_env — presence only, never values", () => {
 
 describe("propose_ai_config — validated config + key NAMES", () => {
   const server = makeServer();
-  const session = server.authenticate("tok_acct_b_111111111111");
+  const session = server.authenticate("tok_acct_b_111111111111111111111111");
 
   test("derives default key NAMES per provider and validates the config", async () => {
     const out = (await server.handleToolCall(
@@ -221,7 +221,7 @@ describe("write_forge_config — approval-gated, secrets-safe", () => {
   test("without approval: preview only, writer never invoked (fail-closed)", async () => {
     const writer = recordingWriter();
     const server = makeServer({ writer: writer.port });
-    const session = server.authenticate("tok_acct_b_111111111111");
+    const session = server.authenticate("tok_acct_b_111111111111111111111111");
     const out = (await server.handleToolCall(session, "write_forge_config", {
       settings,
     })) as CoachWriteResult;
@@ -232,7 +232,7 @@ describe("write_forge_config — approval-gated, secrets-safe", () => {
   test("with approval: persists NAMES + .env.example — never a secret value", async () => {
     const writer = recordingWriter();
     const server = makeServer({ writer: writer.port });
-    const session = server.authenticate("tok_acct_b_111111111111");
+    const session = server.authenticate("tok_acct_b_111111111111111111111111");
     const out = (await server.handleToolCall(session, "write_forge_config", {
       settings,
       approve: true,
@@ -252,7 +252,7 @@ describe("write_forge_config — approval-gated, secrets-safe", () => {
 
   test("rejects a key value smuggled as an unknown field (strict)", async () => {
     const server = makeServer();
-    const session = server.authenticate("tok_acct_b_111111111111");
+    const session = server.authenticate("tok_acct_b_111111111111111111111111");
     await expect(
       server.handleToolCall(session, "write_forge_config", {
         settings,
@@ -277,7 +277,7 @@ describe("validate_setup — fail-closed verdict", () => {
 
   test("valid when every referenced key NAME is present", async () => {
     const server = makeServer({ env: envWith(["OPENAI_API_KEY"]) });
-    const session = server.authenticate("tok_acct_b_111111111111");
+    const session = server.authenticate("tok_acct_b_111111111111111111111111");
     const out = (await server.handleToolCall(session, "validate_setup", {
       settings,
     })) as { valid: boolean; checked: string[]; missing: string[] };
@@ -290,7 +290,7 @@ describe("validate_setup — fail-closed verdict", () => {
 
   test("invalid (fail-closed) when a key NAME is unset", async () => {
     const server = makeServer({ env: envWith([]) });
-    const session = server.authenticate("tok_acct_b_111111111111");
+    const session = server.authenticate("tok_acct_b_111111111111111111111111");
     const out = (await server.handleToolCall(session, "validate_setup", {
       settings,
     })) as { valid: boolean; missing: string[] };
@@ -301,12 +301,12 @@ describe("validate_setup — fail-closed verdict", () => {
 
 describe("setup_ai_config prompt — wiring + arg validation", () => {
   const server = makeServer();
-  const caller = server.authenticate("tok_acct_b_111111111111");
+  const caller = server.authenticate("tok_acct_b_111111111111111111111111");
 
   test("visible to every authenticated caller once the coach is wired", () => {
     for (const token of [
-      "tok_acct_a_000000000000",
-      "tok_acct_b_111111111111",
+      "tok_acct_a_000000000000000000000000",
+      "tok_acct_b_111111111111111111111111",
     ]) {
       expect(
         server.listPrompts(server.authenticate(token)).map((p) => p.name),

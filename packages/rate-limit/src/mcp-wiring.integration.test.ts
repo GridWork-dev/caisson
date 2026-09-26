@@ -12,7 +12,7 @@ import {
 } from "@caisson/mcp-server";
 import { createRateLimitedMcpServer } from "./account-hook.ts";
 
-const TOKEN = "mcp_tok_acct_a_000000";
+const TOKEN = "mcp_tok_acct_a_000000000000000000";
 const ACCOUNT = "acct_a";
 const EMPTY_INDEX = loadRegistryIndex({ schemaVersion: 1, modules: [] });
 

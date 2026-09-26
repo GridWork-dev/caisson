@@ -36,7 +36,7 @@ const index = loadRegistryIndex({
   ],
 });
 
-const TOKEN = "tok_acct_a_000000000000";
+const TOKEN = "tok_acct_a_000000000000000000000000";
 function baseOptions(): McpServerOptions {
   return {
     tokens: [{ token: TOKEN, accountId: "acct_a" }],

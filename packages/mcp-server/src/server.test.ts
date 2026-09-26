@@ -43,7 +43,9 @@ const index = loadRegistryIndex({
 
 const calls: GenerateContext[] = [];
 const server = createMcpServer({
-  tokens: [{ token: "tok_acct_a_000000000000", accountId: "acct_a" }],
+  tokens: [
+    { token: "tok_acct_a_000000000000000000000000", accountId: "acct_a" },
+  ],
   index,
   onGenerate: async (ctx) => {
     calls.push(ctx);
@@ -51,7 +53,7 @@ const server = createMcpServer({
   },
 });
 
-const session = server.authenticate("tok_acct_a_000000000000");
+const session = server.authenticate("tok_acct_a_000000000000000000000000");
 
 describe("MCP server", () => {
   test("authenticates a valid token and rejects a wrong or missing one (timing-safe)", () => {
@@ -195,7 +197,7 @@ describe("MCP server", () => {
 describe("ADR-0216 tool manifest validation (registerTool)", () => {
   function freshServer() {
     return createMcpServer({
-      tokens: [{ token: "tok_manifest_x00000000000000", accountId: "a" }],
+      tokens: [{ token: "tok_manifest_x00000000000000000000", accountId: "a" }],
       index,
       onGenerate: async () => ({ generationId: "gen_manifest" }),
     });
@@ -243,8 +245,8 @@ describe("ADR-0076 tool-registration seam", () => {
   // Fresh server so registrations don't bleed across the suite.
   const ed = createMcpServer({
     tokens: [
-      { token: "tok_acct_a_000000000000", accountId: "acct_a" },
-      { token: "tok_acct_b_111111111111", accountId: "acct_b" },
+      { token: "tok_acct_a_000000000000000000000000", accountId: "acct_a" },
+      { token: "tok_acct_b_111111111111111111111111", accountId: "acct_b" },
     ],
     index,
     onGenerate: async () => ({ generationId: "gen_x" }),
@@ -262,8 +264,8 @@ describe("ADR-0076 tool-registration seam", () => {
     },
   });
 
-  const callerA = ed.authenticate("tok_acct_a_000000000000");
-  const callerB = ed.authenticate("tok_acct_b_111111111111");
+  const callerA = ed.authenticate("tok_acct_a_000000000000000000000000");
+  const callerB = ed.authenticate("tok_acct_b_111111111111111111111111");
 
   test("registering a duplicate tool name is rejected (fail-closed)", () => {
     expect(() =>
@@ -394,5 +396,36 @@ describe("prompt registry (registerPrompt / listPrompts / getPrompt)", () => {
         project_name: "x".repeat(513),
       }),
     ).rejects.toBeInstanceOf(ValidationError);
+  });
+});
+
+describe("token length is enforced at construction", () => {
+  const build = (token: string) => () =>
+    createMcpServer({
+      tokens: [
+        { token: "tok_ok_".padEnd(40, "0"), accountId: "acct_ok" },
+        { token, accountId: "acct_weak" },
+      ],
+      index,
+      onGenerate: async () => ({ generationId: "gen" }),
+    });
+
+  test("an empty token is refused, naming the account and never the token", () => {
+    expect(build("")).toThrow(ValidationError);
+    expect(build("")).toThrow(/acct_weak.*empty.*at least 32/);
+  });
+
+  test("a 31-character token is refused; 32 characters is accepted", () => {
+    const short = "s".repeat(31);
+    expect(build(short)).toThrow(ValidationError);
+    let message = "";
+    try {
+      build(short)();
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).toMatch(/acct_weak.*31 characters/);
+    expect(message).not.toContain(short);
+    expect(build("s".repeat(32))).not.toThrow();
   });
 });

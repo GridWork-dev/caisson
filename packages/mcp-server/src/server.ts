@@ -291,6 +291,10 @@ export interface McpServer {
 // registry (the CLI also dedups ids at Selection.parse); raise if the catalog grows past it.
 const MAX_MODULES = 100;
 
+// The shortest Bearer token `createMcpServer` accepts. An empty or short token is a guessable
+// credential, so it is refused at construction, before any caller can authenticate against it.
+const MIN_TOKEN_LENGTH = 32;
+
 // The declarative per-tool manifest (ADR-0216): validated in `registerTool()` before the
 // duplicate-name guard, so a bad manifest is a registration-time `ValidationError`, never a
 // call-time surprise. `version` is bare semver (no leading `v`, no pre-release/build metadata —
@@ -365,6 +369,16 @@ const generateArgs = strictObject({
 });
 
 export function createMcpServer(options: McpServerOptions): McpServer {
+  // Every transport (stdio, HTTP) and the rate-limited wrapper construct through here, so this one
+  // check covers them all. The message names the account, never the token.
+  for (const t of options.tokens) {
+    if (t.token.length < MIN_TOKEN_LENGTH) {
+      throw new ValidationError(
+        `MCP token for account "${t.accountId}" is ${t.token.length === 0 ? "empty" : `${t.token.length} characters`}; tokens must be at least ${MIN_TOKEN_LENGTH} characters.`,
+        { accountId: t.accountId, minLength: MIN_TOKEN_LENGTH },
+      );
+    }
+  }
   const registry = new Map<string, ToolRegistration>();
   // Append-only retirement ledger (ADR-0216): per-server-instance, same seeding pattern as
   // `registry` — no new persistence surface. A name is exactly one of active/retired/unknown.

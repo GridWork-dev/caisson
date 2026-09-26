@@ -213,7 +213,7 @@ beforeAll(async () => {
     mcp: {
       tokens: [
         {
-          token: "mcp_tok_acct_a_000000",
+          token: "mcp_tok_acct_a_000000000000000000",
           accountId: "acct_a",
         },
       ],
@@ -296,7 +296,7 @@ describe("base package composition (HTTP)", () => {
     const res = await post(
       "/mcp",
       { tool: "list_modules" },
-      { authorization: "Bearer mcp_tok_acct_a_000000" },
+      { authorization: "Bearer mcp_tok_acct_a_000000000000000000" },
     );
     expect(res.status).toBe(200);
     // The fixture wires an empty registry index, so the catalog listing is empty.
