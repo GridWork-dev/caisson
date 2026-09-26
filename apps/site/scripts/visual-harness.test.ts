@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { MARKETING_ROUTES } from "../lib/routes.ts";
 import { WRITING_PIECES } from "../lib/writing.tsx";
-import { DASHBOARD_ROUTES, allRoutes, routeSlug } from "./visual-harness.ts";
+import { allRoutes, routeSlug } from "./visual-harness.ts";
 
 describe("routeSlug", () => {
   test("root route maps to 'home'", () => {
@@ -15,7 +15,7 @@ describe("routeSlug", () => {
   });
 
   test("a single-segment route strips only the leading slash", () => {
-    expect(routeSlug("/login")).toBe("login");
+    expect(routeSlug("/support")).toBe("support");
   });
 
   test("a deep-linked pop-out query string flattens to filename-safe dashes", () => {
@@ -26,17 +26,15 @@ describe("routeSlug", () => {
 });
 
 describe("allRoutes", () => {
-  test("includes every module depth page and glossary term, with no duplicates", () => {
+  test("includes every module depth page, with no duplicates", () => {
     const routes = allRoutes();
     expect(new Set(routes).size).toBe(routes.length);
     expect(routes).toContain("/marketplace/modules/field-crypto");
-    expect(routes).toContain("/glossary/worm-audit-log");
     expect(routes).toContain("/");
   });
 
-  test("includes the compare family and the enumerated docs tree", () => {
+  test("includes the enumerated docs tree", () => {
     const routes = allRoutes();
-    expect(routes.some((r) => r.startsWith("/compare/"))).toBe(true);
     expect(routes).toContain("/docs");
     expect(routes).toContain("/docs/getting-started");
   });
@@ -78,19 +76,19 @@ describe("allRoutes", () => {
     expect(missing).toEqual([]);
   });
 
-  // The refuted half of C25: deriving public routes must NOT swallow the stateful surfaces, which
-  // need setup (an item in the cart, a session) and therefore stay hand-written.
-  test("keeps the stateful routes that have no registry row", () => {
+  // The static site has no stateful surfaces left: no cart, sign-in, or dashboard to shoot.
+  test("shoots no retired commerce or auth route", () => {
     const routes = allRoutes();
     for (const path of [
       "/cart",
       "/login",
-      "/forgot-password",
-      "/reset-password",
+      "/dashboard",
+      "/marketplace/plans",
     ]) {
-      expect(routes).toContain(path);
+      expect(routes).not.toContain(path);
     }
-    expect(DASHBOARD_ROUTES).toContain("/dashboard");
-    expect(DASHBOARD_ROUTES).toContain("/dashboard/license");
+    expect(
+      routes.some((r) => r.startsWith("/compare") || r.startsWith("/glossary")),
+    ).toBe(false);
   });
 });

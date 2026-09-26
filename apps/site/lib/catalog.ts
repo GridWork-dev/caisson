@@ -1,171 +1,367 @@
-// Bridges the marketing PRICE DISPLAY (`lib/pricing.ts`) to a cart/checkout-ready catalog: every
-// sellable one-time item (the 6 bundles and the 27 à-la-carte modules) carries the Paddle price id
-// the cart's multi-item checkout passes to `Paddle.Checkout.open()`.
-//
-// CART IDS ARE KIND-NAMESPACED (`bundle:<slug>` / `module:<slug>`). A bundle id can collide with a
-// module-adjacent name, so the namespace keeps the cart's id-dedup and the grid lookups kind-scoped
-// by construction (`bundleCatalogItem` / `moduleCatalogItem`), never a bare-slug search.
-//
-// Bundles + modules map to the REAL Paddle sandbox price ids `@caisson/pricebook`'s PURCHASE_BOOK
-// carries (the W7 catalog big-bang section; the original 11 modules from the 2026-07-02 module-SKU
-// wiring). `resolvePurchase` throws fail-closed on an unresolved id (ADR-0089 §6 / ADR-0113), so a
-// mismatched id reaching production grants nothing rather than silently succeeding. The retired
-// edition-era ids (4 editions + the legacy $1,499 bundle) are absent — their Paddle products are
-// archived, and `pruneCart` drops any persisted cart line still carrying one. This file is
-// display + cart wiring only, not a source of commerce truth.
-import type { CartItem } from "./cart";
-import { type BundleId, BUNDLE_PRICES, MODULE_PRICES } from "./pricing";
+// The module catalog the site demonstrates: five module families plus the whole-catalog
+// Everything composition, and every module with its family membership. Display data only: no
+// prices, no purchase ids.
 
-export type CatalogKind = "module" | "bundle";
+/** The module-family ids (ADR-0257 vocabulary). Kept SITE-LOCAL on purpose: this module is
+ *  client-reachable, and pulling `@caisson/registry-schema` drags in its `node:fs` disk loader. */
+export const BUNDLE_IDS = [
+  "compliance",
+  "ai-production",
+  "local-first",
+  "agentic-dev",
+  "provenance",
+  "everything",
+] as const;
+export type BundleId = (typeof BUNDLE_IDS)[number];
 
-export interface CatalogItem {
-  /** Stable, KIND-NAMESPACED cart key (`bundle:<slug>` / `module:<slug>`) — also the Plausible
-   *  event prop and the React list key. */
-  id: string;
-  kind: CatalogKind;
+export function isBundleId(id: string): id is BundleId {
+  return (BUNDLE_IDS as readonly string[]).includes(id);
+}
+
+/** Every family a module can be a member of: all but the whole-catalog `everything`, which holds
+ *  every module by construction and so is never listed on a per-module `bundles[]`. */
+export const PERSONA_BUNDLE_IDS = BUNDLE_IDS.filter(
+  (b): b is Exclude<BundleId, "everything"> => b !== "everything",
+);
+
+export interface Bundle {
+  id: BundleId;
   label: string;
-  /** Integer display USD. */
-  amount: number;
-  /** The real Paddle sandbox price id the pricebook's PURCHASE_BOOK resolves this item against
-   *  (see the file header). */
-  priceId: string;
+  /** One-line position note. */
+  note: string;
+}
+
+/** The six module families, in display order. */
+export const BUNDLES: readonly Bundle[] = [
+  {
+    id: "compliance",
+    label: "Compliance",
+    note: "The compliance wedge: fail-closed RLS, WORM, an audit chain, evidence packs, access reviews, the AI risk register, a buyer trust page, and the framework + signing carves.",
+  },
+  {
+    id: "ai-production",
+    label: "AI-Production",
+    note: "The production-rigor layer for AI features: metering, guardrails, prompt versioning, and the CI eval harness.",
+  },
+  {
+    id: "local-first",
+    label: "Local-first",
+    note: "On-device inference, a privacy egress gate, and local vector search: data stays on device unless you explicitly enable a hosted transport.",
+  },
+  {
+    id: "agentic-dev",
+    label: "Agentic-Dev",
+    note: "The governed-agent kernel: typed agent/skill/rule schema, a guarded lifecycle, and sandboxed execution.",
+  },
+  {
+    id: "provenance",
+    label: "Provenance",
+    note: "Cryptographic provenance: detached signing, an append-only WORM audit chain, and per-tenant field encryption.",
+  },
+  {
+    id: "everything",
+    label: "Everything",
+    note: "The full catalog: every module family and every standalone module together.",
+  },
+] as const;
+
+export interface CatalogModule {
+  /** Slug: the registry id and the `/marketplace/modules/<id>` path segment. */
+  id: string;
+  label: string;
+  /** The families this module belongs to (1:N). Never lists `everything`. Empty = standalone. */
+  bundles: readonly BundleId[];
+  /** One-line benefit. */
   blurb: string;
 }
 
-/** Bundle id -> the pricebook's REAL Paddle price id (`purchases.ts`, W7 catalog big-bang rows —
- *  each grants the CANONICAL bundle entitlement id). A `Record` over the closed `BundleId` union,
- *  not an open index signature — every bundle MUST resolve, so a future 7th bundle added to
- *  `pricing.ts` without a row here is a compile error, not a silent `undefined` at checkout time. */
-const BUNDLE_PRICE_IDS: Record<BundleId, string> = {
-  compliance: "pri_01kyeczreqq58ze5en0p3f0jkc",
-  "ai-production": "pri_01kwwqa2rcxtn8pt3dr3jdnnf0",
-  "local-first": "pri_01kwwqa2xp3jp1qww2j5ya0meh",
-  "agentic-dev": "pri_01kwwqa332mweg8veaarkygbae",
-  provenance: "pri_01kwwqa3872cs4c53w8qhhz31k",
-  everything: "pri_01kyeczrjj0tzpwg7tv752e42s",
-};
+export const MODULES: readonly CatalogModule[] = [
+  // ---- Compliance ----
+  {
+    id: "field-crypto",
+    label: "Field encryption",
+    bundles: ["compliance", "ai-production", "local-first", "provenance"],
+    blurb:
+      "Per-tenant field encryption (HKDF-SHA256): each tenant's ciphertext is sealed under its own derived key, and a cross-tenant read fails to decrypt in the test suite, every run.",
+  },
+  {
+    id: "audit-worm",
+    label: "Audit chain + WORM",
+    bundles: ["compliance", "provenance"],
+    blurb:
+      "Append-only SHA-256 audit chain plus S3 Object-Lock WORM evidence storage. Tamper breaks the link.",
+  },
+  {
+    id: "retention-runner",
+    label: "Retention runner",
+    bundles: ["compliance"],
+    blurb:
+      "Policy-driven data retention on a schedule: expiry and legal-hold, enforced automatically.",
+  },
+  {
+    id: "alerting",
+    label: "Alert pipeline",
+    bundles: ["compliance"],
+    blurb:
+      "Deduped, rate-capped alert delivery with quiet hours and an audit trail: the SOC 2 CC7.2 alerting control your compliance program can point to.",
+  },
+  {
+    id: "access-review",
+    label: "Access reviews",
+    bundles: ["compliance"],
+    blurb:
+      "Audit-prep access-review campaigns: import a membership snapshot, record per-reviewee attested approve/revoke decisions into the WORM log, and close with every undecided reviewee flagged, never auto-approved.",
+  },
+  {
+    id: "risk-register",
+    label: "AI risk register",
+    bundles: ["compliance"],
+    blurb:
+      "Likelihood x impact risk scoring with a computed residual, operator overrides recorded as chained exceptions, crosswalks into your framework packs, and a treatment-plan evidence artifact.",
+  },
+  {
+    id: "trust-page",
+    label: "Trust page",
+    bundles: ["compliance"],
+    blurb:
+      "A self-contained trust page built from your evidence pack through allowlist-based redaction: host it anywhere to show prospects your compliance posture.",
+  },
+  // ---- AI-Production ----
+  {
+    id: "ai-meter",
+    label: "Token metering",
+    bundles: ["ai-production"],
+    blurb:
+      "PG-atomic token metering with per-tenant spend caps and a circuit breaker that trips before a runaway prompt loop reaches your invoice.",
+  },
+  {
+    id: "ai-evals",
+    label: "Eval harness",
+    bundles: ["ai-production"],
+    blurb:
+      "Regression-grade evals that run in CI, ahead of production. A model swap that regresses fails the build, catching it before a customer's session does.",
+  },
+  {
+    id: "guardrails",
+    label: "Guardrails",
+    bundles: ["ai-production"],
+    blurb:
+      "A single guardrail boundary between your app and the model: every call passes through the same PII redaction, moderation, and secret-shape gate.",
+  },
+  {
+    id: "prompt-registry",
+    label: "Prompt registry",
+    bundles: ["ai-production"],
+    blurb:
+      "Versioned prompts with rollout history: promote or roll back a prompt by moving an alias pointer, no redeploy required.",
+  },
+  // ---- Local-first ----
+  {
+    id: "local-store",
+    label: "Local vector store",
+    bundles: ["local-first", "agentic-dev"],
+    blurb:
+      "Hybrid FTS5 + sqlite-vec search that runs on disk, one file per tenant, with no vector-cloud vendor in the loop.",
+  },
+  // ---- Agentic-Dev ----
+  {
+    id: "agent-kernel",
+    label: "Agent kernel",
+    bundles: ["agentic-dev"],
+    blurb:
+      "Typed agent/skill/rule schema plus the guarded lifecycle state machine: a failed VERIFY reopens PLAN, and the only path to SHIP runs back through it.",
+  },
+  {
+    id: "agent-runner",
+    label: "Agent runner",
+    bundles: ["agentic-dev"],
+    blurb:
+      "Sandboxed, governed agent execution: spawn a headless coding agent into an isolated worktree and stream back an auditable transcript, with the child's environment built from scratch rather than inherited.",
+  },
+  {
+    id: "agent-trajectory",
+    label: "Agent trajectory",
+    bundles: ["agentic-dev"],
+    blurb:
+      "The governed run record: an append-only, replayable event log of every agent step, tool proposal, approval, and spend, with sensitive bodies referenced by digest, paused runs encrypted at rest, and a deterministic replay for scoring and audit.",
+  },
+  // ---- Compliance carves ----
+  {
+    id: "compliance-core",
+    label: "Compliance core",
+    bundles: ["compliance"],
+    blurb:
+      "The fail-closed compliance substrate: the RLS-force evidence collector, isolation tests, and the SOC 2 / HIPAA evidence-pack generator that maps live controls to named clauses.",
+  },
+  {
+    id: "frameworks-pack",
+    label: "Frameworks pack",
+    bundles: ["compliance"],
+    blurb:
+      "The framework control library: SOC 2, HIPAA, and EU AI Act mappings, the clause-to-control catalog the evidence packs render against.",
+  },
+  {
+    id: "oscal-spine",
+    label: "OSCAL spine",
+    bundles: ["compliance"],
+    blurb:
+      "OSCAL v1.2.2 expression for assessment plans, results, POA&Ms, merged catalogs, ISO 27001 statements of applicability, and the vendored NIST 800-53 crosswalk.",
+  },
+  {
+    id: "signing-primitive",
+    label: "Signing primitive",
+    bundles: ["compliance", "provenance"],
+    blurb:
+      "Detached Ed25519 + RFC-3161 signing over evidence bundles and audit roots: a verifiable signature a third party can check without your keys.",
+  },
+  // ---- AI-Production ----
+  {
+    id: "credits",
+    label: "Credits + metering",
+    bundles: ["ai-production"],
+    blurb:
+      "PG-atomic credit ledger with one integer denomination: grant, debit, and spend-cap credits across codegen and AI features, fail-closed on an empty balance (402).",
+  },
+  // ---- Local-first carves ----
+  {
+    id: "local-sync",
+    label: "Local sync engine",
+    bundles: ["local-first"],
+    blurb:
+      "Two-way offline sync: changesets, tombstones, a logical clock, and a reconcile pass with a convergence test, so the device catches up without a server round-trip.",
+  },
+  {
+    id: "local-inference",
+    label: "On-device inference",
+    bundles: ["local-first"],
+    blurb:
+      "The InferenceBackend seam over a MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use: inference on-device by default, hosted only by opt-in.",
+  },
+  {
+    id: "local-privacy",
+    label: "Privacy egress gate",
+    bundles: ["local-first"],
+    blurb:
+      "A default-deny egress boundary every payload crosses before it can leave the process: no host is reachable unless a typed allowlist names it, and leaving it empty makes egress zero.",
+  },
+  {
+    id: "tool-exec",
+    label: "Tool-exec gate",
+    bundles: ["agentic-dev"],
+    blurb:
+      "The governed tool-execution gate: a default-deny allowlist over Zod-strict argv schemas and execFile arg-arrays, so an agent reaches only the commands you explicitly allowed, never a shell.",
+  },
+  // ---- Standalone modules (in Everything, no family) ----
+  {
+    id: "org-controls",
+    label: "Org controls",
+    bundles: [],
+    blurb:
+      "WorkOS SSO plus the owner-gated multi-user surface: invite and manage account members, and the admin-write RLS layer that lets an owner mutate scoped tenant data under a dual-logged policy.",
+  },
+  {
+    id: "billing-orchestration",
+    label: "Billing orchestration",
+    bundles: [],
+    blurb:
+      "The multi-provider billing engine: Paddle, Stripe, LemonSqueezy, and Polar behind one BillingProvider port, with idempotent webhook fulfillment and a domain event stream.",
+  },
+  {
+    id: "ui-pro",
+    label: "UI Pro",
+    bundles: [],
+    blurb:
+      "The extended component layer on the open @caisson/ui base: data-dense matrices, credential strips, and the elevation + glow treatments the brand system ships.",
+  },
+] as const;
 
-/** À-la-carte module slug -> the pricebook's REAL Paddle price id (`purchases.ts`'s per-module REAL
- *  section, module-SKU wiring 2026-07-02). MUST match the same slug's row there EXACTLY — the cart
- *  passes this `priceId` to Paddle, and the webhook resolves that same id in PURCHASE_BOOK to grant
- *  the entitlement (ADR-0071/0113); a mismatch fails resolvePurchase closed and a module purchase
- *  grants NOTHING. Keyed by every id `pricing.ts`'s MODULE_PRICES carries; `moduleRealPriceId` below
- *  throws if a future module is added there without a matching row here — the runtime mirror of the
- *  `BUNDLE_PRICE_IDS` `Record<BundleId, string>` compile-time guard above (module ids aren't a
- *  closed union, so the check runs at catalog build time instead of at `tsc`). (catalog.test.ts pins
- *  the cross-package invariant against PURCHASE_BOOK.) */
-const MODULE_PRICE_IDS: Record<string, string> = {
-  // The four dropped edition-core rows' sandbox price ids (pri_01kwj6m31f…, pri_01kwj6m55y…,
-  // pri_01kwj6m5mz…, pri_01kwj6m6cb…) are retired with their rows (ADR-0238) — the products sit
-  // orphaned in the Paddle SANDBOX, which never ports to production (ADR-0227).
-  "field-crypto": "pri_01kwj6m3cwez98t45jzwsqb250",
-  "audit-worm": "pri_01kwj6m3mjq4rpv7918rhfhrhw",
-  "retention-runner": "pri_01kwj6m3x1cw1k54tcdhsc6pgj",
-  "ai-meter": "pri_01kwj6m45zeqyxgad3f32x1b30",
-  "ai-evals": "pri_01kwj6m4d3npk8sszerx7fek7w",
-  guardrails: "pri_01kwj6m4n105qe80fapw9sk5xc",
-  "prompt-registry": "pri_01kwj6m4whyw1stbej2qk8q0bg",
-  alerting: "pri_01kwj6m5da9ay3z85b6qwtjcpe",
-  "local-store": "pri_01kwj6m5w3s4fmvseap7zmp5yf",
-  "agent-kernel": "pri_01kwj6m63qpt52489tq5a3v6q3",
-  "agent-runner": "pri_01kwj71a53hycbspsfv8pck5vc",
-  // agent-trajectory joined the catalog 2026-07-18 (agent-runtime wave) — created via
-  // tools/paddle-catalog-recreate.ts against the sandbox, marker custom_data.caisson_id.
-  "agent-trajectory": "pri_01kxvpjjx55q4cf21cwjbjhwv5",
-  // The compliance-gap trio joined the catalog 2026-07-20 (SKU-arming wave) — created via
-  // tools/paddle-catalog-recreate.ts against the sandbox, marker custom_data.caisson_key.
-  "access-review": "pri_01ky0fgqdwpf6yaxzeef03q88e",
-  "risk-register": "pri_01ky0fgqk5d855hfjdngjrvj89",
-  "trust-page": "pri_01ky0fgqqzmfbm2406q4rys44e",
-  // Twelve rows: the 11 carve/standalone SKUs from the W7 catalog big-bang, each matched
-  // one-for-one against the pricebook's W7 PURCHASE_BOOK rows, plus the later oscal-spine carve.
-  "compliance-core": "pri_01kwwqa0k69m965tx8hgsv904h",
-  "frameworks-pack": "pri_01kwwqa0rkz3etv2yfd6c7jjad",
-  "oscal-spine": "pri_01kye9597z46149qg5xfrqxybk",
-  "signing-primitive": "pri_01kwwqa0y1hn63taahdh7y03vf",
-  credits: "pri_01kwwqa1413c33yfsrvjb4r34a",
-  "local-sync": "pri_01kwwqa1b33ycmh114440xc6re",
-  "local-inference": "pri_01kwwqa1gvkpj7g0jfna7h2qcr",
-  "local-privacy": "pri_01kwwqa1p152hskczw7daszzgn",
-  "tool-exec": "pri_01kwwqa1v2gm7cr5g1rpzyk522",
-  "org-controls": "pri_01kwwqa20m42dmedx9mprk085k",
-  "billing-orchestration": "pri_01kwwqa266p6smw4yaanxg1n5j",
-  "ui-pro": "pri_01kwwqa2c799fpe1af76p75r7r",
-};
-
-function bundleCartId(slug: string): string {
-  return `bundle:${slug}`;
+/** Every module that is a member of `bundle`, in catalog order. */
+export function modulesByBundle(bundle: BundleId): readonly CatalogModule[] {
+  return MODULES.filter((m) => m.bundles.includes(bundle));
 }
 
-function moduleCartId(slug: string): string {
-  return `module:${slug}`;
+/** A family's display record by id. */
+export function bundleById(id: BundleId): Bundle | undefined {
+  return BUNDLES.find((b) => b.id === id);
 }
 
-function moduleRealPriceId(moduleId: string): string {
-  const priceId = MODULE_PRICE_IDS[moduleId];
-  if (!priceId) {
-    throw new Error(
-      `catalog.ts: no Paddle price id wired in MODULE_PRICE_IDS for module "${moduleId}"`,
-    );
-  }
-  return priceId;
+// ---- The families × capabilities matrix — SINGLE SOURCE (ADR-0195) ----
+
+/** A comparison-matrix row — structurally the kit's `SkuMatrixRow`, kept UI-decoupled here. */
+export interface SkuRow {
+  label: string;
+  /** One cell per column: `true` = included, `false` = not, or a display string. */
+  cells: readonly (boolean | string)[];
 }
 
-/** The six bundles as cart-ready catalog items, each carrying its real Paddle price id. */
-export const BUNDLE_CATALOG: readonly CatalogItem[] = BUNDLE_PRICES.map((p) => {
-  if (p.amount === null) {
-    throw new Error(`catalog.ts: bundle "${p.id}" has no committed amount`);
-  }
-  return {
-    id: bundleCartId(p.id),
-    kind: "bundle" as const,
-    label: p.label,
-    amount: p.amount,
-    priceId: BUNDLE_PRICE_IDS[p.id],
-    blurb: p.note,
-  };
-});
+/** Matrix columns — the five families, in display order (Everything holds every module by
+ *  construction, so a column for it would be all-true noise). */
+export const SKU_COLUMNS = [
+  "Compliance",
+  "AI-Production",
+  "Local-first",
+  "Agentic-Dev",
+  "Provenance",
+] as const;
 
-/** Every à-la-carte module as a cart-ready catalog item. Post-W7 every sellable SKU is
- *  Paddle-wired, so this is a straight map — a module added to `pricing.ts` without a
- *  `MODULE_PRICE_IDS` row fails the build via `moduleRealPriceId`'s fail-closed throw (never a
- *  silently unpurchasable card). */
-export const MODULE_CATALOG: readonly CatalogItem[] = MODULE_PRICES.map(
-  (m) => ({
-    id: moduleCartId(m.id),
-    kind: "module" as const,
-    label: m.label,
-    amount: m.amount,
-    priceId: moduleRealPriceId(m.id),
-    blurb: m.blurb,
-  }),
-);
-
-/** Every Paddle price id the live catalog can sell — the hydration allowlist for
- *  `lib/cart.ts` `pruneCart` (a persisted cart line carrying a retired id — the four ADR-0238
- *  edition-core rows, the 4 archived editions, or the legacy $1,499 bundle — is dropped before it
- *  can reach checkout). */
-export const LIVE_PRICE_IDS: ReadonlySet<string> = new Set(
-  [...BUNDLE_CATALOG, ...MODULE_CATALOG].map((c) => c.priceId),
-);
-
-/** The cart-ready catalog item for a bundle slug (`compliance`, `everything`, …). */
-export function bundleCatalogItem(slug: string): CatalogItem | undefined {
-  return BUNDLE_CATALOG.find((c) => c.id === bundleCartId(slug));
-}
-
-/** The cart-ready catalog item for a module slug (`field-crypto`, `ai-meter`, …). */
-export function moduleCatalogItem(slug: string): CatalogItem | undefined {
-  return MODULE_CATALOG.find((c) => c.id === moduleCartId(slug));
-}
-
-/** Project a catalog item down to the `CartItem` shape the cart persists (drops `blurb`). */
-export function toCartItem(item: CatalogItem): CartItem {
-  return {
-    id: item.id,
-    priceId: item.priceId,
-    label: item.label,
-    amount: item.amount,
-    kind: item.kind,
-  };
-}
+/** The capability rows. A cell is an INCLUSION claim; base capabilities (Apache-2.0, ship with
+ *  everything, incl. fail-closed RLS) live on the one base row. */
+export const SKU_FEATURE_ROWS: readonly SkuRow[] = [
+  {
+    label: "Postgres base: fail-closed RLS, auth (Apache-2.0)",
+    cells: [true, true, true, true, true],
+  },
+  {
+    label: "RLS-force evidence collector + isolation tests",
+    cells: [true, false, false, false, false],
+  },
+  { label: "WORM evidence store", cells: [true, false, false, false, true] },
+  {
+    label: "Append-only audit chain",
+    cells: [true, false, false, false, true],
+  },
+  {
+    label: "Per-tenant field encryption",
+    cells: [true, true, true, false, true],
+  },
+  {
+    label: "Evidence-pack generator + framework mappings",
+    cells: [true, false, false, false, false],
+  },
+  {
+    label: "Detached Ed25519 + RFC-3161 evidence signing",
+    cells: [true, false, false, false, true],
+  },
+  {
+    label: "Alert pipeline + retention runner",
+    cells: [true, false, false, false, false],
+  },
+  {
+    label: "Token metering · spend caps · credit ledger",
+    cells: [false, true, false, false, false],
+  },
+  {
+    label: "Versioned prompts + guardrails",
+    cells: [false, true, false, false, false],
+  },
+  {
+    label: "CI eval harness",
+    cells: [false, true, false, false, false],
+  },
+  {
+    label: "On-device vector search",
+    cells: [false, false, true, true, false],
+  },
+  {
+    label: "On-device inference + offline sync",
+    cells: [false, false, true, false, false],
+  },
+  {
+    label: "Privacy gate (no-egress)",
+    cells: [false, false, true, false, false],
+  },
+  {
+    label: "Governed-agent kernel + sandboxed runner + tool-exec gate",
+    cells: [false, false, false, true, false],
+  },
+];

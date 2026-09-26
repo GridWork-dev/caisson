@@ -14,9 +14,6 @@
     "provenance",
     "everything",
     "---Tooling---",
-    "cli",
-    "---Policies---",
-    "refunds",
-    "licensing"
+    "cli"
   ]
 }

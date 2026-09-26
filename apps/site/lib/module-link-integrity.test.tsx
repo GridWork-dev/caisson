@@ -1,7 +1,7 @@
 // Regression guard for G5 (buyer-lifecycle audit, 2026-07-07): three of five bundle/persona pages
-// gated a module member's `<Link>` on `MODULE_PRICES.find(id)` truthiness instead of on
-// `module-pages.ts` (the real depth-page route set) — a priced-but-pageless module rendered as a
-// clickable card that 404s, hitting the flagship Compliance page mid-evaluation.
+// gated a module member's `<Link>` on catalog membership instead of on `module-pages.ts` (the real
+// depth-page route set) — a pageless module rendered as a clickable card that 404s, hitting the
+// flagship Compliance page mid-evaluation.
 // `routes.test.ts` only walks the static MARKETING_ROUTES registry; it never renders a page or
 // follows a member-list-derived link, so that class slipped through. This test renders the ACTUAL
 // page output (not a re-derivation of the gating logic) and walks every internal module link it
@@ -11,7 +11,6 @@ import { describe, expect, test } from "bun:test";
 import type { ComponentType } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { CartProvider } from "@/components/cart-provider";
 import CompliancePage from "@/app/(marketing)/compliance/page";
 import AiProductionPage from "@/app/(marketing)/ai-kit/page";
 import LocalFirstPage from "@/app/(marketing)/local-first/page";
@@ -37,11 +36,7 @@ const BUNDLE_PAGES_UNDER_TEST: ReadonlyArray<
 describe("bundle/persona pages — every rendered module link resolves to a real depth page (G5)", () => {
   for (const [path, Page] of BUNDLE_PAGES_UNDER_TEST) {
     test(`${path} renders no dead /marketplace/modules/<slug> link`, () => {
-      const html = renderToStaticMarkup(
-        <CartProvider>
-          <Page />
-        </CartProvider>,
-      );
+      const html = renderToStaticMarkup(<Page />);
       const hrefs = [
         ...html.matchAll(/href="\/marketplace\/modules\/(?<slug>[a-z0-9-]+)"/g),
       ]

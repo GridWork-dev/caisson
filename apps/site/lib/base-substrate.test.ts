@@ -9,13 +9,13 @@ import {
   BASE_SUBSTRATE_PACKAGES,
   baseSubstrateList,
 } from "./base-substrate";
-import { MODULE_PRICES } from "./pricing";
+import { MODULES } from "./catalog";
 
 // The honesty guard for the open-base SOT. The bug this exists to prevent: a prose list once
 // claimed `credits` (a paid $149 module) was part of the free Apache-2.0 base. The binding truth is
 // the SPDX `license` field in each package's package.json — so assert that directly (a commercial
 // package that is NOT a sellable module, e.g. provenance/everything/brand, would pass the
-// MODULE_PRICES check but fail this one). apps/site/lib -> repo root is three levels up.
+// MODULES check but fail this one). apps/site/lib -> repo root is three levels up.
 const REPO_ROOT = join(import.meta.dir, "..", "..", "..");
 describe("base substrate SOT", () => {
   test("every base package is SPDX Apache-2.0 on disk", () => {
@@ -124,7 +124,7 @@ describe("base substrate SOT", () => {
   });
 
   test("no base package is a commercial SKU", () => {
-    const commercial = new Set(MODULE_PRICES.map((m) => m.id));
+    const commercial = new Set(MODULES.map((m) => m.id));
     for (const p of BASE_PACKAGES) {
       expect(commercial.has(p)).toBe(false);
     }

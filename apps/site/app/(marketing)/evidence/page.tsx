@@ -271,8 +271,8 @@ function FeatureGridSafe() {
           <Button href="mailto:security@caisson.sh" external variant="primary">
             security@caisson.sh
           </Button>
-          <Button href="/stack-fit" variant="ghost">
-            Does it fit my stack?
+          <Button href="/docs/getting-started" variant="ghost">
+            Try it on your stack
           </Button>
         </div>
       </div>

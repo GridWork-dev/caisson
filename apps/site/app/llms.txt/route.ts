@@ -2,8 +2,6 @@ import { llms } from "fumadocs-core/source";
 
 import { source } from "@/lib/source";
 import { BASE_PACKAGES, basePackagesScoped } from "@/lib/base-substrate";
-import { COMPARISONS } from "@/lib/comparisons";
-import { GLOSSARY_TERMS } from "@/lib/glossary";
 import { MODULE_PAGES } from "@/lib/module-pages";
 import { SECURITY_LLMS_SUMMARY } from "@/lib/security-copy";
 import { WRITING_PIECES } from "@/lib/writing";
@@ -38,8 +36,8 @@ function agentGovernanceModules(): ReadonlyArray<
 
 // Agent-readable index (specs/03 §3, ADR-0237 F8). Composed, not docs-only: a Caisson preamble
 // carries the marketplace hub + the data-driven MODULE_PAGES spokes (the depth routes fumadocs'
-// docs index never covers), so an LLM reading llms.txt learns the commerce + module routes that
-// exist alongside the docs. The Fumadocs docs tree follows, its leading H1 demoted one level so
+// docs index never covers), so an LLM reading llms.txt learns the module routes that exist
+// alongside the docs. The Fumadocs docs tree follows, its leading H1 demoted one level so
 // the composed file has a single top-level title. MODULE_PAGES is the same record the sitemap and
 // the depth routes render — a catalog change lands here with no second edit.
 export const dynamic = "force-static";
@@ -48,38 +46,25 @@ const PREAMBLE = [
   "# Caisson",
   "",
   // The summary line is what an answer engine reads to CLASSIFY the product, so it has to name
-  // both categories Caisson actually sells into — compliance infrastructure and governance for AI
-  // coding agents. Every capability named here is a shipped module with a page below; the wording
-  // is the honest one, not the keyword-dense one (ADR-0080).
-  "> Compliance-grade infrastructure and AI agent governance for regulated SaaS and AI-generated code: fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, and a governed-agent kernel with a sandboxed runner and a default-deny tool-execution gate — shipped as a composable open-core base plus six commercial bundles.",
+  // both categories Caisson covers — compliance infrastructure and governance for AI coding agents.
+  // Every capability named here is a shipped module with a page below; the wording is the honest
+  // one, not the keyword-dense one (ADR-0080).
+  "> Compliance-grade infrastructure and AI agent governance for regulated SaaS and AI-generated code: fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, and a governed-agent kernel with a sandboxed runner and a default-deny tool-execution gate — shipped as a composable base plus six module families.",
   "",
   "## Licensing",
   "",
-  // Counted and named from lib/base-substrate.ts, the same const the /legal/license page and the
-  // marketing copy read, so this can never claim a package set the site contradicts. Note the
-  // distinction the license page draws: a couple of packages outside the named Base substrate are
-  // Apache-2.0 too, so this says "the Base substrate is N packages", not "N packages are Apache".
-  `Open-core. The ${BASE_PACKAGES.length}-package Base substrate is Apache-2.0 — free to use, read, and redistribute under those terms: ${basePackagesScoped()}. The six bundles and the à-la-carte modules built on top of it are commercial, sold as a perpetual license with a 12-month updates window.`,
-  "",
-  "- [License terms](/legal/license): which packages are Apache-2.0, which are commercial, and what each grant allows.",
-  "- [Licensing, updates and renewals](/docs/licensing): what a perpetual license includes and what renewing costs.",
+  // Counted and named from lib/base-substrate.ts, the same const the marketing copy reads, so this
+  // can never claim a package set the site contradicts.
+  `The ${BASE_PACKAGES.length}-package Base substrate is Apache-2.0 — free to use, read, and redistribute under those terms: ${basePackagesScoped()}.`,
   "",
   "## Documentation",
   "",
   "- [Documentation](/docs): the full docs tree, indexed below.",
   "- [Getting started](/docs/getting-started): install and first run.",
   "",
-  "## Buying",
-  "",
-  // CONTENT TRUTH: /cart and /dashboard sit behind a Cloudflare Access team login (verified live
-  // 2026-08-12), so no visitor outside the team can complete a purchase. Prices ARE published and
-  // committed (ADR-0403), so this states both facts rather than implying a self-serve path.
-  "Prices are published and committed on the marketplace pages below. Checkout on caisson.sh is currently restricted to the Caisson team, so there is no public self-serve purchase path today — purchase, licensing, and delivery questions go to support@caisson.sh (see /support).",
-  "",
   "## Marketplace",
   "",
-  "- [Marketplace](/marketplace): Every bundle and module on one surface — filter, compare, and build a stack.",
-  "- [Plans and pricing](/marketplace/plans): Subscription plans alongside the one-time bundles and modules.",
+  "- [Marketplace](/marketplace): Every module family and module on one surface, each with its docs and a live in-browser demo.",
   "",
   "## Security",
   "",
@@ -97,12 +82,6 @@ const PREAMBLE = [
     (m) => `- [${m.slug}](/marketplace/modules/${m.slug}): ${m.heroOneLiner}`,
   ),
   "",
-  "## Comparisons",
-  "",
-  ...COMPARISONS.map(
-    (c) => `- [Caisson vs ${c.competitor}](/compare/${c.slug}): ${c.category}.`,
-  ),
-  "",
   "## Writing",
   "",
   ...WRITING_PIECES.map((p) => `- [${p.title}](/writing/${p.slug})`),
@@ -112,11 +91,6 @@ const PREAMBLE = [
   ...MODULE_PAGES.map(
     (m) => `- [${m.slug}](/marketplace/modules/${m.slug}): ${m.heroOneLiner}`,
   ),
-  "",
-  "## Glossary",
-  "",
-  "- [Glossary](/glossary): Definitions of the compliance, security, licensing, and AI-infrastructure terms Caisson ships against.",
-  ...GLOSSARY_TERMS.map((t) => `- [${t.term}](/glossary/${t.slug})`),
 ].join("\n");
 
 export function GET() {

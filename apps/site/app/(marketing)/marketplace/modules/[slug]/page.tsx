@@ -6,21 +6,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Card, Hero, MobileBuyBar, Section, StatusChip } from "@/components";
-import { AddToCartButton } from "@/components/add-to-cart-button";
+import { Card, Hero, Section, StatusChip } from "@/components";
+import { EntryLinks } from "@/components/entry-links";
 import { MediaCarousel } from "@/components/media-carousel";
 import { PageSections } from "@/components/page-sections";
 import { TrackView } from "@/components/track-view";
 import { mediaSlides } from "@/lib/media-manifest";
-import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
-import { bundleLabel } from "@/components/marketplace";
-import { GLOSSARY_TERMS } from "@/lib/glossary";
+import { bundleLabel, bundlePagePath } from "@/components/marketplace";
+import { entryDocsHrefs } from "@/lib/entry-docs";
 import { breadcrumb, faqPage, moduleSoftwareApplication } from "@/lib/jsonld";
 import { JsonLdScript } from "@/lib/jsonld-script";
+import { entryByViewId } from "@/lib/marketplace-surface";
 import { buildMetadata } from "@/lib/metadata";
 import { MODULE_PAGES, type ModulePageRecord } from "@/lib/module-pages";
 import type { PageSection } from "@/lib/page-sections";
-import { formatUsd, MODULE_PRICES, type ModulePrice } from "@/lib/pricing";
+import { MODULES, type CatalogModule } from "@/lib/catalog";
 import styles from "./depth.module.css";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -29,8 +29,8 @@ function findRecord(slug: string): ModulePageRecord | undefined {
   return MODULE_PAGES.find((r) => r.slug === slug);
 }
 
-function findPrice(slug: string): ModulePrice | undefined {
-  return MODULE_PRICES.find((m) => m.id === slug);
+function findModule(slug: string): CatalogModule | undefined {
+  return MODULES.find((m) => m.id === slug);
 }
 
 /** The root layout's title template appends " · Caisson" — strip a record's own brand suffix. */
@@ -98,7 +98,7 @@ function bodySections(record: ModulePageRecord): readonly PageSection[] {
       // renders `record.artifact` as a framed CodeBlock, so the carousel would otherwise repeat it.
       kind: "custom",
       node: (
-        <Section eyebrow="Media" title="See it work">
+        <Section id="demo" eyebrow="Media" title="See it work">
           <MediaCarousel
             slides={mediaSlides("module", record.slug, {
               omitCodeArtifact: true,
@@ -124,116 +124,77 @@ function bodySections(record: ModulePageRecord): readonly PageSection[] {
   ];
 }
 
-/** The sticky buy rail (ADR-0237 F2): type chip, committed price, add-to-cart, the
- *  entitlement-honest bundle cross-sell, and curated glossary reading. */
-function BuyRail({
-  record,
-  price,
-}: {
-  record: ModulePageRecord;
-  price: ModulePrice;
-}) {
-  const catalogItem = moduleCatalogItem(price.id);
-  const related = record.relatedGlossary
-    .map((slug) => GLOSSARY_TERMS.find((t) => t.slug === slug))
-    .filter((t) => t !== undefined);
-
+/** The sticky rail (ADR-0237 F2): type chip, the module's docs + live demo, and its families. */
+function ModuleRail({ mod }: { mod: CatalogModule }) {
+  const entry = entryByViewId(`module:${mod.id}`);
   return (
-    <aside className={styles.rail} aria-label={`Buy ${price.label}`}>
+    <aside className={styles.rail} aria-label={`${mod.label} links`}>
       <Card accent>
         <div className={styles.railCard}>
           <div style={{ display: "flex", gap: "var(--cs-space-2)" }}>
             <StatusChip label="Module" />
-            <StatusChip label="One-time" tone="success" dot />
           </div>
-          <div>
-            <div className={styles.railPrice}>{formatUsd(price.amount)}</div>
-            <p className="cs-footnote">
-              One-time, perpetual license. Own the source.
-            </p>
-          </div>
-          {catalogItem && (
-            <AddToCartButton item={toCartItem(catalogItem)} variant="primary" />
-          )}
-          {/* record.sells.note is authored per-module and always already states the
-              bundle/price relationship (or standalone-only status) — a second,
-              auto-generated "Or composed into..." line here just repeated the same
-              fact back-to-back on every module page (visual-audit remediation). */}
-          <p className="cs-footnote">{record.sells.note}</p>
-          {related.length > 0 && (
-            <div>
-              <div
-                className="cs-status"
-                style={{ marginBottom: "var(--cs-space-2)" }}
-              >
-                Related reading
-              </div>
-              <ul className={styles.railList}>
-                {related.map((t) => (
-                  <li key={t.slug}>
-                    <Link className="cs-link" href={`/glossary/${t.slug}`}>
-                      {t.term}
+          <EntryLinks
+            label={mod.label}
+            docsHref={entryDocsHrefs()[`module:${mod.id}`]}
+            // This page frames the demo itself, so the rail jumps to it instead of self-linking.
+            demoHref={entry?.demoHref ? "#demo" : null}
+          />
+          <p className="cs-footnote">
+            {mod.bundles.length === 0 ? (
+              "Standalone: composes onto the base on its own."
+            ) : (
+              <>
+                Part of{" "}
+                {mod.bundles.map((b, i) => (
+                  <span key={b}>
+                    {i > 0 ? ", " : ""}
+                    <Link className="cs-link" href={bundlePagePath(b)}>
+                      {bundleLabel(b)}
                     </Link>
-                  </li>
+                  </span>
                 ))}
-              </ul>
-            </div>
-          )}
+                .
+              </>
+            )}
+          </p>
         </div>
       </Card>
     </aside>
   );
 }
 
-/** The condensed sticky mobile counterpart to `BuyRail` (ADR-0242): same price + label + Add-to-cart
- *  action, reused as-is — not reinvented — so the two surfaces can never drift out of agreement. The
- *  full card above still renders at its usual position for the bundle cross-sell and related
- *  reading; this bar is the persistent reminder that stays visible at every scroll position. */
-function MobileBuyBarSection({ price }: { price: ModulePrice }) {
-  const catalogItem = moduleCatalogItem(price.id);
-  if (!catalogItem) return null;
-  return (
-    <MobileBuyBar
-      label={price.label}
-      price={formatUsd(price.amount)}
-      action={
-        <AddToCartButton item={toCartItem(catalogItem)} variant="primary" />
-      }
-    />
-  );
-}
-
 export default async function ModuleDepthPage(props: Params) {
   const { slug } = await props.params;
   const record = findRecord(slug);
-  const price = findPrice(slug);
-  if (!record || !price) notFound();
+  const mod = findModule(slug);
+  if (!record || !mod) notFound();
 
   const breadcrumbLd = breadcrumb([
     { name: "Home", path: "/" },
     { name: "Marketplace", path: "/marketplace" },
     { name: "Modules", path: "/marketplace?type=modules" },
-    { name: price.label, path: `/marketplace/modules/${price.id}` },
+    { name: mod.label, path: `/marketplace/modules/${mod.id}` },
   ]);
-  const appLd = moduleSoftwareApplication(price, {
+  const appLd = moduleSoftwareApplication(mod, {
     description: record.metaDescription,
   });
   const faqLd = faqPage(record.faq);
 
   return (
     <>
-      <TrackView item={`module:${price.id}`} />
+      <TrackView item={`module:${mod.id}`} />
       <JsonLdScript data={breadcrumbLd} />
       <JsonLdScript data={appLd} />
       <JsonLdScript data={faqLd} />
 
       <Hero
         eyebrow={
-          price.bundles.length === 0
+          mod.bundles.length === 0
             ? "Module · Standalone"
-            : `Module · ${bundleLabel(price.bundles[0]!)}`
+            : `Module · ${bundleLabel(mod.bundles[0]!)}`
         }
-        title={price.label}
+        title={mod.label}
         lede={record.heroOneLiner}
         ctas={
           <nav aria-label="Breadcrumb" className="cs-footnote">
@@ -245,7 +206,7 @@ export default async function ModuleDepthPage(props: Params) {
               Modules
             </Link>
             {" / "}
-            <span aria-current="page">{price.label}</span>
+            <span aria-current="page">{mod.label}</span>
           </nav>
         }
       />
@@ -255,12 +216,8 @@ export default async function ModuleDepthPage(props: Params) {
           <div>
             <PageSections sections={bodySections(record)} />
           </div>
-          <BuyRail record={record} price={price} />
+          <ModuleRail mod={mod} />
         </div>
-      </div>
-
-      <div className={styles.mobileBarWrap}>
-        <MobileBuyBarSection price={price} />
       </div>
     </>
   );

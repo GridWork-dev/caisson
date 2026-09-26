@@ -3,7 +3,7 @@
 // (`/compliance`, `/ai-kit`, `/local-first`, `/agentic-dev`, `/provenance`) reads its hero copy,
 // member list, and FAQ from here so the same content powers both the standalone SEO page and the
 // marketplace card viewer (`components/preview-dialog.tsx`). The `everything` bundle has no
-// standalone page (its buy path is the marketplace surface); its entry exists only to power the viewer.
+// standalone page (it lives on the marketplace surface); its entry exists only to power the viewer.
 //
 // SCOPE — what lives here vs. what stays in the page: this record holds the content the pop-out
 // REUSES (hero, definition, members, faq) plus the page metadata, so a claim never drifts between
@@ -13,7 +13,7 @@
 // data record would trade byte-identical SEO output for zero reuse. Keep every claim true-to-built
 // (ADR-0082) and V1-live (ADR-0237 rider 2).
 
-import { type BundleId, bundlePrice } from "./pricing";
+import type { BundleId } from "./catalog";
 
 // Spelled-out counts for composition headings (e.g. "Seven composed packages.") — small, fixed
 // vocabulary matching the site's existing voice ("Fourteen packages, one bundle.", "Five technical
@@ -44,9 +44,9 @@ export function spellCount(n: number): string {
   return COUNT_WORDS[n] ?? String(n);
 }
 
-/** One composed member of a bundle — the id (a MODULE_PRICES id or a base-package slug), its display
+/** One composed member of a bundle — the id (a MODULES id or a base-package slug), its display
  *  name as the page renders it, and the customer-facing one-liner. Priced/linked state is derived by
- *  the page (a member with a MODULE_PRICES row shows its price and links to its depth page). */
+ *  the page (a member with a MODULES row shows its price and links to its depth page). */
 export interface BundlePageMember {
   id: string;
   name: string;
@@ -181,19 +181,19 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       {
         question: "Which packages does the bundle actually compose?",
         answer:
-          "Ten direct workspace dependencies are wired at runtime and re-exported through the bundle's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. compliance-core and frameworks-pack both depend on and re-export oscal-spine, so the OSCAL package is a real shared dependency in that runtime graph. Access reviews, the AI risk register, and the trust-page generator are three further standalone modules in the same purchase. Nothing on this page is a manifest claim without code behind it.",
+          "Ten direct workspace dependencies are wired at runtime and re-exported through the bundle's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. compliance-core and frameworks-pack both depend on and re-export oscal-spine, so the OSCAL package is a real shared dependency in that runtime graph. Access reviews, the AI risk register, and the trust-page generator are three further standalone modules in the same bundle. Nothing on this page is a manifest claim without code behind it.",
       },
       {
         question: "Do I own the source?",
         answer:
-          "Yes. The one-time Compliance license is perpetual, you own the source for the base, the composed packages, and the evidence-pack generator, and it includes 12 months of published framework-mapping updates from your purchase date. An optional Compliance Updates subscription keeps those updates flowing automatically after that; a per-entitlement renewal is the other way to extend the window.",
+          "Yes. The code is Apache-2.0, and framework-mapping updates ship as ordinary npm releases.",
       },
     ],
   },
   {
     slug: "ai-production",
     metaTitle: "AI Production Kit",
-    metaDescription: `A metered infer()/embed() gateway on Vercel AI SDK v7: Postgres-atomic token metering with a per-tenant circuit breaker, typed input/output guardrails, and versioned prompts, composed behind one chokepoint. ${bundlePrice("ai-production")} once, own the source.`,
+    metaDescription: `A metered infer()/embed() gateway on Vercel AI SDK v7: Postgres-atomic token metering with a per-tenant circuit breaker, typed input/output guardrails, and versioned prompts, composed behind one chokepoint. Own the source.`,
     hero: {
       eyebrow: "AI-Production bundle",
       title: "One gateway between your code and the model.",
@@ -247,11 +247,6 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     ],
     faq: [
       {
-        question: "How many developers does the license cover?",
-        answer:
-          "Everyone at your organization. The license is per purchasing entity, any personnel you authorize can work with the source. No per-seat pricing, no seat counting. For contrast: a similarly priced competitor tier caps at 5 developer seats (Supastarter Startup, $799, verified 2026-07-10).",
-      },
-      {
         question: "What does token metering actually prevent?",
         answer:
           "A runaway loop, a misconfigured agent, or a single burst of traffic can multiply your API invoice by 10x before you see it. Usage writes in the same Postgres transaction as the result (an atomic increment), so concurrent calls can never double-count or drop a charge. Crossing the cap opens the circuit breaker and returns HTTP 402 before the next model call fires.",
@@ -271,7 +266,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
   {
     slug: "local-first",
     metaTitle: "Local-first AI",
-    metaDescription: `Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, offline sync, and hybrid sqlite-vec + FTS5 search into one Caisson bundle (${bundlePrice("local-first")} one-time, own the source).`,
+    metaDescription: `Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, offline sync, and hybrid sqlite-vec + FTS5 search into one Caisson bundle (own the source).`,
     hero: {
       eyebrow: "Local-first AI · Own the source",
       title: "Your data stays on the device by default.",
@@ -325,11 +320,6 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     ],
     faq: [
       {
-        question: "How many developers does the license cover?",
-        answer:
-          "Everyone at your organization. The license is per purchasing entity, any personnel you authorize can work with the source. No per-seat pricing, no seat counting. For contrast: a similarly priced competitor tier caps at 5 developer seats (Supastarter Startup, $799, verified 2026-07-10).",
-      },
-      {
         question: 'Does "own the source" rule out hosted inference?',
         answer:
           "No. The compute seam supports opt-in rented transports (OpenRouter, Azure OpenAI, and AWS Bedrock) behind the same InferenceBackend interface used on-device. They are off by default; the privacy policy's allowlist is the only way any of those hosts becomes reachable.",
@@ -341,10 +331,9 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       },
       {
         question:
-          "Can I buy just the vector store instead of the whole bundle?",
-        // ponytail: the $99/$249/$199 figures are MODULE prices (single-sourced checks cover
-        // metaDescription; the review scoped FAQ interpolation to bundle-price literals only).
-        answer: `Yes. @caisson/local-store is also sold standalone for $99, as are on-device inference ($249), the sync engine ($199), and the privacy gate ($99). The full Local-first AI bundle (all seven composed packages, own the source) is ${bundlePrice("local-first")} one-time.`,
+          "Can I use just the vector store instead of the whole bundle?",
+        answer:
+          "Yes. @caisson/local-store also works standalone, as do on-device inference, the sync engine, and the privacy gate. The full Local-first AI bundle composes all seven packages.",
       },
     ],
   },
@@ -400,9 +389,9 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
           "@caisson/agent-runner spawns the agent CLI as a detached subprocess in an isolated worktree with a child environment built from scratch, never a spread of your process env, plus a fixed non-secret passthrough allowlist and only the target provider's key. Every run streams a durable .jsonl transcript and resolves to a structured report of tool calls, files touched, and the final result.",
       },
       {
-        question: "Can I buy just the kernel or just the runner?",
+        question: "Can I use just the kernel or just the runner?",
         answer:
-          "Yes. Every member of the Agentic-Dev bundle is also purchasable à la carte onto your existing Caisson base: the agent kernel, the agent runner, the trajectory log, local hybrid memory (also a member of the Local-first bundle), and the tool-exec gate.",
+          "Yes. Every member of the Agentic-Dev bundle also composes on its own onto your existing Caisson base: the agent kernel, the agent runner, the trajectory log, local hybrid memory (also a member of the Local-first bundle), and the tool-exec gate.",
       },
       {
         question: "Does the runner or the kernel ever hold a credential?",
@@ -467,16 +456,16 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     slug: "everything",
     metaTitle: "Everything",
     metaDescription:
-      "The Everything bundle: every Caisson bundle and every à-la-carte module, composed on the same audited base, in one perpetual purchase.",
+      "The Everything bundle: every Caisson module family and every module, composed on the same audited base.",
     hero: {
       eyebrow: "Everything bundle",
-      title: "The whole catalog, one purchase.",
-      lede: "The Everything bundle is exactly what it says: every commercial bundle and every à-la-carte module, the full sellable catalog, composed on the same audited base.",
+      title: "The whole catalog, one composition.",
+      lede: "The Everything bundle is exactly what it says: every module family and every module, the full catalog, composed on the same audited base.",
     },
     definition:
-      "The Everything bundle is the whole commercial catalog: every bundle and every à-la-carte module, composed on the same audited base, in one perpetual purchase. Only the private brand layer is excluded.",
-    // The Everything bundle is the whole catalog by construction; the pop-out renders its catalog
-    // savings ladder rather than a fixed member list, so this stays empty.
+      "The Everything bundle is the whole catalog: every module family and every module, composed on the same audited base. Only the private brand layer is excluded.",
+    // The Everything bundle is the whole catalog by construction; the pop-out renders a catalog
+    // summary rather than a fixed member list, so this stays empty.
     members: [],
     faq: [],
   },

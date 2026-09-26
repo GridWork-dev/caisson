@@ -9,13 +9,12 @@
 //
 // What it covers: drives a REAL Chromium browser (not a fetch) at a representative slice of the
 // real router tree — home, the marketplace hub, the /pricing -> /marketplace redirect
-// (ADR-0237 F1), /updates, the docs section, all five legal pages, sign-in, and a 3-module
+// (ADR-0237 F1), /updates, the docs section, the legal pages, and a 3-module
 // sample of the module depth pages (`lib/module-pages.ts` — the same registry `sitemap.ts` and
 // `scripts/visual-harness.ts` derive from, so this list can't silently drift from the real
 // catalog). Per route: the navigation succeeds (HTTP < 400), it lands on the expected path, no
 // Cloudflare Access interstitial appeared, the page's H1 renders, and the browser logged no
-// console/page errors (warnings are fine). Buyer-dashboard routes are a separate, session-gated
-// leg — see `buyer-dashboard-flow.live.test.ts`.
+// console/page errors (warnings are fine).
 //
 // How to run: `bunx turbo run test:live --filter=@caisson/site` (or `cd apps/site && bun run
 // test:live`) with both env vars set. `~/.gridwork/caisson.env` carries them for a dev-box run.
@@ -37,15 +36,6 @@ interface ProdRoute {
   path: string;
   /** Final pathname after navigation, when it differs from `path` (a redirect). */
   expectPath?: string;
-  /** Positively assert the Turnstile widget rendered — the health check the source-frame
-   *  console filter below deliberately gives up (see its comment). One representative footer
-   *  route carries it. The probe is the hidden `cf-turnstile-response` input the widget
-   *  injects at render: it proves api.js loaded and `turnstile.render()` ran against our
-   *  container (the widget's own iframe sits in a closed shadow root and its src is empty —
-   *  neither is reachable/stable). A dead or blocked api.js turns THIS red even though the
-   *  platform's console output is filtered; a domain-allowlist mismatch is covered by the
-   *  deploy-time widget probe, not this sweep. */
-  expectTurnstileWidget?: boolean;
 }
 
 // Module depth pages derive from the real catalog registry (not hardcoded slugs) — "at least 3"
@@ -62,10 +52,9 @@ const ROUTES: readonly ProdRoute[] = [
   { path: "/marketplace" },
   // ADR-0237 F1: /pricing permanently 301s to the unified /marketplace hub.
   { path: "/pricing", expectPath: "/marketplace" },
-  { path: "/updates", expectTurnstileWidget: true },
+  { path: "/updates" },
   { path: "/docs" },
   ...LEGAL_ROUTES.map((r): ProdRoute => ({ path: r.path })),
-  { path: "/login" },
   ...MODULE_SAMPLE,
 ];
 
@@ -73,26 +62,6 @@ const ROUTES: readonly ProdRoute[] = [
 // 2026-07-09 (infra/terraform/web-analytics.tf) — the KNOWN_NOISE filter that tolerated its CSP
 // console error came out with it. Any `static.cloudflareinsights.com` (or hydration #418) signal
 // this sweep sees now IS a regression: the injection ruleset has been re-enabled.
-//
-// Turnstile is different. Once its site key baked into the prod bundle, the footer widget arms on
-// every marketing/legal/glossary/docs route — and Cloudflare's challenge platform logs by design
-// in browsers without Private-Access-Token support (this headless Chromium included): its PAT
-// probe 401s (expected — that 401 is how the platform detects PAT absence and falls back), and
-// its challenge script emits styled "%c%d font-size:0;color:transparent NaN" console-error lines.
-// Unlike the beacon — our own zone misconfiguration, fixable at the root — this is a third
-// party's documented console behavior on a deliberate product surface, with no our-side root
-// fix. So the sweep drops console errors whose SOURCE frame is the challenge platform, keyed on
-// the console message's origin URL (never on message text — the noise shapes are brittle and
-// unlocalizable — and never on our own frames), and stays zero-tolerance for everything else.
-//
-// The trade-off, named: this drop is origin-scoped, so a REAL Turnstile fault that logs from the
-// same origin (a 110200 domain mismatch, an api.js load failure) is swallowed here too, and no
-// pageerror fires for those. Console-error absence is therefore NOT the Turnstile health signal
-// — the positive `expectTurnstileWidget` assertion on the /updates route is: it requires the
-// widget's injected response input to attach, which a dead or blocked api.js cannot produce.
-const THIRD_PARTY_CONSOLE_SOURCES: readonly RegExp[] = [
-  /^https:\/\/challenges\.cloudflare\.com\//,
-];
 
 let browser: Browser | null = null;
 let context: BrowserContext | null = null;
@@ -109,10 +78,7 @@ async function assertRoute(
   const page = await ctx.newPage();
   const consoleErrors: string[] = [];
   page.on("console", (msg) => {
-    if (msg.type() !== "error") return;
-    const source = msg.location().url;
-    if (THIRD_PARTY_CONSOLE_SOURCES.some((re) => re.test(source))) return;
-    consoleErrors.push(msg.text());
+    if (msg.type() === "error") consoleErrors.push(msg.text());
   });
   const pageErrors: string[] = [];
   page.on("pageerror", (err) => {
@@ -142,23 +108,13 @@ async function assertRoute(
       `${route.path}: landed on an unexpected path`,
     ).toBe(route.expectPath ?? route.path);
 
-    // "a main content element" — every route type here renders one H1 (marketing Hero, the
-    // dashboard's own h1, fumadocs' DocsTitle), which is a steadier signal across this app's
+    // "a main content element" — every route type here renders one H1 (marketing Hero,
+    // fumadocs' DocsTitle), which is a steadier signal across this app's
     // several distinct layouts than hunting a <main> wrapper that not every layout uses.
     await page
       .locator('main, [role="main"], #main-content, h1')
       .first()
       .waitFor({ state: "visible", timeout: 10_000 });
-
-    // The positive Turnstile health check (see the THIRD_PARTY_CONSOLE_SOURCES comment): the
-    // widget's injected response input must attach. `attached`, not `visible` — it is a hidden
-    // input, and the footer widget can sit below the fold.
-    if (route.expectTurnstileWidget) {
-      await page
-        .locator('input[name="cf-turnstile-response"]')
-        .first()
-        .waitFor({ state: "attached", timeout: 15_000 });
-    }
 
     await page.waitForTimeout(500); // let deferred scripts (analytics init, etc.) settle
     expect(

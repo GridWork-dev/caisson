@@ -29,10 +29,13 @@ export interface DependencyGraphCoverage {
   dependencies: number;
 }
 
+// Non-vacuity floors, about 10% under the measured tree (2064 modules, 1416 TypeScript, 5871
+// dependencies after the site dropped its commerce surface). They catch a scan that silently
+// covered a fraction of the tree; re-measure and lower them when a deliberate deletion lands.
 const DEFAULT_OPTIONS: DependencyGraphGuardOptions = {
-  minimumModules: 2_000,
-  minimumTypeScriptModules: 1_500,
-  minimumDependencies: 6_000,
+  minimumModules: 1_850,
+  minimumTypeScriptModules: 1_250,
+  minimumDependencies: 5_250,
   sentinels: [
     "packages/kernel/src/index.ts",
     "apps/site/app/layout.tsx",

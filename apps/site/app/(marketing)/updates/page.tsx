@@ -1,57 +1,7 @@
-import {
-  Button,
-  Section,
-  Card,
-  CodeBlock,
-  Faq,
-  FeatureGrid,
-  StatusChip,
-  Reveal,
-  Icon,
-} from "@/components";
+import { Button, Section, Card, StatusChip, Reveal, Icon } from "@/components";
 import { buildMetadata } from "@/lib/metadata";
-import {
-  serializeJsonLd,
-  techArticle,
-  breadcrumb,
-  faqPage,
-} from "@/lib/jsonld";
+import { serializeJsonLd, techArticle, breadcrumb } from "@/lib/jsonld";
 import { CHANGELOG_ENTRIES, FEED_RSS_URL } from "@/lib/changelog";
-import { bundlePrice, planPrice } from "@/lib/pricing";
-
-// Coverage-window explainer copy (verified against services/license + registry/worker source,
-// outputs/research/compliance-updates-page-record-2026-07-19.json). Entitlement-honest: Compliance
-// Updates renews REACH into the registry, never rewrites code the buyer already owns.
-const COVERAGE_WINDOW_ITEMS = [
-  {
-    title: "Every paid cycle stamps a coverage horizon",
-    body: "Each granting invoice writes a subscription-sourced grant that sets updates_expires_at to now plus one cadence on the buyer's compliance entitlement.",
-  },
-  {
-    title: "computeUpdatesWindows folds the most-favorable bound",
-    body: "The buyer's one-time bundle window and any active subscription coverage horizon are folded together, taking whichever bound reaches furthest.",
-  },
-  {
-    title: "windowFilterEntry enforces it fail-closed, at the edge",
-    body: "The registry Worker keeps only versions published at or before the resolved cutoff on every pull, so a module with zero in-window versions returns exactly like one never bought.",
-  },
-  {
-    title: "Cancelling doesn't touch code you already pulled",
-    body: "Cancelling only stops new coverage-horizon stamps going forward. Nothing revokes or breaks a version already sitting in your node_modules.",
-  },
-] as const;
-
-const COVERAGE_WINDOW_FAQ = [
-  {
-    question: "Is Compliance Updates the same as the Compliance bundle?",
-    answer: `No. The Compliance bundle (${bundlePrice("compliance")}, one-time) is the code; Compliance Updates (${planPrice("compliance-updates")}) is the subscription that keeps its control mappings and evidence packs current by extending the license's per-entitlement updates window.`,
-  },
-  {
-    question: "Does an active subscription make my organization compliant?",
-    answer:
-      "No. No module or subscription makes an organization compliant; that determination is your organization's and its auditor's to make. Compliance Updates keeps the technical control mappings and evidence-pack generation current as frameworks revise. The administrative controls and the audit itself remain yours.",
-  },
-] as const;
 
 export const metadata = buildMetadata({
   title: "Updates",
@@ -83,13 +33,6 @@ export default function UpdatesPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(ldBreadcrumb) }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: serializeJsonLd(faqPage(COVERAGE_WINDOW_FAQ)),
-        }}
-      />
-
       {/* ===== Header ===== */}
       <Section
         flush
@@ -98,10 +41,7 @@ export default function UpdatesPage() {
         title="Updates"
         lede="Every Caisson release, dated, versioned, and tagged by what changed, plus a way to follow along."
       >
-        {/* The footer already renders the identical "Product updates" capture on every page
-            (site-wide, SiteFooter -> UpdatesFormLazy) - a second copy of the same form here
-            duplicated it back-to-back on this page (visual-audit id f136990a6a7b2313). The RSS
-            feed is this page's own, distinct follow path. */}
+        {/* The RSS feed is this page's follow path. */}
         <div style={{ marginTop: "var(--cs-space-5)" }}>
           <Button href={FEED_RSS_URL} external variant="primary">
             Subscribe via RSS
@@ -139,62 +79,6 @@ export default function UpdatesPage() {
           ))}
         </ul>
       </Section>
-
-      {/* ===== Coverage window ===== */}
-      <Reveal>
-        <Section
-          eyebrow="Coverage window"
-          title="What keeps versions pulling"
-          lede="Compliance Updates is the annual subscription that keeps a Compliance bundle license current with new package versions. Each paid cycle stamps a coverage horizon that the registry Worker enforces at the edge, so a version published after the window lapses is fail-closed invisible: it renews reach, never rewrites the code you already own."
-        >
-          <FeatureGrid cols={2}>
-            {COVERAGE_WINDOW_ITEMS.map((item) => (
-              <Card key={item.title}>
-                <h3 className="cs-card-title">{item.title}</h3>
-                <p className="cs-muted">{item.body}</p>
-              </Card>
-            ))}
-          </FeatureGrid>
-
-          <div style={{ marginTop: "var(--cs-space-6)" }}>
-            <CodeBlock
-              frame
-              label="registry/worker/handler.ts"
-              code={`export function windowFilterEntry(
-  entry: ModuleEntry,
-  cutoff: string,
-): ModuleEntry | null {
-  const bound = Date.parse(cutoff);
-  const versions = entry.versions.filter(
-    (v) => Date.parse(v.publishedAt) <= bound,
-  );
-  let newest = versions[0];
-  if (newest === undefined) return null;
-  for (const v of versions) {
-    if (Date.parse(v.publishedAt) > Date.parse(newest.publishedAt)) newest = v;
-  }
-  const latest = versions.some((v) => v.version === entry.latest)
-    ? entry.latest
-    : newest.version;
-  return { ...entry, latest, versions };
-}`}
-            />
-          </div>
-
-          <div style={{ marginTop: "var(--cs-space-6)" }}>
-            <Faq items={COVERAGE_WINDOW_FAQ} />
-          </div>
-
-          <div style={{ marginTop: "var(--cs-space-5)" }}>
-            <Button
-              href="/marketplace/plans#compliance-updates"
-              variant="ghost"
-            >
-              Compliance Updates: {planPrice("compliance-updates")}
-            </Button>
-          </div>
-        </Section>
-      </Reveal>
 
       {/* ===== Entries ===== */}
       <Section>

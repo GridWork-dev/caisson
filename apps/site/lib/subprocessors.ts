@@ -1,5 +1,5 @@
-// The third-party services that process data for the CAISSON SERVICE itself — this website, the
-// buyer dashboard, checkout, email, support, monitoring, and inference. Caisson the product runs in
+// The third-party services that process data for the CAISSON SERVICE itself — this website,
+// email, support, monitoring, and inference. Caisson the product runs in
 // the buyer's own infrastructure and processes their application data there; the vendors below never
 // touch it. Rendered as a table on /trust.
 //
@@ -26,12 +26,8 @@ export const SUBPROCESSORS: readonly Subprocessor[] = [
   {
     processor: "Railway",
     purpose:
-      "Hosts the Caisson website, buyer dashboard, and the license, registry, docs, and support services, along with their Postgres databases.",
-    dataCategories: [
-      "Account email",
-      "Purchase and entitlement records",
-      "Support content",
-    ],
+      "Hosts the license, registry, docs, and support services, along with their Postgres databases.",
+    dataCategories: ["Account email", "Entitlement records", "Support content"],
     region: "United States",
   },
   {
@@ -45,16 +41,6 @@ export const SUBPROCESSORS: readonly Subprocessor[] = [
     region: "Global edge network",
   },
   {
-    processor: "Paddle",
-    purpose:
-      "Merchant of record: checkout, payment processing, tax, and receipts. Payment details are collected and held by Paddle and never reach Caisson.",
-    dataCategories: [
-      "Billing and payment details (held by Paddle)",
-      "Order records",
-    ],
-    region: "Global (United Kingdom)",
-  },
-  {
     processor: "Resend",
     purpose: "Delivery of transactional and product-update email.",
     dataCategories: ["Email address", "Message content"],
@@ -64,12 +50,6 @@ export const SUBPROCESSORS: readonly Subprocessor[] = [
     processor: "Amazon SES",
     purpose: "Secondary delivery path for transactional email.",
     dataCategories: ["Email address", "Message content"],
-    region: "United States",
-  },
-  {
-    processor: "PostHog",
-    purpose: "Product analytics for the buyer dashboard.",
-    dataCategories: ["Product usage events", "Account identifier"],
     region: "United States",
   },
   {
@@ -94,9 +74,8 @@ export const SUBPROCESSORS: readonly Subprocessor[] = [
   },
   {
     processor: "OpenRouter",
-    purpose:
-      "AI inference for the documentation assistant and the support bot.",
-    dataCategories: ["Documentation questions submitted to the assistant"],
+    purpose: "AI inference for the support bot.",
+    dataCategories: ["Questions submitted to the support bot"],
     region: "United States",
   },
   {

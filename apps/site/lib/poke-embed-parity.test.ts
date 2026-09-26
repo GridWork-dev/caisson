@@ -19,17 +19,17 @@ import { describe, expect, test } from "bun:test";
 
 import { POKE_IDS } from "../../demos/components/poke/ids";
 import { mediaSlides } from "./media-manifest";
-import { BUNDLE_PRICES, MODULE_PRICES } from "./pricing";
+import { BUNDLES, MODULES } from "./catalog";
 
 /** Every poke id the site actually renders, across both entry kinds. */
 function manifestPokeIds(): string[] {
   const ids = new Set<string>();
-  for (const module of MODULE_PRICES) {
+  for (const module of MODULES) {
     for (const slide of mediaSlides("module", module.id)) {
       if (slide.kind === "poke" && slide.poke) ids.add(slide.poke);
     }
   }
-  for (const bundle of BUNDLE_PRICES) {
+  for (const bundle of BUNDLES) {
     for (const slide of mediaSlides("bundle", bundle.id)) {
       if (slide.kind === "poke" && slide.poke) ids.add(slide.poke);
     }
@@ -53,7 +53,7 @@ describe("every poke the site renders has an embed route in apps/demos", () => {
   test("bundles borrow a member's poke rather than introducing an id of their own", () => {
     // ADR-0378 lock 1 (borrow, never fork) restated as a boundary check: a bundle that invented
     // its own poke id would need a route apps/demos has no component for.
-    for (const bundle of BUNDLE_PRICES) {
+    for (const bundle of BUNDLES) {
       for (const slide of mediaSlides("bundle", bundle.id)) {
         if (slide.kind === "poke" && slide.poke) {
           expect(POKE_IDS).toContain(slide.poke);

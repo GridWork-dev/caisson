@@ -4,10 +4,10 @@ import robots from "./robots";
 import sitemap from "./sitemap";
 import { SITE_URL } from "@/lib/metadata";
 
-// Crawl hygiene has no local failure mode — a wrong host or a crawlable auth wall costs nothing at
+// Crawl hygiene has no local failure mode — a wrong host or a crawlable non-page costs nothing at
 // build time and shows up weeks later in the index. These assert the two invariants: every URL a
-// crawler is handed is absolute on the canonical origin, and the routes that only ever serve a
-// login (Cloudflare Access sits in front of /cart and /dashboard) are not offered at all.
+// crawler is handed is absolute on the canonical origin, and the framed demo embeds and the
+// prebuilt search index are not offered at all.
 
 describe("robots.txt", () => {
   test("points at the canonical absolute sitemap and host", () => {
@@ -16,14 +16,14 @@ describe("robots.txt", () => {
     expect(r.host).toBe(SITE_URL);
   });
 
-  test("every rule group disallows the auth and checkout dead-ends", () => {
+  test("every rule group disallows the demo embeds and the search index", () => {
     // robots.txt is most-specific-match: a bot with its own group ignores `*` entirely, so each
     // named AI-crawler group has to repeat the disallows rather than inherit them.
     const rules = robots().rules;
     expect(Array.isArray(rules)).toBeTrue();
     for (const rule of rules as { disallow?: string | string[] }[]) {
       const disallow = [rule.disallow ?? []].flat();
-      for (const path of ["/dashboard", "/cart", "/login"]) {
+      for (const path of ["/demos/", "/api/"]) {
         expect(disallow).toContain(path);
       }
     }

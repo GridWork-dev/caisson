@@ -13,7 +13,6 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  checkCatalogParity,
   checkOrphanSku,
   checkPriceCoverage,
   checkPricebookPriceAgreement,
@@ -48,12 +47,6 @@ describe("catalog gate checks — the committed tree", () => {
 
   test("orphan-sku: every PRICE_AUTHORITY row maps to a real manifested package", () => {
     expect(checkOrphanSku(pkgs)).toEqual([]);
-  });
-
-  test("catalog-parity: the site catalog agrees with the registry members maps + locked prices", async () => {
-    // Returns [] only if pricing.ts + index.json loaded AND agreed — a warn (skip) would fail this,
-    // so it also proves the cross-surface load path works against the real tree.
-    expect(await checkCatalogParity(ROOT)).toEqual([]);
   });
 
   test("reserved-ids-staleness: no stale reservations (alerting/retention-runner graduated to indexed)", () => {
@@ -292,145 +285,6 @@ describe("checkOrphanSku", () => {
     const f = checkOrphanSku(stripped);
     expect(f).toHaveLength(1);
     expect(f[0]?.message).toContain("not a manifested");
-  });
-});
-
-// ─── catalog-parity failure paths (temp root with pricing + workspace-manifest fixtures) ─────────
-describe("checkCatalogParity", () => {
-  let root: string;
-  beforeEach(() => {
-    root = mkdtempSync(join(tmpdir(), "gate-parity-"));
-  });
-  afterEach(() => rmSync(root, { recursive: true, force: true }));
-
-  function writeCatalog(
-    modulesLiteral: string,
-    manifestMembers: Record<string, string>,
-    indexMembers?: Record<string, string>,
-  ): void {
-    const pricingDir = join(root, "apps", "site", "lib");
-    mkdirSync(pricingDir, { recursive: true });
-    writeFileSync(
-      join(pricingDir, "pricing.ts"),
-      `export const MODULE_PRICES = ${modulesLiteral};\n`,
-    );
-    for (const bundleId of [
-      "compliance",
-      "ai-production",
-      "local-first",
-      "agentic-dev",
-      "provenance",
-    ]) {
-      const manifestDir = join(root, "packages", bundleId);
-      mkdirSync(manifestDir, { recursive: true });
-      const members = bundleId === "compliance" ? manifestMembers : {};
-      writeFileSync(
-        join(manifestDir, "manifest.ts"),
-        `export default { id: "${bundleId}", members: ${JSON.stringify(members)} };\n`,
-      );
-    }
-    // Only written when a case exercises the PUBLISHED-index leg; its absence keeps that leg
-    // skipped, which is the pre-publish posture every other case in this block relies on.
-    if (indexMembers !== undefined) {
-      mkdirSync(join(root, "registry"), { recursive: true });
-      writeFileSync(
-        join(root, "registry", "index.json"),
-        JSON.stringify({
-          modules: [
-            {
-              id: "@caisson/compliance",
-              latest: "1.0.0",
-              versions: [
-                { version: "1.0.0", manifest: { members: indexMembers } },
-              ],
-            },
-          ],
-        }),
-      );
-    }
-  }
-
-  test("absent cross-surface files → a warn (skip), never a false error", async () => {
-    const f = await checkCatalogParity(root);
-    expect(f).toHaveLength(1);
-    expect(f[0]?.severity).toBe("warn");
-  });
-
-  test("a module the site claims a bundle grants but the members map omits is a membership error", async () => {
-    writeCatalog(
-      `[{ id: "audit-worm", amount: 149, bundles: ["compliance"] }, { id: "ghost", amount: 50, bundles: ["compliance"] }]`,
-      { "@caisson/audit-worm": "1.0.0" },
-    );
-    const f = await checkCatalogParity(root);
-    const membership = f.filter((x) => x.message.includes("members map"));
-    expect(membership.map((x) => x.pkg)).toEqual(["@caisson/ghost"]);
-  });
-
-  test("a displayed price that disagrees with a locked PRICE_AUTHORITY row is a price error", async () => {
-    // audit-worm is locked at 14900; display it at $999 (99900¢) → mismatch.
-    writeCatalog(
-      `[{ id: "audit-worm", amount: 999, bundles: ["compliance"] }]`,
-      {
-        "@caisson/audit-worm": "1.0.0",
-      },
-    );
-    const f = await checkCatalogParity(root);
-    const price = f.filter((x) => x.message.includes("locks it at"));
-    expect(price).toHaveLength(1);
-    expect(price[0]?.pkg).toBe("@caisson/audit-worm");
-  });
-
-  test("an agreeing catalog is clean", async () => {
-    writeCatalog(
-      `[{ id: "audit-worm", amount: 149, bundles: ["compliance"] }]`,
-      {
-        "@caisson/audit-worm": "1.0.0",
-      },
-    );
-    expect(await checkCatalogParity(root)).toEqual([]);
-  });
-
-  test("a module with an empty bundles[] makes no membership claim to verify", async () => {
-    writeCatalog(`[{ id: "ai-evals", amount: 199, bundles: [] }]`, {});
-    // No bundles listed → nothing to check against manifests (a genuinely standalone SKU).
-    expect(await checkCatalogParity(root)).toEqual([]);
-  });
-
-  test("a member the workspace manifest grants but the PUBLISHED index does not is a live-drift warn", async () => {
-    // The a21c4784 shape reproduced: site + workspace manifest agree, the published bundle entry
-    // does not carry the member yet, so a buyer today resolves no grant for it.
-    writeCatalog(
-      `[{ id: "audit-worm", amount: 149, bundles: ["compliance"] }]`,
-      { "@caisson/audit-worm": "1.0.0" },
-      {},
-    );
-    const f = await checkCatalogParity(root);
-    expect(f).toHaveLength(1);
-    expect(f[0]?.severity).toBe("warn");
-    expect(f[0]?.pkg).toBe("@caisson/audit-worm");
-    expect(f[0]?.message).toContain("registry/index.json");
-  });
-
-  test("a published index that already grants the member is clean", async () => {
-    writeCatalog(
-      `[{ id: "audit-worm", amount: 149, bundles: ["compliance"] }]`,
-      { "@caisson/audit-worm": "1.0.0" },
-      { "@caisson/audit-worm": "1.0.0" },
-    );
-    expect(await checkCatalogParity(root)).toEqual([]);
-  });
-
-  test("a module listing an unknown bundle id is flagged (1:N — each listed bundle is checked)", async () => {
-    // audit-worm lists compliance (valid, granted by the fixture members map) + a bogus id; only the
-    // bogus one errors, proving each entry in bundles[] is verified independently.
-    writeCatalog(
-      `[{ id: "audit-worm", amount: 149, bundles: ["compliance", "not-a-bundle"] }]`,
-      { "@caisson/audit-worm": "1.0.0" },
-    );
-    const f = await checkCatalogParity(root);
-    const unknown = f.filter((x) => x.message.includes("unknown bundle"));
-    expect(unknown).toHaveLength(1);
-    expect(unknown[0]?.pkg).toBe("@caisson/audit-worm");
   });
 });
 

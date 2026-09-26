@@ -11,8 +11,8 @@ import { Button } from "@caisson/ui/components";
 import { trackEvent } from "@/lib/analytics";
 
 export function DocsCta({
-  href = "/login?ref=docs-quickstart",
-  children = "Get started",
+  href = "/marketplace",
+  children = "Run the live demos",
 }: {
   href?: string;
   children?: string;

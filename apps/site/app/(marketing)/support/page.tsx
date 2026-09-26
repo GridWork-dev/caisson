@@ -6,21 +6,11 @@ import { buildMetadata } from "@/lib/metadata";
 export const metadata = buildMetadata({
   title: "Support",
   description:
-    "Contact Caisson Software LLC for purchase, license, delivery, refund, documentation, and security help.",
+    "Contact Caisson Software LLC for product, documentation, and security help.",
   path: "/support",
 });
 
 const supportAreas = [
-  {
-    title: "Orders and refunds",
-    body: "Include the Paddle order number and the email address used at checkout. For a multi-item order, name the bundle or module you need help with.",
-    subject: "Caisson order or refund support",
-  },
-  {
-    title: "Licenses and delivery",
-    body: "Include the order number, your Caisson account email, and the package or entitlement you expected to receive. Do not email license tokens or credentials.",
-    subject: "Caisson license or delivery support",
-  },
   {
     title: "Product and documentation",
     body: "Tell us what you are building, which bundle or module you are using, and link the relevant documentation page when possible.",
@@ -33,8 +23,8 @@ export default function SupportPage() {
     <>
       <Section eyebrow="Support" title="Get help with Caisson" flush as="h1">
         <p className="cs-lede" style={{ marginTop: "var(--cs-space-3)" }}>
-          Direct support from Caisson Software LLC for purchases, licenses,
-          delivery, and product questions.
+          Direct support from Caisson Software LLC for product and documentation
+          questions.
         </p>
         <div style={{ marginTop: "var(--cs-space-6)" }}>
           <Button
@@ -74,20 +64,7 @@ export default function SupportPage() {
         </div>
       </Section>
 
-      <Section title="Refund policy">
-        <p className="cs-lede">
-          Every purchase includes an unconditional 14-day money-back guarantee.
-          The dedicated policy explains eligibility, request details, and what
-          happens to licenses and credits after approval.
-        </p>
-        <p style={{ marginTop: "var(--cs-space-5)" }}>
-          <Link href="/legal/refunds" className="cs-link">
-            Read the refund policy
-          </Link>
-        </p>
-      </Section>
-
-      <Section title="Security reports" band="tint">
+      <Section title="Security reports">
         <p className="cs-lede">
           Send vulnerability reports and reproduction steps to{" "}
           <a href="mailto:security@caisson.sh" className="cs-link">
@@ -105,18 +82,6 @@ export default function SupportPage() {
             security.txt
           </Link>{" "}
           for the disclosure channel.
-        </p>
-      </Section>
-
-      <Section title="Paddle payment help">
-        <p className="cs-lede">
-          Paddle is the Merchant of Record and handles payment receipts, tax,
-          and the payment-side execution of approved refunds. For Paddle account
-          or receipt help, visit{" "}
-          <a href="https://paddle.net" rel="noreferrer" className="cs-link">
-            paddle.net
-          </a>
-          .
         </p>
       </Section>
     </>

@@ -3,42 +3,39 @@ import Link from "next/link";
 import { Card, Faq, Icon, Reveal, Section } from "@/components";
 
 import { MarketplaceSurface } from "@/components/marketplace-surface";
-import { bundlePagePath } from "@/components/marketplace";
 import { BASE_CAPABILITIES, BASE_PACKAGES } from "@/lib/base-substrate";
+import { MODULES } from "@/lib/catalog";
 import {
   breadcrumb,
   faqPage,
   moduleItemList,
   serializeJsonLd,
-  softwareApplication,
 } from "@/lib/jsonld";
-import { buildMetadata, SITE_URL } from "@/lib/metadata";
+import { entryDocsHrefs } from "@/lib/entry-docs";
+import { buildMetadata } from "@/lib/metadata";
 import { hasModulePage } from "@/lib/module-pages";
-import { BUNDLE_PRICES, MODULE_PRICES } from "@/lib/pricing";
 import { truthfulSignals } from "@/lib/trust-signals";
 import { TruthfulSignals } from "@/components/truthful-signals";
 
 export const metadata = buildMetadata({
   title: "Marketplace",
-  description: `Every Caisson bundle and module on one surface: ${MODULE_PRICES.length} modules composed into six bundles, one-time perpetual pricing. Filter by type, category, or price; preview the media; compare; and build a stack. Own the source, no forced renewal.`,
+  description: `Every Caisson module family and module on one surface: ${MODULES.length} modules composed into six families, each with its docs and a live in-browser demo.`,
   path: "/marketplace",
 });
 
-// The unified marketplace surface (ADR-0285): ONE screen for the whole catalog. The good/better/best
-// SEO copy the former Bundles + Modules tabs carried is superseded by the surface itself (which
-// server-renders every bundle and module card); this page keeps the JSON-LD (bundle Offers + the
-// module ItemList + the FAQ), the surface island, the open-base anxiety-relief beat, and the FAQ.
-// Prices + membership all derive from `lib/pricing.ts` — never hand-keyed.
+// The unified marketplace surface (ADR-0285), now a demonstration gallery: ONE screen for the whole
+// catalog. This page keeps the JSON-LD (the module ItemList + the FAQ), the surface island, the
+// open-base beat, and the FAQ.
 
 const HUB_FAQ = [
   {
     question: "Where did the Modules and Build tabs go?",
     answer:
-      "They're this one surface now. Filter by type to see just modules or just bundles, add anything to your cart, and the drawer points at the bundle that covers your picks for less. Old links redirect here automatically.",
+      "They're this one surface now. Filter by type to see just modules or just module families. Old links redirect here automatically.",
   },
   {
-    question: "Can I buy one module without the bundle around it?",
-    answer: `Yes. Each of the ${MODULE_PRICES.length} modules is a standalone one-time purchase: pick what composes onto your base, no bundle required. Every card previews what ships and opens straight to checkout.`,
+    question: "Can I use one module without the family around it?",
+    answer: `Yes. Each of the ${MODULES.length} modules composes onto the base on its own. Every card links to the module's docs and, where it has one, a live demo that runs the module's own code in your browser.`,
   },
 ] as const;
 
@@ -48,22 +45,10 @@ export default function MarketplacePage() {
     { name: "Home", path: "/" },
     { name: "Marketplace", path: "/marketplace" },
   ]);
-
-  // One SoftwareApplication node per bundle, carrying its committed Offer (ADR-0082, InStock).
-  const bundleNodes = BUNDLE_PRICES.map((b) =>
-    softwareApplication({
-      name: `Caisson ${b.label}`,
-      description: b.note,
-      url: `${SITE_URL}${bundlePagePath(b.id)}`,
-      price: b,
-    }),
-  );
-  // Offer URLs only for modules with a real depth page (mirrors sitemap.ts's MODULE_PAGES-derived
-  // module set) — the full MODULE_PRICES list includes SKUs with no `/marketplace/modules/<id>`
-  // route yet, and advertising a dead Offer URL in structured data is dishonest to the exact AEO
-  // crawlers robots.ts courts (G17).
+  // URLs only for modules with a real depth page (mirrors sitemap.ts's MODULE_PAGES-derived set) —
+  // advertising a dead URL in structured data is dishonest to the crawlers robots.ts courts (G17).
   const catalogNode = moduleItemList(
-    MODULE_PRICES.filter((m) => hasModulePage(m.id)),
+    MODULES.filter((m) => hasModulePage(m.id)),
   );
 
   return (
@@ -76,18 +61,11 @@ export default function MarketplacePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(catalogNode) }}
       />
-      {bundleNodes.map((node, i) => (
-        <script
-          key={i}
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: serializeJsonLd(node) }}
-        />
-      ))}
 
       {/* ===== The catalog — one surface ===== */}
       <Section
         title="Browse the whole library in one place."
-        lede="Six bundles and every à-la-carte module, side by side. Filter by type, category, or price; preview the diagrams and demos; compare up to three; and add anything to your cart, the drawer points at the bundle that covers your picks for less."
+        lede="Six module families and every module, side by side. Filter by type or category, preview the diagrams and demos, then open the docs or run the live demo."
       >
         <div
           style={{
@@ -95,16 +73,15 @@ export default function MarketplacePage() {
             marginBottom: "var(--cs-space-6)",
           }}
         >
-          <TruthfulSignals signals={signals} lead="Check before you buy:" />
+          <TruthfulSignals signals={signals} lead="Check the evidence:" />
         </div>
-        <MarketplaceSurface signals={signals} />
+        <MarketplaceSurface signals={signals} docsHrefs={entryDocsHrefs()} />
       </Section>
 
-      {/* ===== The open base — "batteries included" under the prices (anxiety-relief beat;
-          ADR-0094 open-core made visible at purchase time) ===== */}
+      {/* ===== The open base — "batteries included" under every family ===== */}
       <Section
-        title="Every bundle sits on this. So can you, for free."
-        lede="Before you weigh a bundle: the audited foundation under all of them is Apache-2.0, open source, and free to use on its own. Buy a bundle and it is a one-time perpetual license (source you own), but the base was always yours."
+        title="Every module family sits on this."
+        lede="The audited foundation under all of them is Apache-2.0, open source, and free to use on its own."
         band="surface"
       >
         {/* Static header, base-capability cards cascade in (ADR-0307). */}
@@ -135,8 +112,8 @@ export default function MarketplacePage() {
         </Reveal>
         <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
           {BASE_PACKAGES.length} packages under Apache-2.0.{" "}
-          <Link href="/legal/license" className="cs-link">
-            See the open / commercial split
+          <Link href="/docs/base" className="cs-link">
+            Read the base docs
           </Link>
           .
         </p>
@@ -147,7 +124,7 @@ export default function MarketplacePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqPage(HUB_FAQ)) }}
       />
-      <Section title="Buying, briefly.">
+      <Section title="The gallery, briefly.">
         <Faq items={HUB_FAQ} defaultOpenFirst />
       </Section>
     </>

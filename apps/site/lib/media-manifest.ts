@@ -18,7 +18,7 @@ import type { IconName } from "@caisson/ui/components";
 
 import { BUNDLE_MARKS, moduleMark } from "./marks";
 import { MODULE_PAGES } from "./module-pages";
-import { type BundleId, BUNDLE_PRICES, isBundleId } from "./pricing";
+import { type BundleId, BUNDLES, isBundleId } from "./catalog";
 
 export type SlideKind =
   | "diagram"
@@ -535,7 +535,7 @@ function bundleCompositionCaption(id: BundleId): string {
   if (id === "everything") {
     return "The whole catalog — every bundle and every module — composing onto one Apache-2.0 audited base.";
   }
-  const label = BUNDLE_PRICES.find((b) => b.id === id)?.label ?? id;
+  const label = BUNDLES.find((b) => b.id === id)?.label ?? id;
   return `The ${label} bundle's real member modules, composing onto Caisson's Apache-2.0 audited base.`;
 }
 

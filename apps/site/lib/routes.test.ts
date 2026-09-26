@@ -2,7 +2,6 @@ import { test, expect, describe } from "bun:test";
 
 import {
   MARKETING_ROUTES,
-  MARKETPLACE_TAB_ROUTES,
   BUNDLE_ROUTES,
   footerRoutes,
   LEGAL_ROUTES,
@@ -45,8 +44,19 @@ describe("MARKETING_ROUTES registry", () => {
     expect(byPath("/frameworks/eu-ai-act")?.priority).toBe(0.75);
   });
 
-  test("the three retired commerce paths are OUT of the registry (they 301 in next.config.ts)", () => {
-    for (const gone of ["/pricing", "/modules", "/build"]) {
+  test("the retired commerce paths are OUT of the registry (they 301 in public/_redirects)", () => {
+    for (const gone of [
+      "/pricing",
+      "/modules",
+      "/build",
+      "/marketplace/plans",
+      "/compare",
+      "/stack-fit",
+      "/glossary",
+      "/build-vs-buy",
+      "/procurement",
+      "/affiliates",
+    ]) {
       expect(MARKETING_ROUTES.some((r) => r.path === gone)).toBe(false);
     }
   });
@@ -73,14 +83,7 @@ describe("derived route slices", () => {
     ]);
   });
 
-  test("MARKETPLACE_TAB_ROUTES are the unified surface + Plans (ADR-0285 folded Modules + Build)", () => {
-    expect(MARKETPLACE_TAB_ROUTES.map((r) => r.path)).toEqual([
-      "/marketplace",
-      "/marketplace/plans",
-    ]);
-  });
-
-  test("the folded Modules + Build tab paths are OUT of the registry (they 301 in next.config.ts)", () => {
+  test("the folded Modules + Build tab paths are OUT of the registry (they 301 in public/_redirects)", () => {
     for (const gone of ["/marketplace/modules", "/marketplace/build"]) {
       expect(MARKETING_ROUTES.some((r) => r.path === gone)).toBe(false);
     }
@@ -92,15 +95,15 @@ describe("derived route slices", () => {
     expect(ui?.footer).toBe("resources");
   });
 
-  test("footer derivation (ADR-0237): every column non-empty, security.txt page + glossary present", () => {
+  test("footer derivation (ADR-0237): every column non-empty, security page present", () => {
     expect(footerRoutes("editions").map((r) => r.path)).toEqual(
       BUNDLE_ROUTES.map((r) => r.path),
     );
-    expect(footerRoutes("product").map((r) => r.path)).toEqual(
-      MARKETPLACE_TAB_ROUTES.map((r) => r.path),
-    );
+    expect(footerRoutes("product").map((r) => r.path)).toEqual([
+      "/marketplace",
+    ]);
     const resources = footerRoutes("resources").map((r) => r.path);
-    expect(resources).toContain("/glossary");
+    expect(resources).toContain("/evidence");
     expect(resources).toContain("/security");
     expect(footerRoutes("legal").map((r) => r.path)).toEqual(
       LEGAL_ROUTES.map((r) => r.path),
@@ -113,13 +116,10 @@ describe("derived route slices", () => {
     expect(lf?.navLabel).toBe("Local-first");
   });
 
-  test("LEGAL_ROUTES include the dedicated refunds policy", () => {
+  test("LEGAL_ROUTES are privacy + terms only (the commercial EULA/license/refunds retired)", () => {
     expect(LEGAL_ROUTES.map((r) => r.path)).toEqual([
       "/legal/privacy",
       "/legal/terms",
-      "/legal/refunds",
-      "/legal/license",
-      "/legal/eula",
     ]);
     expect(LEGAL_ROUTES.every((r) => r.group === "legal")).toBe(true);
   });
