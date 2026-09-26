@@ -117,7 +117,7 @@ function loadRegistryIndexFromFile(path: string): RegistryIndex;
 ```
 
 `assertKnownModule` re-checks the `@caisson/<slug>` shape and membership in the index;
-`assertKnownVersion` additionally requires that exact version among the module's published
+`assertKnownVersion` additionally requires that exact version among the module's catalog
 `versions`. Both throw a plain `Error` on a miss, synchronously, before any generation work
 starts. `loadRegistryIndexFromFile` is the one sanctioned read path (`RegistryIndex.parse`
 underneath); a malformed or tampered index file throws rather than yielding a half-typed object.
@@ -131,20 +131,21 @@ interface RegistryIndex {
     versions: {
       version: string; // semver
       manifest: ModuleManifest;
-      publishedAt: string; // ISO 8601
-      gateAttestation: string; // "<ci-run-id>@<commit-sha>" — provenance, not the access control
+      publishedAt?: string; // ISO 8601; absent from the CLI's bundled catalog
+      gateAttestation?: string; // "<ci-run-id>@<commit-sha>"; absent from the CLI's bundled catalog
     }[];
   }[];
 }
 ```
 
-The index is built by a CI-only writer, never hand-appended: a version's presence here is what
-"published" means. A generation resolves against this index once and pins the exact versions it
-used into `package.json`; nothing re-resolves against `latest` after that.
+The CLI's catalog is derived when the CLI is built: every published `@caisson/*` package, at the
+version in its `package.json`, with the description, dependencies, and stability from its
+manifest. It is never hand-edited. A generation resolves against this catalog once and pins the
+exact versions it used into `package.json`; nothing re-resolves against `latest` after that.
 
 ### Generation
 
-`@caisson/cli` validates a raw selection against the registry allowlist, then materializes it:
+`@caisson/cli` validates a raw selection against the module catalog, then materializes it:
 in-memory, no disk write yet:
 
 ```ts

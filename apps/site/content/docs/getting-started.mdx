@@ -35,11 +35,11 @@ bun install
 
 A `create-caisson` run carries two independent pins: which release of the generator you run, and
 which exact version of each module it resolves. Neither accepts a range, every version string is
-matched byte-for-byte against the registry.
+matched byte-for-byte against the module catalog.
 
-**The generator release.** Each published `@caisson-sh/cli` release bundles a snapshot of the
-registry index at build time, so the id/version pairs `--module` can resolve against are frozen to
-whatever the registry looked like when that CLI version shipped.
+**The generator release.** Each published `@caisson-sh/cli` release bundles a module catalog built
+from the packages released alongside it, one version per module, so the id/version pairs
+`--module` can resolve against are frozen to the package versions of that CLI release.
 
 ```bash
 bunx @caisson-sh/cli@0.4.0 --name my-app --module @caisson/kernel@1.4.0
@@ -59,7 +59,7 @@ bunx @caisson-sh/cli@latest --name my-app \
 
 - Each value splits on the **last** `@`, so a scoped id (`@caisson/kernel`) keeps its leading `@`;
   a value with no `@` after position 0 fails immediately (`--module expects <id@version>`).
-- `version` is not a semver range, it must equal one of that module's published versions exactly.
+- `version` is not a semver range, it must equal that module's catalog version exactly.
   `^1.4.0`, `~1.4`, `1.x`, and `latest` are all rejected.
 - The same module id twice in one selection is rejected before generation runs (an ambiguous
   "which version wins" case, `package.json` and the generated README would otherwise disagree).
@@ -68,7 +68,7 @@ Both checks run **before** any path is built or any file touches disk, so a bad 
 reaches the filesystem:
 
 ```
-unknown module id (not in registry allowlist): "@caisson/typo"
+unknown module id (not in the module catalog): "@caisson/typo"
 unknown version for @caisson/kernel: "9.9.9"
 ```
 
