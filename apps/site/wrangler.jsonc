@@ -1,0 +1,14 @@
+// caisson.sh: the static export served by Workers static assets (ADR-0428 L3). No Worker script,
+// so every request is an asset read; `_headers` and `_redirects` in `out/` apply natively.
+{
+  "$schema": "https://unpkg.com/wrangler@4/config-schema.json",
+  "name": "caisson-site",
+  "compatibility_date": "2026-09-25",
+  "assets": {
+    "directory": "./out",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash",
+  },
+  "workers_dev": true,
+  "preview_urls": false,
+}
