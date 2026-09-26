@@ -65,4 +65,22 @@ describe("public/_headers", () => {
       expect(set).toBeGreaterThan(idx);
     }
   });
+
+  test("/* precedes /demos/* (rules apply in file order; reversed, /* would append DENY back)", () => {
+    const order = [...HEADERS.keys()];
+    expect(order.indexOf("/*")).toBeGreaterThanOrEqual(0);
+    expect(order.indexOf("/demos/*")).toBeGreaterThan(order.indexOf("/*"));
+  });
+
+  test("extensionless exports name their Content-Type", () => {
+    const expected: [string, string][] = [
+      ["/opengraph-image*", "image/png"],
+      ["/:section/opengraph-image*", "image/png"],
+      ["/apple-icon*", "image/png"],
+      ["/api/search", "application/json"],
+    ];
+    for (const [path, type] of expected) {
+      expect(HEADERS.get(path)).toEqual([["Content-Type", type]]);
+    }
+  });
 });
