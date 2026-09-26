@@ -6,7 +6,7 @@
 // WHAT IS SHARED vs TWINNED. The vocabulary — the HKDF `info` string, the envelope layout, the AAD
 // tuple, the rotation bound — has exactly ONE implementation, and it lives here; derive.ts,
 // envelope.ts, aad.ts, and registry.ts re-export or delegate to it, so the node surface is unchanged
-// for buyers. Only the two primitives that are genuinely runtime-bound are twinned:
+// for adopters. Only the two primitives that are genuinely runtime-bound are twinned:
 //
 //   node (`.`)                        browser (`./browser`)          why twinned
 //   ------------------------------    ---------------------------    -------------------------------

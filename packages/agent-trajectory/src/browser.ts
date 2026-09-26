@@ -2,7 +2,7 @@
 // contract MINUS the two Postgres-backed store implementations — the strict event schema, the
 // in-memory append-only store, the durable run-state port with its in-memory implementation, both
 // deterministic projections, and the Claude-transcript adapter. ADDITIVE: `.` is untouched for
-// buyers and stays the full node-capable surface.
+// adopters and stays the full node-capable surface.
 //
 // This file is the SINGLE list of the shared half — `src/index.ts` re-exports it and adds only the
 // two PG exports — so `.` is a superset of `./browser` by construction and cannot drift on a later

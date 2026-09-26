@@ -83,7 +83,7 @@ export interface CoachOptions {
   readonly env: CoachEnvPort;
   /** Where the approved config is persisted. */
   readonly writer: CoachWriterPort;
-  /** Output path for the buyer config. Default `"forge.config.json"`. */
+  /** Output path for the generated config. Default `"forge.config.json"`. */
   readonly configPath?: string;
   /** Output path for the key-name template. Default `".env.example"`. */
   readonly envExamplePath?: string;

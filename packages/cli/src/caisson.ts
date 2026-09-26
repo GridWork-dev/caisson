@@ -3,9 +3,9 @@
 //   caisson doctor  [dir] [--json]         — the static verify doctor; a thin client of the local
 //                                             MCP `check_usage` tool.
 //   caisson run start <prompt>             — open a governed agent run (ADR-0360 S5); a thin client
-//                                             of the buyer MCP `run_start` tool (ADR-0362).
+//                                             of the MCP `run_start` tool (ADR-0362).
 //   caisson run approve|deny|status        — the agent-runtime approval seam (ADR-0360 U-2); direct
-//                                             DB call against the buyer's own Postgres.
+//                                             DB call against the adopter's own Postgres.
 // Bins may print to stdout/stderr (the no-console floor is for library code); errors fail closed
 // with a non-zero exit.
 import { loadBaseManifest } from "@caisson-sh/ds-manifest";

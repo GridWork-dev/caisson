@@ -2,7 +2,7 @@
 // output through the UNMODIFIED `TenantExecutor` port (rls.ts:21) inside `withTenant`. This file
 // has zero RUNTIME dependency on `drizzle-orm` — `DrizzleToSql` only needs the `{ sql, params }`
 // shape drizzle's own `Query` type already carries, structurally. `drizzle-orm` is a
-// devDependency here, used only by the tests, so a buyer who has never installed it pulls no
+// devDependency here, used only by the tests, so an adopter who has never installed it pulls no
 // extra package to use `withTenant`'s raw-SQL path.
 import type { TenantExecutor } from "./rls.ts";
 

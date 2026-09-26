@@ -1,9 +1,9 @@
 // src/soa/iso-27001-soa.ts — the ISO/IEC 27001:2022 Statement of Applicability (SoA) row computation.
 //
 // A PURE function (no I/O, no clock, no id minting — mirrors `crosswalk-rollup.ts`'s own seam
-// discipline): the caller supplies the SCOPE (`controlIds` — the Annex A control ids the buyer's
+// discipline): the caller supplies the SCOPE (`controlIds` — the Annex A control ids the adopter's
 // ISMS puts in scope; this module carries no hardcoded Annex A catalog, deliberately, since the
-// buyer's own ISMS scoping decision is theirs, never Caisson's to assert) plus the ISO/IEC
+// adopter's own ISMS scoping decision is theirs, never Caisson's to assert) plus the ISO/IEC
 // 27001:2022 `iso27001Crosswalk` (`../crosswalks/regimes.ts`) and a per-canonical-control-id
 // evidence-status map (the same shape `computeCrosswalkRollup`'s caller in `@caisson-sh/compliance-core`
 // already builds from a collector run). Lives in `@caisson-sh/frameworks-pack` — NOT `compliance-core` —
@@ -14,7 +14,7 @@
 // FLAG-NEVER-GUESS (the invariant every evidence surface in this repo carries, ADR-0058): a control
 // id with NO matching `iso27001Crosswalk` row renders `applicable: "unresolved"` — never a guessed
 // "applicable" or "not-applicable". Caisson maps only the technical controls it actually ships;
-// whether an Annex A control the crosswalk doesn't cover applies to the buyer's ISMS is the buyer's
+// whether an Annex A control the crosswalk doesn't cover applies to the adopter's ISMS is the adopter's
 // own scoping call, which this function never makes for them.
 import { z } from "zod";
 import { strictObject, parseStrict, ValidationError } from "@caisson-sh/kernel";
@@ -31,7 +31,7 @@ const controlEvidenceStatus = z.enum(["ready", "gap", "unresolved"]);
  *  Never asserts an applicability answer Caisson isn't positioned to make. */
 const NO_CROSSWALK_JUSTIFICATION =
   "No Caisson crosswalk row maps this control to a shipped technical mechanism; applicability is " +
-  "not resolved by this generator and remains the buyer's own ISMS scoping decision.";
+  "not resolved by this generator and remains the adopter's own ISMS scoping decision.";
 
 /** One Statement of Applicability row. `applicable` is `"unresolved"` — never a guessed answer —
  *  whenever no crosswalk row exists for the control (flag-never-guess). */
@@ -52,7 +52,7 @@ export type SoaRow = z.infer<typeof soaRowSchema>;
 export type SoaRowInput = z.input<typeof soaRowSchema>;
 
 export interface ComputeIso27001SoaRowsInput {
-  /** The Annex A control ids in the buyer's ISMS scope — caller-supplied, never inferred here. */
+  /** The Annex A control ids in the adopter's ISMS scope — caller-supplied, never inferred here. */
   readonly controlIds: readonly string[];
   /** Must be the ISO/IEC 27001:2022 regime crosswalk (`regime: "iso-27001"`) — fails closed otherwise. */
   readonly crosswalk: RegimeCrosswalk;

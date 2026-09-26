@@ -1,6 +1,6 @@
 /**
  * `createTheme` — compose a resolved `{ dark, light }` theme from a registered preset id plus an
- * optional per-mode token override. The entry point buyers use to select/extend a preset at
+ * optional per-mode token override. The entry point adopters use to select/extend a preset at
  * runtime (ADR-0250 G2b).
  */
 import { DEFAULT_PRESET_ID, getPreset, listPresets } from "./presets.ts";

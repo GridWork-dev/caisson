@@ -3,7 +3,7 @@
 // anything, so it never fires the purchase-confirmation email (gated on grantedEntitlements).
 // Sent once per webhook renewal, next to (never instead of) the purchase-confirmation email on a
 // mixed cart (the host's post-commit webhook block — v1 accepts both firing). Same
-// bounded prop set + voice as purchase-confirmation: buyer name, provider order id, the renewed
+// bounded prop set + voice as purchase-confirmation: customer name, provider order id, the renewed
 // line(s) with their new updates-window end date, the charged total (integer minor units, ADR-0007),
 // and the dashboard link.
 import {
@@ -22,7 +22,7 @@ export interface RenewalConfirmationLine {
 }
 
 export interface RenewalConfirmationData {
-  /** The buyer's display name, or their email when no name is on file. */
+  /** The customer's display name, or their email when no name is on file. */
   buyerName: string;
   /** The provider order/transaction id, for support reference. */
   orderId: string;
@@ -34,7 +34,7 @@ export interface RenewalConfirmationData {
   amountTotalMinor?: number | undefined;
   /** Per-line renewal breakdown. */
   lines: readonly RenewalConfirmationLine[];
-  /** The buyer dashboard — license + registry access. */
+  /** The customer dashboard — license + registry access. */
   dashboardUrl: string;
 }
 

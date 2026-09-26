@@ -29,7 +29,7 @@ import { assertValidSourceEventId, sideEffectEventKey } from "./event-keys.ts";
  * migration STRING (a new file in apps/site deploy-migrate), never an edit to an existing one — see
  * `CREDIT_ROUNDING_MIGRATION_SQL`'s convention. Tenant-owned (the claim runs inside `withTenant`): the
  * row's `account_id` is bound from the tenant GUC on insert, so the FORCE-RLS policy admits only the
- * buyer's own claims. `event_key` is the PK — `sourceEventId` for the outer layer, `${sourceEventId}:
+ * tenant's own claims. `event_key` is the PK — `sourceEventId` for the outer layer, `${sourceEventId}:
  * ${sideEffect}` for the per-effect layer — both share this one table + mechanic.
  */
 export const PROCESSED_EVENT_SCHEMA_SQL = `

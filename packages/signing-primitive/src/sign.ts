@@ -7,27 +7,27 @@
 // (the signature is DETACHED, so the body stays byte-stable and golden-fixturable, ADR-0013).
 //
 // Locked design (ADR-0056), each enforced below:
-//   1. PER-TENANT Ed25519, DISTINCT FROM THE CAISSON LICENSE KEY. The buyer proves provenance of
-//      their OWN evidence with their OWN identity (a key provisioned per tenant, ADR-0045). The
-//      license-issuer key (ADR-0010, `crypto.verify` discipline) NEVER signs buyer evidence — wrong
-//      trust model. `Ed25519Signer` holds the tenant seed in a private field; it is never logged.
+//   1. PER-TENANT Ed25519, DISTINCT FROM ANY OTHER CAISSON SIGNING KEY. The adopter proves provenance of
+//      their OWN evidence with their OWN identity (a key provisioned per tenant, ADR-0045). Any other
+//      Caisson signing key (ADR-0010, `crypto.verify` discipline) NEVER signs an adopter's evidence —
+//      wrong trust model. `Ed25519Signer` holds the tenant seed in a private field; it is never logged.
 //   2. DETACHED signature over `canonicalize(manifest) ∥ anchor.tipHash`. Binding the WORM
 //      audit-chain tip hash ties the pack to the chain state at generation time (ADR-0006/0046).
 //      Canonicalization reuses the shipped `audit-chain.ts` primitive, so the signed bytes equal the
 //      generator's `pack.canonicalManifest` exactly.
-//   3. ONE shared `@noble/ed25519` primitive for sign AND verify — the same curve the license issuer
-//      will use, so the verify path is a single primitive across the product.
+//   3. ONE shared `@noble/ed25519` primitive for sign AND verify — the same curve used elsewhere in
+//      this repo, so the verify path is a single primitive across the product.
 //   4. RFC-3161 trusted timestamp COUNTERSIGNS the signature (a near-free "existed at time T"
 //      attestation over the Ed25519 signature, layered on top — never a replacement). It is
 //      test-doubled here: NO live TSA call runs in CI. The live HTTP transport is the
 //      only un-exercised path (un-wired seam, ADR-0047 ethos).
-//   5. Buyer-supplied AWS KMS Sign and DSSE/in-toto + Sigstore/Rekor are documented UN-WIRED seams,
-//      reachable behind the `Signer` / premium-provenance boundary — not the v1 base path.
+//   5. Caller-supplied AWS KMS Sign and DSSE/in-toto + Sigstore/Rekor are documented UN-WIRED seams,
+//      reachable behind the `Signer` boundary — not the v1 base path.
 //
 // THE BROWSER SPLIT (ADR-0396): the contracts, the shared `@noble/ed25519` verify path, the signable
 // payload, and the RFC-3161 test double live in `./portable.ts` — they were never node-bound, and the
 // `node:crypto` import below tainted the whole module for a bundler. They are re-exported here
-// verbatim, so this file and the `.` barrel are unchanged for buyers. What stays: the signing identity
+// verbatim, so this file and the `.` barrel are unchanged for adopters. What stays: the signing identity
 // (a tenant secret), and the two constant-time compares that need `node:crypto`'s `timingSafeEqual`.
 import { createHash } from "node:crypto";
 import * as ed from "@noble/ed25519";
@@ -69,7 +69,7 @@ const ED25519_SECRET_BYTES = 32;
 // --- signer port + Ed25519 implementation ------------------------------------------------------
 
 /**
- * The signing-identity port. The base path is `Ed25519Signer`; a buyer-supplied AWS KMS asymmetric
+ * The signing-identity port. The base path is `Ed25519Signer`; a caller-supplied AWS KMS asymmetric
  * Sign is a drop-in implementation of this same interface (the secret never leaves the HSM) — a
  * documented un-wired seam (ADR-0056), not the v1 base.
  */
@@ -85,8 +85,8 @@ export interface Signer {
 
 /**
  * Per-tenant Ed25519 signer over `@noble/ed25519`. The 32-byte seed is the tenant's signing key
- * (ADR-0045 derivation), held in a private field and never logged — and it MUST NOT be the Caisson
- * license-issuer key (ADR-0010). Construction fails closed on a malformed key.
+ * (ADR-0045 derivation), held in a private field and never logged — and it MUST NOT be any other
+ * Caisson signing key (ADR-0010). Construction fails closed on a malformed key.
  */
 export class Ed25519Signer implements Signer {
   readonly algorithm: SignatureAlgorithm = "ed25519";

@@ -6,7 +6,7 @@
 //
 // DELIBERATELY EXCLUDED, so the next reader does not "complete" this entry:
 //   - the KMS adapters (kms-aws / kms-gcp / kms-azure) and their vendor SDKs — cloud-KMS calls belong
-//     on a server holding the credential, never in a bundle the buyer's users download.
+//     on a server holding the credential, never in a bundle the adopter's users download.
 //   - column.ts (the Drizzle `customType` seam), store.pg.ts, and schema.ts — database-side.
 //   - `deriveTenantKey` / `AesGcmCipher` / `encryptField` / `decryptField` — the node:crypto twins of
 //     what is exported here. Their browser counterparts are the `…Async` names below.

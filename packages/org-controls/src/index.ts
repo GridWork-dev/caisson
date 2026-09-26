@@ -1,7 +1,7 @@
-// @caisson-sh/org-controls (commercial, $249 — ADR-0257 §1.3): WorkOS SSO sign-in, a Clerk
+// @caisson-sh/org-controls (ADR-0257 §1.3): WorkOS SSO sign-in, a Clerk
 // session-verification driver, the owner-gated multi-user membership surface, the cross-tenant
 // admin-write RLS layer, and the entitlement predicate that gates the product's own surfaces. The
-// open @caisson-sh/auth keeps buyer session resolution; @caisson-sh/tenancy-rls keeps buyer tenant isolation.
+// open @caisson-sh/auth keeps adopter session resolution; @caisson-sh/tenancy-rls keeps adopter tenant isolation.
 export { createWorkosSsoProvider } from "./workos.ts";
 export type {
   WorkosSsoConfig,

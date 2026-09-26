@@ -167,7 +167,7 @@ describe("TsaAnchorLog (constructor guards, no network)", () => {
     // trust comes from the CMS/EKU verification of the response rather than the transport, and an
     // internal TSA is a supported deployment (docs/security/external-anchoring.md Fork C).
     // Applying the public-host SSRF guard here would break mainstream http public TSAs and every
-    // internal-TSA buyer.
+    // adopter running an internal TSA.
     expect(
       () => new TsaAnchorLog({ url: "http://timestamp.digicert.com" }),
     ).not.toThrow();

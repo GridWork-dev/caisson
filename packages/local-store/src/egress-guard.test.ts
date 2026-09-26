@@ -116,7 +116,7 @@ describe("createCloudEmbedder (test-doubled transport — no live call)", () => 
       },
       fetchImpl,
     );
-    await expect(embedder.embed("buyer content")).rejects.toThrow(
+    await expect(embedder.embed("adopter content")).rejects.toThrow(
       /private address/,
     );
     expect(fetchImpl).not.toHaveBeenCalled();

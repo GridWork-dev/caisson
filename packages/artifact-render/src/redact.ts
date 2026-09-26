@@ -1,11 +1,11 @@
-// src/redact.ts — allowlist-based field redaction (binding for the buyer trust page, SPEC piece 3).
+// src/redact.ts — allowlist-based field redaction (binding for the trust page, SPEC piece 3).
 //
 // Deliberately the OPPOSITE security posture from `@caisson-sh/kernel`'s `scrubDeep`: that scrubber is a
 // DENYLIST (a key matching a PHI/secret NAME pattern drops; everything else passes through — opt-out,
-// fail-open on an unrecognized field). A buyer-hosted trust page instead needs an ALLOWLIST: a field
+// fail-open on an unrecognized field). An adopter-hosted trust page instead needs an ALLOWLIST: a field
 // absent from the caller's explicit allowlist never renders, full stop — opt-in, fail-closed on an
 // unrecognized field. The two compose (kernel's scrubber is still the right tool for an unstructured
-// egress log); this is the tool for a curated, buyer-controlled PUBLIC artifact.
+// egress log); this is the tool for a curated, adopter-controlled PUBLIC artifact.
 import type { JsonValue } from "@caisson-sh/kernel";
 
 /** A flat fact record — the shape every caller flattens its structured input into before redacting. */

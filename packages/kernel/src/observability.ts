@@ -1,5 +1,5 @@
 // The shared observability schemas (ADR-0075). The ONE base home for the three operational record
-// shapes the buyer dashboard, docs, and support bot read — so no edition (Compliance · AI Production
+// shapes the adopter dashboard, docs, and support bot read — so no edition (Compliance · AI Production
 // Kit · Local-first AI · Agentic-Dev) coins its own. All `.strict()`: unknown fields are rejected at
 // the boundary. Money/credit quantities are integers (ADR-0007); timestamps are ISO-8601.
 //

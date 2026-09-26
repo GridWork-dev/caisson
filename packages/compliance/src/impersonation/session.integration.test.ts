@@ -1,6 +1,6 @@
 // Integration proof for the support-impersonation kernel (ADR-0187; ADR-0005/0052). Runs the REAL
 // composed migration set (via the package assembler — the same 0004_impersonation_session.sql a
-// generated buyer app applies), the REAL `withTenant`, and the REAL `AuditChainStore` (PGlite + a
+// generated app applies), the REAL `withTenant`, and the REAL `AuditChainStore` (PGlite + a
 // local WORM dir) — no network, no live cloud. Proves the ADR's testable invariants: one
 // impersonated write yields TWO chained, `verifyChain`-valid records linked by sessionId in
 // deterministic order; an impersonated context still cannot read outside the target tenant
@@ -37,7 +37,7 @@ import {
 } from "./session.ts";
 
 const T0 = new Date("2026-06-27T12:00:00.000Z");
-const REASON = "Investigating a buyer-reported evidence-pack failure.";
+const REASON = "Investigating a customer-reported evidence-pack failure.";
 
 let tp: TestPg;
 let tmpDir: string;

@@ -56,7 +56,7 @@ describe("createEmailChannel", () => {
   });
 });
 
-// SSRF: buyer-supplied destination URLs must be https to a public host, guarded at BOTH the Zod
+// SSRF: caller-supplied destination URLs must be https to a public host, guarded at BOTH the Zod
 // schema boundary and the fetch seam (a config object can be built without parsing the schema).
 const UNSAFE_URLS = [
   "http://hooks.slack.com/services/x", // non-https

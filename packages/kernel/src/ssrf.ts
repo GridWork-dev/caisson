@@ -1,5 +1,5 @@
 // SSRF guard (ADR-0002 security floor: "resolve-then-pin for SSRF"). ONE home for the outbound-URL
-// safety policy every buyer-/config-supplied destination shares — the alerting webhook/Slack/Telegram
+// safety policy every caller-/config-supplied destination shares — the alerting webhook/Slack/Telegram
 // transports (@caisson-sh/alerting) and the ai-kit provider baseUrl (@caisson-sh/ai-kit). Both used to carry
 // near-identical LITERAL-only denylists that never resolved the hostname, so a public host that resolved
 // (or DNS-rebound) to 127.0.0.1 / a private range / 169.254.169.254 (cloud metadata) sailed through
@@ -7,7 +7,7 @@
 // re-check the floor requires.
 //
 // POLICY: https only · no credentials-in-URL · a private/loopback/link-local/metadata DENYLIST (NOT a
-// host allowlist — buyers may point a webhook / self-hosted gateway at ANY public https host).
+// host allowlist — adopters may point a webhook / self-hosted gateway at ANY public https host).
 //
 // Two seams, by cost:
 //   - `assertSafePublicUrl` (SYNC): parse + https + no-creds + LITERAL-host denylist. Cheap, no DNS —
@@ -132,7 +132,7 @@ export async function assertResolvedHostPublic(
 /**
  * ASYNC full guard for an outbound-fetch seam: the sync {@link assertSafePublicUrl} check THEN the
  * {@link assertResolvedHostPublic} DNS re-check. Use immediately before an outbound fetch to a
- * buyer-/config-supplied URL.
+ * caller-/config-supplied URL.
  */
 export async function assertSafePublicUrlResolved(raw: string): Promise<void> {
   const url = assertSafePublicUrl(raw);

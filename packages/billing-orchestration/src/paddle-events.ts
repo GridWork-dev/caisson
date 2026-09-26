@@ -112,11 +112,11 @@ function readLineItemQueues(
 }
 
 /** EVERY line of a one-time transaction: `items[].price.id` + `items[].quantity` — a multi-item cart
- * is ONE transaction carrying N lines; fulfilling only `items[0]` under-grants a cart the buyer paid
+ * is ONE transaction carrying N lines; fulfilling only `items[0]` under-grants a cart the customer paid
  * for in full — enriched per line with its `details.line_items[].id` (`txnitm_…`) join key + charged
  * total for per-line refunds. FAILS CLOSED on any unreadable line in a non-empty `items` (money path):
  * throwing makes `verifyAndParse` return a non-2xx so Paddle RETRIES, versus silently skipping the
- * line — which would ack the delivery and under-grant a buyer who paid for it, permanently. An
+ * line — which would ack the delivery and under-grant a customer who paid for it, permanently. An
  * absent / empty `items` returns [] (the caller maps that to null: nothing to grant — a genuinely
  * itemless event, NOT a dropped paid line). */
 function readLineItems(obj: Record<string, unknown>): {
@@ -158,7 +158,7 @@ function readLineItems(obj: Record<string, unknown>): {
   // absent/short/idless → the "" sentinel). Two credit-bearing lines with itemId "" collide on the
   // credit ledger's (source_event_id, event_type, COALESCE(line_item_id,'')) uniqueness key, so every
   // credit-bearing line past the first hits ON CONFLICT DO NOTHING and is SILENTLY dropped while the
-  // webhook acks 200 — the buyer pays for the whole cart and receives only the first line's credits.
+  // webhook acks 200 — the customer pays for the whole cart and receives only the first line's credits.
   // Throwing returns a non-2xx so Paddle redelivers (same fail-closed money-path contract as the
   // missing-price-id throw above). A single-line transaction with the "" sentinel cannot collide, so
   // it stays allowed — the common no-details.line_items case for a one-SKU buy.
@@ -231,7 +231,7 @@ function readAdjustmentItems(
   // check: each entry is applied against the grant row for its line, and the applier's idempotency
   // anchor is the adjustment id recorded on that row, so the FIRST entry writes the adjustment id
   // and every later entry sharing the itemId is then refused as a redelivery — correctly, by a
-  // guard that cannot tell this case from a real one. The refund under-records, the buyer keeps a
+  // guard that cannot tell this case from a real one. The refund under-records, the customer keeps a
   // credit floor higher than they paid for, and the webhook still acks 200. A non-2xx makes Paddle
   // redeliver the whole adjustment instead, so a malformed delivery is visible rather than
   // half-applied. Summing them would be guessing at intent on a shape Paddle does not legitimately
@@ -372,7 +372,7 @@ export function parsePaddleEvent(
       };
     case "adjustment.created": {
       // ADR-0294: a chargeback/dispute — fired ONLY on `action: 'chargeback'` (Paddle's bank-
-      // initiated dispute, distinct from a merchant/buyer-initiated refund, whose `action` is
+      // initiated dispute, distinct from a merchant/customer-initiated refund, whose `action` is
       // `'refund'` and settles via the adjustment.updated case below). Unlike a refund, a
       // chargeback has no merchant approval step to wait on, so this alerts immediately on
       // creation rather than waiting for a terminal status — an operator wants to know AS SOON AS

@@ -106,7 +106,7 @@ describe("MCP rate-limit wiring", () => {
       },
     );
 
-    // Fail-OPEN (lock 5): a store fault must NOT lock out a paying buyer.
+    // Fail-OPEN (lock 5): a store fault must NOT lock out an adopter.
     const result = await listModules(server);
     expect(result).toEqual({ modules: [] });
     // The fault was surfaced to the telemetry sink, not swallowed.

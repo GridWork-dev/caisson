@@ -58,7 +58,7 @@ interface RetentionReadback {
   readonly retainUntil: Date | undefined;
 }
 
-/** The exact acknowledgement a buyer must echo to escalate an evidence class to COMPLIANCE. */
+/** The exact acknowledgement an adopter must echo to escalate an evidence class to COMPLIANCE. */
 export const COMPLIANCE_ACKNOWLEDGEMENT =
   "I acknowledge COMPLIANCE-mode S3 Object-Lock is irreversible: this data cannot be deleted or " +
   "shortened by anyone — including the AWS account root — until its retain-until date.";
@@ -68,7 +68,7 @@ const OPT_IN_BRAND: unique symbol = Symbol(
 );
 
 /**
- * The typed, opaque proof that a buyer has acknowledged COMPLIANCE-mode is irreversible (ADR-0051).
+ * The typed, opaque proof that an adopter has acknowledged COMPLIANCE-mode is irreversible (ADR-0051).
  * It is unforgeable in practice — the only constructor is {@link irreversibleComplianceOptIn}, which
  * demands the exact acknowledgement string and the bucket it applies to. No code path selects
  * COMPLIANCE without one of these in hand, so the footgun is impossible to pull by accident.

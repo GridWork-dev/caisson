@@ -1,6 +1,6 @@
 # @caisson-sh/ai-kit
 
-The **AI Production Kit** edition (ADR-0059/0213): one metered gateway with four public entry points—
+The **AI Production Kit** package (ADR-0059/0213): one metered gateway with four public entry points—
 `infer`, `inferStream`, `embed`, and `embedMany`—that enforce reserve-before-provider-call accounting.
 It composes the four base primitives behind Vercel AI SDK v7, so a shipped app gets cost
 control, reproducible prompts, fail-closed content safety, and a quality gate **by construction**,

@@ -3,7 +3,7 @@ export type { Role, SessionContext, SessionProvider } from "./session.ts";
 export { ACCOUNT_MEMBER_SCHEMA_SQL } from "./schema.ts";
 // Session-token hash-at-rest (ADR-0366) — pure crypto, no better-auth import.
 export { deriveTokenLookupKey } from "./session-token.ts";
-// Session-resolution half only (ADR-0257 §1.3) — runs on every buyer login, stays open. The
+// Session-resolution half only (ADR-0257 §1.3) — runs on every login, stays open. The
 // owner-gated MANAGE half (list/add/assertCanManageMembers) + WorkOS SSO moved to @caisson-sh/org-controls.
 export {
   ensurePersonalAccount,

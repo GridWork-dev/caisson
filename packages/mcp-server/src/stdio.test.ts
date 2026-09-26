@@ -68,7 +68,7 @@ afterEach(async () => {
 describe("stdio transport binding", () => {
   test("auth gates an unauthenticated call: a bad bearer never reaches a transport", () => {
     // No `Server` is constructed and no transport connects on a bad token — every tool a valid
-    // buyer could call is unreachable, not just the first one (see stdio.ts file header).
+    // client could call is unreachable, not just the first one (see stdio.ts file header).
     expect(() =>
       createStdioMcpServer({ ...deps(), bearer: "not-a-real-token" }),
     ).toThrow(AuthnError);

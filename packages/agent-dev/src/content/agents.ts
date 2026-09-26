@@ -7,7 +7,7 @@
 // clean. Caisson-native content, authored directly against this schema.
 import { type AgentArtifact, defineAgent } from "@caisson-sh/agent-kernel";
 
-/** The default agent set a buyer of the agent-dev edition gets out of the box (engine-neutral). */
+/** The default agent set an adopter of the agent-dev edition gets out of the box (engine-neutral). */
 export const CAISSON_AGENTS: readonly AgentArtifact[] = [
   defineAgent({
     name: "code-reviewer",

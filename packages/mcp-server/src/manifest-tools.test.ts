@@ -67,11 +67,11 @@ function makeServer() {
 
 const BROKEN = `import { Button, Frobnicate } from "@caisson-sh/ui";\n<Frobnicate />`;
 
-describe("base read tools — open to every authenticated buyer", () => {
+describe("base read tools — open to every authenticated caller", () => {
   const server = makeServer();
   const base = server.authenticate(T_BASE);
 
-  test("list_components + describe_component + get_tokens need no entitlement", async () => {
+  test("list_components + describe_component + get_tokens need no extra grant", async () => {
     const list = (await server.handleToolCall(base, "list_components", {})) as {
       components: { name: string }[];
     };

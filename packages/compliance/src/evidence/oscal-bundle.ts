@@ -4,7 +4,7 @@
 // Assessment-Plan `rlink` honestly resolvable WITHOUT a hosted route. It co-locates the real per-framework
 // AP (`oscal-assessment-plan.ts`), the SAR, the POA&M, the canonical manifest, and its detached
 // Ed25519 signature — then rewrites the SAR's back-matter `rlink.href` to the RELATIVE in-bundle AP path
-// with a SHA-256 `hashes[]` binding over the exact bundled AP bytes. A buyer's GRC tooling resolves the
+// with a SHA-256 `hashes[]` binding over the exact bundled AP bytes. An adopter's GRC tooling resolves the
 // reference relative to the doc's own location (OSCAL relative-URI resolution) — no `caisson.sh` URL served.
 //
 // PURE + DETERMINISM: a single injected `now`/`newId` seam feeds the AP, SAR, and POA&M in a fixed order,

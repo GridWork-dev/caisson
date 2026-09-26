@@ -71,7 +71,7 @@ describe("evaluateFtc4P — one scareware fixture per rule", () => {
 describe("evaluateFtc4P — clean copy", () => {
   test("ordinary copy with no dark-pattern language passes", () => {
     const result = evaluateFtc4P(
-      "Caisson ships as a composable base plus four premium editions; buy what you need, extend anytime.",
+      "This starter kit ships as a composable base plus optional feature packs; add what you need, anytime.",
     );
     expect(result.flagged).toBe(false);
     expect(result.findings).toHaveLength(0);

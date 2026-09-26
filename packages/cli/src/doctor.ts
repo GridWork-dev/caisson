@@ -56,7 +56,7 @@ const SKIP_DIRS = new Set(["node_modules", ".git", "dist", ".next", ".turbo"]);
 const MAX_FILES = 500;
 const MAX_FILE_BYTES = 200_000;
 
-/** Collect the buyer source the doctor checks: source/style/manifest files under `root`, bounded in
+/** Collect the adopter source the doctor checks: source/style/manifest files under `root`, bounded in
  *  count and per-file size to the same limits the `check_usage` tool enforces. Vendored/build dirs
  *  are skipped. Returns repo-relative paths. */
 export function collectFiles(root: string): DoctorFile[] {
@@ -105,7 +105,7 @@ export function buyerMcpTransport(): Transport {
   return new StdioClientTransport({ command, args, env });
 }
 
-/** The bin entry: parse `[dir] [--json]`, collect files, call the buyer MCP, render findings, and
+/** The bin entry: parse `[dir] [--json]`, collect files, call the local MCP, render findings, and
  *  exit non-zero when any error-severity finding is present (CI-usable). */
 export async function runDoctorCli(argv: readonly string[]): Promise<void> {
   let dir = ".";

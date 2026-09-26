@@ -1,7 +1,7 @@
 // @caisson-sh/ai-evals — the eval gate CLI (ADR-0062 / ADR-0072). The runnable behind the DISTINCT
 // turbo `eval` task: it runs the committed eval suite against the committed JSON baseline and exits
 // non-zero on a regression, BLESS-style. This is a MONOREPO-only gate — it is NEVER injected into a
-// generated buyer repo as a required CI job (ADR-0072): a buyer owns their own eval cadence.
+// generated repo as a required CI job (ADR-0072): the adopter owns their own eval cadence.
 //
 // Offline + deterministic by construction: model-graded scorers replay a committed
 // cassette, never a live provider call, never a secret. `BLESS=1 bun run eval` is the one sanctioned

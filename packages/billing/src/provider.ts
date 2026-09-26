@@ -2,8 +2,8 @@
 // was the original driver; ADR-0108 switches the live merchant-of-record to Paddle — both (plus the
 // LemonSqueezy/Polar MoR drivers, ADR-0175) implement THIS one port, so a provider swap is a new driver,
 // not a rewrite. The port + `CheckoutInput` + every provider's config TYPE stay OPEN here (registry-schema
-// precedent) so generated buyer hosts typecheck against open code only; the driver FACTORIES that
-// construct them (createStripeBilling/…/createPolarBilling) live in the commercial
+// precedent) so generated hosts typecheck against open code only; the driver FACTORIES that
+// construct them (createStripeBilling/…/createPolarBilling) live in the paired package
 // @caisson-sh/billing-orchestration (ADR-0249 G3). The raw-body signature verifiers also stay open (webhook.ts,
 // paddle-webhook.ts, lemonsqueezy-webhook.ts, polar-webhook.ts).
 import type { VerifyOptions } from "./webhook.ts";

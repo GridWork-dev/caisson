@@ -148,7 +148,7 @@ export async function verifyClerkSessionClaims(
  *  - Active Organization with NO role claim: this must fail to LEAST privilege (`"seat"`), never
  *    `personalAccountRole`. `personalAccountRole` defaults to `"owner"`, and an org account is a
  *    SHARED tenant — silently granting owner-level (full admin/RLS) rights to every member whose
- *    token happens to omit `o.rol` (e.g. a buyer's custom Clerk session-token JWT template that
+ *    token happens to omit `o.rol` (e.g. an adopter's custom Clerk session-token JWT template that
  *    reshapes `o` without a role field) is a privilege-escalation bug, not a convenience default.
  *    Matches `mapOrganizationRole`'s own "anything not admin -> seat" posture, and
  *    `@caisson-sh/auth/jwt.ts`'s requirement that `role` be explicit for a shared account, never

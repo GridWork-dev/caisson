@@ -415,7 +415,7 @@ export function isEmailTemplateId(
 }
 
 /**
- * The `Emailer` port is shared with non-buyer-facing callers (e.g. `@caisson-sh/alerting`'s
+ * The `Emailer` port is shared with non-customer-facing callers (e.g. `@caisson-sh/alerting`'s
  * operator alert emails, which use free-form `template` names like `alert.system.error_rate_high`
  * and arbitrary `data`) — those were never meant to render as a branded template. This renders
  * ONLY when `template` is a known branded id and `data` coerces to that template's expected

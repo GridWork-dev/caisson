@@ -1,5 +1,5 @@
 // The FieldKeyProvider port (ADR-0043). Key MANAGEMENT sits behind one interface; the ciphertext
-// format, the column type, and the rotation registry are unchanged when a buyer swaps providers.
+// format, the column type, and the rotation registry are unchanged when an adopter swaps providers.
 //   - DerivedKeyProvider (default) — per-tenant HKDF derivation, zero infra. Exposes a SYNCHRONOUS
 //     `deriveKey` for the Drizzle column hot-path (toDriver/fromDriver are sync; HKDF is sync).
 //   - KmsKeyProvider (kms.ts) — async envelope encryption behind the same port (network behind it).

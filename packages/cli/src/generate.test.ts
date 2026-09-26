@@ -68,7 +68,7 @@ describe("generate — allowlist gate (ADR-0021/0048)", () => {
     const { selection, files } = generate(INDEX, BASE);
     expect(selection.projectName).toBe("acme-app");
     const paths = files.map((f) => f.path);
-    // The trimmed buyer-repo harness ships its config, CI, AGENTS, and a golden baseline.
+    // The trimmed generated-repo harness ships its config, CI, AGENTS, and a golden baseline.
     expect(paths).toEqual([
       ".github/workflows/ci.yml",
       ".gitignore",
@@ -317,7 +317,7 @@ describe("generate — framework templates (ADR-0287)", () => {
       build: "next build",
       start: "next start",
     });
-    // the buyer's explicit --module selection is present alongside the framework's own deps.
+    // the adopter's explicit --module selection is present alongside the framework's own deps.
     // The kernel pin is read from the real package rather than hardcoded: this assertion is about
     // COMPOSITION, and a literal here goes stale on every version bump for no added coverage
     // (framework-template-pins.test.ts is what actually guards the pin values).
@@ -362,8 +362,8 @@ describe("generate — framework templates (ADR-0287)", () => {
   });
 });
 
-describe("generate — ADR-0072 buyer-repo boundary", () => {
-  // Paths that would only appear if a monorepo-internal surface leaked into a buyer repo.
+describe("generate — ADR-0072 generated-repo boundary", () => {
+  // Paths that would only appear if a monorepo-internal surface leaked into a generated repo.
   const FORBIDDEN_PATH = [
     /build-index/i,
     /append-ledger/i,

@@ -229,7 +229,7 @@ export type EvidencePackManifest = z.infer<typeof evidencePackManifestSchema>;
 
 /**
  * The BLOCKED-case report (flag-never-guess, ADR-0058). When ANY control's evidence is `unresolved`,
- * NO manifest is assembled — the generator throws, surfacing this body so the buyer knows
+ * NO manifest is assembled — the generator throws, surfacing this body so the adopter knows
  * exactly which evidence is absent. There is no partial pack: this report is the only output of a
  * blocked run, and it lists every unresolved item.
  */

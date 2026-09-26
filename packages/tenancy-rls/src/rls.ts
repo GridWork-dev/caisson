@@ -167,6 +167,6 @@ export function buildTenantPolicySql(
 
 // The cross-tenant admin-WRITE seam (ADMIN_WRITE_ROLE, ADMIN_WRITE_ROLE_BOOTSTRAP_SQL,
 // buildAdminWritePolicySql, buildAdminSelectPolicySql, withAdminWrite, AdminWritePolicyOptions) moved
-// to the commercial @caisson-sh/org-controls (ADR-0257 §1.3). This open package keeps ONLY the buyer
+// to @caisson-sh/org-controls (ADR-0257 §1.3). This open package keeps ONLY the adopter
 // tenant-isolation floor (withTenant/withUser + buildTenantPolicySql); the operator control plane
 // imports the admin-write layer from org-controls.

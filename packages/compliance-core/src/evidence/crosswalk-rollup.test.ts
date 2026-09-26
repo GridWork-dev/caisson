@@ -391,7 +391,7 @@ describe("Legal-gate copy guard (ADR-0080 / ADR-0333 Group G) -- rollup note is 
     test(`a note claiming "${forbidden}" is rejected`, () => {
       expect(() =>
         crosswalkRollupCellSchema.parse(
-          cellInput(`This mapping means the buyer is ${forbidden}.`),
+          cellInput(`This mapping means the customer is ${forbidden}.`),
         ),
       ).toThrow();
     });

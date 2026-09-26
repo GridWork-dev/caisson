@@ -157,7 +157,7 @@ export interface PromptRegistration {
 
 /**
  * A deliberately-deprecated tool (ADR-0216). Distinct from "never existed": a retired name answers
- * `RetiredToolError` (410) with `reason`/`retiredAt`, so a buyer integration gets an actionable
+ * `RetiredToolError` (410) with `reason`/`retiredAt`, so a caller's integration gets an actionable
  * signal instead of the same 404 an unknown tool gets.
  */
 export interface RetiredTool {

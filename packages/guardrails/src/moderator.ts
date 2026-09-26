@@ -305,7 +305,7 @@ export function localModerator(sources: readonly string[]): Moderator {
 
 /**
  * The `provider` driver — wraps an INJECTED check. Guardrails makes no network call itself (it is a
- * port boundary); the buyer's real adapter performs the HTTP call with `fetchWithTimeout`, and CI
+ * port boundary); the adopter's real adapter performs the HTTP call with `fetchWithTimeout`, and CI
  * injects a test double. This keeps the live transport the only un-exercised path.
  */
 export function providerModerator(

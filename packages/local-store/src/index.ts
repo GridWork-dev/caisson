@@ -45,7 +45,7 @@ export type { CloudEmbedConfig, EmbedFetch } from "./embed-scrub-guard.ts";
 
 // The retention policy (ADR-0067): dedup-on-write (a near-duplicate fact is REINFORCED, not
 // copied) + a default sliding TTL + a GC pass (expired / decayed / over-cap) — pure, deterministic,
-// buyer-config (`GcConfig`, `.strict()`). Operates over the `MemoryItem` record the edition owns and
+// adopter-config (`GcConfig`, `.strict()`). Operates over the `MemoryItem` record the edition owns and
 // composes ON TOP of the store's `upsert`-by-id; the base never deletes or enumerates store rows.
 export {
   parseGcConfig,

@@ -1,5 +1,5 @@
 // src/embed-scrub-guard.ts — the cloud-embed secret-scrub guard (ADR-0067, security-critical). The
-// Embedder PORT is the ONE path that can carry buyer content OFF the box (to a cloud embedder).
+// Embedder PORT is the ONE path that can carry adopter content OFF the box (to a cloud embedder).
 // Before any such egress, credential-bearing spans MUST be scrubbed, and the embed transport stays a
 // TEST-DOUBLED seam — no live cloud call ever runs in CI (the live transport is the only
 // un-exercised path).
@@ -55,7 +55,7 @@ export function guardEmbedder(inner: Embedder): Embedder {
   };
 }
 
-/** Buyer config for the reference guarded cloud embedder — validated `.strict()` at the boundary. */
+/** Adopter config for the reference guarded cloud embedder — validated `.strict()` at the boundary. */
 const CloudEmbedConfigSchema = strictObject({
   /** HTTPS embedding endpoint. Non-https (incl. `http:`/`file:`/`data:`) is rejected fail-closed. */
   endpoint: z

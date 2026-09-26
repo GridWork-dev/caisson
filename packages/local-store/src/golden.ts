@@ -40,7 +40,7 @@ const RRF_FIXTURE: RrfFixture = {
 };
 
 // ── Egress secret-scrub golden (golden-first for the egress guard) ─────────────────────────────────
-// The local store's embedder PORT (ADR-0067) is the one path that can carry buyer content OFF the box
+// The local store's embedder PORT (ADR-0067) is the one path that can carry adopter content OFF the box
 // (to a cloud embedder). Before any such egress the egress guard MUST scrub credential-bearing
 // content. This fixture PINS that guard's contract — a table of credential-bearing `raw` inputs → the
 // exact `scrubbed` output the guard must produce — and lands BEFORE the logic (ADR-0013 golden-first).

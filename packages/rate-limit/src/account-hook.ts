@@ -9,7 +9,7 @@
 //   - store error / unreachable   → FAIL-OPEN (operator-locked): ALLOW the call and signal an alert
 //                                    through the operator-supplied sink. A rate limit is an
 //                                    abuse-throttle, NOT an auth boundary; an infrastructure fault
-//                                    must never lock out a paying buyer. The alert sink is the
+//                                    must never lock out an adopter. The alert sink is the
 //                                    caller's telemetry/error surface, never `console.log`.
 import { RateLimitError } from "@caisson-sh/kernel";
 import {
@@ -44,7 +44,7 @@ export interface RateLimitHookDeps {
 }
 
 /**
- * Build the `(accountId) => Promise<void>` hook the buyer MCP awaits before every tool dispatch.
+ * Build the `(accountId) => Promise<void>` hook the MCP server awaits before every tool dispatch.
  * Resolves to allow; throws `RateLimitError` only on a genuine deny; fails OPEN (resolves + alerts)
  * on any store error.
  */
@@ -73,7 +73,7 @@ export function createRateLimitHook(
   };
 }
 
-/** Build the buyer MCP with the Postgres-backed account throttle installed by default. */
+/** Build the MCP server with the Postgres-backed account throttle installed by default. */
 export function createRateLimitedMcpServer(
   options: McpServerOptions,
   deps: RateLimitHookDeps,

@@ -86,7 +86,7 @@ export interface VerifyExternalDeps {
    */
   readonly receiptVersions?: Pick<AnchorOutbox, "get">;
   /**
-   * Buyer-configured TSA CA root certificates (DER), Fork C. TSA path only. When provided, the token's
+   * Caller-configured TSA CA root certificates (DER), Fork C. TSA path only. When provided, the token's
    * certificate chain is validated against them (`chainValidated: true`); when omitted, the signature +
    * imprint + EKU are still verified but the chain is not anchored to a known root
    * (`chainValidated: false`) — the honest limit surfaced to the caller, never silently upgraded.
@@ -103,7 +103,7 @@ export type AnchorVerification =
   | {
       readonly grade: "trusted-timestamped";
       readonly verified: true;
-      /** Whether the TSA cert chain was validated against buyer-configured trust anchors. */
+      /** Whether the TSA cert chain was validated against caller-configured trust anchors. */
       readonly chainValidated: boolean;
       readonly anchorLength: number;
     }
