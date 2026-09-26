@@ -1,12 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import {
-  HUB_CASE_STUDY_ID,
-  HUB_FOUNDER_ID,
-  rootGraph,
-  SAME_AS,
-  serializeJsonLd,
-} from "./jsonld.ts";
+import { FOUNDER_ID, rootGraph, SAME_AS, serializeJsonLd } from "./jsonld.ts";
 
 // `sameAs` is an identity claim read by crawlers and answer engines. An entry that does not
 // resolve for an ANONYMOUS visitor is a BROKEN claim, not a weak one — and that is exactly what
@@ -51,42 +45,34 @@ describe("Organization sameAs", () => {
   });
 });
 
-// R19 entity edges (operator "A+C", 2026-08-25). The two orgs are separate LLCs, so the ONLY
-// truthful cross-domain predicates are a shared founder Person and the hub case study's `about`
-// mirrored as `subjectOf`. The IRIs are pinned as LITERALS here, not via the exported constants:
-// editing the constant must red this file. The negative guard runs over the SERIALIZED root
-// graph so a subsidiary predicate cannot sneak in on any node under any spelling.
-describe("Organization entity edges to the GridWork hub", () => {
+// The founder edge. Caisson Software LLC is a separate company, so the ONLY truthful
+// cross-domain predicate is a shared founder Person. The IRI is pinned as a LITERAL here, not via
+// the exported constant: editing the constant must red this file. The negative guards run over
+// the SERIALIZED root graph so a subsidiary predicate, or an IRI on the retired gridworkdigital.com
+// hub (404 since 2026-09-26), cannot sneak in on any node under any spelling.
+describe("Organization founder edge", () => {
   const org = rootGraph["@graph"].find((n) => n["@type"] === "Organization") as
-    | { founder?: { "@id": string }; subjectOf?: { "@id": string } }
+    | { founder?: { "@id": string }; subjectOf?: unknown }
     | undefined;
 
-  test("shape floor: the Organization carries both edges", () => {
+  test("shape floor: the Organization carries the founder edge", () => {
     expect(org?.founder).toBeDefined();
-    expect(org?.subjectOf).toBeDefined();
   });
 
-  test("founder is the hub's Person IRI, verbatim", () => {
-    expect(org?.founder).toEqual({
-      "@id": "https://gridworkdigital.com/#founder",
-    });
-    expect(HUB_FOUNDER_ID).toBe("https://gridworkdigital.com/#founder");
+  test("founder is gridwork.dev's Person IRI, verbatim", () => {
+    expect(org?.founder).toEqual({ "@id": "https://gridwork.dev/#person" });
+    expect(FOUNDER_ID).toBe("https://gridwork.dev/#person");
   });
 
-  test("subjectOf is the hub's case-study IRI, verbatim", () => {
-    expect(org?.subjectOf).toEqual({
-      "@id": "https://gridworkdigital.com/work/caisson-reliability#casestudy",
-    });
-    expect(HUB_CASE_STUDY_ID).toBe(
-      "https://gridworkdigital.com/work/caisson-reliability#casestudy",
-    );
+  test("no subjectOf edge and nothing on the retired gridworkdigital.com hub", () => {
+    expect(org?.subjectOf).toBeUndefined();
+    expect(serializeJsonLd(rootGraph)).not.toMatch(/gridworkdigital/i);
   });
 
   test("never publishes a subsidiary predicate on any node", () => {
     const serialized = serializeJsonLd(rootGraph);
     expect(serialized).not.toMatch(/parentOrganization/i);
     expect(serialized).not.toMatch(/subOrganization/i);
-    expect(serialized).not.toMatch(/gridworkdigital\.com\/#organization/);
   });
 
   test("the Person is referenced by @id only — no inline org back-reference", () => {

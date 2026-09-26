@@ -18,18 +18,14 @@ export const SITE_ID = `${SITE_URL}/#website`;
 export const SAME_AS = ["https://github.com/caisson-sh"] as const;
 
 /**
- * Entity-association edges to the GridWork Digital hub (R19, operator ruling "A+C", 2026-08-25).
- * Caisson Software LLC and GridWork Digital LLC are SEPARATE Georgia LLCs with common ownership
- * at the individual level only, so the truthful predicates are a shared `founder` Person and the
- * hub's case study being `about` this Organization (mirrored here as `subjectOf`). There is
- * deliberately NO `parentOrganization` / `subOrganization` — that is the subsidiary predicate and
- * it would be false (R39/R40). Both IRIs are constants on the hub side (studio PR #87 pins them
- * once `NEXT_PUBLIC_SITE_URL` is set), and each must resolve in the hub's served JSON-LD before
- * this ships; the pinning tests hold the literal strings so a drift here cannot go unnoticed.
+ * The founder edge. Caisson Software LLC is a separate company that shares its founder with other
+ * GridWork work at the individual level only, so the one truthful cross-domain predicate is
+ * `founder`, pointing at the Person that gridwork.dev publishes. There is deliberately NO
+ * `parentOrganization` / `subOrganization`: that is the subsidiary predicate and it would be
+ * false. The IRI must resolve in gridwork.dev's served JSON-LD; the pinning test holds the literal
+ * so a drift here cannot go unnoticed.
  */
-export const HUB_FOUNDER_ID = "https://gridworkdigital.com/#founder";
-export const HUB_CASE_STUDY_ID =
-  "https://gridworkdigital.com/work/caisson-reliability#casestudy";
+export const FOUNDER_ID = "https://gridwork.dev/#person";
 
 /** XSS-safe serialize for a dangerouslySetInnerHTML JSON-LD payload. */
 export function serializeJsonLd(data: unknown): string {
@@ -49,8 +45,7 @@ export const rootGraph = {
       description:
         "Compliance-grade infrastructure for regulated SaaS — fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only audit chain.",
       sameAs: SAME_AS,
-      founder: { "@id": HUB_FOUNDER_ID },
-      subjectOf: { "@id": HUB_CASE_STUDY_ID },
+      founder: { "@id": FOUNDER_ID },
     },
     {
       "@type": "WebSite",
