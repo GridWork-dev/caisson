@@ -16,23 +16,6 @@
     "lint": {},
     "typecheck": { "dependsOn": ["^build"] },
     "test": { "dependsOn": ["^build"] },
-    "@caisson/service-docs#test": {
-      "dependsOn": ["^build"],
-      // This suite reads its corpus from OUTSIDE its own package: the retrieval goldens build the
-      // real corpus from apps/site/content plus every non-private package README. Turbo's default
-      // inputs are the package's own files plus its declared dependencies' hashes, and
-      // services/docs does not depend on @caisson/site — so a change to the buyer docs left this
-      // task's hash untouched and CI replayed a cached pass. Not hypothetical: two MDX pages added
-      // 2026-08-28 pushed a golden's expected source out of the top-5 and merged green, because the
-      // one gate that could see it never ran. These inputs put the corpus in the cache key.
-      "inputs": [
-        "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/apps/site/content/**",
-        "$TURBO_ROOT$/apps/site/lib/pricing.ts",
-        "$TURBO_ROOT$/packages/*/README.md",
-        "$TURBO_ROOT$/packages/*/package.json"
-      ]
-    },
     "test:e2e": { "dependsOn": ["build"], "cache": false },
     "test:live": { "cache": false },
     "eval": {}

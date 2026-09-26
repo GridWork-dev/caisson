@@ -1,8 +1,0 @@
-{
-  "extends": "@caisson/tsconfig/base.json",
-  "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "."
-  },
-  "include": ["handler.ts", "handler.test.ts"]
-}

@@ -19,14 +19,13 @@ on:
 # (CAISSON-96): a path-skipped required job never reports and the PR blocks forever, but a DRAFT
 # PR cannot merge anyway, and marking it ready_for_review (in the types list above) fires the full
 # run before merge is possible. ADR-0422 adds the optional path-gated Docker build smoke below;
-# its path gate never conditions a required job. Other jobs (eval · native-ext · token-drift ·
-# publish-and-index · the Railway deploy) have moved to their own workflow files
-# (quality.yml / publish.yml / deploy-railway.yml) where path-filtering and main-only gating are
-# safe because those jobs are not required checks. ONE required check lives outside this file:
-# `support-bot` (support-bot.yml), promoted by ADR-0414 — and it obeys the same rule, having had
-# its paths filter removed in that same change. The full required set is therefore
-# standards-gate · check · registry-index · oscal-conformance (here) · deterministic
-# (security-scan.yml) · support-bot (support-bot.yml); scripts/release-readiness.ts is the list.
+# its path gate never conditions a required job. Other jobs (eval · native-ext · token-drift) have
+# moved to quality.yml, where path-filtering and main-only gating are safe because those jobs are
+# not required checks. The full required set is therefore standards-gate · check · registry-index ·
+# oscal-conformance (here) · deterministic (security-scan.yml); scripts/release-readiness.ts is the
+# list. (oss-pivot PR2: the commercial fleet's deploy-railway/publish/mirror-sync/release-train/
+# support-bot workflows and the required checks they carried are retired with the services they
+# deployed.)
 #
 # RUNNER LINEAGE: pure-compute gates moved to Blacksmith VM-per-job runners on 2026-07-11
 # (ADR-0326); credential-bearing publish/deploy-railway/mirror-sync/release-train jobs followed
@@ -184,7 +183,7 @@ jobs:
         # PGlite instances; at turbo's default fan-out they contend on the runner and a PGlite `beforeAll`
         # can exceed its hook timeout. Halving peak concurrency removes the starvation (local `bun run
         # check` stays full-speed). Tunable if the job runs long.
-        run: bunx turbo run build lint typecheck test --no-daemon --concurrency=50% --continue=dependencies-successful && bunx oxlint deploy && bunx tsc -p deploy/tsconfig.json && bun test deploy/*.test.ts && bun run gate
+        run: bunx turbo run build lint typecheck test --no-daemon --concurrency=50% --continue=dependencies-successful && bun run gate
       - name: public-surface + Paddle catalog + browser-audit skill guards (outside the workspace)
         # The excerpt secret-scan + source-drift test, preview reader contract, and production
         # Paddle marker-map validator are load-bearing gates outside turbo — same class as the
@@ -210,16 +209,7 @@ jobs:
         # railway-deploy and railway-env-sync use injected exec doubles and source-text assertions,
         # and sot-check builds SYNTHETIC throwaway git repos under mkdtempSync rather than reading
         # this working tree — which is why its live-repo DRIFT output does not follow it into CI.
-        run: bun test tools/demo-excerpts tools/demo-preview tools/paddle-catalog-recreate.test.ts scripts/export-public-mirror.test.ts ./.agents/skills/caisson-production-browser-audit/scripts/ scripts/release-readiness.test.ts scripts/gen-shadcn-registry.test.ts tooling/scripts/railway-deploy.test.ts tooling/scripts/sot-check.test.ts tooling/scripts/dts-drift-check.test.ts tooling/scripts/tsgo-agreement.test.ts tooling/scripts/railway-env-sync.test.ts tooling/scripts/vault-parity-check.test.ts tooling/scripts/aeo-probe.test.ts
-      - name: typecheck the browser-audit skill (.agents sits outside the workspaces)
-        # ADR-0413 / C13. The deleted tooling/browser-audit manifest's `build: tscn -p tsconfig.json`
-        # was the only thing typechecking this code. Nothing else reaches it: the root tsconfig is
-        # `"files": []`, `.agents/` has no turbo task, and it is outside package.json `workspaces`.
-        # Lint and format DO cover it (oxlint and oxfmt both walk `.agents`) — only tsc was lost, and
-        # reconcile.ts re-exports a type from tooling/testing and calls a generic, so an upstream
-        # signature change would have produced no build error anywhere. Adding this leg immediately
-        # surfaced four pre-existing zod-4 `z.record` type defects in the skill's other scripts.
-        run: bun tooling/tsconfig/bin/tscn.ts -p .agents/skills/caisson-production-browser-audit/tsconfig.json
+        run: bun test tools/demo-excerpts tools/demo-preview tools/paddle-catalog-recreate.test.ts scripts/release-readiness.test.ts scripts/gen-shadcn-registry.test.ts tooling/scripts/railway-deploy.test.ts tooling/scripts/sot-check.test.ts tooling/scripts/dts-drift-check.test.ts tooling/scripts/tsgo-agreement.test.ts tooling/scripts/railway-env-sync.test.ts tooling/scripts/vault-parity-check.test.ts tooling/scripts/aeo-probe.test.ts
       # Slow golden-file / testcontainers matrices land here once the compliance
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
 
@@ -238,8 +228,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup-bun
       - run: bun install --frozen-lockfile
-      - name: registry tests (schema · index builder · worker seam)
-        run: bun test registry/schema registry/scripts registry/worker
+      - name: registry tests (schema · index builder)
+        run: bun test registry/schema registry/scripts
       - name: index.json is a byte-identical rebuild from the ledger (proves CI-built)
         run: |
           bun registry/scripts/build-index.ts

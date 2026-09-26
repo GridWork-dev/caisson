@@ -22,10 +22,9 @@ fetch_verified() { # url sha256 outfile
   curl -sSfL -o "$3" "$1" && echo "$2  $3" | sha256sum -c - >/dev/null
 }
 
-# 1 — uv-managed Python CLIs (semgrep, schemathesis, ruff, ptai) --------------------------------
+# 1 — uv-managed Python CLIs (semgrep, schemathesis, ptai) ---------------------------------------
 have uv || { echo "uv required (https://docs.astral.sh/uv) — install it first"; exit 1; }
 have semgrep && info "semgrep present ($(semgrep --version 2>&1 | head -1))" || { info "installing semgrep==$SEMGREP_VERSION"; uv tool install "semgrep==$SEMGREP_VERSION"; }
-have ruff && info "ruff present ($(ruff --version 2>&1 | head -1))" || { info "installing ruff==$RUFF_VERSION"; uv tool install "ruff==$RUFF_VERSION"; }
 have schemathesis && info "schemathesis present" || { info "installing schemathesis"; uv tool install schemathesis; }
 have ptai && info "ptai present" || { info "installing ptai==$PTAI_V"; uv tool install "ptai==$PTAI_V" || uv tool install ptai; }
 

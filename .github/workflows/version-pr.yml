@@ -1,41 +1,32 @@
 name: version-pr
 # The ADR-0325 version PR — the ONLY place changesets are consumed. Operator-dispatched; authors
 # a branch carrying the WHOLE release source truth as one reviewable PR: `changeset version`
-# (package.json bumps + CHANGELOGs + consumed .changeset/*.md), a refreshed bun.lock, the ledger
-# append, the index.json rebuild, and the tarballs.json hash rows (packed here so the publish leg
-# can later re-pack at the release tag and byte-verify — `bun pm pack` is deterministic for
-# identical source bytes).
+# (package.json bumps + CHANGELOGs + consumed .changeset/*.md) and a refreshed bun.lock.
 #
 # Flow (ADR-0325, amends ADR-0318/0223 mechanics):
 #   1. operator dispatches THIS workflow → it opens the version PR
-#   2. operator merges it → push-to-main CI (the 5 required checks) runs on the merge commit
+#   2. operator merges it → push-to-main CI (the required checks) runs on the merge commit
 #   3. operator publishes a GitHub Release whose tag targets EXACTLY that merge commit
-#   4. release-train.yml readiness re-verifies (CI green at the tag SHA, changesets drained,
-#      tag-on-main) → propagation legs publish exactly the tagged bytes, zero source mutation
 #
 # The initial branch push uses the ephemeral GITHUB_TOKEN, so it does NOT trigger pull_request CI
-# (GitHub anti-loop rule). Later operator pushes do trigger the synchronize lane below: it re-packs
-# every row introduced since the branch fork point and commits any changed bytes back to the release
-# branch. Historical rows from main stay append-only. Green required CI on the VERSION COMMIT still
-# comes from the push-to-main run after merge; close + reopen remains the operator path to force the
-# full pre-merge CI signal.
+# (GitHub anti-loop rule); close + reopen is the operator path to force the full pre-merge CI signal
+# on the version commit.
 #
 # The "never in-branch `changeset version`" rule (ADR-0321) is unchanged — this automation-authored
 # PR is the gated consumption point; it is still never a feature-branch act.
+#
+# (oss-pivot PR2: the ledger append + index.json rebuild + tarballs.json hash-row step, and the
+# pull_request_target `refresh-version-tarballs` job that kept those rows in sync on later pushes,
+# are retired with registry/tarballs.json and the R2/tarball publish pipeline they served.)
 on:
   workflow_dispatch:
-  # Trusted-base synchronize hook: the workflow definition + executable tooling come from main.
-  # The PR head is checked out separately and treated only as data (never imported/executed).
-  pull_request_target:
-    branches: [main]
-    types: [synchronize]
 
 permissions:
   contents: read
 
 concurrency:
   group: version-pr-${{ github.event.pull_request.number || 'dispatch' }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request_target' }}
+  cancel-in-progress: false
 
 jobs:
   version-pr:
@@ -84,22 +75,9 @@ jobs:
       # frozen) so the merge commit passes every `bun install --frozen-lockfile` gate downstream.
       - name: refresh bun.lock for the bumped versions
         run: bun install
-      # Ledger append + index rebuild + tarball pack/hash rows — all INTO this PR (version mode
-      # writes tracked files; publish mode later verifies against them at the tag). The recorded
-      # gateAttestation is "<run-id>@<base-sha>" — the main SHA this PR was cut from; the release
-      # tag anchors the final merged state (a commit cannot contain its own SHA).
-      - name: append ledger + rebuild index + record tarball rows (version mode)
-        run: |
-          bun registry/scripts/ci-publish-step.ts \
-            --mode version \
-            --run-id "${{ github.run_id }}" \
-            --sha "${{ github.sha }}" \
-            --published-at "$(date -u '+%Y-%m-%dT%H:%M:%S.000Z')" \
-            --dry-run false
       # Commit everything the consume produced and open the PR. Pathspecs cover EVERY workspace
       # (apps/services/registry/tooling get dependent bumps too) + bun.lock; the loud leftovers
       # check fails with filenames if a future write-site slips past the pathspec.
-      # registry/.tarball-staging/ is untracked and never staged.
       - name: open the version PR
         env:
           GH_TOKEN: ${{ github.token }}
@@ -112,8 +90,7 @@ jobs:
           git add -A -- \
             ':(glob)**/package.json' ':(glob)**/CHANGELOG.md' '.changeset' bun.lock \
             packages/ds-manifest/src/base-manifest.json \
-            packages/cli/src/__golden__/generated-fileset-framework-next.json \
-            registry/ledger.jsonl registry/index.json registry/tarballs.json
+            packages/cli/src/__golden__/generated-fileset-framework-next.json
           if git diff --cached --quiet; then
             echo "::error::changeset version produced no changes — nothing to PR"
             exit 1
@@ -123,7 +100,7 @@ jobs:
             git status --short
             exit 1
           fi
-          git commit -m "chore(release): version PR - consume changesets + ledger/index/tarball rows [version-pr]"
+          git commit -m "chore(release): version PR - consume changesets [version-pr]"
           git push -u origin "$branch"
           gh pr create \
             --title "chore(release): version PR ($(date -u '+%Y-%m-%d'), run ${{ github.run_id }})" \
@@ -132,95 +109,8 @@ jobs:
               "" \
               "- \`changeset version\` consume: package.json bumps + CHANGELOGs + drained \`.changeset/\`" \
               "- refreshed \`bun.lock\`" \
-              "- \`registry/ledger.jsonl\` append + \`registry/index.json\` rebuild + \`registry/tarballs.json\` hash rows" \
               "" \
               "Next steps (release runbook):" \
-              "1. Merge this PR (push-to-main CI runs the 5 required checks on the merge commit; this PR shows no checks because GITHUB_TOKEN pushes never trigger CI — close/reopen to force a pre-merge run)." \
+              "1. Merge this PR (push-to-main CI runs the required checks on the merge commit; this PR shows no checks because GITHUB_TOKEN pushes never trigger CI — close/reopen to force a pre-merge run)." \
               "2. Publish a GitHub Release whose tag targets EXACTLY the merge commit." \
-              "3. The release train verifies readiness and publishes the tagged bytes with zero mutation." \
               )"
-
-  refresh-version-tarballs:
-    # Same-repo automation release branches only. Fork PRs never receive write authority, and the
-    # trusted main copy of this workflow never executes candidate source or lifecycle scripts.
-    if: >-
-      github.event_name == 'pull_request_target' &&
-      github.event.pull_request.base.ref == 'main' &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      startsWith(github.event.pull_request.head.ref, 'release/version-')
-    # Blacksmith per ADR-0365 (fleet-only sweep; release-branch write accepted on VM-per-job runners).
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
-    timeout-minutes: 15
-    environment: release
-    permissions:
-      contents: write
-      pull-requests: read
-    steps:
-      - name: checkout trusted base tooling
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 1
-          ref: ${{ github.event.pull_request.base.sha }}
-          path: trusted
-          persist-credentials: false
-      - name: checkout candidate release branch as data only
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
-          path: candidate
-          persist-credentials: false
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
-        with:
-          bun-version: "1.4.2"
-      - name: cache bun installs
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
-        with:
-          path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('trusted/bun.lock', 'candidate/bun.lock') }}
-          restore-keys: ${{ runner.os }}-bun-
-      - name: install trusted base dependencies without lifecycle scripts
-        working-directory: trusted
-        run: bun install --frozen-lockfile --ignore-scripts
-      # Materialize the candidate's dependency graph under its own committed lockfile so `bun pm
-      # pack` rewrites workspace dependencies from candidate resolution. `--ignore-scripts` keeps
-      # the PR head data-only: no candidate lifecycle hook executes; the packer/tooling stays trusted.
-      - name: install candidate dependencies under its frozen lockfile without lifecycle scripts
-        working-directory: candidate
-        run: bun install --frozen-lockfile --ignore-scripts
-      - name: re-record unmerged version-branch tarball rows
-        run: |
-          set -euo pipefail
-          base_sha="$(git -C candidate merge-base HEAD '${{ github.event.pull_request.base.sha }}')"
-          base_sidecar="$RUNNER_TEMP/base-tarballs.json"
-          base_ledger="$RUNNER_TEMP/base-ledger.jsonl"
-          git -C candidate show "${base_sha}:registry/tarballs.json" > "$base_sidecar"
-          git -C candidate show "${base_sha}:registry/ledger.jsonl" > "$base_ledger"
-          bun trusted/registry/scripts/ci-publish-step.ts \
-            --refresh-candidate-root "$GITHUB_WORKSPACE/candidate" \
-            --refresh-base-sidecar "$base_sidecar" \
-            --refresh-base-ledger "$base_ledger" \
-            --dry-run false
-      - name: commit refreshed release truth when bytes changed
-        env:
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          if git -C candidate diff --quiet -- registry/tarballs.json; then
-            echo "[version-pr] tarball rows already reproduce the branch source"
-            exit 0
-          fi
-          git -C candidate config user.name "github-actions[bot]"
-          git -C candidate config user.email "github-actions[bot]@users.noreply.github.com"
-          git -C candidate add -- registry/tarballs.json
-          changed="$(git -C candidate diff --cached --name-only)"
-          if [ "$changed" != "registry/tarballs.json" ]; then
-            echo "::error::trusted refresh produced an unexpected staged path: $changed"
-            exit 1
-          fi
-          git -C candidate commit -m "chore(release): refresh version-branch tarball rows [version-pr-refresh]"
-          basic="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
-          git -C candidate \
-            -c http.https://github.com/.extraheader="AUTHORIZATION: basic $basic" \
-            push origin "HEAD:${HEAD_REF}"
