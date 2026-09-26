@@ -48,12 +48,18 @@ serve their pre-rewrite diffs, bodies and review threads. The rewrite gives a cl
 browser and blame; it hides nothing. So **every credential that ever appeared in any commit is
 revoked before the flip** (§Revocation), and no secret's safety relies on the rewrite.
 
-## Open forks (decided in W3 on side-by-side design options)
+## Same-day locks (ADR-0428 L10–L13)
 
-- **F-demos:** delete `apps/demos` (its embeds only live on marketplace pages being deleted), or
-  fold the client-only demos into the static site.
-- **F-site-direction:** the OSS site's visual and copy direction: hero, IA, and how the five
-  module families are presented now that "bundle" is not a product.
+- **L10 site:** keep the current design. Remove Compare, Stack fit, Plans, Glossary, sign-in,
+  the dashboard portal and the cart. Marketplace becomes a demonstration gallery (modules + live
+  demos, no prices, no buying). Evidence pack stays under Resources. All copy is reframed for
+  the open-source model.
+- **L11 demos:** `apps/demos` stays as the marketplace's demo engine, converted to a static
+  export served by the same Worker under `/demos`.
+- **L12:** every teardown and revocation batch is pre-approved; Cloudflare work runs through the
+  CLI/API.
+- **L13:** a private `GridWork-dev/caisson-archive` receives every branch, tag and PR head
+  before any deletion lands.
 
 ## Defaults taken (conventional; override any of them by saying so)
 
@@ -80,14 +86,14 @@ revoked before the flip** (§Revocation), and no secret's safety relies on the r
 - Tree: `packages/` (48), `apps/site` (static), `tooling/` (lint policy, tsconfig, testing, a
   trimmed standards gate), `scripts/gen-shadcn-registry.ts`, `specs/`, `knowledge/decisions/`
   (scrubbed, append-only, next number 0429), public `docs/` (architecture, engineering, design,
-  glossary, packages, product, security-model, releases), `.github/`.
+  glossary, packages, product, security-model, releases), `.github/`, `apps/demos` (static).
 - Community files: `README.md` (rewritten for OSS), `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
   `SECURITY.md`, `.github/ISSUE_TEMPLATE/` (bug + docs forms; `config.yml` sends questions and
   ideas to Discussions, blank issues off), `pull_request_template.md`, `CODEOWNERS`.
 - `CLAUDE.md` / `AGENTS.md`: rewritten as a short public contributor and agent guide (commands,
   engineering invariants). Operator-private process rules move to the operator's private memory.
 - Gone from the tree: `services/` (all five), `apps/admin`, `registry/` + Worker, `deploy/`,
-  `infra/`, `tooling/demo-registry`, `scripts/export-public-mirror.ts` + `mirror-assets/`,
+  `infra/`, `scripts/export-public-mirror.ts` + `mirror-assets/`,
   `tooling/scripts/sot-check.ts`, `graphify-out/`, `orca.yaml`, `.gridwork/`, `.agents/`, and 17
   of 23 workflows. (Their history stays; only the paths below are stripped from history.)
 
@@ -119,12 +125,14 @@ revoked before the flip** (§Revocation), and no secret's safety relies on the r
   Cloudflare Workers static assets on pushes to `main` that touch `apps/site`.
 - Security headers (HSTS, `nosniff`, `X-Frame-Options: DENY`, CSP without Paddle, Turnstile or
   PostHog) move to `apps/site/public/_headers`; redirects to `_redirects`.
-- Keeps: home, module-family pages, docs (45 MDX, commerce stripped), glossary, writing (+ launch
-  post), security, frameworks, privacy + terms (Paddle removed), llms.txt/llms-full.txt, sitemap,
-  robots, OG images.
-- Removes: marketplace, compare, cart, dashboard, login/reset, affiliates, procurement,
-  EULA/license/refunds, the `/demos` proxy, `proxy.ts`, and every `app/api/*` route except the
-  static search index.
+- The current design stays (L10). Keeps: home, module-family pages, marketplace as a
+  demonstration gallery (module pages + live demos, no prices), docs (45 MDX, commerce
+  stripped), evidence pack, updates, security, trust, UI showcase, writing (+ launch post),
+  frameworks, privacy + terms (Paddle removed), llms.txt/llms-full.txt, sitemap, robots, OG
+  images. `/demos/*` is served from `apps/demos`' static export in the same Worker.
+- Removes: compare, stack-fit, marketplace plans, glossary, cart, dashboard, login/reset,
+  affiliates, procurement, EULA/license/refunds, `proxy.ts`, and every `app/api/*` route except
+  the static search index. Every price, "buy" and license-key reference goes.
 
 ### Running infrastructure — the entire list
 
@@ -162,9 +170,9 @@ approval.
 
 ## Scrub model (L2 mechanics)
 
-1. **Archive first.** Push a `git clone --mirror` of the untouched original (every ref) to a new
-   private `GridWork-dev/caisson-archive`. Nothing internal is lost; it just leaves the public
-   repo.
+1. **Archive first (L13).** Every branch, tag and PR head of the untouched original goes to a new
+   private `GridWork-dev/caisson-archive` before W1 deletes anything; flip day pushes the final
+   pre-rewrite `main` again. Nothing internal is lost; it just leaves the public repo.
 2. **Rewrite** a fresh mirror clone with `git-filter-repo`:
    - `--invert-paths --paths-from-file strip-paths.txt`: `outputs/`, `docs/{state,business,gtm,
 ops,archive}/`, `docs/deploy/`, `docs/build-state.md`, `docs/compliance/

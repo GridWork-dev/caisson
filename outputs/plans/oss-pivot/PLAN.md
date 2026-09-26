@@ -21,35 +21,47 @@ file is itself stripped at the rewrite and survives in the private archive.
 
 ## W1 — De-commercialize the code (4 PRs)
 
-Parallel worktree lanes per ADR-0328 D6. PR1 and PR2 run in parallel; PR3 starts once both have
-merged; PR4 runs alone. The operator launches the lanes; the orchestrator delivers each brief,
-worktree and `cd` line.
+W0 (done before W1): the private archive repo (L13) holds every branch, tag and PR head.
 
-**PR1 `feature/oss-site-strip` — the site stops selling and becomes exportable.**
+PR1 and PR2 run in parallel as in-session subagents in isolated worktrees (the operator handed
+the launch over on 2026-09-25); PR3 starts once both have merged; PR4 runs alone.
+
+**PR1 `feature/oss-site-strip` — the site stops selling and becomes exportable (L10/L11).**
 
 1. Delete the commerce and auth surface under `apps/site`: `app/dashboard/**`,
-   `(marketing)/{marketplace,compare,cart,affiliates,procurement,login,forgot-password,
-reset-password}`, `legal/{eula,license,refunds}`, every `app/api/*` except `api/search`,
-   `demos/[[...path]]`, `healthz`, and `proxy.ts`. Delete the `lib/` modules those were the only
-   users of: cart, catalog, pricing, `paddle-*`, `upgrade-quote`, `plan-owned`, `members-gate`,
-   `byok*`, `subscription-cancel`, `field-crypto-kms`, `auth`, `ask-ai`.
-2. Remove every import of `@caisson/{pricebook,platform-reads,platform-migrations}` from the
+   `(marketing)/{compare,stack-fit,cart,affiliates,procurement,login,forgot-password,
+reset-password}`, `marketplace/(hub)/plans`, `glossary/**`, `legal/{eula,license,refunds}`,
+   every `app/api/*` except `api/search`, `demos/[[...path]]` (the proxy), `healthz`, and
+   `proxy.ts`. Delete the `lib/` modules that only those used: cart, pricing, `paddle-*`,
+   `upgrade-quote`, `plan-owned`, `members-gate`, `byok*`, `subscription-cancel`,
+   `field-crypto-kms`, `auth`, `ask-ai`, comparisons, glossary. Delete the nav cart trigger and
+   account island.
+2. Marketplace becomes a demonstration gallery: the hub and `modules/[slug]` keep their layout,
+   lose every price, plan, cart and buy affordance, and point at docs + the live demo instead.
+   Nav: the Marketplace panel drops Plans/Compare/Stack fit and every price; Resources drops
+   Glossary and keeps Evidence pack.
+3. Remove every import of `@caisson/{pricebook,platform-reads,platform-migrations}` from the
    site.
-3. `next.config.ts`: `output: "export"`. Drop `redirects()`/`headers()` into `public/_redirects`
+4. `next.config.ts`: `output: "export"`. Drop `redirects()`/`headers()` into `public/_redirects`
    and `public/_headers` (HSTS, `nosniff`, `X-Frame-Options: DENY`, CSP without Paddle,
    Turnstile or PostHog), and drop the standalone-only options.
-4. Switch search to Orama static (`staticGET()` + `staticClient()`).
-5. Minimal copy pass so nothing links to a deleted route: nav, footer, CTAs. The real copy
-   rework is W3.
-6. Verify: `bun run --filter @caisson/site build` emits `apps/site/out/`; a link check over
-   `out/` finds zero internal 404s; `grep -rE 'paddle|checkout|/cart|/dashboard' apps/site/out`
-   returns nothing; site unit tests green.
+5. Switch search to Orama static (`staticGET()` + `staticClient()`).
+6. `apps/demos`: `output: "export"` with `basePath: "/demos"` and `generateStaticParams` over
+   the modules; the site build copies `apps/demos/out` into `apps/site/out/demos`. The demo
+   stubs lose their "commercial / watermark" language.
+7. Copy stays close to today's; this PR only removes selling language and dead links. The full
+   reframe is W3.
+8. Verify: the site build emits `apps/site/out/` including `out/demos/`; a link check over `out/`
+   finds zero internal 404s; `grep -rE 'paddle|checkout|/cart|/dashboard|\$[0-9]'
+apps/site/out` finds nothing outside the search index; site and demos unit tests green.
 
 **PR2 `chore/oss-retire-services` — the fleet and sales back office leave the tree.**
 
 1. Delete `services/{license,docs,intel,support-bot,betterstack-adapter}`, `apps/admin`,
-   `registry/` (including `worker/`), `tooling/demo-registry`, `deploy/`, and
-   `scripts/export-public-mirror.ts` + `scripts/mirror-assets/`.
+   `registry/worker/` plus the registry's R2/tarball/ledger publish tooling, `deploy/`, and
+   `scripts/export-public-mirror.ts` + `scripts/mirror-assets/`. Keep `registry/index.json` and
+   its build script while the cli and site still read them; PR3 decides their final form.
+   `apps/demos` and `tooling/demo-registry` stay (L11).
 2. Delete these workflows: `deploy-{railway,production,staging,worker}.yml`, `rollback.yml`,
    `publish{,-gates,-image,-scan-proof}.yml`, `mirror-sync.yml`, `r2-parity-probe.yml`,
    `release-train.yml`, `support-bot.yml`, `aeo-probe.yml`, `nist-catalog-watch.yml`,
@@ -135,33 +147,35 @@ ai-production,local-first,agentic-dev,provenance,everything}`.
 9. Verify: `bun run check` green; `actionlint` + `zizmor` clean on `.github/`;
    `rg -l '/home/gw|gw-ms-a2' --glob '!knowledge/**' --glob '!outputs/**'` returns nothing.
 
-## W3 — The OSS site (design fork, then 1–2 PRs)
+## W3 — The OSS copy reframe (1 PR, `feature/oss-site-copy`)
 
-1. **Design options [OP picks]:** `gw-frontend-designer` researches through refero and builds 2–3
-   side-by-side directions for the home page and module-family pages. Each carries a live demo on
-   the tailnet studio, not a Claude artifact. The same sitting decides F-demos (delete
-   `apps/demos` or fold its client-only demos into the static site).
-2. **Build `feature/oss-site`:** the chosen direction on the existing brand system (tokens,
-   motion, illustration are reused, not redone). Home, module families, docs (45 MDX: strip
-   bundle/price/license language, rewrite install steps for `@caisson-sh/*` and public npm),
-   glossary, writing, security, frameworks, privacy + terms (no Paddle), llms files, sitemap, OG.
-   Analytics: Cloudflare Web Analytics.
-3. **Copy:** `gw-gtm-copywriter` owns claims (scraped, dated, no superlatives); `gw-devrel-writer`
-   drafts the launch post as an unpublished `writing/` entry.
+No design options: L10 keeps the current design.
+
+1. **Copy reframe:** every page (home, module families, marketplace gallery, evidence, trust,
+   security, updates, writing, frameworks, footer, meta/OG/llms files) is rewritten for the
+   open-source model. Apache-2.0, `bunx create-caisson`, "read the code", GitHub and Discussions
+   CTAs replace purchase language. `gw-gtm-copywriter` owns claims (scraped, dated, no
+   superlatives).
+2. Docs (45 MDX): strip bundle, price and license language, and rewrite install steps for
+   `@caisson-sh/*` and public npm (after PR4). `gw-devrel-writer` drafts the launch post as an
+   unpublished `writing/` entry.
+3. Analytics: Cloudflare Web Analytics replaces Plausible and PostHog.
 4. **Deploy path:** `apps/site/wrangler.jsonc` (`assets.directory = "out"`,
    `not_found_handling = "404-page"`); `site.yml` deploys on `main` pushes that touch
-   `apps/site` via `cloudflare/wrangler-action`. **[OP]** Create a Cloudflare API token scoped to
-   Workers Scripts:Edit on that one Worker; store it as the repo secret `CLOUDFLARE_API_TOKEN`,
-   with the account id as a variable. Until W5, the site deploys to its `*.workers.dev` hostname
-   only.
+   `apps/site` or `apps/demos` via `cloudflare/wrangler-action`. The narrow Cloudflare token
+   (Workers Scripts:Edit on the account) is minted through the API (L12) and stored as the repo
+   secret `CLOUDFLARE_API_TOKEN`, with the account id as a variable. Until W5, the site deploys
+   to its `*.workers.dev` hostname only.
 5. Verify: an `impeccable`/`uiux-audit` pass on the preview; Lighthouse ≥ 0.95 perf and 1.0 a11y
    on home and one docs page; `curl -I` on the preview shows HSTS, `nosniff` and
    `X-Frame-Options`; a responsive srcdoc sweep of every route at 360/768/1280.
 
 ## W4 — Teardown and revocation (main thread; external side effects)
 
-Order matters: nothing that serves caisson.sh goes before the W5 DNS cutover. Each row gets a
-receipt: resource, action, timestamp, and the command output that proves the deletion.
+Every batch is pre-approved (L12); the **[OP confirms]** marks below are satisfied. Order
+matters: nothing that serves caisson.sh goes before the W5 DNS cutover. Each row gets a receipt:
+resource, action, timestamp, and the command output that proves the deletion. Cloudflare runs
+through wrangler and the API.
 
 1. **Inventory freeze:** list what actually exists on each platform before deleting anything
    (Railway projects/services, GCP Cloud Run/Artifact Registry/WIF, Cloudflare Workers/R2/Access,
@@ -179,7 +193,7 @@ receipt: resource, action, timestamp, and the command output that proves the del
    token), then close the server **[OP]**; the PostHog project; the Grafana stack; the Resend
    domain + DKIM record; the Turnstile widget; the DataForSEO login; Paddle (close the sandbox
    and any pending production application **[OP]**).
-4. **Cloudflare via terraform (targeted apply):** remove the Access app/policy + service token,
+4. **Cloudflare (API/CLI; terraform only if its state is reachable):** remove the Access app/policy + service token,
    the WAF/rate-limit/bot rules, and the Railway `_railway-verify` TXT + CNAMEs for
    admin/license/docs-api. Keep the apex/www records until W5, plus MX/SPF/DMARC/CAA. Then delete
    `infra/` from the tree (PR `chore/oss-drop-infra`).
@@ -197,10 +211,9 @@ receipt: resource, action, timestamp, and the command output that proves the del
 
 Precondition: W1–W4 merged or complete; `main` CI green; zero open PRs; `RECEIPTS.md` complete.
 
-1. **Archive:** `git clone --mirror` from GitHub → create private `GridWork-dev/caisson-archive`
-   → push `refs/heads/*` and `refs/tags/*`. Verify that the `refs/heads` + `refs/tags` counts
-   from `git ls-remote` match on both sides. (GitHub refuses pushes to `refs/pull/*`; the PRs
-   themselves stay on the transferred repo.)
+1. **Archive refresh:** push the final pre-rewrite `main` and any new branches/tags to the W0
+   archive (`GridWork-dev/caisson-archive`), then verify that the `refs/heads` + `refs/tags`
+   counts from `git ls-remote` match on both sides.
 2. **Rewrite** a fresh clone of `main` only (`--single-branch --no-tags`):
    - Build `strip-paths.txt` from SPEC §Scrub plus a census of historical-only paths.
    - Build `redactions.txt` by census: `rg` every blob in `git rev-list --all --objects` for local
@@ -272,7 +285,6 @@ effect. Model set explicitly on every dispatch; Codex lanes go through `gw dispa
 | W1 PR4 scope rename    | code_write                   | gw-platform-migrator                   | sonnet          | serial, alone     | worktree             | workspace-write    | zero-match rg + generator run   |
 | W1 PR3 audits          | code_review / security_audit | gw-code-reviewer / gw-security-auditor | opus / fable    | async             | shared-read          | repo-read          | REVIEW + SECURITY on the diff   |
 | W2 baseline            | code_write                   | main thread                            | opus            | serial            | main checkout branch | workspace-write    | actionlint/zizmor + check       |
-| W3 design options      | design                       | gw-frontend-designer                   | opus            | serial            | worktree             | workspace-write    | studio demo URLs                |
 | W3 copy                | writing                      | gw-gtm-copywriter / gw-devrel-writer   | sonnet          | parallel          | worktree             | workspace-write    | dated claims ledger             |
 | W4 teardown            | external-system              | main thread                            | opus            | serial            | none                 | operator-confirmed | RECEIPTS.md rows                |
 | W5 flip                | external-system + secrets    | main thread                            | opus            | serial            | scratch mirror clone | operator-gated     | gate outputs + re-clone verify  |

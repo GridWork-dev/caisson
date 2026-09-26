@@ -47,6 +47,16 @@ maintenance.
 8. **L8 — copyright.** Caisson Software LLC stays the named copyright holder in every LICENSE and
    the root NOTICE.
 9. **L9 — community.** GitHub Discussions only; the Discord server closes.
+10. **L10 — site direction (operator, same day).** Keep the current design. Remove Compare,
+    Stack fit, Plans, Glossary, sign-in, the dashboard portal and the cart. Marketplace becomes a
+    demonstration gallery: modules and demos, no prices and no buying. The Evidence pack stays
+    under Resources. All copy is reframed for the open-source model.
+11. **L11 — demos stay.** `apps/demos` powers the marketplace demonstrations and is converted to
+    a static export served by the same Worker under `/demos`.
+12. **L12 — teardown pre-approved.** Every W4 deletion and revocation batch is authorized up
+    front. Cloudflare operations run through the CLI/API rather than the dashboard.
+13. **L13 — private archive now.** A private `GridWork-dev/caisson-archive` receives every
+    branch, tag and PR head before any deletion lands, and again at flip day.
 
 ## Consequences
 
@@ -54,5 +64,4 @@ maintenance.
   revocation → archive, transfer, rewrite, flip, first publish → soak → launch day.
 - The operator-private process (fork board, `bun run sot`, the "never auto-decide a fork" rule)
   leaves the public tree; new ADRs keep landing here, append-only, numbered from 0429.
-- Two forks stay open for the site phase, to be decided on side-by-side design options: the fate
-  of `apps/demos` and the site's visual and copy direction.
+- No forks remain open; L10 and L11 closed the site phase without design options.
