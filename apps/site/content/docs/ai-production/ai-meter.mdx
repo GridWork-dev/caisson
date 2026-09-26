@@ -21,7 +21,7 @@ never a float and never drifts.
   cap warns, crossing a hard cap trips a circuit breaker so every subsequent call fails
   closed until an operator resets it.
 - **A bundled, overridable price book.** Ships default per-million-token rates for common
-  provider/model pairs; a buyer can override the whole book or the credit denomination.
+  provider/model pairs; you can override the whole book or the credit denomination.
   `resolvePriceEntry` throws on an unrecognized provider/model instead of metering at zero.
 - **Idempotent by construction.** Both `reserve()` and `reconcile()` key off the caller's
   `callId`: a retried call settles exactly once instead of double-charging.
@@ -91,13 +91,13 @@ invalid override fails closed rather than metering silently at zero.
 
 ## Composing with the base
 
-`ai-meter` is a base primitive, it never imports an edition. It runs on the same
-Postgres-atomic accounting as `@caisson-sh/credits` and is scoped per tenant through
+`ai-meter` is a base primitive: it never depends "up" on a higher-layer module. It runs on the
+same Postgres-atomic accounting as `@caisson-sh/credits` and is scoped per tenant through
 `@caisson-sh/tenancy-rls`'s `withTenant`. The AI Production Kit's inference gateway composes
 `reserve()`/`reconcile()` around the provider call site; `ai-meter` itself never talks to
 a provider.
 
-<Callout type="info" title="Sold standalone or in AI-Production">
-  Buy `ai-meter` standalone onto the free base, or get it, plus guardrails and the prompt
-  registry, composed into the AI-Production bundle.
+<Callout type="info" title="Standalone or in AI-Production">
+  `ai-meter` works standalone on the open base, or as one of the modules composing the
+  AI-Production family alongside guardrails and the prompt registry.
 </Callout>

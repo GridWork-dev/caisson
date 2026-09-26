@@ -28,7 +28,6 @@ import {
 } from "@/lib/jsonld";
 import { moduleMark } from "@/lib/marks";
 import { hasModulePage } from "@/lib/module-pages";
-import { TrackView } from "@/components/track-view";
 
 // Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts),
 // the SOT this page shares with the marketplace pop-out. Bespoke sections below (the controls,
@@ -166,7 +165,6 @@ export default function CompliancePage() {
 
   return (
     <>
-      <TrackView item="bundle:compliance" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -235,7 +233,7 @@ export default function CompliancePage() {
       <Reveal>
         <Section
           title="What it composes"
-          lede="The Compliance bundle's core has ten direct @caisson-sh/* dependencies: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. compliance-core and frameworks-pack both depend on and re-export oscal-spine, the shared commercial package that owns OSCAL assessment, catalog, XML, ISO 27001 SoA, and pinned NIST SP 800-53 surfaces. The bundle also includes three standalone compliance modules beside that runtime graph: access-review, risk-register, and trust-page."
+          lede="The Compliance module family's core has ten direct @caisson-sh/* dependencies: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. compliance-core and frameworks-pack both depend on and re-export oscal-spine, the shared package that owns OSCAL assessment, catalog, XML, ISO 27001 SoA, and pinned NIST SP 800-53 surfaces. The module family also includes three standalone compliance modules beside that runtime graph: access-review, risk-register, and trust-page."
         />
       </Reveal>
 
@@ -243,14 +241,14 @@ export default function CompliancePage() {
       <Section>
         <MediaCarousel
           slides={mediaSlides("bundle", "compliance")}
-          label="Compliance bundle media"
+          label="Compliance module family media"
         />
       </Section>
 
       {/* ===== The fourteen member packages ===== */}
       <Reveal>
         <Section
-          title="Fourteen packages, one bundle."
+          title="Fourteen packages, one module family."
           lede="Ten direct dependencies plus their shared OSCAL spine form the runtime graph. Three further standalone compliance modules round it out."
         >
           <FeatureGrid cols={3}>
@@ -316,9 +314,9 @@ export default function CompliancePage() {
               className="cs-muted"
               style={{ marginTop: "var(--cs-space-4)", maxWidth: "60ch" }}
             >
-              Those reviews ask for what this bundle ships, the audit chain,
-              immutable logs, the evidence export. Install the controls before
-              the deal that demands them.
+              Those reviews ask for what this module family ships, the audit
+              chain, immutable logs, the evidence export. Install the controls
+              before the deal that demands them.
             </p>
           </Card>
         </Section>
@@ -518,13 +516,14 @@ export default function CompliancePage() {
         <Section title="How it ships." band="tint">
           <Card accent className="cs-elevate-md">
             <p className="cs-muted" style={{ maxWidth: "60ch" }}>
-              bunx @caisson-sh/cli@latest scaffolds the base with tenancy-rls
-              fail-closed and the standards gate passing, and the five evidence
-              collectors, RLS-force, chain-verify, WORM-retention,
-              field-crypto-policy, and the impersonation collector, are already
-              wired into the SOC 2, HIPAA, and EU-AI-Act evidence packs. The
-              pack format includes an OSCAL v1.2.2 export (canonical JSON plus
-              an XML conversion path) alongside Ed25519 and RFC-3161 signing.{" "}
+              bunx --package @caisson-sh/cli create-caisson scaffolds the base
+              with tenancy-rls fail-closed and the standards gate passing, and
+              the five evidence collectors, RLS-force, chain-verify,
+              WORM-retention, field-crypto-policy, and the impersonation
+              collector, are already wired into the SOC 2, HIPAA, and EU-AI-Act
+              evidence packs. The pack format includes an OSCAL v1.2.2 export
+              (canonical JSON plus an XML conversion path) alongside Ed25519 and
+              RFC-3161 signing.{" "}
               <code className="mono">caisson audit verify</code> walks the chain
               and reports the root hash; the evidence pack is generated from the
               live system, not written by hand.
@@ -560,7 +559,7 @@ export default function CompliancePage() {
             label="shell"
             status={<StatusChip label="ready" tone="success" dot />}
           >
-            {`$ bunx @caisson-sh/cli@latest\n`}
+            {`$ bunx --package @caisson-sh/cli create-caisson\n`}
             <span className="cs-tok-accent">{`✓ scaffold complete\n`}</span>
             <span className="cs-tok-accent">{`✓ tenancy-rls: fail-closed\n`}</span>
             <span className="cs-tok-accent">{`✓ standards gate: passing\n`}</span>

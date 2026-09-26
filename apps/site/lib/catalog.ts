@@ -36,7 +36,7 @@ export const BUNDLES: readonly Bundle[] = [
   {
     id: "compliance",
     label: "Compliance",
-    note: "The compliance wedge: fail-closed RLS, WORM, an audit chain, evidence packs, access reviews, the AI risk register, a buyer trust page, and the framework + signing carves.",
+    note: "The compliance wedge: fail-closed RLS, WORM, an audit chain, evidence packs, access reviews, the AI risk register, a public trust page, and the framework + signing carves.",
   },
   {
     id: "ai-production",

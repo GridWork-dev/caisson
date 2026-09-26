@@ -1,20 +1,20 @@
 ---
 title: Everything
-description: The full Caisson catalog, every bundle and every à-la-carte module, one purchase.
+description: The full Caisson catalog, every family and every à-la-carte module, all Apache-2.0.
 ---
 
-The **Everything** bundle is the full catalog: every module across [Compliance](/docs/compliance),
+The **Everything** family is the full catalog: every module across [Compliance](/docs/compliance),
 [AI-Production](/docs/ai-production), [Local-first](/docs/local-first),
 [Agentic-Dev](/docs/agentic-dev), and [Provenance](/docs/provenance), plus the standalone
-commercial modules no persona bundle grants, org controls, billing orchestration, and the UI Pro
-component layer, in one purchase.
+modules no persona family lists, org controls, billing orchestration, and the UI Pro
+component layer.
 
-## What's in the bundle
+## What's in the family
 
-Everything contains every sellable SKU in the catalog by construction, it is never listed on an
-individual module's bundle membership because membership in it is implicit. That includes:
+Everything contains every module in the catalog by construction, it is never listed on an
+individual module's family membership because membership in it is implicit. That includes:
 
-- Every module in the five persona/provenance bundles above (field-crypto, audit-worm,
+- Every module in the five persona/provenance families above (field-crypto, audit-worm,
   retention-runner, alerting, compliance-core, frameworks-pack, signing-primitive, oscal-spine,
   access-review, risk-register, trust-page, ai-meter, ai-evals, guardrails, prompt-registry,
   credits, local-store, local-sync, local-inference, local-privacy, agent-kernel, agent-runner,
@@ -23,7 +23,7 @@ individual module's bundle membership because membership in it is implicit. That
   surface and admin-write RLS layer.
 - **[billing-orchestration](/docs/base/billing-orchestration)**: the multi-provider billing
   engine (Paddle, Stripe, LemonSqueezy, Polar) behind one `BillingProvider` port.
-- **[ui-pro](/docs/base/ui-pro)**: the commercial component tier on the open `@caisson-sh/ui` base:
+- **[ui-pro](/docs/base/ui-pro)**: the advanced component tier on the open `@caisson-sh/ui` base:
   DataTablePro, OpsMatrix, AuditTimeline, CommandPalette, charts, and the interactive primitives.
 
 ## Install
@@ -39,16 +39,16 @@ no token needed; see [Getting started](/docs/getting-started) for the full flag 
 
 ## How it composes
 
-Every module in Everything composes exactly the way it composes inside its own persona bundle:
-Everything changes what's licensed, not how the modules wire together. A module that spans
-several bundles (`field-crypto` across Compliance, AI-Production, Local-first, and Provenance) is
-granted once, not duplicated per bundle.
+Every module in Everything composes exactly the way it composes inside its own persona family:
+Everything is a way of naming the whole catalog, not a different way the modules wire together. A
+module that spans several families (`field-crypto` across Compliance, AI-Production, Local-first,
+and Provenance) is one package, not duplicated per family.
 
 ## Composing with the base
 
-Everything sits on the same open-core [base substrate](/docs/base) as every other bundle:
+Everything sits on the same [base substrate](/docs/base) as every other family:
 `@caisson-sh/kernel`, `@caisson-sh/tenancy-rls`, `@caisson-sh/ui`, `@caisson-sh/billing`, and the rest of the
-Apache-2.0 packages, and adds the full commercial layer on top.
+Apache-2.0 packages, plus the three base-adjacent modules described above.
 
 ## License
 

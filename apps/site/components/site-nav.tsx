@@ -20,7 +20,7 @@ import styles from "./site-nav.module.css";
 // mobile drawer ship as client islands. Everything derives from the canonical route registry
 // (lib/routes.ts) + the module catalog (lib/catalog.ts).
 
-// The Marketplace panel carries two card groups under one trigger: "Bundles" — the five
+// The Marketplace panel carries two card groups under one trigger: "Module families" — the five
 // module-family cards plus the whole-catalog Everything composition — and "Marketplace" — the
 // demonstration gallery and the UI showcase. The /ai-kit route maps to the ai-production id.
 const MARKETPLACE_PANEL: NavPanelSpec = {
@@ -28,7 +28,7 @@ const MARKETPLACE_PANEL: NavPanelSpec = {
   lede: "One audited base. Six module families, every module demonstrated live.",
   groups: [
     {
-      heading: "Bundles",
+      heading: "Module families",
       cards: [
         ...BUNDLE_ROUTES.map((r) => {
           const slug = r.path.slice(1);
@@ -106,10 +106,10 @@ const PANELS: readonly NavPanelSpec[] = [MARKETPLACE_PANEL, RESOURCES_PANEL];
 
 // The mobile drawer's accordion sections (ADR-0312) are DERIVED from the same panel spec as the
 // desktop dropdowns — one card group becomes one collapsed <details> section — so the two surfaces
-// can never drift. A panel with `groups` yields one section per group (Bundles / Marketplace); a
-// flat-`cards` panel yields one section under its own label (Resources).
+// can never drift. A panel with `groups` yields one section per group (Module families /
+// Marketplace); a flat-`cards` panel yields one section under its own label (Resources).
 const SECTION_ICON: Record<string, IconName> = {
-  Bundles: "bundle",
+  "Module families": "bundle",
   Marketplace: "boxes",
   Resources: "book",
 };

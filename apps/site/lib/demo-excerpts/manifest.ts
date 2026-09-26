@@ -17,7 +17,7 @@ export interface DemoExcerptEntry {
   readonly sourcePath: string;
   readonly sourceCommit: string;
   readonly approvedBy: "operator";
-  readonly licensePosture: "commercial-display-only";
+  readonly licensePosture: "Apache-2.0";
   readonly content: string;
 }
 
@@ -34,7 +34,7 @@ export const DEMO_EXCERPTS: readonly DemoExcerptEntry[] = [
     sourcePath: "packages/kernel/src/audit-chain.ts",
     sourceCommit: "d39c024d3766c0640d63e4c96c825c7e0dbd05e9",
     approvedBy: "operator",
-    licensePosture: "commercial-display-only",
+    licensePosture: "Apache-2.0",
     content: auditChainCoreContent,
   },
   {
@@ -43,7 +43,7 @@ export const DEMO_EXCERPTS: readonly DemoExcerptEntry[] = [
     sourcePath: "packages/field-crypto/src/derive.ts",
     sourceCommit: "47b59fca5744079fe47fc0696ced00a285213c89",
     approvedBy: "operator",
-    licensePosture: "commercial-display-only",
+    licensePosture: "Apache-2.0",
     content: fieldCryptoHkdfDeriveContent,
   },
 ];

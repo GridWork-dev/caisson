@@ -28,7 +28,7 @@ describe("base substrate SOT", () => {
   // THE PROSE ARM, and the reason the two set guards above were not enough (ADR-0412 SHIP review).
   // Both of those compare CODE to DISK. The docs tree is neither: `apps/site/content/**` is
   // hand-written MDX that enumerates the base set in prose, and `docs/cli/create-caisson.mdx` was
-  // still rendering the pre-ds-manifest fifteen AFTER the set guards landed — a buyer-facing page
+  // still rendering the pre-ds-manifest fifteen AFTER the set guards landed — a public page
   // that states affirmatively what is free to install. It is not inert copy either: the docs RAG
   // corpus is assembled from this exact tree (`services/docs/src/corpus.ts`), so the support-bot
   // answers "what's free?" from it, and `/llms.txt` re-emits the index.
@@ -93,10 +93,10 @@ describe("base substrate SOT", () => {
     expect(offenders).toEqual([]);
   });
 
-  test("no base package is a commercial SKU", () => {
-    const commercial = new Set(MODULES.map((m) => m.id));
+  test("no base package duplicates a standalone module id", () => {
+    const moduleIds = new Set(MODULES.map((m) => m.id));
     for (const p of BASE_PACKAGES) {
-      expect(commercial.has(p)).toBe(false);
+      expect(moduleIds.has(p)).toBe(false);
     }
   });
 

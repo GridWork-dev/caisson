@@ -25,7 +25,6 @@ import { TrialPath } from "@/components/trial-path";
 import { MediaCarousel } from "@/components/media-carousel";
 import { mediaSlides } from "@/lib/media-manifest";
 import { requireBundlePage, spellCount } from "@/lib/bundle-pages";
-import { TrackView } from "@/components/track-view";
 
 // Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts);
 // the bespoke sections below stay page-local.
@@ -135,7 +134,6 @@ export default function AiKitPage() {
 
   return (
     <>
-      <TrackView item="bundle:ai-production" />
       {/* JSON-LD */}
       <script
         type="application/ld+json"
@@ -171,7 +169,7 @@ export default function AiKitPage() {
       {/* ===== What it composes ===== */}
       <Section
         title="One package, nine other Caisson packages behind it."
-        lede="The AI-Production bundle composes @caisson-sh/ai-config, @caisson-sh/ai-meter, @caisson-sh/credits, @caisson-sh/field-crypto, @caisson-sh/guardrails, @caisson-sh/kernel, @caisson-sh/prompt-registry, @caisson-sh/tenancy-rls, and @caisson-sh/ai-evals. Together they resolve and render versioned prompts, map lanes to providers, validate inputs and outputs, reserve and reconcile integer credits, isolate tenant data, encrypt sensitive fields, and run the same eval checks in CI. The production safeguards stay in explicit package boundaries instead of being scattered through route handlers."
+        lede="The AI-Production module family composes @caisson-sh/ai-config, @caisson-sh/ai-meter, @caisson-sh/credits, @caisson-sh/field-crypto, @caisson-sh/guardrails, @caisson-sh/kernel, @caisson-sh/prompt-registry, @caisson-sh/tenancy-rls, and @caisson-sh/ai-evals. Together they resolve and render versioned prompts, map lanes to providers, validate inputs and outputs, reserve and reconcile integer credits, isolate tenant data, encrypt sensitive fields, and run the same eval checks in CI. The production safeguards stay in explicit package boundaries instead of being scattered through route handlers."
         band="tint"
       />
 
@@ -179,7 +177,7 @@ export default function AiKitPage() {
       <Section>
         <MediaCarousel
           slides={mediaSlides("bundle", "ai-production")}
-          label="AI-Production bundle media"
+          label="AI-Production module family media"
         />
       </Section>
 
@@ -258,8 +256,8 @@ export default function AiKitPage() {
                 The gateway and all{" "}
                 {spellCount(MEMBER_MODULES.length).toLowerCase()} composed
                 modules, in your own repo as TypeScript source. Scaffold it in
-                with bunx @caisson-sh/cli@latest, or add it to an existing
-                Caisson base.
+                with bunx --package @caisson-sh/cli create-caisson, or add it to
+                an existing Caisson base.
               </p>
             </Card>
 
@@ -325,7 +323,7 @@ export default function AiKitPage() {
           label="terminal"
           status={<StatusChip label="ready" tone="success" dot />}
         >
-          {"$ bunx @caisson-sh/cli@latest\n"}
+          {"$ bunx --package @caisson-sh/cli create-caisson\n"}
         </Terminal>
         <div
           style={{

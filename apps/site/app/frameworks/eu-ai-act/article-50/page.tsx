@@ -142,7 +142,7 @@ export default function Article50Page() {
               The EU AI Act evidence map
             </Button>
             <Button href="/compliance" variant="ghost">
-              Explore the Compliance bundle
+              Explore the Compliance module family
             </Button>
           </>
         }
@@ -353,12 +353,12 @@ export default function Article50Page() {
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
           The audit chain, evidence bundles, and versioned configuration that
           preserve evidence of Article 50 disclosure events ship in the
-          Compliance bundle, wired and testable from day one. That evidence
-          supports review; it does not determine legal satisfaction.
+          Compliance module family, wired and testable from day one. That
+          evidence supports review; it does not determine legal satisfaction.
         </p>
         <div className="cs-cta-row">
           <Button href="/compliance" variant="primary">
-            Explore the Compliance bundle
+            Explore the Compliance module family
           </Button>
           <Button href="/frameworks/eu-ai-act" variant="ghost">
             The EU AI Act overview

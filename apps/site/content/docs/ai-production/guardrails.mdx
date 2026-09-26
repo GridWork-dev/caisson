@@ -75,12 +75,12 @@ regex pre-screen, and an optional `pii` mode for the input leg. `GuardRuntime` c
 
 ## Composition
 
-Guardrails is a base primitive, it never imports an edition. It composes `@caisson-sh/kernel`
+Guardrails is a base primitive: it composes `@caisson-sh/kernel`
 for the `EventSink`/`looksLikeSecret` primitives and `@caisson-sh/field-crypto` for reversible
-PII tokenization; the AI-Production bundle's metered gateway wires `guardInput`/`guardOutput`
-around its `infer()`/`embed()` calls.
+PII tokenization, and never depends "up" on a higher-layer module. The AI-Production family's
+metered gateway wires `guardInput`/`guardOutput` around its `infer()`/`embed()` calls.
 
-## Entitlement
+## Standalone or in AI-Production
 
-Guardrails ships inside the AI-Production bundle (with ai-meter and prompt-registry) or
-standalone.
+Guardrails works standalone, or as one of the modules composing the AI-Production family
+(with ai-meter and prompt-registry).

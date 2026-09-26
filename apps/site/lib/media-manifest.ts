@@ -110,8 +110,8 @@ export type DiagramKey =
  *    - `audit-worm` · `ai-meter` · `prompt-registry` · `local-store` — each ships its OWN embeddable
  *      `@caisson-sh/<mod>/ui` surface (ADR-0250 G2c/G2d): ChainViewer · UsageChart · PromptBrowser ·
  *      StoreSearch, presentational + headless-data-in.
- *    - `credits` — the real buyer-dashboard ledger surface (`@caisson-sh/ui` LedgerList/MetricStat,
- *      apps/site/app/dashboard/credits): what the buyer sees when they hold credits.
+ *    - `credits` — the real ledger surface (`@caisson-sh/ui` LedgerList/MetricStat): what a
+ *      developer's own app renders when a tenant holds credits.
  *  Every other catalog module is a backend/library package with no showable UI of its own and
  *  legitimately stays diagram(+code-artifact)-only. */
 export type ComponentKey =
@@ -199,7 +199,7 @@ const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
   "schematic-audit-worm":
     "The package in blueprint: every append mints a length-keyed anchor into write-once S3 Object-Lock storage, and verify() treats that store as the trusted length oracle, so a cut tail fails even when the surviving prefix hashes clean.",
   "schematic-compliance":
-    "The bundle in cross-section: commercial members at the module seam, composing onto the Apache-2.0 kernel and fail-closed RLS base, on Postgres and S3 Object-Lock bedrock; nine of the fourteen pinned members drawn.",
+    "The module family in cross-section: members at the module seam, composing onto the Apache-2.0 kernel and fail-closed RLS base, on Postgres and S3 Object-Lock bedrock; nine of the fourteen pinned members drawn.",
   "schematic-ai-meter":
     "The package in blueprint: reserve debits credits and checks the circuit breaker before the provider is ever called, and reconcile trues the charge to actual usage inside an atomic per-tenant spend window.",
   "schematic-guardrails":
@@ -251,15 +251,15 @@ const DIAGRAM_CAPTIONS: Record<DiagramKey, string> = {
   "schematic-trust-page":
     "The package in blueprint: flattenManifestFacts declares the universe of facts a page could show, and the allowlist filter runs before either output renders, so an absent field never reaches HTML or JSON.",
   "schematic-ai-production":
-    "The AI-Production bundle in cross-section: six commercial members at the module seam, composing onto the kernel, tenancy-rls, and ai-config base, on a Postgres bedrock.",
+    "The AI-Production module family in cross-section: six members at the module seam, composing onto the kernel, tenancy-rls, and ai-config base, on a Postgres bedrock.",
   "schematic-local-first":
-    "The Local-first bundle in cross-section: five members at the module seam, composing onto the kernel base, on an on-device SQLite bedrock.",
+    "The Local-first module family in cross-section: five members at the module seam, composing onto the kernel base, on an on-device SQLite bedrock.",
   "schematic-agentic-dev":
-    "The Agentic-Dev bundle in cross-section: five commercial members at the module seam, composing onto the kernel and ai-config base, on Postgres and on-device SQLite bedrock.",
+    "The Agentic-Dev module family in cross-section: five members at the module seam, composing onto the kernel and ai-config base, on Postgres and on-device SQLite bedrock.",
   "schematic-provenance":
-    "The Provenance bundle in cross-section: three commercial members at the module seam, composing onto the kernel base, on Postgres and S3 Object-Lock bedrock.",
+    "The Provenance module family in cross-section: three members at the module seam, composing onto the kernel base, on Postgres and S3 Object-Lock bedrock.",
   "schematic-everything":
-    "The Everything bundle in cross-section: five persona bundles plus three platform modules at the module seam, composing onto the Apache-2.0 base, on Postgres, S3 Object-Lock, and on-device SQLite bedrock.",
+    "Everything in cross-section: five persona module families plus three platform modules at the module seam, composing onto the Apache-2.0 base, on Postgres, S3 Object-Lock, and on-device SQLite bedrock.",
 };
 
 // Which entries carry which sheet (`kind:slug`). Post-migration (ADR-0378), every sheet is
@@ -339,7 +339,7 @@ const MODULE_COMPONENTS: Readonly<
   credits: {
     component: "credits",
     caption:
-      "The buyer's dashboard credits surface, rendered live: the balance tile and the append-only ledger, every delta an integer credit unit.",
+      "The credits ledger surface, rendered live: the balance tile and the append-only ledger, every delta an integer credit unit.",
   },
 };
 
@@ -490,35 +490,35 @@ const DEPTH_POKE_FIRST_MODULES = {
   "trust-page": true,
 } as const satisfies Partial<Record<PokeKey, true>>;
 
-/** Bundles borrow the hero member's poke VERBATIM (ADR-0378 lock 1 — borrow, never fork): the same
- *  component the module page renders, one manifest line per bundle. */
+/** Module families borrow the hero member's poke VERBATIM (ADR-0378 lock 1 — borrow, never fork):
+ *  the same component the module page renders, one manifest line per module family. */
 const BUNDLE_POKES: Readonly<
   Record<string, { poke: PokeKey; caption: string }>
 > = {
   compliance: {
     poke: "field-crypto",
     caption:
-      "The bundle's hero member under your cursor: field encryption sealed live and cross-tenant opens failing, exactly as the field-crypto module page proves it.",
+      "The module family's hero member under your cursor: field encryption sealed live and cross-tenant opens failing, exactly as the field-crypto module page proves it.",
   },
   "ai-production": {
     poke: "ai-meter",
     caption:
-      "The bundle's hero member under your cursor: reserve, reconcile, and breaker-trip in the package's own integer math, exactly as the ai-meter module page proves it.",
+      "The module family's hero member under your cursor: reserve, reconcile, and breaker-trip in the package's own integer math, exactly as the ai-meter module page proves it.",
   },
   provenance: {
     poke: "audit-worm",
     caption:
-      "The bundle's hero member under your cursor: edit history and watch the chain verdict flip, exactly as the audit-worm module page proves it.",
+      "The module family's hero member under your cursor: edit history and watch the chain verdict flip, exactly as the audit-worm module page proves it.",
   },
   "agentic-dev": {
     poke: "agent-kernel",
     caption:
-      "The bundle's hero member under your cursor: the seven-act lifecycle stepper refusing illegal transitions, exactly as the agent-kernel module page proves it.",
+      "The module family's hero member under your cursor: the seven-act lifecycle stepper refusing illegal transitions, exactly as the agent-kernel module page proves it.",
   },
   "local-first": {
     poke: "local-store",
     caption:
-      "The bundle's hero member under your cursor: hybrid retrieval fused by real RRF math, exactly as the local-store module page proves it.",
+      "The module family's hero member under your cursor: hybrid retrieval fused by real RRF math, exactly as the local-store module page proves it.",
   },
 };
 
@@ -530,13 +530,14 @@ function entryMark(kind: "bundle" | "module", id: string): IconName {
   return moduleMark(id);
 }
 
-/** Honest one-liner for a bundle's composition slide — the real member count, never invented. */
+/** Honest one-liner for a module family's composition slide — the real member count, never
+ *  invented. */
 function bundleCompositionCaption(id: BundleId): string {
   if (id === "everything") {
-    return "The whole catalog — every bundle and every module — composing onto one Apache-2.0 audited base.";
+    return "The whole catalog — every module family and every module — composing onto one Apache-2.0 audited base.";
   }
   const label = BUNDLES.find((b) => b.id === id)?.label ?? id;
-  return `The ${label} bundle's real member modules, composing onto Caisson's Apache-2.0 audited base.`;
+  return `The ${label} module family's real member modules, composing onto Caisson's Apache-2.0 audited base.`;
 }
 
 export interface MediaSlidesOptions {
@@ -546,7 +547,7 @@ export interface MediaSlidesOptions {
    *  place they show the code). */
   omitCodeArtifact?: boolean;
   /** Hoist the poke to slide 1 (ADR-0378 lock 1: the card viewer leads with the poke — the only
-   *  slide kind that stops a scrolling buyer mid-gesture; depth pages lead with the sheet). */
+   *  slide kind that stops a scrolling visitor mid-gesture; depth pages lead with the sheet). */
   leadWithPoke?: boolean;
 }
 

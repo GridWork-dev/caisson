@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Icon, type IconName } from "@/components";
-import { trackEvent } from "@/lib/analytics";
 import styles from "./nav-panels.module.css";
 
 // The centered primary-nav trigger row (ADR-0237 F3/F4, repointed onto the kit `Popover` per
@@ -29,8 +28,9 @@ export interface NavCard {
   icon?: IconName;
 }
 
-/** A named sub-list inside a panel (e.g. the merged Marketplace panel's "Bundles" / "Marketplace"
- *  groups) — used instead of a flat `cards` list when a panel has more than one card family. */
+/** A named sub-list inside a panel (e.g. the merged Marketplace panel's "Module families" /
+ *  "Marketplace" groups) — used instead of a flat `cards` list when a panel has more than one
+ *  card family. */
 export interface NavCardGroup {
   heading: string;
   cards: readonly NavCard[];
@@ -41,7 +41,7 @@ export interface NavPanelSpec {
   lede?: string;
   /** A single flat card list, no sub-heading (e.g. Resources). Mutually exclusive with `groups`. */
   cards?: readonly NavCard[];
-  /** Two or more headed card groups inside one panel (e.g. Marketplace's Bundles | Marketplace). */
+  /** Two or more headed card groups inside one panel (e.g. Marketplace's Module families | Marketplace). */
   groups?: readonly NavCardGroup[];
   foot?: readonly { href: string; label: string; desc: string }[];
 }
@@ -136,8 +136,6 @@ export function NavPanels({ panels }: { panels: readonly NavPanelSpec[] }) {
             open={open}
             onOpenChange={(next) => {
               setOpenIndex(next ? i : null);
-              // Nav engagement (ADR-0237 F8) — opens only, never the close of the same panel.
-              if (next) trackEvent("nav_panel_open", { panel: panel.label });
             }}
             aria-current={onSurface ? "page" : undefined}
             className={styles.trigger}

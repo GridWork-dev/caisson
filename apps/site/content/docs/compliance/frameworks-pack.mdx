@@ -25,11 +25,11 @@ bun add @caisson-sh/frameworks-pack
 - **Three framework packs**: `soc2Tsc`, `hipaaSecurity`, `euAiAct`: pre-built, validated
   `Framework` catalogs, each control mapped to its external requirement id.
 - **Named-regime crosswalks**: `soc2Crosswalk`, `pciDssCrosswalk`, `gdprCrosswalk` (and
-  `regimeCrosswalks`, all three together): the buyer-facing mapping from a regime's control
+  `regimeCrosswalks`, all three together): the mapping from a regime's control
   id to the concrete Caisson package/mechanism that addresses it, with a `claim` of either
   `"maps-to"` (domain overlap) or `"implements"` (proven by a live test or CI artifact, and
   only ever used when a `proof` pointer backs it), and a required `buyerResponsibility`
-  column naming what Caisson does not cover.
+  column naming what stays outside Caisson's scope.
 
 ## Quickstart
 
@@ -79,11 +79,11 @@ const artifact = exportRegimeCrosswalk(soc2Crosswalk);
 
 ## Composition
 
-Depends on `@caisson-sh/kernel` plus `@caisson-sh/oscal-spine`, the commercial OSCAL boundary it
+Depends on `@caisson-sh/kernel` plus `@caisson-sh/oscal-spine`, the OSCAL boundary it
 re-exports for source compatibility. The framework catalogs are consumed by
 `@caisson-sh/compliance-core`, which assembles the evidence pack; `oscal-spine` generates the
 machine-readable OSCAL artifacts against those control ids. All three are members of the
-Compliance bundle.
+Compliance family.
 
 ## License
 

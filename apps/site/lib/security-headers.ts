@@ -7,7 +7,7 @@
 // `frame-src 'self'` is load-bearing (ADR-0400): frame-src does NOT fall back to default-src when
 // present, so without it the site would block the same-origin /demos embed its module pages
 // render. `'unsafe-inline'` on script/style-src covers Next's inlined hydration bootstrap (no
-// per-request nonce under the App Router). Plausible is the only third-party origin.
+// per-request nonce under the App Router). No third-party origin.
 export const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -17,7 +17,7 @@ export const CONTENT_SECURITY_POLICY = [
   "img-src 'self' data:",
   "font-src 'self'",
   "style-src 'self' 'unsafe-inline'",
-  "script-src 'self' 'unsafe-inline' https://plausible.io",
+  "script-src 'self' 'unsafe-inline'",
   "frame-src 'self'",
-  "connect-src 'self' https://plausible.io",
+  "connect-src 'self'",
 ].join("; ");

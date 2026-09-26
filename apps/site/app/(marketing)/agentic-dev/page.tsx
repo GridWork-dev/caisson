@@ -26,7 +26,6 @@ import {
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import { moduleMark } from "@/lib/marks";
 import { hasModulePage } from "@/lib/module-pages";
-import { TrackView } from "@/components/track-view";
 
 // Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts);
 // the bespoke sections below stay page-local.
@@ -65,17 +64,16 @@ const PIECES = [
   },
 ] as const;
 
-// Base substrate / no-bespoke-mark packages predate the F6 sellable-module mark set — tool-exec
-// never got a bespoke mark, so it resolves through this local map (matches the compliance/ai-kit/
-// local-first pages' same-shaped exception). Sellable members resolve via `moduleMark`.
+// Base substrate / no-bespoke-mark packages predate the F6 module mark set — tool-exec never got
+// a bespoke mark, so it resolves through this local map (matches the compliance/ai-kit/
+// local-first pages' same-shaped exception).
 const BASE_MEMBER_ICON: Record<string, IconName> = {
   "tool-exec": "terminal",
 };
 
-// The bundle's real composed packages — read from the shared bundle content record. Priced via a
-// StatusChip when a member is also sold standalone (`MODULES`); linked to its module depth
-// page only when one exists — tool-exec is priced but has no depth page yet, so it renders its
-// price chip but stays non-interactive and unlinked (G5).
+// The module family's real composed packages — read from the shared bundle content record.
+// Linked to its module depth page only when one exists — tool-exec has no depth page yet, so it
+// renders unlinked (G5).
 const MEMBER_MODULES = record.members;
 
 function MemberModuleCard({
@@ -120,26 +118,26 @@ function MemberModuleCard({
 }
 
 /* ---------- MCP feature-card sequence (SYNTHESIS §6 Tier-1 row 9) ---------- */
-// @caisson-sh/mcp-server ships in the open Base substrate (every plan, not an Agentic-Dev-only SKU) —
-// this is the page where an agent-tooling buyer is already looking for "where does my agent
-// connect", so the sequence lives here rather than inventing a standalone module page for a
-// package that has no separate SKU. Four real request-lifecycle stages, in order, each grounded in
+// @caisson-sh/mcp-server ships in the open Base substrate (every plan) — this is the page where
+// someone doing agent tooling is already looking for "where does my agent connect", so the
+// sequence lives here rather than inventing a standalone module page for a package with no
+// separate module page. Four real request-lifecycle stages, in order, each grounded in
 // packages/mcp-server/src/server.ts.
 const MCP_SEQUENCE = [
   {
     icon: "key" as const,
     step: "1. Authenticate",
-    body: "A timing-safe Bearer compare against every issued buyer token, no early return, a match never leaks through response latency.",
+    body: "A timing-safe Bearer compare against every issued token, no early return, a match never leaks through response latency.",
   },
   {
     icon: "boxes" as const,
     step: "2. Discover",
-    body: "listTools returns only what the caller owns. A tool from a bundle you don't own is invisible, not just refused, the same 404 as a tool that doesn't exist.",
+    body: "listTools returns only what the caller's token grants. A tool outside that grant is invisible, not just refused, the same 404 as a tool that doesn't exist.",
   },
   {
     icon: "terminal" as const,
     step: "3. Generate",
-    body: "The one write tool revalidates every requested module id and version against the SAME allowlisted registry index the CLI generator checks, then entitlement-expands your purchases before it ever calls the host.",
+    body: "The one write tool revalidates every requested module id and version against the SAME allowlisted registry index the CLI generator checks, then expands the token's grants before it ever calls the host.",
   },
   {
     icon: "shield" as const,
@@ -219,7 +217,6 @@ export default function AgenticDevPage() {
 
   return (
     <>
-      <TrackView item="bundle:agentic-dev" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(appLd) }}
@@ -255,7 +252,7 @@ export default function AgenticDevPage() {
       {/* ===== What it composes ===== */}
       <Section
         title="A governed kernel, not a wrapper."
-        lede="@caisson-sh/agent-kernel is one of the pieces the Agentic-Dev bundle composes together as peers, alongside local memory and the tool-exec gate, all built on the same open @caisson-sh/kernel base every bundle shares. It carries a typed agent/skill/rule schema with a reference-integrity validator (a ghost cross-ref throws before anything runs), the 7-act lifecycle FSM (SPEC → PLAN → EXECUTE → VERIFY → SWEEP → EVAL → SHIP, with a failed VERIFY reopening PLAN and SHIP as the only terminal state), governance guards, and the hooks dispatcher that fires lifecycle events without handing a hook a credential the kernel didn't give it."
+        lede="@caisson-sh/agent-kernel is one of the pieces the Agentic-Dev module family composes together as peers, alongside local memory and the tool-exec gate, all built on the same open @caisson-sh/kernel base every module family shares. It carries a typed agent/skill/rule schema with a reference-integrity validator (a ghost cross-ref throws before anything runs), the 7-act lifecycle FSM (SPEC → PLAN → EXECUTE → VERIFY → SWEEP → EVAL → SHIP, with a failed VERIFY reopening PLAN and SHIP as the only terminal state), governance guards, and the hooks dispatcher that fires lifecycle events without handing a hook a credential the kernel didn't give it."
         band="tint"
       />
 
@@ -263,7 +260,7 @@ export default function AgenticDevPage() {
       <Section>
         <MediaCarousel
           slides={mediaSlides("bundle", "agentic-dev")}
-          label="Agentic-Dev bundle media"
+          label="Agentic-Dev module family media"
         />
       </Section>
 
@@ -271,7 +268,7 @@ export default function AgenticDevPage() {
       <Reveal>
         <Section
           title={`${spellCount(MEMBER_MODULES.length)} composed packages, not one kernel.`}
-          lede="Each member is a real workspace dependency, and each one carries its own standalone price: the kernel, the runner, the trajectory log, local memory, and the tool-exec gate."
+          lede="Each member is a real workspace dependency, and each one also installs on its own: the kernel, the runner, the trajectory log, local memory, and the tool-exec gate."
         >
           <FeatureGrid cols={2}>
             {MEMBER_MODULES.map((m) => (
@@ -346,7 +343,7 @@ export default function AgenticDevPage() {
       <Reveal>
         <Section
           title="Spawns agents, not just scaffolds them."
-          lede="@caisson-sh/agent-runner spawns a headless coding-agent CLI as a detached subprocess in an isolated worktree, streams an auditable .jsonl transcript that survives the launcher exiting, and parses it into a structured run report (tool calls, files touched, final result). The child environment is built from scratch (never spread from process.env) with a fixed non-secret passthrough allowlist and only the target provider's key, so a secret sitting in your shell has no path into the sandbox. Provider-agnostic: name the binary, the env-var names for the endpoint and key, the model, and an argv template; a worked Claude Code CLI profile ships as the reference. It ships as its own package alongside the bundle, not wired into the kernel's lifecycle."
+          lede="@caisson-sh/agent-runner spawns a headless coding-agent CLI as a detached subprocess in an isolated worktree, streams an auditable .jsonl transcript that survives the launcher exiting, and parses it into a structured run report (tool calls, files touched, final result). The child environment is built from scratch (never spread from process.env) with a fixed non-secret passthrough allowlist and only the target provider's key, so a secret sitting in your shell has no path into the sandbox. Provider-agnostic: name the binary, the env-var names for the endpoint and key, the model, and an argv template; a worked Claude Code CLI profile ships as the reference. It ships as its own package alongside the module family, not wired into the kernel's lifecycle."
         >
           {RunnerSpawn}
         </Section>
@@ -356,7 +353,7 @@ export default function AgenticDevPage() {
       <Reveal>
         <Section
           title="Local memory, and a sandboxed exec gate."
-          lede="@caisson-sh/local-store gives the bundle hybrid vector + full-text recall (vec0 + FTS5 with reciprocal-rank fusion, an FTS-only offline floor when no embedder is wired) scoped per tenant at the file level. @caisson-sh/tool-exec is the governed tool-execution gate composed alongside it: default-deny allowlist, Zod-strict argv schemas, execFile arg-arrays (never a shell) so an agent that wants to run a command only gets the ones you explicitly allowed. Neither piece makes an LLM call or imports a vendor SDK; the composed bundle holds no credential of its own."
+          lede="@caisson-sh/local-store gives the module family hybrid vector + full-text recall (vec0 + FTS5 with reciprocal-rank fusion, an FTS-only offline floor when no embedder is wired) scoped per tenant at the file level. @caisson-sh/tool-exec is the governed tool-execution gate composed alongside it: default-deny allowlist, Zod-strict argv schemas, execFile arg-arrays (never a shell) so an agent that wants to run a command only gets the ones you explicitly allowed. Neither piece makes an LLM call or imports a vendor SDK; the composed module family holds no credential of its own."
           band="surface"
         />
       </Reveal>
@@ -365,7 +362,7 @@ export default function AgenticDevPage() {
       <Reveal>
         <Section
           title="Where your agent connects."
-          lede="Most kits ship an MCP server now; the difference is what it lets an agent do. @caisson-sh/mcp-server ships in the open Base substrate (every plan gets it, not just Agentic-Dev) and it treats the agent as a principal: four stages on every call, in order, the same server the buyer dashboard and any MCP-speaking agent client connect through."
+          lede="Most kits ship an MCP server now; the difference is what it lets an agent do. @caisson-sh/mcp-server ships in the open Base substrate (every install gets it, not just Agentic-Dev) and it treats the agent as a principal: four stages on every call, in order, the same server any MCP-speaking agent client connects through."
         >
           <FeatureGrid cols={2}>
             {MCP_SEQUENCE.map((s) => (
@@ -437,7 +434,7 @@ export default function AgenticDevPage() {
       <Reveal>
         <Section
           title="A composition of the same base."
-          lede="Agentic-Dev is a composition of the same open Caisson base every bundle shares, not a fork. Take the whole family, or a single piece."
+          lede="Agentic-Dev is a composition of the same open Caisson base every module family shares, not a fork. Take the whole family, or a single piece."
           band="tint"
         >
           <FeatureGrid cols={2}>

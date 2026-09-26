@@ -61,7 +61,7 @@ export default function UpdatesPage() {
         >
           {[
             "Release notes for every base-substrate and kernel version",
-            "Notable module and bundle changes as they ship",
+            "Notable module and module-family changes as they ship",
           ].map((item) => (
             <li
               key={item}

@@ -32,7 +32,7 @@ import { MODULE_ENTRIES } from "@/lib/marketplace-surface";
 
 export const metadata = buildMetadata({
   description:
-    "One audited Postgres base mapped to SOC 2, HIPAA, ISO 27001, and NIST 800-53: fail-closed RLS, S3 Object-Lock WORM, and an append-only audit chain, in six composable bundles you compose, never fork.",
+    "One audited Postgres base mapped to SOC 2, HIPAA, ISO 27001, and NIST 800-53: fail-closed RLS, S3 Object-Lock WORM, and an append-only audit chain, in six composable module families you compose, never fork.",
   path: "/",
 });
 
@@ -41,7 +41,7 @@ export const metadata = buildMetadata({
 const homeJsonLd = softwareApplication({
   name: "Caisson",
   description:
-    "Composable infrastructure for regulated and production SaaS on one audited Postgres base: fail-closed RLS, S3 Object-Lock WORM, an append-only audit chain, token metering, on-device inference, and signed provenance, in six bundles.",
+    "Composable infrastructure for regulated and production SaaS on one audited Postgres base: fail-closed RLS, S3 Object-Lock WORM, an append-only audit chain, token metering, on-device inference, and signed provenance, in six module families.",
   url: SITE_URL,
 });
 
@@ -223,13 +223,14 @@ export default function HomePage() {
       </Reveal>
 
       {/* ===== Architecture fit — how the modules land in a stack you already run (ADR-0323
-          Cookiy-response: buyers want to see fit before booking anything). Placed right before
-          the buy CTAs, after "how the guarantees hold" has already earned the technical trust. ===== */}
+          Cookiy-response: developers want to see fit before adopting anything). Placed right
+          before the getting-started CTAs, after "how the guarantees hold" has already earned
+          the technical trust. ===== */}
       <Reveal>
         <Section
           eyebrow="Where it lands"
           title="It installs into the stack you already have."
-          lede="Not a hosted platform, not a new service to stand up. The module layer is packages on your Postgres, license checks verify with zero network, and telemetry exports to the collector you already run."
+          lede="Not a hosted platform, not a new service to stand up. The module layer is packages on your Postgres, and telemetry exports to the collector you already run."
           band="surface"
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
@@ -242,8 +243,8 @@ export default function HomePage() {
           the Bundles cards below reuse it (ADR-0237 F5) ===== */}
       <Section
         eyebrow="How it composes"
-        title="Module or bundle: same catalog, two shapes."
-        lede="Take a single module, or a bundle that composes several for one job, and run any of them live in your browser first. Open the marketplace to browse the rest."
+        title="Module or module family: same catalog, two shapes."
+        lede="Take a single module, or a module family that composes several for one job, and run any of them live in your browser first. Open the marketplace to browse the rest."
       >
         <Reveal stagger={70} className="cs-grid cs-grid--3 cs-feature-grid">
           <Card>
@@ -290,7 +291,7 @@ export default function HomePage() {
               <span className="cs-card-title">
                 A composed stack for one job
               </span>
-              <StatusChip label="Bundle" />
+              <StatusChip label="Module family" />
             </div>
             <p
               className="cs-num"
@@ -300,7 +301,7 @@ export default function HomePage() {
                 fontFamily: "var(--cs-font-mono)",
               }}
             >
-              {PERSONA_BUNDLE_COUNT} bundles
+              {PERSONA_BUNDLE_COUNT} module families
             </p>
             <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
               Compliance, AI-Production, Local-first, Agentic-Dev, or
@@ -309,7 +310,7 @@ export default function HomePage() {
             </p>
             <div style={{ marginTop: "var(--cs-space-6)" }}>
               <Button href="/marketplace" variant="ghost">
-                Browse bundles
+                Browse module families
               </Button>
             </div>
           </Card>
@@ -349,14 +350,14 @@ export default function HomePage() {
         </Reveal>
       </Section>
 
-      {/* ===== Bundles — featured-lead hierarchy, one accent. id="bundles" is the production
-          door's target from the dual-door hero (D1). Six cards cascade in — the signature beat
-          of the authored rhythm (ADR-0307). ===== */}
+      {/* ===== Module families — featured-lead hierarchy, one accent. id="bundles" is the
+          production door's target from the dual-door hero (D1). Six cards cascade in — the
+          signature beat of the authored rhythm (ADR-0307). ===== */}
       <Section
         id="bundles"
-        eyebrow="Bundles"
-        title="Six bundles, one audited base."
-        lede="Compliance leads; every bundle (Provenance and the whole-catalog Everything included) draws from the same audited base, never a fork."
+        eyebrow="Module families"
+        title="Six module families, one audited base."
+        lede="Compliance leads; every module family (Provenance and the whole-catalog Everything included) draws from the same audited base, never a fork."
         band="surface"
       >
         <Reveal
@@ -449,18 +450,18 @@ export default function HomePage() {
                 label={`all ${MODULES.length} modules`}
               />
             }
-            line="Every bundle and every module, including the platform capabilities no persona bundle carries: the whole library."
+            line="Every module family and every module, including the platform capabilities no persona module family carries: the whole library."
             proof={`${MODULES.length} modules · one audited base`}
           />
         </Reveal>
       </Section>
 
-      {/* ===== SKU matrix — bundles × capabilities ===== */}
+      {/* ===== SKU matrix — module families × capabilities ===== */}
       <Reveal>
         <Section
-          eyebrow="What&rsquo;s in each bundle"
+          eyebrow="What&rsquo;s in each module family"
           title="Compose, don&rsquo;t fork."
-          lede="Every bundle draws from the same audited base. Modules differ by composition, never by a divergent copy."
+          lede="Every module family draws from the same audited base. Modules differ by composition, never by a divergent copy."
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
             <SkuMatrix columns={[...SKU_COLUMNS]} rows={SKU_FEATURE_ROWS} />
@@ -480,8 +481,8 @@ export default function HomePage() {
       <Reveal>
         <Section
           eyebrow="Pick a path"
-          title="Pick the path. The bundle follows."
-          lede="Three ways in. Each opens the matching bundle's viewer on the marketplace, live demo included."
+          title="Pick the path. The module family follows."
+          lede="Three ways in. Each opens the matching module family's viewer on the marketplace, live demo included."
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
             <DecisionBand />
@@ -609,7 +610,7 @@ export default function HomePage() {
           id="get-started"
           eyebrow="Get started"
           title="Start audit-ready."
-          lede="Scaffold the audited base in one command, then open the marketplace for the bundle or module you need."
+          lede="Scaffold the audited base in one command, then open the marketplace for the module family or module you need."
           band="surface"
         >
           <div
@@ -625,8 +626,9 @@ export default function HomePage() {
               label="install"
               code={
                 <>
-                  <span className="cs-tok-muted">$</span> bunx{" "}
-                  <span className="cs-tok-accent">@caisson-sh/cli</span>@latest
+                  <span className="cs-tok-muted">$</span> bunx --package{" "}
+                  <span className="cs-tok-accent">@caisson-sh/cli</span>{" "}
+                  create-caisson
                 </>
               }
             />

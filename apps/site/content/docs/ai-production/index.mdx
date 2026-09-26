@@ -3,7 +3,7 @@ title: AI-Production
 description: The production-rigor layer for AI features, token metering with spend caps, a CI eval gate, PII/moderation guardrails, and a versioned prompt registry.
 ---
 
-The **AI-Production** bundle is the layer between "the model call works in dev" and "the model
+The **AI-Production** family is the layer between "the model call works in dev" and "the model
 call survives production": every call is metered and capped, every prompt change is scored
 against a regression gate before it ships, and every input/output crosses one guardrail boundary.
 
@@ -22,7 +22,7 @@ HTTP/1.1 402 Payment Required
 The cap is enforced before the provider is called, in integer credit units, fail-closed, over
 budget returns `402`, never an unbounded charge.
 
-## What's in the bundle
+## What's in the family
 
 - **[ai-meter](/docs/ai-production/ai-meter)**: Postgres-atomic reserve/reconcile token
   metering, per-tenant spend caps, and a circuit breaker. Integer credits only, no floats.
@@ -36,7 +36,7 @@ budget returns `402`, never an unbounded charge.
 - **[credits](/docs/ai-production/credits)**: the integer credit wallet the spend caps debit
   against: append-only ledger, debit-before-spend, fail-closed `402` on an empty balance.
 - **[field-crypto](/docs/provenance/field-crypto)**: per-tenant field encryption, shared with
-  the Compliance, Local-first, and Provenance bundles, for any prompt input or output you store.
+  the Compliance, Local-first, and Provenance families, for any prompt input or output you store.
 
 ## Install
 

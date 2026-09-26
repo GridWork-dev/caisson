@@ -3,7 +3,7 @@ title: Governed agent loop
 description: Run a bounded tool loop with runToolLoop, where every model and tool step reserves credits before it executes, a gated tool parks the run for an operator decision, and an approval resumes it from durable state.
 ---
 
-`@caisson-sh/ai-kit` is the metered inference layer of the AI-Production bundle: it composes
+`@caisson-sh/ai-kit` is the metered inference layer of the AI-Production family: it composes
 `@caisson-sh/ai-meter`, `@caisson-sh/guardrails`, `@caisson-sh/prompt-registry`, and
 `@caisson-sh/ai-config` behind one chokepoint so a provider SDK is never called directly from
 your app. `runToolLoop` is that chokepoint for agents. A raw provider tool loop spends

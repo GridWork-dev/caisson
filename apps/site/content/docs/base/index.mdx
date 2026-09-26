@@ -1,12 +1,12 @@
 ---
 title: Base substrate
-description: The sixteen Apache-2.0 packages every bundle sits on — kernel, auth, tenancy RLS, UI tokens, billing, jobs, email, AI config, the MCP server, registry-schema, observability, rate-limit, ds-manifest, and the generator tooling (cli, migrate, license-verify) — plus the commercial Platform tier.
+description: The sixteen Apache-2.0 packages every module family sits on — kernel, auth, tenancy RLS, UI tokens, billing, jobs, email, AI config, the MCP server, registry-schema, observability, rate-limit, ds-manifest, and the generator tooling (cli, migrate, license-verify) — plus three modules that extend the base without joining a family.
 ---
 
-The **Base substrate** is the open-core floor every Caisson bundle composes on. It is Apache-2.0,
-installs without a license, and carries the load-bearing contracts, the typed error hierarchy,
-fail-closed tenancy, the billing port, the token floor, that the commercial modules extend but
-never fork.
+The **Base substrate** is the floor every Caisson module family composes on. It is Apache-2.0 and
+installs like any other package, and carries the load-bearing contracts, the typed error hierarchy,
+fail-closed tenancy, the billing port, and the token floor that every other module extends but
+never forks.
 
 ## What's in the base
 
@@ -28,7 +28,7 @@ never fork.
   side-effects are enqueued, not inline.
 - **[email](/docs/base/email)**: a Resend email port with a test driver.
 - **`registry-schema`**: the open module-manifest and index schema plus the allowlist helpers —
-  the contract the commercial registry service implements.
+  the contract the generator's catalog-index builder implements.
 - **`observability`**: a vendor-neutral OpenTelemetry bootstrap; env-gated NodeSDK with an
   OTLP/HTTP exporter.
 - **`rate-limit`**: token-bucket rate limiting with per-key and global ceilings and an injectable
@@ -41,19 +41,21 @@ The generator and its tooling, `create-caisson`, the CLI, `@caisson-sh/migrate`,
 [create-caisson](/docs/cli/create-caisson).
 
 That is the whole open set: **sixteen** Apache-2.0 packages, thirteen substrate plus three
-generator tooling. Nothing else in the catalog is Apache-2.0.
+generator tooling.
 
-## The Platform tier
+## Three more base-adjacent modules
 
-Three commercial modules extend the base without living in a persona bundle:
+Three modules extend the base without living in one of the five persona families:
 
 - **[org-controls](/docs/base/org-controls)**: WorkOS SSO, the owner-gated multi-user surface,
   and the admin-write RLS layer.
 - **[billing-orchestration](/docs/base/billing-orchestration)**: the full verify → parse →
   checkout → idempotency flow composed on the open `BillingProvider` port.
-- **[ui-pro](/docs/base/ui-pro)**: the commercial component tier on the open `@caisson-sh/ui` token
+- **[ui-pro](/docs/base/ui-pro)**: the advanced component tier on the open `@caisson-sh/ui` token
   floor: DataTablePro, OpsMatrix, AuditTimeline, CommandPalette, charts, and the interactive
   primitives.
+
+Like every other module, these three are Apache-2.0 and included in the Everything family.
 
 ## Licensing
 

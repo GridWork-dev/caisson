@@ -478,8 +478,8 @@ export function AuditWormSheet() {
 export function ComplianceCrossSection() {
   return (
     <Sheet
-      title="The Compliance bundle in cross-section: commercial members at the module seam, composing onto the Apache-2.0 base, on Postgres and S3 Object-Lock"
-      bar="bundle: compliance · cross-section · 9 of 13 members drawn"
+      title="The Compliance module family in cross-section: members at the module seam, composing onto the Apache-2.0 base, on Postgres and S3 Object-Lock"
+      bar="family: compliance · cross-section · 9 of 13 members drawn"
     >
       <text x={163} y={9} className={styles.sub}>
         your app
@@ -507,7 +507,7 @@ export function ComplianceCrossSection() {
         {...HAIRLINE}
       />
       <text x={14} y={30} className={styles.bandLabelAccent}>
-        MODULE SEAM · THE BUNDLE
+        MODULE SEAM · THE FAMILY
       </text>
       {/* 7 seam chips over three rows — every label at full 9px advance, no squeezing (the
           kimi squeeze ban); the prose note the band carried is cut per the note discipline. */}

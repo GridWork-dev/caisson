@@ -26,7 +26,6 @@ import {
 } from "@/lib/jsonld";
 import { moduleMark } from "@/lib/marks";
 import { hasModulePage } from "@/lib/module-pages";
-import { TrackView } from "@/components/track-view";
 
 // Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts);
 // the bespoke sections below stay page-local.
@@ -140,7 +139,6 @@ const ldFaq = faqPage(
 export default function LocalFirstPage() {
   return (
     <>
-      <TrackView item="bundle:local-first" />
       {/* JSON-LD */}
       <script
         type="application/ld+json"
@@ -205,7 +203,7 @@ export default function LocalFirstPage() {
       {/* ===== The compute seam ===== */}
       <Section
         title="On-device by default, hosted by opt-in."
-        lede="The Local-first bundle composes @caisson-sh/kernel, @caisson-sh/local-store, @caisson-sh/field-crypto, @caisson-sh/local-privacy, @caisson-sh/local-inference, and @caisson-sh/local-sync. @caisson-sh/local-inference provides the InferenceBackend port and runs on-device by default: a MiniLM-class ONNX model via transformers.js, fetched on first use and SHA-256 hash-verified before it touches your data. Hosted inference is explicit opt-in. The same interface offers metered, egress-guarded transports for OpenRouter, Azure OpenAI, and AWS Bedrock, all disabled until configured."
+        lede="The Local-first module family composes @caisson-sh/kernel, @caisson-sh/local-store, @caisson-sh/field-crypto, @caisson-sh/local-privacy, @caisson-sh/local-inference, and @caisson-sh/local-sync. @caisson-sh/local-inference provides the InferenceBackend port and runs on-device by default: a MiniLM-class ONNX model via transformers.js, fetched on first use and SHA-256 hash-verified before it touches your data. Hosted inference is explicit opt-in. The same interface offers metered, egress-guarded transports for OpenRouter, Azure OpenAI, and AWS Bedrock, all disabled until configured."
         band="tint"
       />
 
@@ -213,7 +211,7 @@ export default function LocalFirstPage() {
       <Section>
         <MediaCarousel
           slides={mediaSlides("bundle", "local-first")}
-          label="Local-first bundle media"
+          label="Local-first module family media"
         />
       </Section>
 
@@ -308,7 +306,7 @@ export default function LocalFirstPage() {
       <Reveal>
         <Section
           title="All local."
-          lede="@caisson-sh/local-store gives you hybrid retrieval: sqlite-vec ANN and FTS5 merged by Reciprocal-Rank-Fusion, degrading to an FTS-only path if the vector leg fails, semantic search with nothing indexed by a vector cloud vendor. Isolation is file-per-tenant: the resolved file path is the tenant boundary. On top, the bundle ships a built two-way sync engine (changesets, tombstones, a logical clock, and a reconcile pass with a convergence test) for when a device needs to catch up."
+          lede="@caisson-sh/local-store gives you hybrid retrieval: sqlite-vec ANN and FTS5 merged by Reciprocal-Rank-Fusion, degrading to an FTS-only path if the vector leg fails, semantic search with nothing indexed by a vector cloud vendor. Isolation is file-per-tenant: the resolved file path is the tenant boundary. On top, the family ships a built two-way sync engine (changesets, tombstones, a logical clock, and a reconcile pass with a convergence test) for when a device needs to catch up."
           band="surface"
         />
       </Reveal>
@@ -353,14 +351,14 @@ export default function LocalFirstPage() {
       <Reveal>
         <Section
           title="Own the source. Run it on your machine."
-          lede="This bundle is for teams that cannot send data off the device: regulated data kept local, air-gapped deployments, embedded and edge tooling, or a product that should not need a network call to work at all. It ships the way every Caisson bundle ships: bunx @caisson-sh/cli@latest scaffolds the base, then you add Local-first AI."
+          lede="This module family is for teams that cannot send data off the device: regulated data kept local, air-gapped deployments, embedded and edge tooling, or a product that should not need a network call to work at all. It ships the way every Caisson module family ships: bunx --package @caisson-sh/cli create-caisson scaffolds the base, then you add Local-first AI."
           band="tint"
         />
       </Reveal>
 
       {/* ===== FAQ ===== */}
       <Reveal>
-        <Section title="Questions procurement asks first.">
+        <Section title="Questions a security review asks first.">
           <Faq items={FAQ_ITEMS} style={{ marginTop: "var(--cs-space-8)" }} />
         </Section>
       </Reveal>
@@ -385,9 +383,9 @@ export default function LocalFirstPage() {
             status={<StatusChip tone="muted" label="scaffold" />}
           >
             <span className="cs-tok-muted">{"$ "}</span>
-            {"bunx "}
+            {"bunx --package "}
             <span className="cs-tok-accent">{"@caisson-sh/cli"}</span>
-            {"@latest"}
+            {" create-caisson"}
           </Terminal>
           <div
             style={{

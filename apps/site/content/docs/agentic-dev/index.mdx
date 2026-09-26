@@ -3,12 +3,12 @@ title: Agentic-Dev
 description: The governed-agent kernel plus sandboxed execution, typed agent/skill/rule schema, a seven-act lifecycle FSM, a default-deny tool-exec gate, and local hybrid memory.
 ---
 
-The **Agentic-Dev** bundle is the layer your own AI coding agent runs inside, not a layer that
+The **Agentic-Dev** family is the layer your own AI coding agent runs inside, not a layer that
 replaces your judgment with autonomy. Every agent, skill, and rule is a typed artifact; every act
 transition is a legal move on a state machine; every shell command an agent runs passes a
 default-deny gate. The kernel governs the loop, it does not hand the agent the keys.
 
-## What's in the bundle
+## What's in the family
 
 - **[agent-kernel](/docs/agentic-dev/agent-kernel)**: the engine-neutral base: a Zod schema for
   agent/skill/rule artifacts, a seven-act lifecycle FSM (spec through ship), allow/deny/mutate
@@ -20,7 +20,7 @@ default-deny gate. The kernel governs the loop, it does not hand the agent the k
   command allowlist, Zod-strict argv validation, and `execFile` arg-arrays only, an agent never
   reaches a shell.
 - **[local-store](/docs/local-first/local-store)**: the hybrid vector + full-text local memory
-  an agent recalls over, shared with the Local-first bundle.
+  an agent recalls over, shared with the Local-first family.
 
 ## Install
 
@@ -46,9 +46,9 @@ on the machine unless you wire an explicit egress.
 ## Composing with the base
 
 `agent-kernel` imports no vendor SDK and runs no LLM, it is composition mechanism only, and both
-the base `@caisson-sh/cli`/`@caisson-sh/mcp-server` and this bundle's curated content consume it
-down-only. The same kernel underpins the `create-caisson` generator and the
-buyer-facing MCP server, so the rules that govern your own workflow are the rules that govern code
+the base `@caisson-sh/cli`/`@caisson-sh/mcp-server` and this family's curated content consume it
+down-only. The same kernel underpins the `create-caisson` generator and the MCP
+server, so the rules that govern your own workflow are the rules that govern code
 generation.
 
 ## License

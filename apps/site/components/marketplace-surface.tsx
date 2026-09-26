@@ -27,7 +27,7 @@ import styles from "./marketplace.module.css";
 type TypeFilter = "all" | "bundles" | "modules";
 const TYPE_OPTIONS: readonly { id: TypeFilter; label: string }[] = [
   { id: "all", label: "All" },
-  { id: "bundles", label: "Bundles" },
+  { id: "bundles", label: "Module families" },
   { id: "modules", label: "Modules" },
 ];
 
@@ -172,7 +172,7 @@ export function MarketplaceSurface({
 
   const countLabel =
     results.length === TOTAL
-      ? `${TOTAL} bundles and modules`
+      ? `${TOTAL} module families and modules`
       : `Showing ${results.length} of ${TOTAL}`;
 
   const bundleResults = results.filter((e) => e.kind === "bundle");
@@ -238,8 +238,8 @@ export function MarketplaceSurface({
       type="search"
       value={query}
       onChange={(e) => setQuery(e.target.value)}
-      placeholder="Search bundles and modules…"
-      aria-label="Search bundles and modules"
+      placeholder="Search module families and modules…"
+      aria-label="Search module families and modules"
       className={styles.search}
     />
   );
@@ -316,7 +316,7 @@ export function MarketplaceSurface({
         {countLabel}
       </p>
 
-      {/* ===== Results — Bundles band, hairline divider, Modules band ===== */}
+      {/* ===== Results — Module families band, hairline divider, Modules band ===== */}
       {results.length === 0 ? (
         <div className={styles.empty}>
           <p>Nothing matches those filters.</p>
@@ -328,7 +328,7 @@ export function MarketplaceSurface({
         <>
           {bundleResults.length > 0 && (
             <section className={styles.band}>
-              <h3 className={styles.bandHead}>Bundles</h3>
+              <h3 className={styles.bandHead}>Module families</h3>
               <div className="cs-grid cs-grid--3">
                 {bundleResults.map(renderCard)}
               </div>
@@ -395,7 +395,9 @@ function SurfaceCard({
       ? BUNDLE_MARKS[e.id]
       : "bundle"
     : moduleMark(e.id);
-  const eyebrow = isBundle ? "Bundle" : categoryLabel(primaryCategory(e));
+  const eyebrow = isBundle
+    ? "Module family"
+    : categoryLabel(primaryCategory(e));
   // A module's honest DB posture (ADR-0285 §2).
   const posture = isBundle ? undefined : modulePostureGroup(e.id);
 
@@ -429,7 +431,7 @@ function SurfaceCard({
           )}
         </span>
         <span className={styles.cardMetaEnd}>
-          <StatusChip label={isBundle ? "Bundle" : "Module"} />
+          <StatusChip label={isBundle ? "Module family" : "Module"} />
         </span>
       </div>
       <span className="cs-card-title">{e.label}</span>

@@ -397,12 +397,12 @@ export default function EuAiActPage() {
         </div>
       </Section>
 
-      {/* ===== Evidence bundle (Compliance bundle) ===== */}
+      {/* ===== Evidence bundle (Compliance module family) ===== */}
       <Reveal>
         <Section
           eyebrow="Evidence artifacts"
           title="Auditor-readable output from live controls."
-          lede="The Compliance bundle collects the RLS policies, audit-chain proof, and field-encryption config from the system that enforces them, maps each to an Annex IV section, and packages them as a dated, replayable bundle."
+          lede="The Compliance module family collects the RLS policies, audit-chain proof, and field-encryption config from the system that enforces them, maps each to an Annex IV section, and packages them as a dated, replayable bundle."
           band="surface"
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
@@ -429,8 +429,8 @@ export default function EuAiActPage() {
             />
           </div>
           <p className="cs-footnote" style={{ marginTop: "var(--cs-space-5)" }}>
-            The EU AI Act-ready evidence bundle ships with the Compliance
-            bundle, available to buyers anywhere.
+            The EU AI Act-ready evidence bundle ships with the Compliance module
+            family, available to anyone.
           </p>
         </Section>
       </Reveal>
@@ -545,13 +545,13 @@ export default function EuAiActPage() {
           Ship with the evidence already in the repo.
         </h2>
         <p className="cs-lede" style={{ marginBottom: "var(--cs-space-6)" }}>
-          The Compliance bundle ships the audit chain, RLS policies, and
+          The Compliance module family ships the audit chain, RLS policies, and
           field-encryption wired and testable from day one, ready well before
           your first notified-body assessment.
         </p>
         <div style={{ marginBottom: "var(--cs-space-5)" }}>
           <Terminal label="scaffold a Caisson project">
-            bunx @caisson-sh/cli@latest
+            bunx --package @caisson-sh/cli create-caisson
           </Terminal>
         </div>
         <div className="cs-cta-row">

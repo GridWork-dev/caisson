@@ -5,12 +5,11 @@ description: Stripe, Paddle, LemonSqueezy, and Polar behind a BillingProvider po
 
 `@caisson-sh/billing` wires four providers (Stripe, Paddle, LemonSqueezy, and Polar) behind the
 same `BillingProvider` port, so the rest of the base depends on the port, not the vendor. Stripe
-pairs with Stripe Tax, with the operator as the merchant of record. Paddle, LemonSqueezy, and Polar
-are each Merchant of Record themselves, they compute, collect, and remit tax on the sale. Paddle
-is the provider Caisson's own store runs on; Stripe, LemonSqueezy, and Polar stay buyer-selectable
-drivers for products composed on the base, dormant until you supply that provider's credentials,
-each satisfying the identical port, swap providers by injecting a different driver, not by
-rewriting call sites.
+pairs with Stripe Tax, with your app as the merchant of record. Paddle, LemonSqueezy, and Polar
+are each Merchant of Record themselves, they compute, collect, and remit tax on the sale. All four
+are driver choices for products you compose on the base, each dormant until you supply that
+provider's credentials, each satisfying the identical port, swap providers by injecting a
+different driver, not by rewriting call sites.
 
 ## The contract
 
@@ -77,7 +76,7 @@ standards gate, suites assert on charge and webhook behavior without a network c
 The public surface of `@caisson-sh/billing`: the four raw-body verifiers, the `BillingProvider` port,
 each provider's config contract, and the `DomainBillingEvent` webhook event map. The driver
 factories that construct a live `BillingProvider` (`createStripeBilling` and its siblings) and the
-provider → `DomainBillingEvent` parsers live in the commercial `@caisson-sh/billing-orchestration`;
+provider → `DomainBillingEvent` parsers live in `@caisson-sh/billing-orchestration`;
 this package ships the port, the config types, and the open verify + event-schema seam every driver
 is built on.
 

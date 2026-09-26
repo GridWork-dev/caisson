@@ -114,11 +114,11 @@ auto-writes a committed dataset, merging a candidate back in stays a human act.
 
 `recordEvalSpend()` tracks eval-run cost on its own budget-isolated ledger, it never touches the
 production credit wallet or `@caisson-sh/ai-meter`. `ai-evals` is a base primitive: the AI Production
-bundle's prompt registry and metering compose on top of it to gate quality in the same CI run that
+family's prompt registry and metering compose on top of it to gate quality in the same CI run that
 gates spend.
 
 <Callout type="info" title="Standalone">
   `ai-evals` works standalone and is included in the AI-Production
-  bundle. It pairs with the bundle's metering and guardrails to gate CI on
+  family. It pairs with the family's metering and guardrails to gate CI on
   regression.
 </Callout>
