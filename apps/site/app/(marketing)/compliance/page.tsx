@@ -28,7 +28,6 @@ import {
 } from "@/lib/jsonld";
 import { moduleMark } from "@/lib/marks";
 import { hasModulePage } from "@/lib/module-pages";
-import { TrackView } from "@/components/track-view";
 
 // Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts),
 // the SOT this page shares with the marketplace pop-out. Bespoke sections below (the controls,
@@ -166,7 +165,6 @@ export default function CompliancePage() {
 
   return (
     <>
-      <TrackView item="bundle:compliance" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

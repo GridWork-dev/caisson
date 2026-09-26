@@ -25,7 +25,6 @@ import { TrialPath } from "@/components/trial-path";
 import { MediaCarousel } from "@/components/media-carousel";
 import { mediaSlides } from "@/lib/media-manifest";
 import { requireBundlePage, spellCount } from "@/lib/bundle-pages";
-import { TrackView } from "@/components/track-view";
 
 // Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts);
 // the bespoke sections below stay page-local.
@@ -135,7 +134,6 @@ export default function AiKitPage() {
 
   return (
     <>
-      <TrackView item="bundle:ai-production" />
       {/* JSON-LD */}
       <script
         type="application/ld+json"

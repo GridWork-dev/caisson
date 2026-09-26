@@ -26,7 +26,6 @@ import {
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import { moduleMark } from "@/lib/marks";
 import { hasModulePage } from "@/lib/module-pages";
-import { TrackView } from "@/components/track-view";
 
 // Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts);
 // the bespoke sections below stay page-local.
@@ -219,7 +218,6 @@ export default function AgenticDevPage() {
 
   return (
     <>
-      <TrackView item="bundle:agentic-dev" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(appLd) }}

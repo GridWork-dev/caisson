@@ -26,7 +26,6 @@ import {
   softwareApplication,
 } from "@/lib/jsonld";
 import { moduleMark } from "@/lib/marks";
-import { TrackView } from "@/components/track-view";
 
 // Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts);
 // the bespoke controls + how-it-ships sections below stay page-local.
@@ -137,7 +136,6 @@ export default function ProvenancePage() {
 
   return (
     <>
-      <TrackView item="bundle:provenance" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
