@@ -1,0 +1,10 @@
+Caisson
+Copyright 2026 Caisson Software LLC
+
+This product includes software developed by Caisson Software LLC (https://caisson.sh).
+
+Licensed under the Apache License, Version 2.0. See LICENSE for the full text.
+
+Third-party material:
+- packages/frameworks-pack and packages/oscal-spine vendor the NIST SP 800-53 Rev. 5 OSCAL
+  catalog, a work of the U.S. Government that is not subject to copyright in the United States.

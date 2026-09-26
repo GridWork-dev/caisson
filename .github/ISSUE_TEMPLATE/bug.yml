@@ -1,0 +1,33 @@
+name: Bug report
+description: Something in a published @caisson-sh package or the generator doesn't work as documented.
+labels: [bug]
+body:
+  - type: input
+    id: package
+    attributes:
+      label: Package and version
+      description: For example `@caisson-sh/tenancy-rls@1.2.0`, or `create-caisson@1.0.0`.
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal reproduction
+      description: A small code sample, a repo link, or exact steps. Issues without one may be closed.
+      render: ts
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Bun/Node version, OS, database and version if relevant.
+    validations:
+      required: false

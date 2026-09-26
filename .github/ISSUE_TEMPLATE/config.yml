@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or help
+    url: https://github.com/GridWork-dev/caisson/discussions/categories/q-a
+    about: Ask how to use Caisson or get help with your setup.
+  - name: Idea or feature request
+    url: https://github.com/GridWork-dev/caisson/discussions/categories/ideas
+    about: Propose a feature or a larger change before writing code.
+  - name: Security vulnerability
+    url: https://github.com/GridWork-dev/caisson/security/advisories/new
+    about: Report privately. Never open a public issue for a vulnerability.

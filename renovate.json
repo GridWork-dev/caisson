@@ -1,30 +1,64 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Low-maintenance dependency updates: one monthly batch, non-major updates automerge on green CI, majors wait on the Dependency Dashboard, security fixes arrive any time.",
   "extends": [
-    "github>GridWork-dev/gridwork-core//renovate-preset",
+    "config:recommended",
+    ":semanticCommits",
+    "helpers:pinGitHubActionDigests",
     "docker:pinDigests"
   ],
+  "timezone": "America/New_York",
+  "schedule": ["* 0-6 1 * *"],
+  "minimumReleaseAge": "7 days",
+  "dependencyDashboard": true,
   "rangeStrategy": "replace",
   "commitMessagePrefix": "chore(deps):",
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 3,
   "ignorePaths": [
     "**/node_modules/**",
     "**/bower_components/**",
     "**/vendor/**",
     "packages/cli/templates/**"
   ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["* 0-6 1 * *"],
+    "automerge": true,
+    "automergeType": "branch"
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": ["at any time"],
+    "addLabels": ["security"]
+  },
   "packageRules": [
     {
-      "description": "Buyer-facing create-caisson scaffolds are renovate-ignored entirely (ignorePaths above): template pins are golden-file-tested (a bot bump inside a template broke packages/cli goldens — PR #227), and @caisson/* template deps resolve from registry.caisson.sh, not npm (the dashboard lookup-failure noise). Template pins move deliberately, with a BLESS=1 golden re-record in the same commit. Supersedes the Kickoff-K tag-pin-not-digest rule — under ignorePaths renovate never touches templates at all.",
+      "description": "Every non-major update shares one monthly branch and merges itself when CI is green.",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "monthly non-major updates",
+      "groupSlug": "monthly-non-major",
+      "automerge": true,
+      "automergeType": "branch"
+    },
+    {
+      "description": "Majors never merge on their own; approve them from the Dependency Dashboard.",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true,
+      "addLabels": ["major-bump"]
+    },
+    {
+      "description": "Generator templates pin versions deliberately and are golden-file-tested; they move by hand with a golden re-record.",
       "matchFileNames": ["packages/cli/templates/**"],
       "enabled": false
     },
     {
-      "description": "Never propose Python pre-releases (renovate offered 3.15.0b3 for .python-version).",
+      "description": "Never propose Python pre-releases for .python-version.",
       "matchManagers": ["pyenv"],
       "allowedVersions": "!/[ab]\\d*$|rc\\d*$/"
     },
     {
-      "description": "The typescript API dep (typescript-eslint + gate tooling consumers) stays <7 until typescript-eslint publishes a >=7.0 peer range — stop reproposing it every cycle. matchDepNames (not matchPackageNames): since the ADR-0368 native-compiler cutover the repo ALSO carries the tsc-native alias dep (npm:typescript@7.0.2 in tooling/tsconfig/package.json), whose packageName resolves to \"typescript\" too — matchPackageNames would wrongly freeze that pin as well. tsc-native is version-managed freely; its bumps trigger the tsc-native-dts-drift.yml bump-gated PR check (ADR-0369) instead of this constraint.",
+      "description": "typescript-eslint pins the typescript API dependency below 7. The tsc-native alias (npm:typescript@7) is matched by depName and stays free.",
       "matchDepNames": ["typescript"],
       "allowedVersions": "<7.0.0"
     }
