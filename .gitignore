@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .turbo/
+__pycache__/
+*.pyc
 mirror-out/
 .next/
 *.tsbuildinfo
