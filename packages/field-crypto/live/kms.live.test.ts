@@ -7,7 +7,7 @@
 // This file NEVER runs in the default suite: it lives OUTSIDE ./src (so `bun test ./src`, CI's
 // secret-free runners, and the published tarball never see it) AND every leg self-skips without the
 // KMS-specific opt-in + AWS creds (ADR-0201 live-test convention). Run it via `bun run test:live`
-// with CAISSON_KMS_LIVE=1 + AWS creds scoped by the prover policy printed by infra/kms/provision.ts
+// with CAISSON_KMS_LIVE=1 + AWS creds allowed to create, use and schedule deletion of KMS keys
 // (ADR-0221 KMS-1=A1: the KMS statements joined onto the existing WORM live-proof prover). The
 // opt-in is KMS-specific so WORM's AWS creds sitting in env don't accidentally mint KMS keys.
 //
