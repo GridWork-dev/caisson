@@ -1,4 +1,0 @@
-interface:
-  display_name: "Caisson Production Browser Audit"
-  short_description: "Audit Caisson production with reversible probes"
-  default_prompt: "Use $caisson-production-browser-audit to audit Caisson production across the selected rings."

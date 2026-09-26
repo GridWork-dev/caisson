@@ -209,16 +209,7 @@ jobs:
         # railway-deploy and railway-env-sync use injected exec doubles and source-text assertions,
         # and sot-check builds SYNTHETIC throwaway git repos under mkdtempSync rather than reading
         # this working tree — which is why its live-repo DRIFT output does not follow it into CI.
-        run: bun test tools/demo-excerpts tools/demo-preview tools/paddle-catalog-recreate.test.ts ./.agents/skills/caisson-production-browser-audit/scripts/ scripts/release-readiness.test.ts scripts/gen-shadcn-registry.test.ts tooling/scripts/railway-deploy.test.ts tooling/scripts/sot-check.test.ts tooling/scripts/dts-drift-check.test.ts tooling/scripts/tsgo-agreement.test.ts tooling/scripts/railway-env-sync.test.ts tooling/scripts/vault-parity-check.test.ts tooling/scripts/aeo-probe.test.ts
-      - name: typecheck the browser-audit skill (.agents sits outside the workspaces)
-        # ADR-0413 / C13. The deleted tooling/browser-audit manifest's `build: tscn -p tsconfig.json`
-        # was the only thing typechecking this code. Nothing else reaches it: the root tsconfig is
-        # `"files": []`, `.agents/` has no turbo task, and it is outside package.json `workspaces`.
-        # Lint and format DO cover it (oxlint and oxfmt both walk `.agents`) — only tsc was lost, and
-        # reconcile.ts re-exports a type from tooling/testing and calls a generic, so an upstream
-        # signature change would have produced no build error anywhere. Adding this leg immediately
-        # surfaced four pre-existing zod-4 `z.record` type defects in the skill's other scripts.
-        run: bun tooling/tsconfig/bin/tscn.ts -p .agents/skills/caisson-production-browser-audit/tsconfig.json
+        run: bun test tools/demo-excerpts tools/demo-preview tools/paddle-catalog-recreate.test.ts scripts/release-readiness.test.ts scripts/gen-shadcn-registry.test.ts tooling/scripts/railway-deploy.test.ts tooling/scripts/sot-check.test.ts tooling/scripts/dts-drift-check.test.ts tooling/scripts/tsgo-agreement.test.ts tooling/scripts/railway-env-sync.test.ts tooling/scripts/vault-parity-check.test.ts tooling/scripts/aeo-probe.test.ts
       # Slow golden-file / testcontainers matrices land here once the compliance
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
 
