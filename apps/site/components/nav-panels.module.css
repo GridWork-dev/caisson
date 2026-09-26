@@ -144,13 +144,6 @@
   font-weight: var(--cs-weight-medium);
 }
 
-.cardPrice {
-  font-family: var(--cs-font-mono);
-  font-size: var(--cs-text-xs);
-  color: var(--cs-fg-muted);
-  white-space: nowrap;
-}
-
 .cardNote {
   font-size: var(--cs-text-xs);
   line-height: var(--cs-leading-snug);

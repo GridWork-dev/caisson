@@ -4,22 +4,17 @@
 import { describe, expect, test } from "bun:test";
 
 import { BUNDLE_PAGES, bundlePageRecord, spellCount } from "./bundle-pages";
-import {
-  bundlePrice,
-  BUNDLE_PRICES,
-  MODULE_PRICES,
-  modulesByBundle,
-} from "./pricing";
+import { BUNDLES, MODULES, modulesByBundle } from "./catalog";
 
 describe("BUNDLE_PAGES (bundle content records)", () => {
-  test("every priced bundle has exactly one record (bijection with BUNDLE_PRICES)", () => {
-    const priced = BUNDLE_PRICES.map((b) => b.id).sort();
+  test("every priced bundle has exactly one record (bijection with BUNDLES)", () => {
+    const priced = BUNDLES.map((b) => b.id).sort();
     const recorded = BUNDLE_PAGES.map((r) => r.slug).sort();
     expect(recorded).toEqual(priced);
   });
 
   test("each record resolves via bundlePageRecord and carries hero + definition", () => {
-    for (const b of BUNDLE_PRICES) {
+    for (const b of BUNDLES) {
       const r = bundlePageRecord(b.id);
       expect(r).toBeDefined();
       expect(r?.hero.eyebrow.length).toBeGreaterThan(0);
@@ -41,8 +36,8 @@ describe("BUNDLE_PAGES (bundle content records)", () => {
     }
   });
 
-  test("every member id that names a sellable SKU resolves in MODULE_PRICES", () => {
-    const sellable = new Set(MODULE_PRICES.map((m) => m.id));
+  test("every member id that names a sellable SKU resolves in MODULES", () => {
+    const sellable = new Set(MODULES.map((m) => m.id));
     // A member id is either a sellable module (priced, links out) or a base-package slug (unpriced).
     // The base-package ids are the non-sellable members the pages render unpriced.
     const basePackages = new Set([
@@ -60,23 +55,13 @@ describe("BUNDLE_PAGES (bundle content records)", () => {
     expect(unknown).toEqual([]);
   });
 
-  test("every $-figure in a metaDescription IS that bundle's live price (single-source law)", () => {
-    // A record embedding a price must interpolate `bundlePrice(slug)`, never hand-type a literal —
-    // a reprice in pricing.ts that leaves a stale figure here fails loudly. Records with no price
-    // in their metaDescription pass vacuously.
-    const violations = BUNDLE_PAGES.flatMap((r) => {
-      const live = bundlePrice(r.slug);
-      return (r.metaDescription.match(/\$[\d,]+/g) ?? [])
-        .filter((figure) => figure !== live)
-        .map((figure) => `${r.slug}: ${figure} != ${live}`);
-    });
-    expect(violations).toEqual([]);
-    // And the two records that DO embed their price stay pinned to it.
-    for (const slug of ["ai-production", "local-first"] as const) {
-      expect(bundlePageRecord(slug)?.metaDescription).toContain(
-        bundlePrice(slug),
-      );
-    }
+  test("no record carries a price (nothing on the site is for sale)", () => {
+    const priced = BUNDLE_PAGES.flatMap((r) =>
+      (JSON.stringify(r).match(/\$\d[\d,]*/g) ?? []).map(
+        (f) => `${r.slug}: ${f}`,
+      ),
+    );
+    expect(priced).toEqual([]);
   });
 
   test("the ai-production lede's member count matches the members it enumerates", () => {
@@ -102,8 +87,8 @@ describe("BUNDLE_PAGES (bundle content records)", () => {
     // SET of priced members against under- or over-listing, the exact class G31 caught:
     // ai-production's hand-authored list showed 4 real modules against modulesByBundle's true 6
     // (missing field-crypto, ai-evals, credits).
-    const sellableIds = new Set(MODULE_PRICES.map((m) => m.id));
-    for (const b of BUNDLE_PRICES) {
+    const sellableIds = new Set(MODULES.map((m) => m.id));
+    for (const b of BUNDLES) {
       if (b.id === "everything") continue;
       const record = bundlePageRecord(b.id);
       const recordedSellable = [...(record?.members ?? [])]

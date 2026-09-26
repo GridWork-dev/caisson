@@ -16,11 +16,9 @@ import {
   type IconName,
 } from "@/components";
 import { TrialPath } from "@/components/trial-path";
-import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaCarousel } from "@/components/media-carousel";
 import { mediaSlides } from "@/lib/media-manifest";
 import { requireBundlePage } from "@/lib/bundle-pages";
-import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
   breadcrumb,
@@ -30,17 +28,11 @@ import {
 } from "@/lib/jsonld";
 import { moduleMark } from "@/lib/marks";
 import { hasModulePage } from "@/lib/module-pages";
-import {
-  bundlePrice,
-  formatUsd,
-  MODULE_PRICES,
-  RENEWAL_RATE_PERCENT,
-} from "@/lib/pricing";
 import { TrackView } from "@/components/track-view";
 
 // Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts),
 // the SOT this page shares with the marketplace pop-out. Bespoke sections below (the controls,
-// honesty boundary, terminals, pricing ladder) stay page-local — page-unique, not pop-out-reused.
+// honesty boundary, terminals) stay page-local — page-unique, not pop-out-reused.
 const record = requireBundlePage("compliance");
 
 export const metadata = buildMetadata({
@@ -57,9 +49,8 @@ const BASE_MEMBER_ICON: Record<string, IconName> = {
   migrate: "database",
 };
 
-// The bundle's real composed packages — read from the shared bundle content record. Priced via a
-// StatusChip when a member is also sold standalone (`MODULE_PRICES`), linking to its module depth
-// page; base packages render unpriced.
+// The bundle's real composed packages — read from the shared bundle content record, linking to a
+// member's module depth page when one exists.
 const MEMBER_MODULES = record.members;
 
 function MemberModuleCard({
@@ -71,9 +62,7 @@ function MemberModuleCard({
   name: string;
   oneLiner: string;
 }) {
-  const price = MODULE_PRICES.find((m) => m.id === id);
-  // Linkable is gated on the depth page actually existing, not on price truthiness — a member can
-  // be priced (MODULE_PRICES) with no depth page yet, and a Link to it 404s (G5).
+  // Linkable is gated on the depth page actually existing — a Link to a missing one 404s (G5).
   const linkable = hasModulePage(id);
   const icon = BASE_MEMBER_ICON[id] ?? moduleMark(id);
   const card = (
@@ -91,11 +80,6 @@ function MemberModuleCard({
       <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
         {oneLiner}
       </p>
-      {price && (
-        <div style={{ marginTop: "var(--cs-space-4)" }}>
-          <StatusChip label={formatUsd(price.amount)} tone="muted" />
-        </div>
-      )}
     </Card>
   );
   return linkable ? (
@@ -160,9 +144,8 @@ const CONTROLS: readonly {
 // Visible FAQ (rendered below) — the same items feed the FAQPage JSON-LD; read from the record.
 const FAQ = record.faq;
 
-// Cart-ready CatalogItem for the peak-intent buy CTAs below (ADR-0192 single add-to-cart buy-verb).
-const _catalogItem = bundleCatalogItem("compliance");
-const bundleCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
+// The gallery viewer for this bundle: its live demo, docs, and members in one place.
+const GALLERY_HREF = "/marketplace?view=bundle:compliance";
 
 export default function CompliancePage() {
   const heroArtifact: ReactNode = (
@@ -192,7 +175,6 @@ export default function CompliancePage() {
               name: "Caisson Compliance",
               description: record.metaDescription,
               url: `${SITE_URL}/compliance`,
-              priceId: "compliance",
             }),
           ),
         }}
@@ -225,9 +207,9 @@ export default function CompliancePage() {
           lede={record.hero.lede}
           ctas={
             <>
-              {bundleCartItem && (
-                <AddToCartButton item={bundleCartItem} variant="primary" />
-              )}
+              <Button href={GALLERY_HREF} variant="primary">
+                Run the live demo
+              </Button>
               <Button href="/docs" variant="ghost">
                 Read the docs
               </Button>
@@ -242,7 +224,7 @@ export default function CompliancePage() {
                 "WORM evidence",
                 "Append-only audit",
               ]}
-              note="Caisson generates the evidence, the certification is your auditor's call, not ours. Support is included with every license: a real person on email and Discord, business-days response."
+              note="Caisson generates the evidence, the certification is your auditor's call, not ours."
             />
           }
           artifact={heroArtifact}
@@ -253,7 +235,7 @@ export default function CompliancePage() {
       <Reveal>
         <Section
           title="What it composes"
-          lede="The Compliance bundle's core has ten direct @caisson/* dependencies: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. compliance-core and frameworks-pack both depend on and re-export oscal-spine, the shared commercial package that owns OSCAL assessment, catalog, XML, ISO 27001 SoA, and pinned NIST SP 800-53 surfaces. The purchase also includes three standalone compliance modules beside that runtime graph: access-review, risk-register, and trust-page."
+          lede="The Compliance bundle's core has ten direct @caisson/* dependencies: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. compliance-core and frameworks-pack both depend on and re-export oscal-spine, the shared commercial package that owns OSCAL assessment, catalog, XML, ISO 27001 SoA, and pinned NIST SP 800-53 surfaces. The bundle also includes three standalone compliance modules beside that runtime graph: access-review, risk-register, and trust-page."
         />
       </Reveal>
 
@@ -269,7 +251,7 @@ export default function CompliancePage() {
       <Reveal>
         <Section
           title="Fourteen packages, one bundle."
-          lede="Ten direct dependencies plus their shared OSCAL spine form the runtime graph. Three further standalone compliance modules are included in the same purchase. The ones also sold standalone carry their own price."
+          lede="Ten direct dependencies plus their shared OSCAL spine form the runtime graph. Three further standalone compliance modules round it out."
         >
           <FeatureGrid cols={3}>
             {MEMBER_MODULES.map((m) => (
@@ -295,11 +277,10 @@ export default function CompliancePage() {
                 maxWidth: "60ch",
               }}
             >
-              SOC 2 from scratch runs <span className="cs-num">$80k</span> and{" "}
-              <span className="cs-num">6–9 months</span>. Retrofitting RLS,
-              WORM, and an audit chain into a <em>live</em> multi-tenant
-              database is months more, a migration with customer data on the
-              line.
+              SOC 2 from scratch runs <span className="cs-num">6–9 months</span>
+              . Retrofitting RLS, WORM, and an audit chain into a <em>live</em>{" "}
+              multi-tenant database is months more, a migration with customer
+              data on the line.
             </p>
             <p
               className="cs-muted"
@@ -476,8 +457,7 @@ export default function CompliancePage() {
             Caisson&rsquo;s audit chain is hash-linked and anchored write-once
             outside your database, and its evidence packs are deterministic to
             the byte, so your auditor verifies integrity without trusting any
-            vendor, including us.{" "}
-            <a href="/compare/delve">Read the dated comparison</a>.
+            vendor, including us.
           </p>
         </Section>
       </Reveal>
@@ -533,83 +513,31 @@ export default function CompliancePage() {
         </Section>
       </Reveal>
 
-      {/* ===== Pricing / how it ships ===== */}
+      {/* ===== How it ships ===== */}
       <Reveal>
-        <Section title="Own the source, or track the frameworks." band="tint">
+        <Section title="How it ships." band="tint">
           <Card accent className="cs-elevate-md">
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "baseline",
-                gap: "var(--cs-space-3)",
-              }}
-            >
-              <span
-                className="cs-num"
-                style={{
-                  fontSize: "var(--cs-text-3xl)",
-                  fontWeight: "var(--cs-weight-semibold)",
-                  letterSpacing: "var(--cs-tracking-tight)",
-                }}
-              >
-                {bundlePrice("compliance")}
-              </span>
-              <span className="cs-tag">One-time license · own the source</span>
-              <StatusChip label="Bundle" tone="muted" />
-            </div>
-            <p
-              className="cs-muted"
-              style={{ marginTop: "var(--cs-space-4)", maxWidth: "60ch" }}
-            >
-              A one-time, perpetual license: bunx @caisson-sh/cli@latest
-              scaffolds the base with tenancy-rls fail-closed and the standards
-              gate passing, and the five evidence collectors, RLS-force,
-              chain-verify, WORM-retention, field-crypto-policy, and the
-              impersonation collector, are already wired into the SOC 2, HIPAA,
-              and EU-AI-Act evidence packs. The pack format includes an OSCAL
-              v1.2.2 export (canonical JSON plus an XML conversion path)
-              alongside Ed25519 and RFC-3161 signing.{" "}
+            <p className="cs-muted" style={{ maxWidth: "60ch" }}>
+              bunx @caisson-sh/cli@latest scaffolds the base with tenancy-rls
+              fail-closed and the standards gate passing, and the five evidence
+              collectors, RLS-force, chain-verify, WORM-retention,
+              field-crypto-policy, and the impersonation collector, are already
+              wired into the SOC 2, HIPAA, and EU-AI-Act evidence packs. The
+              pack format includes an OSCAL v1.2.2 export (canonical JSON plus
+              an XML conversion path) alongside Ed25519 and RFC-3161 signing.{" "}
               <code className="mono">caisson audit verify</code> walks the chain
               and reports the root hash; the evidence pack is generated from the
               live system, not written by hand.
             </p>
             <div className="cs-cta-row">
-              {bundleCartItem && (
-                <AddToCartButton item={bundleCartItem} variant="primary" />
-              )}
+              <Button href={GALLERY_HREF} variant="primary">
+                Run the live demo
+              </Button>
               <Button href="/marketplace" variant="ghost">
                 See the full lineup
               </Button>
             </div>
           </Card>
-          {/* D12 item 2 (PRD-4/T3): the month-13 answer belongs AT the decision point, not three
-              clicks away on the plans tab. Terms are unchanged — this restates the already-published
-              /marketplace/plans#after-twelve-months answer beside the price and the buy button. */}
-          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-5)" }}>
-            After month 12: the source stays yours. A perpetual license does not
-            expire, stop working, or phone home — checks verify offline. Only
-            new updates lapse, and you renew a single entitlement for another 12
-            months at {RENEWAL_RATE_PERCENT}% of the then-current list, or let
-            it lapse and keep every version already delivered.{" "}
-            <Link
-              href="/marketplace/plans#after-twelve-months"
-              className="cs-link"
-            >
-              The month-13 terms in full
-            </Link>
-          </p>
-          {/* CAISSON-98 + D12 item 3 (PRD-3): the buyers'-own-estimate ROI frame beside the price
-              (Cookiy study 019f4a11), attributed to the interviews, never asserted as a benchmark —
-              and never as validation OF the price, which the prior ordering read as. The price is
-              stated as committed, per the D4 lock. */}
-          <p className="cs-footnote" style={{ marginTop: "var(--cs-space-3)" }}>
-            {bundlePrice("compliance")} is the committed one-time price. Buyers
-            we interviewed put building these foundations in-house at four to
-            eight engineering-weeks, the translation most sign-offs actually run
-            on; that estimate is theirs, and it is of the build, not of the
-            price.
-          </p>
         </Section>
       </Reveal>
 
@@ -617,7 +545,7 @@ export default function CompliancePage() {
       <Reveal>
         <Section
           title="Prove fit in week one."
-          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
+          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <TrialPath />
@@ -639,9 +567,9 @@ export default function CompliancePage() {
           </Terminal>
         </div>
         <div className="cs-cta-row" style={{ marginTop: "var(--cs-space-6)" }}>
-          {bundleCartItem && (
-            <AddToCartButton item={bundleCartItem} variant="primary" />
-          )}
+          <Button href={GALLERY_HREF} variant="primary">
+            Run the live demo
+          </Button>
           <Button href="/docs" variant="ghost">
             Read the docs
           </Button>

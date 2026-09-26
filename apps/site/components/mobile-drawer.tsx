@@ -7,10 +7,8 @@ import { useSearchContext } from "fumadocs-ui/contexts/search";
 import { Dialog, ThemeToggle } from "@caisson/ui/components";
 import { Icon, type IconName } from "@/components";
 
-import { authClient } from "@/lib/auth-client";
 import { trackEvent } from "@/lib/analytics";
 import { Button } from "./button";
-import { useCart } from "./cart-provider";
 
 // One mobile-drawer link, derived from the desktop panel spec (site-nav.tsx) so mobile can't drift.
 export interface MobileNavItem {
@@ -58,9 +56,9 @@ function ChevronDown() {
 
 /**
  * The mobile hamburger drawer body (ADR-0312) — the Accordion Dropdown. Dynamically imported by
- * MobileNav on idle/first-interaction so this whole tree (the Dialog, better-auth session read, cart
- * read, and search wiring) leaves the critical hydration path (ADR-0310 A4). A pinned top block
- * (search · account · cart · CTA) never scrolls away; three native <details> sections carry the
+ * MobileNav on idle/first-interaction so this whole tree (the Dialog and search wiring) leaves the
+ * critical hydration path (ADR-0310 A4). A pinned top block
+ * (search · CTA) never scrolls away; three native <details> sections carry the
  * grouped links with the current section defaulting open. Enter/exit + section-expand motion is
  * authored in dialog.css / global.css (ADR-0307). Route-close is owned by MobileNav (the persistent
  * shell), so this component never self-closes on mount.
@@ -91,8 +89,6 @@ export function MobileDrawer({
         {/* Pinned top block — sticky, never scrolls away. */}
         <div className="cs-mnav-pinned">
           <SearchRow onClose={onClose} />
-          <AccountRow onClose={onClose} />
-          <CartRow onClose={onClose} />
           <Button
             href={cta.href}
             variant="primary"
@@ -179,33 +175,5 @@ function SearchRow({ onClose }: { onClose: () => void }) {
       </svg>
       <span>Search</span>
     </button>
-  );
-}
-
-function AccountRow({ onClose }: { onClose: () => void }) {
-  const { data } = authClient.useSession();
-  const signedIn = Boolean(data?.user);
-  return (
-    <Link
-      href={signedIn ? "/dashboard" : "/login"}
-      className="cs-mnav-row"
-      onClick={onClose}
-    >
-      <Icon name="circle-user" />
-      <span>{signedIn ? "Account" : "Sign in"}</span>
-    </Link>
-  );
-}
-
-function CartRow({ onClose }: { onClose: () => void }) {
-  const { items } = useCart();
-  return (
-    <Link href="/cart" className="cs-mnav-row" onClick={onClose}>
-      <Icon name="cart" />
-      <span>Cart</span>
-      {items.length > 0 && (
-        <span className="cs-mnav-badge">{items.length}</span>
-      )}
-    </Link>
   );
 }

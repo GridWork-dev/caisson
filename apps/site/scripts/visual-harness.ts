@@ -5,15 +5,13 @@
  * Captures every visual surface at mobile + desktop widths, each in light + dark mode, with
  * `fullPage: true` (viewport WIDTH stays a real device width; height captures the whole page):
  *
- *   - every page route (marketing, marketplace, module depth, compare, glossary, writing, docs,
- *     legal, auth) — the public ones derived from the canonical `lib/routes.ts` registry
+ *   - every page route (marketing, marketplace, module depth, writing, docs, legal) — derived
+ *     from the canonical `lib/routes.ts` registry
  *   - the marketplace card-viewer pop-outs (`?view=bundle:<slug>` / `?view=module:<slug>` deep links)
  *   - every branded email template (`@caisson/email` rendered with EMAIL_SAMPLE_DATA)
- *   - interaction states (mobile nav drawer, docs search, marketplace search, add-to-cart → cart,
- *     invalid login submit, module media carousel) — a failed interaction is recorded in the
- *     manifest as a behavior signal, not silently skipped
- *   - the buyer dashboard (all /dashboard routes) when CAISSON_E2E_ACCOUNT_EMAIL/PASSWORD are set;
- *     the leg self-skips without them (same contract as buyer-dashboard-flow.live.test.ts)
+ *   - interaction states (mobile nav drawer, docs search, marketplace search, module media
+ *     carousel) — a failed interaction is recorded in the manifest as a behavior signal, not
+ *     silently skipped
  *
  * Targets a local server by default. `--prod` targets https://caisson.sh through the CF-Access
  * pre-launch gate using the e2e_prober service token (CAISSON_E2E_CF_CLIENT_ID/SECRET — same
@@ -36,15 +34,8 @@ import {
   EMAIL_TEMPLATE_IDS,
   renderEmailTemplate,
 } from "@caisson/email";
-import { signInProbeAccount } from "../live/probe-session.ts";
 import { BUNDLE_PAGES } from "../lib/bundle-pages.ts";
-import { COMPARISONS } from "../lib/comparisons.ts";
-import { GLOSSARY_TERMS } from "../lib/glossary.tsx";
-import {
-  LEGAL_ROUTES,
-  MARKETING_ROUTES,
-  MARKETPLACE_TAB_ROUTES,
-} from "../lib/routes.ts";
+import { LEGAL_ROUTES, MARKETING_ROUTES } from "../lib/routes.ts";
 import { MODULE_PAGES } from "../lib/module-pages.ts";
 import { WRITING_PIECES } from "../lib/writing.tsx";
 
@@ -69,13 +60,9 @@ export type ShotCategory =
   | "marketplace"
   | "module"
   | "popout"
-  | "compare"
-  | "glossary"
   | "writing"
   | "docs"
   | "legal"
-  | "auth"
-  | "dashboard"
   | "email"
   | "interaction"
   | "motion";
@@ -94,8 +81,6 @@ interface Shot {
   viewports?: readonly Viewport[];
   /** Interactions capture the viewport (modal/drawer state); pages capture the full page. */
   fullPage?: boolean;
-  /** Requires the authenticated buyer session (dashboard leg). */
-  auth?: boolean;
   /** Motion-leg shots run WITHOUT reducedMotion (they capture the ADR-0334 transition states);
    *  everything else keeps `reducedMotion: "reduce"` for deterministic diffs. */
   motion?: boolean;
@@ -118,7 +103,6 @@ interface ShotResult {
 // list the sitemap, nav, and footer read. They used to be literal arrays here, and drifted: by
 // C25 the harness had silently stopped shooting /writing, /trust, /support and
 // /frameworks/eu-ai-act/article-50. A registry row is now a shot by construction.
-// Stateful surfaces (/cart, auth, dashboard) have no registry row and stay explicit below.
 
 /** Every canonical public path, `""` normalized to `/`. Legal rows come out via LEGAL_ROUTES. */
 const PUBLIC_ROUTES: readonly string[] = MARKETING_ROUTES.filter(
@@ -128,47 +112,21 @@ const PUBLIC_ROUTES: readonly string[] = MARKETING_ROUTES.filter(
 /** Which public paths shoot as `marketplace` rather than `marketing` — a category judgement the
  *  registry does not encode, so it is a membership test, never a route list: a new registry row
  *  is still captured (as `marketing`) whether or not it is named here. */
-const COMMERCE_PATHS: ReadonlySet<string> = new Set([
-  ...MARKETPLACE_TAB_ROUTES.map((r) => r.path || "/"),
-  "/compare",
-  "/glossary",
-]);
+const COMMERCE_PATHS: ReadonlySet<string> = new Set(["/marketplace"]);
 
 const MARKETING_PAGE_ROUTES: readonly string[] = PUBLIC_ROUTES.filter(
   (p) => !COMMERCE_PATHS.has(p),
 );
 
-/** `/cart` is the one commerce surface with no registry row — it is stateful (an item has to be
- *  added first), the same reason auth and dashboard routes stay hand-written. */
-const MARKETPLACE_ROUTES: readonly string[] = [
-  ...PUBLIC_ROUTES.filter((p) => COMMERCE_PATHS.has(p)),
-  "/cart",
-];
+const MARKETPLACE_ROUTES: readonly string[] = PUBLIC_ROUTES.filter((p) =>
+  COMMERCE_PATHS.has(p),
+);
 
 /** Dated-commentary spokes, derived exactly as `app/sitemap.ts` derives them. WRITING_DRAFTS is
  *  deliberately unpublished and has no route, so it is deliberately not read here. */
 const WRITING_ROUTES: readonly string[] = WRITING_PIECES.map(
   (piece) => `/writing/${piece.slug}`,
 );
-
-const AUTH_ROUTES: readonly string[] = [
-  "/login",
-  "/forgot-password",
-  "/reset-password",
-];
-
-export const DASHBOARD_ROUTES: readonly string[] = [
-  "/dashboard",
-  "/dashboard/activity",
-  "/dashboard/ai-keys",
-  "/dashboard/cart",
-  "/dashboard/compliance",
-  "/dashboard/credits",
-  "/dashboard/invoices",
-  "/dashboard/license",
-  "/dashboard/members",
-  "/dashboard/plan",
-];
 
 /** content/docs/**.mdx → /docs routes ("index" collapses to its directory). */
 export function docsRoutes(): readonly string[] {
@@ -204,19 +162,10 @@ export function pageShotGroups(): readonly {
   return [
     { category: "marketing", routes: MARKETING_PAGE_ROUTES },
     { category: "marketplace", routes: MARKETPLACE_ROUTES },
-    { category: "auth", routes: AUTH_ROUTES },
     { category: "legal", routes: LEGAL_ROUTES.map((r) => r.path) },
     {
       category: "module",
       routes: MODULE_PAGES.map((m) => `/marketplace/modules/${m.slug}`),
-    },
-    {
-      category: "compare",
-      routes: COMPARISONS.map((c) => `/compare/${c.slug}`),
-    },
-    {
-      category: "glossary",
-      routes: GLOSSARY_TERMS.map((g) => `/glossary/${g.slug}`),
     },
     { category: "writing", routes: WRITING_ROUTES },
     { category: "docs", routes: docsRoutes() },
@@ -250,8 +199,6 @@ async function emailShots(): Promise<Shot[]> {
 }
 
 function interactionShots(): Shot[] {
-  const firstModule = MODULE_PAGES[0];
-  const popoutRoute = `/marketplace?view=module:${firstModule?.slug ?? "audit-worm"}`;
   // getByRole, not a [role=…] CSS selector — the card viewer is a native <dialog> whose role is
   // implicit, so an attribute selector never matches it.
   const inDialog = (page: Page) => page.getByRole("dialog");
@@ -289,51 +236,6 @@ function interactionShots(): Shot[] {
           .first()
           .fill("audit");
         await page.waitForTimeout(600);
-      },
-    },
-    {
-      category: "interaction",
-      name: "cart-with-item",
-      route: popoutRoute,
-      fullPage: false,
-      // Scope to the open dialog — the grid behind the overlay has its own Add-to-cart buttons
-      // that DOM-order .first() would hit and Playwright (correctly) refuses to click through.
-      act: async (page) => {
-        await inDialog(page)
-          .getByRole("button", { name: /add to cart/i })
-          .first()
-          .click();
-        await page.goto(new URL("/cart", page.url()).toString(), {
-          waitUntil: "load",
-        });
-        await page.waitForTimeout(600);
-      },
-    },
-    {
-      category: "interaction",
-      name: "login-invalid-submit",
-      route: "/login",
-      fullPage: false,
-      // A REAL invalid submit, not a mode toggle: the old act's /sign in/i .first() matched the
-      // "Prefer a password? Sign in with email + password" MODE-TOGGLE button (the page loads in
-      // magic-link mode, whose submit says "Send magic link"), so both the baseline and the first
-      // re-run shot a pristine password form that had never been submitted. Toggle to password
-      // mode explicitly, submit wrong credentials, and wait for the role="alert" error the form
-      // renders — that alert (danger-colored "Incorrect email or password.") is the surface this
-      // interaction exists to prove.
-      act: async (page) => {
-        await page.getByRole("button", { name: /prefer a password/i }).click();
-        await page.locator("#login-pw-email").fill("probe-invalid@caisson.sh");
-        await page.locator("#login-password").fill("definitely-wrong-password");
-        await page
-          .getByRole("button", { name: "Sign in", exact: true })
-          .click();
-        // The exact error copy, not getByRole("alert") — Next.js' route announcer is a
-        // permanently-mounted role="alert" node, so the role query resolves instantly and the
-        // shot catches the "Please wait…" in-flight state instead of the rendered error.
-        await page
-          .getByText(/incorrect email or password/i)
-          .waitFor({ timeout: 15_000 });
       },
     },
     {
@@ -467,7 +369,7 @@ export function parseArgs(argv: readonly string[]): {
   return { baseUrl, outDir, prod, only, match };
 }
 
-const NAV_TIMEOUT = 30_000; // Railway cold start + CF Access hop can be slow on the first hit
+const NAV_TIMEOUT = 30_000; // a cold edge + CF Access hop can be slow on the first hit
 
 async function shootOne(
   browser: Browser,
@@ -478,7 +380,6 @@ async function shootOne(
     viewport: Viewport;
     mode: "light" | "dark";
     extraHTTPHeaders?: Record<string, string>;
-    storageState?: string;
   },
 ): Promise<ShotResult> {
   const { baseUrl, outDir, shot, viewport, mode } = opts;
@@ -506,22 +407,7 @@ async function shootOne(
     ...(opts.extraHTTPHeaders
       ? { extraHTTPHeaders: opts.extraHTTPHeaders }
       : {}),
-    ...(opts.storageState ? { storageState: opts.storageState } : {}),
   });
-  // CAISSON-71: 4 concurrent workers × NavAccount's per-page GET /api/auth/get-session trip the
-  // CF 60-req/10s /api/auth/* rate limit from one egress IP (docs/archive/429-root-cause-2026-07-09.md).
-  // Signed-out shots don't need the real call — fulfill better-auth's signed-out response (JSON
-  // null, renders the same "Sign in" pill) so a sweep sends zero /api/auth/* traffic. Auth shots
-  // keep real session traffic; they're few enough to stay under the limit.
-  if (!opts.storageState) {
-    await context.route("**/api/auth/get-session", (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: "null",
-      }),
-    );
-  }
   await context.addInitScript((theme) => {
     window.localStorage.setItem("cs-theme", theme);
   }, mode);
@@ -552,7 +438,7 @@ async function shootOne(
     } else if (shot.route !== undefined) {
       // "load" not "networkidle" — a persistent connection (analytics beacon, HMR) never lets
       // networkidle fire and the nav times out even though the page rendered fine long ago.
-      // One retry: a Railway cold start / CF hop occasionally blows the first nav's budget.
+      // One retry: a cold start / CF hop occasionally blows the first nav's budget.
       let res = await page
         .goto(`${baseUrl}${shot.route}`, {
           waitUntil: "load",
@@ -589,43 +475,6 @@ async function shootOne(
       error: err instanceof Error ? err.message : String(err),
       ...(consoleErrors.length > 0 ? { consoleErrors } : {}),
     };
-  } finally {
-    await context.close();
-  }
-}
-
-/** Log into the buyer account once and persist the session for the dashboard leg. */
-async function establishBuyerSession(
-  browser: Browser,
-  baseUrl: string,
-  outDir: string,
-  extraHTTPHeaders?: Record<string, string>,
-): Promise<string | null> {
-  const email = process.env.CAISSON_E2E_ACCOUNT_EMAIL ?? "";
-  const password = process.env.CAISSON_E2E_ACCOUNT_PASSWORD ?? "";
-  if (email === "" || password === "") return null;
-  const context = await browser.newContext(
-    extraHTTPHeaders ? { extraHTTPHeaders } : {},
-  );
-  try {
-    // API sign-in, not UI automation: the /login page is magic-link-first (no immediate password
-    // input). See live/probe-session.ts for why this is native fetch, not context.request.
-    const signIn = await signInProbeAccount(
-      context,
-      baseUrl,
-      email,
-      password,
-      extraHTTPHeaders,
-    );
-    if (!signIn.ok) throw new Error(`sign-in HTTP ${signIn.status}`);
-    const statePath = join(outDir, "buyer-session-state.json");
-    await context.storageState({ path: statePath });
-    return statePath;
-  } catch (err) {
-    console.error(
-      `dashboard leg: login failed (${err instanceof Error ? err.message : String(err)}) — skipping`,
-    );
-    return null;
   } finally {
     await context.close();
   }
@@ -697,12 +546,6 @@ async function main(): Promise<void> {
     ...(await emailShots()),
     ...interactionShots(),
     ...motionShots(),
-    ...DASHBOARD_ROUTES.map((route): Shot => ({
-      category: "dashboard",
-      name: routeSlug(route),
-      route,
-      auth: true,
-    })),
   ]
     .filter((s) => only === null || s.category === only)
     .filter((s) => match === null || match.test(`${s.category}/${s.name}`));
@@ -714,31 +557,12 @@ async function main(): Promise<void> {
   const browser = await chromium.launch();
   const results: ShotResult[] = [];
   try {
-    const storageState = shots.some((s) => s.auth)
-      ? await establishBuyerSession(browser, baseUrl, outDir, extraHTTPHeaders)
-      : null;
-
     const jobs: Array<{
       shot: Shot;
       viewport: Viewport;
       mode: "light" | "dark";
     }> = [];
-    const skipped: ShotResult[] = [];
     for (const shot of shots) {
-      if (shot.auth && storageState === null) {
-        skipped.push({
-          category: shot.category,
-          name: shot.name,
-          route: shot.route,
-          viewport: "-",
-          mode: "-",
-          file: "",
-          ok: false,
-          skipped:
-            "no buyer session (CAISSON_E2E_ACCOUNT_EMAIL/PASSWORD unset or login failed)",
-        });
-        continue;
-      }
       for (const viewport of shot.viewports ?? VIEWPORTS)
         for (const mode of MODES) jobs.push({ shot, viewport, mode });
     }
@@ -758,7 +582,6 @@ async function main(): Promise<void> {
           viewport,
           mode,
           ...(extraHTTPHeaders ? { extraHTTPHeaders } : {}),
-          ...(shot.auth && storageState ? { storageState } : {}),
         });
         console.log(
           `${r.ok ? "ok  " : "FAIL"} [${r.category}] ${r.name} ${r.viewport}/${r.mode}${r.ok ? "" : ` — ${r.error}`}`,
@@ -766,7 +589,7 @@ async function main(): Promise<void> {
         return r;
       },
     );
-    results.push(...shotResults, ...skipped);
+    results.push(...shotResults);
   } finally {
     await browser.close();
   }

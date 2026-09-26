@@ -1,11 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 
 import { CONTENT_SECURITY_POLICY } from "./security-headers";
 
-// This app is proxied at caisson.sh/demos/* and Next does not apply the proxying app's headers to
-// a rewritten response, so this policy is the only CSP governing a document that holds same-origin
-// authority over caisson.sh. These assertions exist so a loosening has to be deliberate: the
-// policy is pinned whole, and the two directives that carry the design are pinned again by name.
+// This app is served at caisson.sh/demos/*, so this policy governs a document that holds
+// same-origin authority over caisson.sh. These assertions exist so a loosening has to be
+// deliberate: the policy is pinned whole, the two directives that carry the design are pinned
+// again by name, and the header the site actually serves on /demos/* is pinned to this constant.
 
 const directives = new Map(
   CONTENT_SECURITY_POLICY.split("; ").map((d) => {
@@ -45,5 +46,24 @@ describe("apps/demos CSP (ADR-0400)", () => {
   test("the directive parse is not vacuous", () => {
     expect(directives.size).toBe(10);
     expect(directives.get("default-src")).toBe("'self'");
+  });
+
+  // The static export has no server: the served header is the /demos/* block of the site's
+  // _headers file, which must detach the site-wide CSP and restate exactly this one.
+  test("the site's _headers serves exactly this policy on /demos/*", () => {
+    const text = readFileSync(
+      new URL("../../site/public/_headers", import.meta.url),
+      "utf8",
+    );
+    const block = text.split(/\n(?=\S)/).find((b) => b.startsWith("/demos/*"));
+    expect(block).toBeDefined();
+    const csp = (block ?? "")
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.startsWith("Content-Security-Policy:"));
+    expect(csp).toEqual([
+      `Content-Security-Policy: ${CONTENT_SECURITY_POLICY}`,
+    ]);
+    expect(block).toContain("! Content-Security-Policy");
   });
 });

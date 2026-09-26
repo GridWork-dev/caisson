@@ -22,18 +22,13 @@ import Link from "next/link";
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
-  bundlePrice,
-  BUNDLE_PRICES,
-  everythingSavings,
-  formatUsd,
-  MODULE_PRICES,
-  moduleCatalogSubtotal,
+  BUNDLES,
+  MODULES,
   modulesByBundle,
-  PLAN_PRICES,
-  planPrice,
   SKU_COLUMNS,
   SKU_FEATURE_ROWS,
-} from "@/lib/pricing";
+} from "@/lib/catalog";
+import { MODULE_ENTRIES } from "@/lib/marketplace-surface";
 
 export const metadata = buildMetadata({
   description:
@@ -41,7 +36,7 @@ export const metadata = buildMetadata({
   path: "/",
 });
 
-// Umbrella SoftwareApplication node — no priceId (the home node is the product line, not a SKU).
+// Umbrella SoftwareApplication node (the home node is the product line).
 // Describes the two-door umbrella (ADR-0040): the compliance wedge under a production-rigor layer.
 const homeJsonLd = softwareApplication({
   name: "Caisson",
@@ -84,20 +79,13 @@ const CI_CHECKS = [
   "RLS cross-tenant read: denied",
 ] as const;
 
-// How-to-buy price bands — derived from lib/pricing.ts (never hand-duplicated) so the three
-// figures on the type-chip cards below can't drift from the SKUs they describe.
-const HOW_TO_BUY_MODULE_PRICE = planPrice("module");
-// The persona/Provenance bundle price band (catalog-rework W6.2, ADR-0258 numbers) — the Everything
-// bundle is the whole-catalog step above, not part of the "take a bundle" range.
-const BUNDLE_AMOUNTS = BUNDLE_PRICES.filter((b) => b.id !== "everything").map(
-  (b) => b.amount ?? 0,
-);
-const HOW_TO_BUY_BUNDLE_RANGE = `${formatUsd(Math.min(...BUNDLE_AMOUNTS))}–${formatUsd(Math.max(...BUNDLE_AMOUNTS))}`;
-const YEARLY_PLAN_AMOUNTS = PLAN_PRICES.filter(
-  (p): p is typeof p & { amount: number } =>
-    p.unit === "year" && p.amount !== null,
-).map((p) => p.amount);
-const HOW_TO_BUY_PLAN_RANGE = `${formatUsd(Math.min(...YEARLY_PLAN_AMOUNTS))}–${formatUsd(Math.max(...YEARLY_PLAN_AMOUNTS))}/yr`;
+// Counts for the "how it composes" cards — derived from the catalog, never hand-typed.
+const PERSONA_BUNDLE_COUNT = BUNDLES.filter(
+  (b) => b.id !== "everything",
+).length;
+const LIVE_DEMO_COUNT = MODULE_ENTRIES.filter(
+  (e) => e.demoHref !== null,
+).length;
 
 export default function HomePage() {
   return (
@@ -250,12 +238,12 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== How to buy — the Module/Bundle/Plan type-chip vocabulary, defined once before
+      {/* ===== How it composes — the Module/Bundle type-chip vocabulary, defined once before
           the Bundles cards below reuse it (ADR-0237 F5) ===== */}
       <Section
-        eyebrow="How to buy"
-        title="Module, bundle, or plan: same catalog, three shapes."
-        lede="Every price on this site now carries one of three labels. Pick the shape that fits and open the marketplace to browse the rest. Whatever the shape, support is included: a real person on email and Discord, business-days response, with every license."
+        eyebrow="How it composes"
+        title="Module or bundle: same catalog, two shapes."
+        lede="Take a single module, or a bundle that composes several for one job, and run any of them live in your browser first. Open the marketplace to browse the rest."
       >
         <Reveal stagger={70} className="cs-grid cs-grid--3 cs-feature-grid">
           <Card>
@@ -278,11 +266,11 @@ export default function HomePage() {
                 fontFamily: "var(--cs-font-mono)",
               }}
             >
-              {HOW_TO_BUY_MODULE_PRICE}
+              {MODULES.length} modules
             </p>
             <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
-              A single package sold on its own: field encryption, the eval
-              harness, the agent runner. Every module, priced à la carte.
+              A single package on its own: field encryption, the eval harness,
+              the agent runner. Every module composes onto the base alone.
             </p>
             <div style={{ marginTop: "var(--cs-space-6)" }}>
               <Button href="/marketplace?type=modules" variant="ghost">
@@ -312,12 +300,12 @@ export default function HomePage() {
                 fontFamily: "var(--cs-font-mono)",
               }}
             >
-              {HOW_TO_BUY_BUNDLE_RANGE}
+              {PERSONA_BUNDLE_COUNT} bundles
             </p>
             <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
               Compliance, AI-Production, Local-first, Agentic-Dev, or
               Provenance, each composes the same audited base, never a fork.
-              Everything takes the whole catalog at {bundlePrice("everything")}.
+              Everything takes the whole catalog.
             </p>
             <div style={{ marginTop: "var(--cs-space-6)" }}>
               <Button href="/marketplace" variant="ghost">
@@ -334,10 +322,8 @@ export default function HomePage() {
                 gap: "var(--cs-space-3)",
               }}
             >
-              <span className="cs-card-title">
-                A subscription, not a one-time buy
-              </span>
-              <StatusChip label="Plan" />
+              <span className="cs-card-title">Run it in your browser</span>
+              <StatusChip label="Demo" />
             </div>
             <p
               className="cs-num"
@@ -347,40 +333,20 @@ export default function HomePage() {
                 fontFamily: "var(--cs-font-mono)",
               }}
             >
-              {HOW_TO_BUY_PLAN_RANGE}
+              {LIVE_DEMO_COUNT} live demos
             </p>
             <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
-              Compliance Updates keeps control mappings and evidence packs
-              current. Developer adds credits and private-registry pulls.
+              Each demo runs the module's own code in your browser: seal a
+              value, tamper with a chain, trip a spend cap, and watch it fail
+              closed.
             </p>
             <div style={{ marginTop: "var(--cs-space-6)" }}>
-              <Button href="/marketplace/plans" variant="ghost">
-                Browse plans
+              <Button href="/marketplace" variant="ghost">
+                Run the demos
               </Button>
             </div>
           </Card>
         </Reveal>
-        <p className="cs-footnote" style={{ marginTop: "var(--cs-space-6)" }}>
-          Whatever you buy, the code you own is perpetual: no phone-home, no
-          kill switch. Even if Caisson the company stopped operating, the
-          versions you hold keep working. Read the{" "}
-          <Link href="/legal/eula#vendor-continuity" className="cs-link">
-            continuity terms
-          </Link>
-          .
-        </p>
-        {/* CAISSON-98 + D12 item 3 (PRD-3): the weeks-saved translation finance sign-off runs on.
-            The 4–8-week range is the interviewed buyers' OWN in-house build estimate (Cookiy study
-            019f4a11, 12 real-ICP interviews) — attributed, never asserted as a Caisson benchmark
-            (ADR-0080). Price first and stated as committed (D4 lock), with the interview estimate
-            explicitly of the BUILD: leading with the buyers read as buyer-validated pricing. */}
-        <p className="cs-footnote" style={{ marginTop: "var(--cs-space-3)" }}>
-          {bundlePrice("compliance")} one-time is the committed price for the
-          Compliance bundle. For the sign-off conversation: buyers we
-          interviewed put the in-house build of that bundle&rsquo;s foundations
-          at four to eight engineering-weeks. That estimate is theirs, and it is
-          of the build, not of the price.
-        </p>
       </Section>
 
       {/* ===== Bundles — featured-lead hierarchy, one accent. id="bundles" is the production
@@ -407,7 +373,7 @@ export default function HomePage() {
               <StatusChip
                 tone="accent"
                 dot
-                label={`${bundlePrice("compliance")} · ${modulesByBundle("compliance").length} modules`}
+                label={`${modulesByBundle("compliance").length} modules`}
               />
             }
             line="Fail-closed RLS, S3 WORM, append-only audit chain, per-tenant field encryption, and a SOC 2 / HIPAA evidence-pack generator."
@@ -421,7 +387,7 @@ export default function HomePage() {
               <StatusChip
                 tone="muted"
                 dot
-                label={`${bundlePrice("ai-production")} · ${modulesByBundle("ai-production").length} modules`}
+                label={`${modulesByBundle("ai-production").length} modules`}
               />
             }
             line="The production-rigor layer cheap AI boilerplate skips: token metering, spend caps, a circuit breaker, versioned prompts, and guardrails."
@@ -435,7 +401,7 @@ export default function HomePage() {
               <StatusChip
                 tone="muted"
                 dot
-                label={`${bundlePrice("local-first")} · ${modulesByBundle("local-first").length} modules`}
+                label={`${modulesByBundle("local-first").length} modules`}
               />
             }
             line="Compute seam, privacy gate, and on-device vector search. Your data stays on-device by default. Own the source."
@@ -449,7 +415,7 @@ export default function HomePage() {
               <StatusChip
                 tone="muted"
                 dot
-                label={`${bundlePrice("agentic-dev")} · ${modulesByBundle("agentic-dev").length} modules`}
+                label={`${modulesByBundle("agentic-dev").length} modules`}
               />
             }
             line="The governed-agent kernel: typed agent/skill/rule schema, a lifecycle state machine, and a hooks dispatcher."
@@ -463,7 +429,7 @@ export default function HomePage() {
               <StatusChip
                 tone="muted"
                 dot
-                label={`${bundlePrice("provenance")} · ${modulesByBundle("provenance").length} modules`}
+                label={`${modulesByBundle("provenance").length} modules`}
               />
             }
             line="Detached Ed25519 + RFC-3161 signing, an append-only audit chain where one altered row breaks every link after it, and per-tenant field encryption."
@@ -480,16 +446,16 @@ export default function HomePage() {
               <StatusChip
                 tone="muted"
                 dot
-                label={`${bundlePrice("everything")} · all ${MODULE_PRICES.length} modules`}
+                label={`all ${MODULES.length} modules`}
               />
             }
-            line="Every bundle and every module, including the platform capabilities no persona bundle carries: one purchase, the whole library."
-            proof={`save ${formatUsd(everythingSavings())} vs ${formatUsd(moduleCatalogSubtotal())} à la carte`}
+            line="Every bundle and every module, including the platform capabilities no persona bundle carries: the whole library."
+            proof={`${MODULES.length} modules · one audited base`}
           />
         </Reveal>
       </Section>
 
-      {/* ===== SKU matrix — bundles × modules + committed price row ===== */}
+      {/* ===== SKU matrix — bundles × capabilities ===== */}
       <Reveal>
         <Section
           eyebrow="What&rsquo;s in each bundle"
@@ -502,8 +468,6 @@ export default function HomePage() {
               className="cs-footnote"
               style={{ marginTop: "var(--cs-space-5)" }}
             >
-              Modules and bundles are one-time perpetual; subscriptions are
-              marked /yr.{" "}
               <Link href="/marketplace" className="cs-link">
                 Browse the full marketplace
               </Link>
@@ -512,12 +476,12 @@ export default function HomePage() {
         </Section>
       </Reveal>
 
-      {/* ===== Decision band (ADR-0378 lock 5) — three persona paths, zero cart chrome ===== */}
+      {/* ===== Decision band (ADR-0378 lock 5) — three persona paths ===== */}
       <Reveal>
         <Section
           eyebrow="Pick a path"
           title="Pick the path. The bundle follows."
-          lede="Three ways in. Each opens the matching bundle's viewer on the marketplace, priced from the same committed catalog every page reads."
+          lede="Three ways in. Each opens the matching bundle's viewer on the marketplace, live demo included."
         >
           <div style={{ marginTop: "var(--cs-space-8)" }}>
             <DecisionBand />
@@ -558,8 +522,7 @@ export default function HomePage() {
               }}
             >
               Caisson is a software product, built and backed by Liam at
-              GridWork Digital (a named engineer, not a ticket queue). Buy a
-              license and you get a direct line to the engineer who builds it.
+              GridWork Digital (a named engineer, not a ticket queue).
             </p>
             <p
               className="cs-muted"
@@ -592,10 +555,10 @@ export default function HomePage() {
               16 base packages (the kernel, auth, tenant isolation, billing, and
               the generator tooling) ship under Apache-2.0. Read them, audit
               them, and share them: the base is peer-reviewable by the license
-              every buyer receives it under.
+              it ships under.
             </p>
             <div style={{ marginTop: "var(--cs-space-5)" }}>
-              <Button href="/legal/license" variant="ghost">
+              <Button href="/docs/base" variant="ghost">
                 What&rsquo;s open
               </Button>
             </div>
@@ -607,8 +570,7 @@ export default function HomePage() {
             <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
               Every release is logged in the open, in plain English: what
               shipped, release by release. No private roadmap you have to take
-              on faith, and the buyer dashboard shows your own live
-              updates-window.
+              on faith.
             </p>
             <div style={{ marginTop: "var(--cs-space-5)" }}>
               <Button href="/updates" variant="ghost">
@@ -618,17 +580,17 @@ export default function HomePage() {
           </Card>
           <Card>
             <div className="cs-status">
-              <Icon name="users" size="lg" />
-              Be an early reference
+              <Icon name="gauge" size="lg" />
+              Live module demos
             </div>
             <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
-              A limited first cohort of design partners gets discounted access
-              in exchange for a citable case study and a direct line to the
-              engineer. A reference partnership, not a waitlist.
+              Every module in the marketplace links to its docs and a live demo
+              that runs the real component in your browser. Try it before you
+              read the source.
             </p>
             <div style={{ marginTop: "var(--cs-space-5)" }}>
-              <Button href="/partners" variant="ghost">
-                Design partners
+              <Button href="/marketplace" variant="ghost">
+                Open the gallery
               </Button>
             </div>
           </Card>
@@ -647,7 +609,7 @@ export default function HomePage() {
           id="get-started"
           eyebrow="Get started"
           title="Start audit-ready."
-          lede="Scaffold the audited base in one command, then open the marketplace for the bundle, module, or plan you need."
+          lede="Scaffold the audited base in one command, then open the marketplace for the bundle or module you need."
           band="surface"
         >
           <div
@@ -676,7 +638,7 @@ export default function HomePage() {
               }}
             >
               <Button href="/compliance" variant="primary">
-                Get Compliance
+                Explore Compliance
               </Button>
               <Button href="/docs" variant="ghost">
                 Read the docs

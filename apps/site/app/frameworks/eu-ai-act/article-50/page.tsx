@@ -360,8 +360,8 @@ export default function Article50Page() {
           <Button href="/compliance" variant="primary">
             Explore the Compliance bundle
           </Button>
-          <Button href="/glossary/eu-ai-act-article-50" variant="ghost">
-            Article 50 in the glossary
+          <Button href="/frameworks/eu-ai-act" variant="ghost">
+            The EU AI Act overview
           </Button>
         </div>
       </Section>

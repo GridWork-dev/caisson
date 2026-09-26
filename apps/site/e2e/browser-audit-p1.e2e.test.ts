@@ -1,5 +1,5 @@
 // e2e/browser-audit-p1.e2e.test.ts — the DETERMINISTIC browser-audit graduation suite (ADR-0323
-// D2, CAISSON-93). The four P1 clean replays from `outputs/browser-audit/2026-07-10-full-01/`
+// D2, CAISSON-93). The P1 clean replays from `outputs/browser-audit/2026-07-10-full-01/`
 // pinned as local Playwright tests, so the PR that regresses one fails CI instead of waiting for
 // the next advisory audit run. Fixes under pin (all landed in PR #205):
 //
@@ -8,8 +8,7 @@
 //           `:has()` reveal never matched, every panel stayed display:none, `.codeCard` was 0px.
 //   P1-002  /docs skip link: fumadocs' DocsLayout renders no <main>, so `#main-content` had no
 //           target and the document no main landmark (docs/layout.tsx wraps children in one).
-//   P1-003  marketplace compare: 13x13 checkbox under the card's stretched preview overlay —
-//           `.cardCompare` gains z-index:1 + a centered invisible 44x44 `::before` hit area.
+//   (P1-003, the marketplace compare control, retired with the control itself — ADR-0428 L10.)
 //   P1-004  docs search: no trigger rendered Radix's <Dialog.Trigger>, so focus fell to <body>
 //           on dismiss — search.tsx captures the opener and restores it via onCloseAutoFocus.
 //
@@ -19,9 +18,8 @@
 // computing 44px), and the hit-area overhang pass (adjacent 44px overlays in the nav-utils
 // cluster and the media-carousel arrows must not swallow each other's centers at mobile widths).
 //
-// Unlike `live/` this targets a LOCAL `next start` over the committed build — one generated
-// test-only origin credential, no CF Access, and no network beyond localhost — so it runs
-// deterministically on any PR. How to run:
+// Unlike `live/` this targets a LOCAL static server over the exported `out/` directory — no CF
+// Access and no network beyond localhost — so it runs deterministically on any PR. How to run:
 // `bunx turbo run test:e2e --filter=@caisson/site` (builds first via the task's dependsOn), or
 // `bun run build && bun run test:e2e` from apps/site.
 //
@@ -29,11 +27,9 @@
 // fumadocs surfaces — the `data-search-full` attribute on the expanded-sidebar search toggle and
 // the "Close Search" accessible name on the dialog's close control. A fumadocs bump that renames
 // either breaks that test with a locator timeout, not a product regression; re-anchor there.
-import { fetchWithTimeout } from "@caisson/kernel";
-import { ORIGIN_SECRET_HEADER } from "@caisson/kernel/node";
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, statSync } from "node:fs";
+import { join, normalize } from "node:path";
 import {
   chromium,
   type Browser,
@@ -47,12 +43,12 @@ const PORT = 3947; // not 3030 — never collide with an operator dev server
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 const NAV_TIMEOUT = 30_000;
 const TEST_TIMEOUT = 60_000;
-const TEST_ORIGIN_SECRET = Buffer.alloc(32, 0x2a).toString("base64url");
+const OUT_DIR = join(SITE_DIR, "out");
 
 const DESKTOP = { width: 1280, height: 900 } as const;
 const MOBILE = { width: 375, height: 800 } as const; // the audit's mobile breakpoint
 
-let server: ReturnType<typeof Bun.spawn> | null = null;
+let server: ReturnType<typeof Bun.serve> | null = null;
 let browser: Browser | null = null;
 
 async function newPage(viewport: {
@@ -60,10 +56,7 @@ async function newPage(viewport: {
   height: number;
 }): Promise<{ ctx: BrowserContext; page: Page }> {
   if (browser === null) throw new Error("browser not initialized");
-  const ctx = await browser.newContext({
-    viewport,
-    extraHTTPHeaders: { [ORIGIN_SECRET_HEADER]: TEST_ORIGIN_SECRET },
-  });
+  const ctx = await browser.newContext({ viewport });
   const page = await ctx.newPage();
   return { ctx, page };
 }
@@ -77,6 +70,21 @@ async function goto(page: Page, path: string): Promise<void> {
   });
   if (res === null) throw new Error(`${path}: no navigation response`);
   expect(res.status(), `${path}: HTTP ${res.status()}`).toBeLessThan(400);
+}
+
+/** The static export's file for a request path, the way the Cloudflare asset handler resolves it
+ *  (`/x` → `x`, `x.html`, or `x/index.html`), or the 404 page. Paths are normalized and must stay
+ *  under OUT_DIR. */
+function exportedFile(pathname: string): { file: string; status: number } {
+  const base = join(OUT_DIR, normalize(decodeURIComponent(pathname)));
+  if (base.startsWith(OUT_DIR)) {
+    for (const candidate of [base, `${base}.html`, join(base, "index.html")]) {
+      if (existsSync(candidate) && statSync(candidate).isFile()) {
+        return { file: candidate, status: 200 };
+      }
+    }
+  }
+  return { file: join(OUT_DIR, "404.html"), status: 404 };
 }
 
 /** scrollIntoViewIfNeeded with a detach retry: client surfaces (marketplace grid, homepage)
@@ -119,52 +127,26 @@ async function evaluateAfterPaint<T>(
 
 describe("browser-audit P1 graduation — deterministic Playwright over a local next start (ADR-0323 D2)", () => {
   beforeAll(async () => {
-    const buildId = join(SITE_DIR, ".next", "BUILD_ID");
-    if (!existsSync(buildId)) {
+    if (!existsSync(join(OUT_DIR, "index.html"))) {
       throw new Error(
-        "no .next build — run `bunx turbo run build --filter=@caisson/site` first " +
+        "no static export — run `bunx turbo run build --filter=@caisson/site` first " +
           "(the test:e2e turbo task does this via dependsOn)",
       );
     }
-    // spawn the next bin directly under bun (no bunx wrapper) so afterAll's kill() reaches the
-    // real server process instead of orphaning it on port 3947 after a local re-run.
-    const nextBin = Bun.resolveSync("next/dist/bin/next", SITE_DIR);
-    const serverEnvironment = { ...process.env };
-    Reflect.deleteProperty(serverEnvironment, "ORIGIN_SECRET_NEXT");
-    Reflect.set(serverEnvironment, "ORIGIN_SECRET_MODE", "enabled");
-    Reflect.set(serverEnvironment, "ORIGIN_SECRET", TEST_ORIGIN_SECRET);
-    server = Bun.spawn({
-      cmd: ["bun", nextBin, "start", "-p", String(PORT)],
-      cwd: SITE_DIR,
-      env: serverEnvironment,
-      stdout: "ignore",
-      stderr: "ignore",
+    server = Bun.serve({
+      port: PORT,
+      hostname: "127.0.0.1",
+      fetch(req) {
+        const { file, status } = exportedFile(new URL(req.url).pathname);
+        return new Response(Bun.file(file), { status });
+      },
     });
-    // wait-for-ready: poll until the server answers (30s cap)
-    const deadline = Date.now() + 30_000;
-    for (;;) {
-      try {
-        const res = await fetchWithTimeout(
-          `${BASE_URL}/`,
-          { headers: { [ORIGIN_SECRET_HEADER]: TEST_ORIGIN_SECRET } },
-          { timeoutMs: 2_000 },
-        );
-        if (res.ok) break;
-      } catch {
-        /* not up yet */
-      }
-      if (Date.now() > deadline) {
-        throw new Error(`next start did not answer on :${PORT} within 30s`);
-      }
-      await new Promise((r) => setTimeout(r, 250));
-    }
     browser = await chromium.launch();
   }, TEST_TIMEOUT);
 
   afterAll(async () => {
     await browser?.close();
-    server?.kill();
-    await server?.exited;
+    await server?.stop(true);
   });
 
   test(
@@ -275,77 +257,6 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
   );
 
   test(
-    "P1-003 marketplace compare control: 44px effective target above the stretched preview action",
-    async () => {
-      const { ctx, page } = await newPage(DESKTOP);
-      try {
-        await goto(page, "/marketplace");
-        const checkbox = page.getByLabel(/^Compare /).first();
-        const label = checkbox.locator("xpath=ancestor::label").first();
-        await scrollWhenStable(label);
-
-        // the shipped contract: a centered 44x44 ::before hit area (>= the 24px WCAG 2.2 AA
-        // floor) and z-index 1 lifting it above the card's inset:0 preview overlay button.
-        const contract = await label.evaluate((el) => {
-          const before = getComputedStyle(el, "::before");
-          return {
-            w: before.width,
-            h: before.height,
-            zIndex: getComputedStyle(el).zIndex,
-          };
-        });
-        expect(contract.w, "compare ::before hit-area width").toBe("44px");
-        expect(contract.h, "compare ::before hit-area height").toBe("44px");
-        expect(
-          contract.zIndex,
-          "compare label must stack above the stretched preview action",
-        ).toBe("1");
-
-        // every corner of the 24x24 AA box centered on the control resolves to the control —
-        // nothing (in particular the stretched preview button) steals the hit.
-        const corners = await label.evaluate((el) => {
-          const r = el.getBoundingClientRect();
-          const cx = r.x + r.width / 2;
-          const cy = r.y + r.height / 2;
-          return [-12, 12].flatMap((dy) =>
-            [-12, 12].map((dx) => {
-              const hit = document.elementFromPoint(cx + dx, cy + dy);
-              return hit !== null && (hit === el || el.contains(hit));
-            }),
-          );
-        });
-        expect(
-          corners,
-          "a 24x24 AA-box corner is not clickable on the compare control",
-        ).toEqual([true, true, true, true]);
-
-        // behavioral proof: a click OUTSIDE the 19px-tall visual label but inside the expanded
-        // zone toggles the checkbox and does NOT open the preview viewer or navigate.
-        const box = await label.boundingBox();
-        if (box === null) throw new Error("compare label has no box");
-        const urlBefore = page.url();
-        await page.mouse.click(
-          box.x + box.width / 2,
-          box.y + box.height / 2 - 14,
-        );
-        await page.waitForTimeout(300);
-        expect(
-          await checkbox.isChecked(),
-          "expanded-zone click did not toggle compare",
-        ).toBe(true);
-        expect(page.url(), "compare click must not navigate").toBe(urlBefore);
-        expect(
-          await page.getByLabel("Next slide").count(),
-          "compare click must not open the preview viewer",
-        ).toBe(0);
-      } finally {
-        await ctx.close();
-      }
-    },
-    TEST_TIMEOUT,
-  );
-
-  test(
     "P1-004 docs search returns focus to its trigger on every dismissal path",
     async () => {
       const { ctx, page } = await newPage(DESKTOP);
@@ -434,7 +345,7 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
         try {
           await goto(page, "/");
           // every visible header control's center must hit ITSELF — an expanded 44px ::before
-          // on a neighbor (gap-2 cluster: search/cart/theme/menu) must not swallow it.
+          // on a neighbor (gap-2 cluster: search/theme/menu) must not swallow it.
           const controls = await evaluateAfterPaint(
             () =>
               page.evaluate(() => {
@@ -477,12 +388,11 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
             `${viewport.width}px header controls whose center a neighbor's hit area steals`,
           ).toEqual([]);
 
-          // the two known 44px overlays in the compact cluster keep their contract. Assert on
-          // the VISIBLE instance only — the desktop navUtils cluster keeps a display:none twin
-          // of the cart in the DOM at this width, and computed pseudo styles resolve on hidden
-          // nodes too, so an unscoped .first() would pin the wrong control.
+          // the known 44px overlay in the compact cluster keeps its contract. Assert on the
+          // VISIBLE instance only — computed pseudo styles resolve on hidden nodes too, so an
+          // unscoped .first() could pin the wrong control.
           if (viewport.width === MOBILE.width) {
-            for (const name of ["Cart", "Open menu"]) {
+            for (const name of ["Open menu"]) {
               const instances = await page
                 .getByLabel(name, { exact: true })
                 .all();

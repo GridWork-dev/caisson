@@ -4,13 +4,6 @@
 // Replaces the duplicated anonymous SoftwareApplication block. Serialization escapes `<` so a
 // stray "</script>" in any field cannot break out of the <script> tag.
 import { SITE_NAME, SITE_URL } from "./metadata";
-import {
-  bundlePriceById,
-  formatPrice,
-  isBundleId,
-  priceById,
-  type PriceAnchor,
-} from "./pricing";
 
 export const ORG_ID = `${SITE_URL}/#organization`;
 export const SITE_ID = `${SITE_URL}/#website`;
@@ -77,24 +70,13 @@ export const rootGraph = {
   ],
 };
 
-/**
- * A page-scoped SoftwareApplication node. Carries the committed Offer price (ADR-0082): pass
- * `priceId` to resolve a bundle or plan anchor (post-flip the two id sets are disjoint), or
- * `price` to attach an explicit anchor. Omit both for the umbrella home node.
- */
+/** A page-scoped SoftwareApplication node. The Offer is price 0: the code is Apache-2.0 and free
+ *  (Google's software rich result wants an Offer, and a zero price states the truth). */
 export function softwareApplication(opts: {
   name: string;
   description: string;
   url: string;
-  priceId?: string;
-  price?: PriceAnchor;
 }) {
-  const price =
-    opts.price ??
-    (opts.priceId
-      ? (priceById(opts.priceId) ??
-        (isBundleId(opts.priceId) ? bundlePriceById(opts.priceId) : undefined))
-      : undefined);
   return {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
@@ -104,59 +86,32 @@ export function softwareApplication(opts: {
     description: opts.description,
     url: opts.url,
     publisher: { "@id": ORG_ID },
-    ...(price && price.amount !== null
-      ? {
-          offers: {
-            "@type": "Offer",
-            price: price.amount,
-            priceCurrency: "USD",
-            // Committed price (ADR-0082) — live self-serve, so availability is InStock.
-            availability: "https://schema.org/InStock",
-            description: formatPrice(price),
-          },
-        }
-      : {}),
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   };
 }
 
 /**
- * A per-module SoftwareApplication node with its committed Offer (ADR-0082 — live self-serve,
- * InStock). Emitted on the module's own depth page (ADR-0237 F2) and reused, one per element, by
- * `moduleItemList` on the catalog tab so both surfaces describe the identical entity/URL.
+ * A per-module SoftwareApplication node. Emitted on the module's own depth page (ADR-0237 F2) and
+ * reused, one per element, by `moduleItemList` on the gallery so both surfaces describe the
+ * identical entity/URL.
  */
 export function moduleSoftwareApplication(
-  m: { id: string; label: string; amount: number; blurb: string },
+  m: { id: string; label: string; blurb: string },
   opts: { description?: string } = {},
 ) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
+  return softwareApplication({
     name: m.label,
-    applicationCategory: "DeveloperApplication",
-    operatingSystem: "Any",
     description: opts.description ?? m.blurb,
     url: `${SITE_URL}/marketplace/modules/${m.id}`,
-    publisher: { "@id": ORG_ID },
-    offers: {
-      "@type": "Offer",
-      price: m.amount,
-      priceCurrency: "USD",
-      availability: "https://schema.org/InStock",
-    },
-  };
+  });
 }
 
 /**
- * ItemList of the à-la-carte modules for the marketplace Modules tab (ADR-0237 F1). Each element
- * is the module's own SoftwareApplication node, `url` pointing at its depth page.
+ * ItemList of the modules for the marketplace gallery (ADR-0237 F1). Each element is the module's
+ * own SoftwareApplication node, `url` pointing at its depth page.
  */
 export function moduleItemList(
-  modules: readonly {
-    id: string;
-    label: string;
-    amount: number;
-    blurb: string;
-  }[],
+  modules: readonly { id: string; label: string; blurb: string }[],
 ) {
   return {
     "@context": "https://schema.org",
@@ -222,47 +177,6 @@ export function faqPage(
       "@type": "Question",
       name: it.question,
       acceptedAnswer: { "@type": "Answer", text: it.answer },
-    })),
-  };
-}
-
-/** DefinedTerm — one glossary spoke (ADR-0079 §4 addition, glossary SPEC/ADR-0235). */
-export function definedTerm(opts: {
-  name: string;
-  description: string;
-  url: string;
-  inDefinedTermSet?: string;
-}) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "DefinedTerm",
-    name: opts.name,
-    description: opts.description,
-    url: opts.url,
-    ...(opts.inDefinedTermSet
-      ? { inDefinedTermSet: opts.inDefinedTermSet }
-      : {}),
-  };
-}
-
-/** DefinedTermSet — the /glossary hub, listing every spoke (glossary SPEC/ADR-0235). */
-export function definedTermSet(opts: {
-  name: string;
-  description: string;
-  url: string;
-  terms: readonly { name: string; description: string; url: string }[];
-}) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "DefinedTermSet",
-    name: opts.name,
-    description: opts.description,
-    url: opts.url,
-    hasDefinedTerm: opts.terms.map((t) => ({
-      "@type": "DefinedTerm",
-      name: t.name,
-      description: t.description,
-      url: t.url,
     })),
   };
 }

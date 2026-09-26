@@ -53,13 +53,8 @@ export const MARKETING_ROUTES: readonly MarketingRoute[] = [
   { path: "/agentic-dev", label: "Agentic-Dev", priority: 0.9, changeFrequency: "weekly", group: "edition", footer: "editions" }, // prettier-ignore
   { path: "/provenance", label: "Provenance", priority: 0.9, changeFrequency: "weekly", group: "edition", footer: "editions" }, // prettier-ignore
   { path: "/marketplace", label: "Marketplace", priority: 0.9, changeFrequency: "weekly", group: "product", footer: "product" }, // prettier-ignore
-  { path: "/marketplace/plans", label: "Plans", priority: 0.85, changeFrequency: "weekly", group: "product", footer: "product" }, // prettier-ignore
-  { path: "/glossary", label: "Glossary", priority: 0.7, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/writing", label: "Writing", priority: 0.7, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
-  { path: "/compare", label: "Comparisons", priority: 0.75, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
-  { path: "/stack-fit", label: "Stack fit", priority: 0.75, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/ui", label: "UI Pro showcase", navLabel: "UI Pro", priority: 0.7, changeFrequency: "weekly", group: "product", footer: "resources" }, // prettier-ignore
-  { path: "/build-vs-buy", label: "Build vs buy", priority: 0.75, changeFrequency: "weekly", group: "product" }, // prettier-ignore
   // Public, indexable, and until now absent from BOTH the registry and every internal link — the
   // only route on the site reachable by direct URL alone. Registry-only (no nav/footer flag) puts
   // it in the sitemap without deciding where it belongs in the nav.
@@ -67,18 +62,12 @@ export const MARKETING_ROUTES: readonly MarketingRoute[] = [
   { path: "/security", label: "Security", priority: 0.75, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
   { path: "/evidence", label: "Evidence pack", priority: 0.8, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
   { path: "/updates", label: "Updates", priority: 0.7, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
-  { path: "/procurement", label: "Security & procurement", priority: 0.7, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
   { path: "/trust", label: "Trust", priority: 0.75, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
   { path: "/support", label: "Support", priority: 0.6, changeFrequency: "weekly", group: "trust", footer: "resources" }, // prettier-ignore
-  { path: "/affiliates", label: "Affiliates", priority: 0.5, changeFrequency: "monthly", group: "product", footer: "resources" }, // prettier-ignore
-  { path: "/partners", label: "Design partners", priority: 0.5, changeFrequency: "monthly", group: "product", footer: "resources" }, // prettier-ignore
   { path: "/frameworks/eu-ai-act", label: "EU AI Act", priority: 0.75, changeFrequency: "weekly", group: "framework" }, // prettier-ignore
   { path: "/frameworks/eu-ai-act/article-50", label: "EU AI Act Article 50", priority: 0.7, changeFrequency: "weekly", group: "framework" }, // prettier-ignore
   { path: "/legal/privacy", label: "Privacy policy", priority: 0.4, changeFrequency: "weekly", group: "legal", footer: "legal" }, // prettier-ignore
   { path: "/legal/terms", label: "Terms of service", priority: 0.4, changeFrequency: "weekly", group: "legal", footer: "legal" }, // prettier-ignore
-  { path: "/legal/refunds", label: "Refund policy", priority: 0.4, changeFrequency: "weekly", group: "legal", footer: "legal" }, // prettier-ignore
-  { path: "/legal/license", label: "License", priority: 0.4, changeFrequency: "weekly", group: "legal", footer: "legal" }, // prettier-ignore
-  { path: "/legal/eula", label: "EULA", priority: 0.4, changeFrequency: "weekly", group: "legal", footer: "legal" }, // prettier-ignore
 ];
 
 /** The bundle persona pages, in display order — single-sourced for the nav, the footer, and the
@@ -94,11 +83,3 @@ export const LEGAL_ROUTES = MARKETING_ROUTES.filter((r) => r.group === "legal");
 export function footerRoutes(col: FooterCol): readonly MarketingRoute[] {
   return MARKETING_ROUTES.filter((r) => r.footer === col);
 }
-
-/** The `/marketplace` tabs, in display order. Now just the unified one-surface Marketplace and the
- *  standalone Plans page — the ADR-0285 rework folded the former Modules + Build tabs INTO the
- *  surface (they 301 to /marketplace in next.config.ts); subscriptions stay a separate purchase
- *  path. Derived from the registry, not re-declared. */
-export const MARKETPLACE_TAB_ROUTES = MARKETING_ROUTES.filter(
-  (r) => r.path === "/marketplace" || r.path.startsWith("/marketplace/"),
-);

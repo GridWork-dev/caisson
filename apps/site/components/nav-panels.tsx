@@ -25,8 +25,6 @@ export interface NavCard {
   href: string;
   label: string;
   note: string;
-  /** Committed display price ("$1,649", "from $49") — only on commerce cards (ADR-0237 F4). */
-  price?: string;
   /** Icon name from the @caisson/ui set (bespoke marks land with wave 2). */
   icon?: IconName;
 }
@@ -77,7 +75,6 @@ function CardList({
             <span className={styles.cardBody}>
               <span className={styles.cardHead}>
                 <span className={styles.cardName}>{c.label}</span>
-                {c.price && <span className={styles.cardPrice}>{c.price}</span>}
               </span>
               <span className={styles.cardNote}>{c.note}</span>
             </span>

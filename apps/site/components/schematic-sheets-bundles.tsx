@@ -9,7 +9,7 @@ import styles from "./schematics.module.css";
 //
 // Honest-artifact floor (ADR-0082): every member chip is a real registry-pinned member of the
 // bundle. Sources read for this file: each bundle's `packages/<id>/manifest.ts` (the frozen
-// `members` pin map, the sole membership truth), `lib/pricing.ts` `modulesByBundle()` (which of
+// `members` pin map, the sole membership truth), `lib/catalog.ts` `modulesByBundle()` (which of
 // those members is a priced à-la-carte SKU vs. base substrate composed at no separate price), and
 // `lib/bundle-pages.ts` (the page's own member list + base-substrate framing, e.g. ai-config
 // "composed in at no separate module price"). Bedrock storage claims are read from the member
@@ -177,7 +177,7 @@ function Strata({
 
 // ===== bundle:ai-production =====
 // Seam = modulesByBundle("ai-production"): field-crypto, ai-meter, guardrails, prompt-registry,
-// ai-evals, credits (pricing.ts). Base = the manifest's remaining pinned members (kernel,
+// ai-evals, credits (catalog.ts). Base = the manifest's remaining pinned members (kernel,
 // tenancy-rls, ai-config) — bundle-pages.ts calls ai-config out by name as "base substrate,
 // composed in at no separate module price". Bedrock = Postgres: ai-meter's reserve/reconcile spend
 // window is a PG-atomic upsert and credits is a PG-atomic ledger (both already-shipped mechanism
@@ -212,7 +212,7 @@ export function AiProductionCrossSection() {
 // Seam = modulesByBundle("local-first"): local-store, local-sync, local-inference,
 // local-privacy, field-crypto. Base = the manifest's kernel + license-verify (both Apache-2.0 base
 // packages). Bedrock = SQLite: local-store's store.ts runs raw bun:sqlite plus the sqlite-vec
-// vec0 extension and FTS5, on disk, one file per tenant (the pricing.ts blurb) — never Postgres.
+// vec0 extension and FTS5, on disk, one file per tenant (the catalog.ts blurb) — never Postgres.
 export function LocalFirstCrossSection() {
   return (
     <Sheet
@@ -304,7 +304,7 @@ export function ProvenanceCrossSection() {
 // sibling persona-bundle metas are themselves sellable SKUs and are IN"), drawn at bundle
 // granularity rather than per-module: the five persona bundles (compliance, ai-production,
 // local-first, agentic-dev, provenance) plus the three standalone platform SKUs no persona bundle
-// grants (org-controls, billing-orchestration, ui-pro — pricing.ts's `bundles: []` modules). All
+// grants (org-controls, billing-orchestration, ui-pro — catalog.ts's `bundles: []` modules). All
 // eight drawn, matching the manifest description verbatim ("every bundle ... plus every standalone
 // module (org-controls, billing-orchestration, ui-pro)"). Base = one chip, quoting the manifest's
 // own base framing ("the open Apache base ships free") rather than itemized packages, since

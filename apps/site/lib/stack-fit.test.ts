@@ -1,9 +1,9 @@
 // Data-lint for the /stack-fit adapter surface: every sellable module carries an honest DB posture,
-// and the posture groups + axes are well-formed. Pins the posture map to MODULE_PRICES so a new
+// and the posture groups + axes are well-formed. Pins the posture map to MODULES so a new
 // module can never ship without a truthful "does it need a database" classification.
 import { describe, expect, test } from "bun:test";
 
-import { MODULE_PRICES } from "./pricing";
+import { MODULES } from "./catalog";
 import {
   MODULE_DB_POSTURE,
   POSTURE_GROUPS,
@@ -12,8 +12,8 @@ import {
 } from "./stack-fit";
 
 describe("MODULE_DB_POSTURE", () => {
-  test("every sellable module has exactly one posture (bijection with MODULE_PRICES)", () => {
-    const priced = MODULE_PRICES.map((m) => m.id).sort();
+  test("every sellable module has exactly one posture (bijection with MODULES)", () => {
+    const priced = MODULES.map((m) => m.id).sort();
     const classified = Object.keys(MODULE_DB_POSTURE).sort();
     expect(classified).toEqual(priced);
   });

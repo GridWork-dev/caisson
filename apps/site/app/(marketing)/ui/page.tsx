@@ -2,16 +2,13 @@ import { Hero, Section } from "@/components";
 import { UiProGallery } from "@/components/ui-showcase/registry-gallery";
 import { breadcrumb, serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
-import { moduleCatalogItem, toCartItem } from "@/lib/catalog";
-import { formatUsd, MODULE_PRICES } from "@/lib/pricing";
 
-// CAISSON-35: the demo grid itself now reads @caisson/demo-registry (registry-gallery.tsx, a
-// client island) — the same catalog apps/admin's component catalog page renders, so this page and
-// admin can never drift into two hand-rolled demo implementations of the same 11 UI Pro
-// components. This file stays the server shell: metadata, JSON-LD, the buy-rail price lookup, and
-// page chrome — none of which the registry needs to supply.
+// CAISSON-35: the demo grid itself reads @caisson/demo-registry (registry-gallery.tsx, a client
+// island), so no second hand-rolled demo implementation of the same 11 UI Pro components can drift.
+// This file stays the server shell: metadata, JSON-LD, and page chrome — none of which the registry
+// needs to supply.
 const GALLERY_DESCRIPTION =
-  "The @caisson/ui-pro component gallery — live, working demos of the premium data-ops and compliance components: an advanced data grid, a virtualized tree, an operations matrix, a hash-chain audit timeline, a redaction-aware payload viewer, a type-to-confirm dialog, an advanced date-range picker, a dependency-free chart pack, a command palette, a diff viewer, and a Kanban board.";
+  "The @caisson/ui-pro component gallery — live, working demos of the data-ops and compliance components: an advanced data grid, a virtualized tree, an operations matrix, a hash-chain audit timeline, a redaction-aware payload viewer, a type-to-confirm dialog, an advanced date-range picker, a dependency-free chart pack, a command palette, a diff viewer, and a Kanban board.";
 
 export const metadata = buildMetadata({
   title: "UI Pro component gallery",
@@ -19,14 +16,7 @@ export const metadata = buildMetadata({
   path: "/ui",
 });
 
-// Cart-ready item for the per-demo buy CTAs. moduleCatalogItem resolves for every MODULE_PRICES id
-// (see catalog.ts), so the undefined arm is type-narrowing only.
-const uiProCatalog = moduleCatalogItem("ui-pro");
-const uiProItem = uiProCatalog ? toCartItem(uiProCatalog) : undefined;
-const uiProPrice = MODULE_PRICES.find((p) => p.id === "ui-pro");
-
 export default function UiGalleryPage() {
-  const priceLabel = uiProPrice ? formatUsd(uiProPrice.amount) : null;
   return (
     <>
       <script
@@ -89,19 +79,18 @@ export default function UiGalleryPage() {
 
       <Hero
         eyebrow="Component gallery"
-        title="UI Pro — premium data-ops components"
+        title="UI Pro — data-ops components"
         lede={
           <>
             Eleven production components for compliance and operations surfaces,
             layered on the open <code>@caisson/ui</code> token floor. Every demo
-            below is live and interactive
-            {priceLabel ? <> — the full kit is {priceLabel}, one-time.</> : "."}
+            below is live and interactive.
           </>
         }
       />
 
       <Section band="surface" flush>
-        <UiProGallery buyItem={uiProItem} />
+        <UiProGallery />
       </Section>
     </>
   );

@@ -9,16 +9,7 @@
 // claim true-to-built (ADR-0082) and V1-live (ADR-0237 rider 2).
 //
 // `modulePageSpec` (module-page-spec.tsx) turns a record into the PageSpec the shared
-// <PageSections> renderer consumes; the buy rail is page chrome, not a section.
-
-import { bundlePrice, formatUsd, moduleAmount } from "./pricing";
-
-/** A module's standalone display price straight from the canonical catalog — never a
- *  hand-typed literal (the depth-page prose figures drifted silently when literal, and two
- *  notes even shipped non-interpolating quotes rendering raw source). */
-function modulePrice(slug: string): string {
-  return formatUsd(moduleAmount(slug));
-}
+// <PageSections> renderer consumes; the docs/demo rail is page chrome, not a section.
 
 /** One artifact proof block: real package code, cited by file. */
 export interface ModulePageArtifact {
@@ -34,7 +25,7 @@ export interface ModulePageArtifact {
 }
 
 export interface ModulePageRecord {
-  /** = ModulePrice.id — the cart key, route param, and mark key. */
+  /** = CatalogModule.id — the cart key, route param, and mark key. */
   slug: string;
   metaTitle: string;
   metaDescription: string;
@@ -46,10 +37,6 @@ export interface ModulePageRecord {
   included: readonly { title: string; body: string }[];
   artifact: ModulePageArtifact;
   faq: readonly { question: string; answer: string }[];
-  /** Curated glossary cross-links — every slug resolves in GLOSSARY_TERMS (lint in tests). */
-  relatedGlossary: readonly string[];
-  /** How this module is sold relative to its bundle family — entitlement-honest. */
-  sells: { edition: string; note: string };
 }
 
 export const MODULE_PAGES: readonly ModulePageRecord[] = [
@@ -126,11 +113,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "cryptoShred() validates that the destructive key scope matches the recorded tenant or subject, refuses an unprovisioned scope, requests deletion, and returns the KMS receipt. The authorized host persists and reconciles a soft-deleted or scheduled key until its retention or cancellation window closes; permanent erasure is recorded only after an irreversible receipt. The append-only WORM chain still verifies because it committed ciphertext, never plaintext.",
       },
     ],
-    relatedGlossary: ["hipaa-technical-safeguards", "row-level-security"],
-    sells: {
-      edition: "Compliance",
-      note: `Sold standalone at ${modulePrice("field-crypto")}, or as one of the primitives composing the ${bundlePrice("compliance")} Compliance bundle alongside audit-worm, retention-runner, and the alert pipeline.`,
-    },
   },
   {
     slug: "audit-worm",
@@ -194,20 +176,11 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         question:
-          "If I buy this standalone, do I also get retention policy scheduling?",
+          "If I use this standalone, do I also get retention policy scheduling?",
         answer:
           "No. Audit Chain + WORM is the storage and verification primitive (chain, anchor, S3 Object-Lock, retention floor/escalation). Scheduled expiry and legal-hold enforcement is the separate Retention Runner module; Compliance composes both.",
       },
     ],
-    relatedGlossary: [
-      "worm-audit-log",
-      "hash-chain-audit-trail",
-      "s3-object-lock",
-    ],
-    sells: {
-      edition: "compliance",
-      note: "Every evidence collector in Compliance chains through this store: buy it standalone to anchor your own audit trail, or get it composed for you inside the Compliance bundle.",
-    },
   },
   {
     slug: "retention-runner",
@@ -280,11 +253,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "No single module does that. Retention runner ships the erasure execution and the audit row proving a subject's data was purged across every registered store, it's the technical control an auditor checks for, generated as evidence, not a compliance certificate.",
       },
     ],
-    relatedGlossary: ["worm-retention-policy", "row-level-security"],
-    sells: {
-      edition: "Compliance",
-      note: `@caisson/compliance composes retention-runner directly at runtime, not a manifest listing. Buy it standalone at ${modulePrice("retention-runner")} or get it inside the ${bundlePrice("compliance")} Compliance bundle.`,
-    },
   },
   {
     slug: "alerting",
@@ -356,16 +324,11 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         question:
-          "Can I buy the alerting module standalone, or only inside Compliance?",
+          "Can I use the alerting module standalone, or only inside Compliance?",
         answer:
-          "Standalone, $149. It's also composed directly into the Compliance bundle, re-exported from its entry point (\"export * from '@caisson/alerting'\") rather than just listed on a manifest, buying Compliance gets you the same package, not a promise of it.",
+          "Standalone, yes. It's also composed directly into the Compliance family, re-exported from its entry point (\"export * from '@caisson/alerting'\") rather than just listed on a manifest, so Compliance gets you the same package, not a promise of it.",
       },
     ],
-    relatedGlossary: ["soc2-audit-log", "control-to-code-mapping"],
-    sells: {
-      edition: "Compliance",
-      note: `Alerting is composed directly into the Compliance bundle and re-exported at runtime, not a manifest-only listing. Buy it standalone at ${modulePrice("alerting")} or get it composed into Compliance.`,
-    },
   },
   {
     slug: "access-review",
@@ -432,11 +395,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "You inject a CampaignChainStore implementing append() and load(); the real AuditChainStore satisfies that narrow port. A standalone purchase gives you the campaign package, not a hosted chain. The Compliance bundle grants access-review and audit-worm together if you want both source packages.",
       },
     ],
-    relatedGlossary: ["soc2-audit-log", "worm-audit-log"],
-    sells: {
-      edition: "Compliance",
-      note: `Sold standalone at ${modulePrice("access-review")}, or granted as a named member of the ${bundlePrice("compliance")} Compliance bundle. The Everything bundle includes it by construction with every sellable module.`,
-    },
   },
   {
     slug: "risk-register",
@@ -503,11 +461,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "Neither. It is a pure builder over the RiskEntry rows and latest overrides you supply. It returns the validated plan plus canonicalPlan; your application resolves the latest chain records and decides where to persist or package the artifact.",
       },
     ],
-    relatedGlossary: ["control-to-code-mapping", "audit-evidence-bundle"],
-    sells: {
-      edition: "Compliance",
-      note: `Sold standalone at ${modulePrice("risk-register")}, or granted as a named member of the ${bundlePrice("compliance")} Compliance bundle. The Everything bundle includes it by construction with every sellable module.`,
-    },
   },
   {
     slug: "trust-page",
@@ -573,11 +526,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "Add CROSSWALK_ROLLUP_ROWS_KEY to the allowlist. That enables the citation-row table in HTML and the crosswalk array in JSON, including each cell's evidence pointers. Without the sentinel, both outputs omit those rows completely.",
       },
     ],
-    relatedGlossary: ["compliance-crosswalk", "audit-evidence-bundle"],
-    sells: {
-      edition: "Compliance",
-      note: `Sold standalone at ${modulePrice("trust-page")}, or granted as a named member of the ${bundlePrice("compliance")} Compliance bundle. The Everything bundle includes it by construction with every sellable module.`,
-    },
   },
   {
     slug: "ai-meter",
@@ -648,11 +596,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "It's a conservative heuristic (chars/4, full assumed output budget, no cache credit) that deliberately over-reserves rather than under-reserves. reconcile() then refunds the difference to the actual provider-reported usage, so the wallet never sits short mid-call.",
       },
     ],
-    relatedGlossary: ["token-metering", "row-level-security"],
-    sells: {
-      edition: "ai-kit",
-      note: `ai-meter is the metering primitive the AI-Production bundle's inference gateway composes at runtime: buy it standalone onto the free base, or get it (plus guardrails and the prompt registry) bundled into the ${bundlePrice("ai-production")} bundle.`,
-    },
   },
   {
     slug: "ai-evals",
@@ -728,11 +671,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "No. The eval CLI runs as a distinct turbo eval task inside this monorepo only, it is never injected into a generated buyer repo as a required CI job. You own your own eval cadence once you generate.",
       },
     ],
-    relatedGlossary: [],
-    sells: {
-      edition: "ai-kit",
-      note: `Sold standalone at ${modulePrice("ai-evals")}, and included in the AI-Production bundle alongside ai-meter, guardrails, and prompt-registry, and in Everything, which carries every sellable module by construction.`,
-    },
   },
   {
     slug: "guardrails",
@@ -803,11 +741,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           'Yes. guard.ts runs looksLikeSecret(text) as an unconditional gate (category "secret") before either leg reaches the configured moderator. There is no policy field to disable it.',
       },
     ],
-    relatedGlossary: [],
-    sells: {
-      edition: "ai-kit",
-      note: `Guardrails ships inside the ${bundlePrice("ai-production")} AI-Production bundle (with ai-meter and prompt-registry) or standalone at ${modulePrice("guardrails")}.`,
-    },
   },
   {
     slug: "prompt-registry",
@@ -884,11 +817,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "It's a library, a TenantExecutor-scoped API you import and call directly, the same primitive the AI Production Kit's inference gateway resolves prompt refs through before every model call. There's no standalone prompt-registry server or HTTP route; you own the calling code.",
       },
     ],
-    relatedGlossary: ["row-level-security"],
-    sells: {
-      edition: "ai-kit",
-      note: `Prompt registry is one of the modules composing the ${bundlePrice("ai-production")} AI-Production bundle (the inference gateway resolves every promptRef through it before rendering and metering a call. Buy it standalone at ${modulePrice("prompt-registry")}, or get it with ai-meter and guardrails in the bundle, or in the ${bundlePrice("everything")} Everything bundle) the whole catalog, one purchase.`,
-    },
   },
   {
     slug: "local-store",
@@ -963,17 +891,12 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "createCloudEmbedder scrubs every text through scrubForEgress before it leaves the box, PEM blocks, URL passwords, secret-named fields, and bare token shapes are redacted to a constant sentinel first, and the transport is fetchWithTimeout with an injectable seam for tests.",
       },
     ],
-    relatedGlossary: [],
-    sells: {
-      edition: "local-first",
-      note: `Local vector store is the retrieval engine inside the ${bundlePrice("local-first")} Local-first bundle, alongside on-device inference and the privacy gate. Buy it standalone (${modulePrice("local-store")}) to add hybrid search to any stack without the rest of the bundle.`,
-    },
   },
   {
     slug: "agent-kernel",
     metaTitle: "Agent Kernel, Governed Agent Lifecycle FSM | Caisson",
     metaDescription:
-      "Agent Kernel: the agent/skill/rule schema, seven-act lifecycle FSM, and hooks dispatcher behind Caisson's Agentic-Dev bundle. No vendor SDK, $199 standalone.",
+      "Agent Kernel: the agent/skill/rule schema, seven-act lifecycle FSM, and hooks dispatcher behind Caisson's Agentic-Dev bundle. No vendor SDK, usable standalone.",
     heroOneLiner:
       "The guarded agent lifecycle FSM: VERIFY failing reopens PLAN, there's no edge to SHIP.",
     definition:
@@ -1037,15 +960,11 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         question:
-          "Does buying agent-kernel alone get me the sandboxed agent runner too?",
-        answer: `No. agent-kernel ($199) is the schema/FSM/governance/hooks/audit-chain base; running an actual sandboxed agent process is agent-runner ($49), a separate module. Both are sold standalone, as are the bundle’s other paid modules (agent-trajectory, tool-exec, and local-store); the ${bundlePrice("agentic-dev")} Agentic-Dev bundle additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI, with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the modules for your own tooling, or buy the bundle for the assembled loop.`,
+          "Does agent-kernel alone get me the sandboxed agent runner too?",
+        answer:
+          "No. agent-kernel is the schema/FSM/governance/hooks/audit-chain base; running an actual sandboxed agent process is agent-runner, a separate module. Both work standalone, as do the family's other modules (agent-trajectory, tool-exec, and local-store); the Agentic-Dev family additionally brings the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI, with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Use the modules in your own tooling, or the whole family for the assembled loop.",
       },
     ],
-    relatedGlossary: ["hash-chain-audit-trail"],
-    sells: {
-      edition: "agentic-dev",
-      note: `Agent kernel (${modulePrice("agent-kernel")}) and agent-runner (${modulePrice("agent-runner")}) are both sold standalone, as are agent-trajectory, tool-exec, and local-store; the ${bundlePrice("agentic-dev")} Agentic-Dev bundle additionally bundles the local hybrid memory, the sandboxed tool-exec gate, and the multi-harness emitter (Claude Code, Cursor, Devin, GitHub Copilot, Cline, plus a universal AGENTS.md base read natively by Codex, Zed, and Gemini CLI, with fidelity warnings whenever a target can't represent an authored activation choice) that wire agent-kernel into one governed loop. Buy the module alone to consume the schema/FSM/governance/hooks/audit-chain from your own tooling, or buy the bundle for the assembled loop.`,
-    },
   },
   {
     slug: "agent-runner",
@@ -1121,11 +1040,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "The caller, always. Agent Runner's contract stops at the worktree: the subprocess produces a diff and a transcript inside the worktree you gave it, and never touches git, opens a PR, or reaches a deploy target, that stays the orchestrator's job, one call site away.",
       },
     ],
-    relatedGlossary: [],
-    sells: {
-      edition: "Agentic-Dev",
-      note: `${modulePrice("agent-runner")} à la carte, or included in the ${bundlePrice("agentic-dev")} Agentic-Dev bundle alongside agent-kernel.`,
-    },
   },
   {
     slug: "agent-trajectory",
@@ -1203,16 +1117,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "deny() and finish() both null out the stored parkedState on the same transition that makes the run terminal, a denied or finished run keeps no snapshot around to leak. While a run is genuinely parked, that snapshot sits sealed through field-crypto's row-bound encryptField, keyed to the run's own id, so it can't be decrypted if copied to another row.",
       },
     ],
-    relatedGlossary: [
-      "agent-trajectory",
-      "governed-agents",
-      "fail-closed",
-      "per-tenant-encryption-keys",
-    ],
-    sells: {
-      edition: "Agentic-Dev",
-      note: `${modulePrice("agent-trajectory")} à la carte, or included in the Agentic-Dev bundle alongside agent-kernel, agent-runner, and local-store, and in the Everything bundle, which carries every sellable module by construction.`,
-    },
   },
   {
     slug: "tool-exec",
@@ -1286,16 +1190,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "Every call gets a 30-second default timeout (config.timeoutMs to override) and bound() caps stdout/stderr at 64KB before Node's own maxBuffer would throw. A timeout or spawn failure (ENOENT, a non-numeric error.code) resolves with exitCode: -1 rather than throwing, so the caller always gets a provenance record to inspect, never an uncaught exception.",
       },
     ],
-    relatedGlossary: [
-      "fail-closed",
-      "governed-agents",
-      "mcp-server",
-      "agent-trajectory",
-    ],
-    sells: {
-      edition: "agentic-dev",
-      note: `Sold standalone at ${modulePrice("tool-exec")}, or included as @caisson/tool-exec in the ${bundlePrice("agentic-dev")} Agentic-Dev bundle with @caisson/agent-kernel, @caisson/agent-runner, @caisson/agent-trajectory, @caisson/ai-config, @caisson/kernel, and @caisson/local-store.`,
-    },
   },
   {
     slug: "org-controls",
@@ -1333,7 +1227,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Fail-closed entitlement gate",
-        body: "holdsOrgControls is the predicate the /dashboard/members surfaces gate through: an empty active-entitlement set denies by default, and it accepts either the bare org-controls purchase id or the full @caisson/org-controls module id, correct whichever form a standalone purchase or bundle grant carries.",
+        body: "holdsOrgControls is the predicate a members-management surface gates through: an empty active-entitlement set denies by default, and it accepts either the bare org-controls purchase id or the full @caisson/org-controls module id, correct whichever form a standalone purchase or bundle grant carries.",
       },
     ],
     artifact: {
@@ -1374,15 +1268,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "No single module does that. org-controls ships the technical control an auditor checks for role-based access segregation (a DB-enforced split between the buyer app role and the cross-tenant admin_write role, gated by a fail-closed guard that refuses to run as SUPERUSER or BYPASSRLS) not a certification. Compliance status is your organization's and your auditor's call.",
       },
     ],
-    relatedGlossary: [
-      "row-level-security",
-      "multi-tenant-isolation",
-      "fail-closed",
-    ],
-    sells: {
-      edition: "platform",
-      note: `Sold standalone at ${modulePrice("org-controls")}. No persona bundle grants it, so it's a deliberate standalone line on any stack; it's included only by construction inside the ${bundlePrice("everything")} Everything bundle, the one bundle that carries every sellable module.`,
-    },
   },
   {
     slug: "compliance-core",
@@ -1461,16 +1346,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "It means the mapping cleared a mechanical bar: every contributing canonical control is ready, every contributing crosswalk reference carries a reviewed-or-better, non-stale verification record, and a matching regime-crosswalk row already claims implements. Anything short of that (including any reference seeded from NIST's own OLIR mapping, which NIST itself calls subjective and incomplete) renders as the weaker maps-to, never upgraded editorially.",
       },
     ],
-    relatedGlossary: [
-      "oscal",
-      "control-to-code-mapping",
-      "compliance-crosswalk",
-      "audit-evidence-bundle",
-    ],
-    sells: {
-      edition: "Compliance",
-      note: `Sold standalone at ${modulePrice("compliance-core")}, or as one of the carved primitives composing the ${bundlePrice("compliance")} Compliance bundle alongside frameworks-pack, signing-primitive, audit-worm, field-crypto, and retention-runner.`,
-    },
   },
   {
     slug: "billing-orchestration",
@@ -1548,15 +1423,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "It rounds it. LemonSqueezy's numeric amount fields can carry sub-cent artifacts from currency-rate conversion (e.g. 1499.985); readMoneyMinorUnits rounds every amount to the nearest integer minor unit before it enters the domain event, money and credits are integer units everywhere in Caisson, never floats.",
       },
     ],
-    relatedGlossary: [
-      "credit-based-billing",
-      "fail-closed",
-      "row-level-security",
-    ],
-    sells: {
-      edition: "platform",
-      note: `Sold standalone at ${modulePrice("billing-orchestration")}, no persona bundle includes it (a platform SKU, standalone by design); it's part of the Everything bundle, the whole catalog in one purchase.`,
-    },
   },
   {
     slug: "ui-pro",
@@ -1628,11 +1494,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           'No persona bundle (buying Compliance, AI-Production, Local-first, Agentic-Dev, or Provenance never silently includes it (standalone placement, no persona-bundle membership at v1), and buying it never silently requires one of them. The whole-catalog Everything bundle is the one exception: it grants every sellable module by construction, ui-pro included) pinned by a registry test literally named "ui-pro is IN the Everything membership."',
       },
     ],
-    relatedGlossary: ["hash-chain-audit-trail", "signed-audit-anchor"],
-    sells: {
-      edition: "none",
-      note: `Sold standalone at ${modulePrice("ui-pro")}, no persona bundle grants it (standalone placement, no persona-bundle membership at v1), so it stays its own line on Compliance, AI-Production, Local-first, Agentic-Dev, and Provenance. The whole-catalog Everything bundle does include it, like every sellable module. It's the interactive layer each persona bundle's own dashboards reach for (Compliance's audit views, AI-Production's model-quality consoles) without ever being one of their bundle line items.`,
-    },
   },
   {
     slug: "local-inference",
@@ -1704,11 +1565,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "It wires the shape only. #emitMeter builds an integer-quantity, idempotency-keyed UsageMetering record and hands it to whatever MeterSink you provide, the package never imports @caisson/credits or touches a ledger; your billing integration supplies the sink that calls credits.debit.",
       },
     ],
-    relatedGlossary: ["fail-closed", "byok", "llm-cost-control"],
-    sells: {
-      edition: "local-first",
-      note: `On-device inference is the InferenceBackend seam inside the ${bundlePrice("local-first")} Local-first bundle, alongside local vector search and the privacy egress gate. Buy it standalone (${modulePrice("local-inference")}) to add hash-verified on-device embeddings (with an optional metered hosted lane) to any stack without the rest of the bundle.`,
-    },
   },
   {
     slug: "local-privacy",
@@ -1782,11 +1638,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "It wraps it. EgressGuard.fetch calls assertAllowed first and only then delegates to the kernel's fetchWithTimeout, the one audited outbound chokepoint (the native AbortSignal timeout is forbidden on Bun). A blocked request never reaches fetchWithTimeout, so no socket opens and no bytes leave the device.",
       },
     ],
-    relatedGlossary: ["fail-closed", "hipaa-technical-safeguards"],
-    sells: {
-      edition: "local-first",
-      note: `Sold standalone at ${modulePrice("local-privacy")}, or as one of the three local-first primitives (alongside local-sync and local-inference) composing the ${bundlePrice("local-first")} Local-first bundle. It's composed directly into @caisson/local-inference's rented-backend transport, not just a manifest listing, which routes every credentialed request through guard.fetchAs before it's built.`,
-    },
   },
   {
     slug: "local-sync",
@@ -1860,11 +1711,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "No. ChangesetLog binds one instance to one already-open SQLite file and asserts the file's stored tenant id on every re-open; assertApplicable rejects an inbound changeset whose tenantId doesn't match before any entry is integrated. reconcileReplicas and reconcileWithTombstones re-check the same invariant as defense-in-depth and throw TenancyError rather than silently merging across the boundary.",
       },
     ],
-    relatedGlossary: ["fail-closed", "multi-tenant-isolation"],
-    sells: {
-      edition: "local-first",
-      note: `Local sync is the offline-convergence engine inside the ${bundlePrice("local-first")} Local-first bundle, alongside on-device inference and the privacy egress gate. Buy it standalone at ${modulePrice("local-sync")} to add two-way sync to any stack without the rest of the bundle.`,
-    },
   },
   {
     slug: "frameworks-pack",
@@ -1941,16 +1787,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "No. frameworks-pack works on its own with @caisson/kernel, zod, and its @caisson/oscal-spine dependency. You get the framework catalogs, five regime crosswalks, and the re-exported pinned NIST reference data. compliance-core is the separate evidence-pack engine; all three packages ship in the Compliance bundle.",
       },
     ],
-    relatedGlossary: [
-      "compliance-crosswalk",
-      "control-to-code-mapping",
-      "oscal",
-      "eu-ai-act-article-50",
-    ],
-    sells: {
-      edition: "compliance",
-      note: `Sold standalone at ${modulePrice("frameworks-pack")}, or as the framework/crosswalk layer of the Compliance bundle alongside compliance-core, oscal-spine, and signing-primitive.`,
-    },
   },
   {
     slug: "oscal-spine",
@@ -2018,16 +1854,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "A runtime fetch would make validation depend on mutable external state. The committed catalog is pinned to one upstream commit and SHA-256, so tests and exports resolve against the same reviewed reference bytes every time.",
       },
     ],
-    relatedGlossary: [
-      "oscal",
-      "compliance-crosswalk",
-      "control-to-code-mapping",
-      "audit-evidence-bundle",
-    ],
-    sells: {
-      edition: "compliance",
-      note: `Sold standalone at ${modulePrice("oscal-spine")}, or included in the ${bundlePrice("compliance")} Compliance bundle. compliance-core and frameworks-pack also depend on and re-export it for source compatibility.`,
-    },
   },
   {
     slug: "signing-primitive",
@@ -2104,16 +1930,6 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "Not the per-tenant one. Rekor v2's hashedrekord endpoint rejects a pure Ed25519 signature, it's handed only a digest and would re-hash it. Ed25519PhSigner is a separate deployment-level key using ed25519ph (the RFC-8032 prehash variant) specifically for that anchoring path; the per-tenant Ed25519Signer stays the evidence-signing identity.",
       },
     ],
-    relatedGlossary: [
-      "signed-audit-anchor",
-      "rfc-3161-timestamping",
-      "transparency-log",
-      "evidence-receipt",
-    ],
-    sells: {
-      edition: "Compliance",
-      note: `Sold standalone at ${modulePrice("signing-primitive")}, or as one of the primitives composing two bundles: the Compliance bundle and the Provenance bundle (alongside audit-worm and field-crypto), the same package either way, never a promise of it.`,
-    },
   },
   {
     slug: "credits",
@@ -2189,21 +2005,12 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "sweepExpiredGrants() burns each expired grant's residue as an explicit expiry_debit ledger event (not a silent exclusion from balance) bounded to the live wallet balance the same way clawback() is. sweepExpiryNotices() emails a T-30d warning first, gated by a one-row-per-grant credit_expiry_notice marker so the notice only ever fires once.",
       },
     ],
-    relatedGlossary: [
-      "credit-based-billing",
-      "fail-closed",
-      "row-level-security",
-    ],
-    sells: {
-      edition: "ai-production",
-      note: `Sold standalone at ${modulePrice("credits")}, or bundled into the ${bundlePrice("ai-production")} AI-Production bundle alongside ai-meter, ai-evals, guardrails, and prompt-registry, the same wallet ai-meter's reserve()/reconcile() grant() and debit() against directly.`,
-    },
   },
 ];
 
 /** Whether a module has a standalone depth page (`/marketplace/modules/<id>`) — the ONE gate a
  *  bundle/persona page must check before rendering a member card as a clickable link. A module can
- *  be priced (`MODULE_PRICES`) with no depth page yet; gating a `<Link>` on price truthiness instead
+ *  be priced (`MODULES`) with no depth page yet; gating a `<Link>` on price truthiness instead
  *  of this renders a card that 404s (G5) — `provenance/page.tsx`'s `MEMBER_DETAIL` set was the
  *  original hand-rolled instance of this same check. */
 export function hasModulePage(id: string): boolean {

@@ -3,7 +3,7 @@ import type { IconName } from "@caisson/ui/components";
 import { Icon } from "@/components";
 import { requireBundlePage } from "@/lib/bundle-pages";
 import { BUNDLE_MARKS, moduleMark } from "@/lib/marks";
-import { type BundleId, BUNDLE_PRICES } from "@/lib/pricing";
+import { type BundleId, BUNDLES } from "@/lib/catalog";
 
 import { MediaFrame } from "./media-frame";
 import styles from "./marketplace-hero-artifact.module.css";
@@ -12,8 +12,8 @@ import styles from "./marketplace-hero-artifact.module.css";
 // parametrization: the SAME composition pattern — chips composing onto ONE Apache-2.0 audited base —
 // renders either the whole catalog (the hero, all six bundles) or a single bundle's real member
 // modules (a bundle's media-carousel slide, closing the "4 media-less bundles" gap with one
-// component). Server-safe and presentational; the hero's chips derive from BUNDLE_PRICES and a bundle's
-// slide chips derive from bundle-pages.ts's real member list (never MODULE_PRICES — see the
+// component). Server-safe and presentational; the hero's chips derive from BUNDLES and a bundle's
+// slide chips derive from bundle-pages.ts's real member list (never MODULES — see the
 // BundleCompositionSlide doc comment below), so neither can drift from the real catalog. No external assets — every glyph is an inline kit
 // <Icon> (the site CSP blocks remote hosts).
 //
@@ -71,7 +71,7 @@ function ComposeBody({ items }: { items: readonly ComposeItem[] }) {
  *  more thing composing onto the base alongside the five it contains) — the count and the rendered
  *  chips both come from the same filtered array, so they can't drift apart (ADR-0082 F6). */
 export function MarketplaceHeroArtifact() {
-  const bundles = BUNDLE_PRICES.filter((b) => b.id !== "everything");
+  const bundles = BUNDLES.filter((b) => b.id !== "everything");
   const items: readonly ComposeItem[] = bundles.map((b) => ({
     key: b.id,
     mark: BUNDLE_MARKS[b.id],
@@ -102,7 +102,7 @@ export function MarketplaceHeroArtifact() {
 /** A single bundle's composition slide (ADR-0290) — the same pattern, parametrized: that bundle's
  *  real member modules composing onto the base. Members come from `bundle-pages.ts` (the same
  *  record the bundle's own marketing page renders its "N composed packages" heading from), NOT
- *  `pricing.ts`'s `modulesByBundle` — that only returns modules with a standalone SKU, undercounting
+ *  `catalog.ts`'s `modulesByBundle` — that only returns modules with a standalone SKU, undercounting
  *  a bundle that also includes unpriced base packages (e.g. Compliance ships 14 composed packages,
  *  11 of them separately priced), which drifted this diagram's count from the page's own copy.
  *  `everything` has no per-module `members[]` (it is the whole catalog by construction) so it
@@ -110,7 +110,7 @@ export function MarketplaceHeroArtifact() {
 export function BundleCompositionSlide({ bundleId }: { bundleId: BundleId }) {
   if (bundleId === "everything") return <MarketplaceHeroArtifact />;
 
-  const bundle = BUNDLE_PRICES.find((b) => b.id === bundleId);
+  const bundle = BUNDLES.find((b) => b.id === bundleId);
   const label = bundle?.label ?? bundleId;
   const members = requireBundlePage(bundleId).members;
   const items: readonly ComposeItem[] = members.map((m) => ({

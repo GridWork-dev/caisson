@@ -1,14 +1,13 @@
 import Link from "next/link";
 
 import { Button, Hero, Icon, Reveal, Section } from "@/components";
-import { DemoRunner } from "@/components/demo/demo-runner";
 import { ExcerptsSection } from "@/components/demo/excerpts-section";
 import styles from "@/components/demo/demo.module.css";
 import { loadDemoPreview } from "@/components/demo/preview-data";
 import { PreviewPane } from "@/components/demo/preview-pane";
 // T3 seam: the append-only, secret-scanned excerpt manifest (apps/site/lib/demo-excerpts). Rendered
 // read-only; an empty array (manifest not yet landed / flag off) renders the section's graceful state.
-// Export name follows the repo's data-array convention (MODULE_PRICES / STACK_AXES); this is the
+// Export name follows the repo's data-array convention (MODULES / STACK_AXES); this is the
 // single T2↔T3 contract point — T3 landed the manifest at demo-excerpts/manifest.ts (the dir also
 // holds the tools/ scanner's peer types), so this reconciles to the file, not a dir barrel.
 import { DEMO_EXCERPTS } from "@/lib/demo-excerpts/manifest";
@@ -16,15 +15,14 @@ import { breadcrumb, serializeJsonLd } from "@/lib/jsonld";
 import { buildMetadata } from "@/lib/metadata";
 
 export const metadata = buildMetadata({
-  title: "Try Caisson — generate a real app",
+  title: "Try Caisson — read the real source",
   description:
-    "Generate a real Caisson project in your browser, read the actual commercial source, and watch a real build-and-test transcript of the demo app — before you buy. No install, no signup.",
+    "Read the actual module source and watch a real build-and-test transcript of the demo app. No install, no signup.",
   path: "/demo",
 });
 
-// Two independent flags (ADR-0352 F2): the run path and the excerpts never go dark together. The run
-// path's own kill switch/daily-cap lives server-side (503); this public flag only governs excerpt
-// visibility so the excerpt evidence can roll back independently of the compute-backed run path.
+// The public flag governs excerpt visibility so the excerpt evidence can roll back on its own
+// (ADR-0352 F2).
 const EXCERPTS_ENABLED =
   process.env.NEXT_PUBLIC_DEMO_EXCERPTS_ENABLED !== "false";
 
@@ -45,35 +43,21 @@ export default async function DemoPage() {
 
       <Hero
         eyebrow="Try it"
-        title="Prove it runs. Before you pay."
-        lede="Generate a real Caisson project right here, read the actual source of the commercial modules, and watch a real build-and-test transcript of the demo app. No install, no signup — the code, not a video."
+        title="Prove it runs."
+        lede="Read the actual source of the modules and watch a real build-and-test transcript of the demo app. No install, no signup — the code, not a video."
         ctas={
           <>
-            <Button href="#generate" variant="primary">
-              Generate an app
-            </Button>
-            <Button href="#source" variant="ghost">
+            <Button href="#source" variant="primary">
               Read the source
+            </Button>
+            <Button href="/marketplace" variant="ghost">
+              Run the live demos
             </Button>
           </>
         }
       />
 
-      {/* ===== 1. Generate your own app ===== */}
-      <Reveal>
-        <Section
-          id="generate"
-          eyebrow="Your own artifact"
-          title="Generate a project and read every file."
-          lede="Give it a project name and we run the real create-caisson generator server-side, in-process — the same scaffold the CLI emits. The open base comes through as source you own; the commercial modules come through as watermarked stubs, never licensed source. Browse the whole tree below."
-        >
-          <div style={{ marginTop: "var(--cs-space-6)" }}>
-            <DemoRunner />
-          </div>
-        </Section>
-      </Reveal>
-
-      {/* ===== 2. The shared live preview (T4 artifact) ===== */}
+      {/* ===== 1. The shared live preview (T4 artifact) ===== */}
       <Reveal>
         <Section
           band="surface"
@@ -86,24 +70,22 @@ export default async function DemoPage() {
               <PreviewPane preview={preview} />
             ) : (
               <p className="cs-muted" style={{ maxWidth: "60ch" }}>
-                The shared build transcript is being refreshed. Generate your
-                own project above to see the scaffold in the meantime — that
-                runs on every visit.
+                The shared build transcript is being refreshed.
               </p>
             )}
           </div>
         </Section>
       </Reveal>
 
-      {/* ===== 3. Read the real commercial source (T3 excerpts) ===== */}
+      {/* ===== 2. Read the real source (T3 excerpts) ===== */}
       {EXCERPTS_ENABLED && (
         <Reveal>
           <Section
             id="source"
             band="tint"
             eyebrow="The real source"
-            title="Read the commercial modules, in full."
-            lede="Not snippets — whole files from the paid modules, chosen and approved by hand, scanned for anything sensitive before they ship, and shown exactly as they exist in the repo. Read the code that does the work."
+            title="Read the modules, in full."
+            lede="Not snippets — whole files from the modules, chosen by hand, scanned for anything sensitive before they ship, and shown exactly as they exist in the repo. Read the code that does the work."
           >
             <div style={{ marginTop: "var(--cs-space-6)" }}>
               <ExcerptsSection excerpts={DEMO_EXCERPTS} />
@@ -112,12 +94,12 @@ export default async function DemoPage() {
         </Reveal>
       )}
 
-      {/* ===== 4. The ladder (F4): sandbox → evaluate on your stack → buy ===== */}
+      {/* ===== 3. The ladder (F4): read here → run the demos → run it on your stack ===== */}
       <Reveal>
         <Section
           eyebrow="What's next"
           title="Three steps, one path — not three competing asks."
-          lede="This sandbox is the first rung. When you want a deeper look, run it on your own infrastructure; when it fits, buy the bundle you need."
+          lede="This page is the first rung. Then drive each module's live demo, and run the base on your own infrastructure."
         >
           <ol
             className={styles.ladder}
@@ -127,21 +109,21 @@ export default async function DemoPage() {
               n={1}
               here
               title="Touch it here"
-              body="Generate a project and read the real source on this page — zero signup, right now."
+              body="Read the real source and the build transcript on this page — zero signup, right now."
             />
             <LadderRung
               n={2}
-              title="Run it on your own stack"
-              body="Scaffold the audited base with one command and deploy it on your own infrastructure — a real week-one evaluation, with source you own, before you commit."
-              cta={{ href: "/stack-fit", label: "Does it fit my stack?" }}
+              title="Drive the live demos"
+              body="Every module family has an in-browser demo that runs the module's own code: tamper with it and watch it fail closed."
+              cta={{ href: "/marketplace", label: "Open the marketplace" }}
             />
             <LadderRung
               n={3}
-              title="Buy the bundle you need"
-              body="Committed prices, self-serve checkout — pick a bundle or individual modules and own the source."
+              title="Run it on your own stack"
+              body="Scaffold the audited base with one command and deploy it on your own infrastructure — a real week-one evaluation, with source you own."
               cta={{
-                href: "/marketplace?type=bundles",
-                label: "See the bundles",
+                href: "/docs/cli/create-caisson",
+                label: "How the generator works",
               }}
             />
           </ol>

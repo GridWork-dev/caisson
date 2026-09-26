@@ -1,0 +1,41 @@
+# Redirects for the static export, applied by the Cloudflare Worker's asset handler.
+
+# ADR-0237 F1 + ADR-0285: the commerce tabs folded into the one /marketplace surface.
+/pricing /marketplace 301
+/modules /marketplace 301
+/build /marketplace 301
+/marketplace/modules /marketplace 301
+/marketplace/build /marketplace 301
+
+# 2026-07-06: /changelog absorbed into /updates.
+/changelog /updates 301
+/changelog/rss.xml /updates/rss.xml 301
+
+# 2026-07-09 six-bundle docs rework.
+/docs/ai-kit /docs/ai-production 301
+/docs/ai-kit/* /docs/ai-production/:splat 301
+/docs/base/credits /docs/ai-production/credits 301
+/docs/compliance/compliance /docs/compliance 301
+
+# ADR-0428 L10: pages retired with the open-source pivot.
+/marketplace/plans /marketplace 301
+/compare /marketplace 301
+/compare/* /marketplace 301
+/stack-fit /docs/getting-started 301
+/build-vs-buy /compliance 301
+/glossary /docs 301
+/glossary/* /docs 301
+/procurement /security 301
+/legal/eula /legal/terms 301
+/legal/license /legal/terms 301
+/legal/refunds /legal/terms 301
+/docs/licensing /docs 301
+/docs/refunds /docs 301
+/affiliates / 301
+/partners / 301
+/cart / 301
+/login / 301
+/forgot-password / 301
+/reset-password / 301
+/dashboard / 301
+/dashboard/* / 301

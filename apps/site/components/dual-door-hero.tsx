@@ -2,7 +2,7 @@ import { Button, CodeBlock, StatusChip, Terminal } from "@/components";
 import { DoorsWithWeight } from "@/components/doors-with-weight";
 import { HeroField } from "@/components/hero-field";
 import { ProofChips } from "@/components/proof-chips";
-import { bundlePrice, BUNDLE_PRICES, MODULE_PRICES } from "@/lib/pricing";
+import { BUNDLES, MODULES, modulesByBundle } from "@/lib/catalog";
 
 import styles from "./dual-door-hero.module.css";
 
@@ -16,8 +16,8 @@ import styles from "./dual-door-hero.module.css";
 
 // Build facts for the production door chip — computed, never hand-typed, so they can't drift from
 // the catalog (ADR-0080: no invented numbers; every figure is a real build fact).
-const BUNDLE_COUNT = BUNDLE_PRICES.length;
-const MODULE_COUNT = MODULE_PRICES.length;
+const BUNDLE_COUNT = BUNDLES.length;
+const MODULE_COUNT = MODULES.length;
 
 export function DualDoorHero() {
   return (
@@ -52,7 +52,7 @@ export function DualDoorHero() {
               className={styles.chip}
               tone="accent"
               dot
-              label={`Compliance · ${bundlePrice("compliance")} one-time`}
+              label={`Compliance · ${modulesByBundle("compliance").length} modules`}
             />
             <p className={styles.claim}>
               The compliance wedge: fail-closed RLS, WORM evidence storage, an

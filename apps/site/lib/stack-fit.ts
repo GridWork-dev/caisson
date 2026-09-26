@@ -4,7 +4,7 @@
 // the package source (copy law ADR-0080: no invented claims). Where a backend has a real limitation
 // it is stated, not hidden.
 //
-// The DB-posture map is drift-pinned: stack-fit.test.ts asserts every sellable MODULE_PRICES id has
+// The DB-posture map is drift-pinned: stack-fit.test.ts asserts every sellable MODULES id has
 // a posture, so a new module can't ship without an honest DB classification.
 import type { IconName } from "@caisson/ui/components";
 
@@ -12,7 +12,7 @@ import type { IconName } from "@caisson/ui/components";
 export type DbPosture = "postgres" | "sqlite" | "none";
 
 /**
- * Per-module database posture, keyed by MODULE_PRICES id. Verified against each package's deps +
+ * Per-module database posture, keyed by MODULES id. Verified against each package's deps +
  * imports:
  *   - `postgres`: builds on @caisson/tenancy-rls (fail-closed Postgres RLS) or the pg-boss job queue.
  *   - `sqlite`:   runs on bun:sqlite / sqlite-vec, on-device — no server database.

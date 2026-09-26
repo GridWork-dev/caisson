@@ -1,51 +1,86 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 
-import { contentSecurityPolicy } from "./security-headers";
+import { CONTENT_SECURITY_POLICY } from "./security-headers";
 
-// The policy exactly as apps/site served it before the ADR-0400 split, with `frame-src 'self'`
-// added — the one directive change the same-origin embed required. Written out in full, not
-// derived, so this test can actually catch a drift in the builder rather than restate it.
-const POLICY_NONE =
-  "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; " +
-  "img-src 'self' data: https://*.paddle.com; font-src 'self'; " +
-  "style-src 'self' 'unsafe-inline' https://*.paddle.com; " +
-  "script-src 'self' 'unsafe-inline' https://plausible.io https://cdn.paddle.com https://challenges.cloudflare.com https://us-assets.i.posthog.com; " +
-  "frame-src 'self' https://*.paddle.com https://challenges.cloudflare.com; " +
-  "connect-src 'self' https://plausible.io https://*.paddle.com https://challenges.cloudflare.com https://us.i.posthog.com https://us-assets.i.posthog.com";
+// public/_headers is what the static site actually serves; the /security page renders the
+// CONTENT_SECURITY_POLICY constant. These tests pin the two together and pin the floor
+// (identity/security.md: HSTS, nosniff, X-Frame-Options DENY) on every path.
 
-describe("contentSecurityPolicy", () => {
-  test("the site's own policy is the pre-split policy plus frame-src 'self'", () => {
-    expect(contentSecurityPolicy("'none'")).toBe(POLICY_NONE);
+/** Parse a Cloudflare `_headers` file into path → ordered [name, value] lines (`!` = detach). */
+function parseHeaders(text: string): Map<string, [string, string][]> {
+  const blocks = new Map<string, [string, string][]>();
+  let current: [string, string][] | undefined;
+  for (const raw of text.split("\n")) {
+    if (raw.trim() === "" || raw.trimStart().startsWith("#")) continue;
+    if (!/^\s/.test(raw)) {
+      current = [];
+      blocks.set(raw.trim(), current);
+      continue;
+    }
+    const line = raw.trim();
+    if (line.startsWith("! ")) current?.push([line.slice(2), "!"]);
+    else {
+      const colon = line.indexOf(":");
+      current?.push([line.slice(0, colon), line.slice(colon + 1).trim()]);
+    }
+  }
+  return blocks;
+}
+
+const HEADERS = parseHeaders(
+  readFileSync(new URL("../public/_headers", import.meta.url), "utf8"),
+);
+const site = new Map(HEADERS.get("/*") ?? []);
+
+describe("public/_headers", () => {
+  test("the /* block exists and is not vacuous", () => {
+    expect(site.size).toBeGreaterThanOrEqual(6);
   });
 
-  test("frame-ancestors is the ONLY thing the demo zone's policy changes", () => {
-    // The whole reason the builder exists: the /demos header rule restates the entire policy
-    // (a later Next header rule replaces a key, it does not merge into it), so any directive that
-    // differed between the two would be a silent, invisible relaxation of the demo zone.
-    expect(contentSecurityPolicy("'self'")).toBe(
-      POLICY_NONE.replace("frame-ancestors 'none'", "frame-ancestors 'self'"),
+  test("serves the security floor on every path", () => {
+    expect(site.get("Strict-Transport-Security")).toBe(
+      "max-age=63072000; includeSubDomains; preload",
     );
+    expect(site.get("X-Content-Type-Options")).toBe("nosniff");
+    expect(site.get("X-Frame-Options")).toBe("DENY");
   });
 
-  test("frame-src allows the same-origin embed — without it the site blocks its own iframe", () => {
-    // frame-src does not fall back to default-src when present, so 'self' here is load-bearing,
-    // not decorative. Asserted on the directive rather than the whole string so the reason
-    // survives a future directive edit elsewhere in the policy.
-    const frameSrc = contentSecurityPolicy("'none'")
-      .split("; ")
-      .find((d) => d.startsWith("frame-src "));
-    expect(frameSrc).toContain("'self'");
+  test("the served CSP is exactly the one the /security page renders", () => {
+    expect(site.get("Content-Security-Policy")).toBe(CONTENT_SECURITY_POLICY);
   });
 
-  test("no cross-origin frame parent is ever permitted", () => {
-    // 'self' on frame-ancestors means "the document's own origin" — proxied through this app that
-    // is caisson.sh, and hit directly on Railway it is the Railway host. Neither policy may ever
-    // grow a wildcard or a third-party origin here.
-    for (const value of ["'none'", "'self'"]) {
-      const ancestors = contentSecurityPolicy(value)
-        .split("; ")
-        .find((d) => d.startsWith("frame-ancestors "));
-      expect(ancestors).toBe(`frame-ancestors ${value}`);
+  test("no retired third party survives in the CSP", () => {
+    for (const origin of ["paddle", "challenges.cloudflare.com", "posthog"]) {
+      expect(CONTENT_SECURITY_POLICY).not.toContain(origin);
+    }
+  });
+
+  test("the /demos/* override detaches before it re-sets (no comma-joined DENY, SAMEORIGIN)", () => {
+    const demos = HEADERS.get("/demos/*") ?? [];
+    for (const name of ["X-Frame-Options", "Content-Security-Policy"]) {
+      const idx = demos.findIndex(([n, v]) => n === name && v === "!");
+      const set = demos.findIndex(([n, v]) => n === name && v !== "!");
+      expect(idx).toBeGreaterThanOrEqual(0);
+      expect(set).toBeGreaterThan(idx);
+    }
+  });
+
+  test("/* precedes /demos/* (rules apply in file order; reversed, /* would append DENY back)", () => {
+    const order = [...HEADERS.keys()];
+    expect(order.indexOf("/*")).toBeGreaterThanOrEqual(0);
+    expect(order.indexOf("/demos/*")).toBeGreaterThan(order.indexOf("/*"));
+  });
+
+  test("extensionless exports name their Content-Type", () => {
+    const expected: [string, string][] = [
+      ["/opengraph-image*", "image/png"],
+      ["/:section/opengraph-image*", "image/png"],
+      ["/apple-icon*", "image/png"],
+      ["/api/search", "application/json"],
+    ];
+    for (const [path, type] of expected) {
+      expect(HEADERS.get(path)).toEqual([["Content-Type", type]]);
     }
   });
 });

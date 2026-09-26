@@ -1,16 +1,16 @@
-// The one-surface catalog model (ADR-0285): a single grid over BOTH kinds — the six bundles and the
-// à-la-carte modules — so one card system, one facet set, and one deep-link scheme serve both. Pure
-// data (no React, no "use client") so the client grid, the compare tray, and the viewer dialog all
-// import it without pulling each other's tree. Every value derives from the single pricing source
-// (`lib/pricing.ts`) and the media manifest — this file adds NO new product data.
+// The one-surface catalog model (ADR-0285): a single grid over BOTH kinds — the six module families
+// and the modules — so one card system, one facet set, and one deep-link scheme serve both. Pure
+// data (no React, no "use client") so the client grid and the viewer dialog both import it without
+// pulling each other's tree. Every value derives from the catalog (`lib/catalog.ts`) and the media
+// manifest — this file adds NO new product data.
 import {
   type BundleId,
-  BUNDLE_PRICES,
-  MODULE_PRICES,
-  type ModulePrice,
+  BUNDLES,
+  MODULES,
+  type CatalogModule,
   PERSONA_BUNDLE_IDS,
-} from "./pricing";
-import { entryHasMedia } from "./media-manifest";
+} from "./catalog";
+import { entryHasMedia, mediaSlides } from "./media-manifest";
 
 export type EntryKind = "bundle" | "module";
 
@@ -32,23 +32,31 @@ export const CATEGORIES: readonly Category[] = [
  *  so it doubles as the deep-link param and the React list key with no bare-slug collisions. */
 export interface SurfaceEntry {
   kind: EntryKind;
-  /** Bare slug (a BundleId or a MODULE_PRICES id). */
+  /** Bare slug (a BundleId or a MODULES id). */
   id: string;
   /** Kind-namespaced key: `bundle:<slug>` / `module:<slug>`. */
   viewId: string;
   label: string;
-  /** Integer display USD. */
-  amount: number;
   blurb: string;
   categories: readonly Category[];
   /** True when the viewer shows real media (an authored diagram, a produced video, or a live demo) —
    *  not just the brand placeholder. Drives the media facet + the card badge. */
   hasMedia: boolean;
+  /** The module page that frames the entry's live demo (a module's own, or a family's borrowed hero
+   *  module's), or null when it has none. */
+  demoHref: string | null;
 }
 
-function moduleCategories(m: ModulePrice): readonly Category[] {
+/** The module page framing an entry's interactive poke, if it has one. Every poke id is also a
+ *  module-page slug (marketplace-surface.test pins it), so the link always resolves. */
+function demoHref(kind: EntryKind, id: string): string | null {
+  const poke = mediaSlides(kind, id).find((s) => s.kind === "poke")?.poke;
+  return poke ? `/marketplace/modules/${poke}` : null;
+}
+
+function moduleCategories(m: CatalogModule): readonly Category[] {
   // A module's `bundles[]` is persona/Provenance ids only (never the whole-catalog Everything, by
-  // construction — pricing.ts); filtering it out both satisfies the type and stays honest.
+  // construction — catalog.ts); filtering it out both satisfies the type and stays honest.
   if (m.bundles.length === 0) return [PLATFORM];
   return m.bundles.filter(
     (b): b is Exclude<BundleId, "everything"> => b !== "everything",
@@ -62,40 +70,29 @@ function bundleCategories(id: BundleId): readonly Category[] {
   return [id];
 }
 
-/** The six bundles as surface entries, in display order. */
-export const BUNDLE_ENTRIES: readonly SurfaceEntry[] = BUNDLE_PRICES.map(
-  (b) => {
-    if (b.amount === null) {
-      throw new Error(
-        `marketplace-surface: bundle "${b.id}" has no committed amount`,
-      );
-    }
-    return {
-      kind: "bundle" as const,
-      id: b.id,
-      viewId: `bundle:${b.id}`,
-      label: b.label,
-      amount: b.amount,
-      blurb: b.note,
-      categories: bundleCategories(b.id),
-      hasMedia: entryHasMedia("bundle", b.id),
-    };
-  },
-);
+/** The six module families as surface entries, in display order. */
+export const BUNDLE_ENTRIES: readonly SurfaceEntry[] = BUNDLES.map((b) => ({
+  kind: "bundle" as const,
+  id: b.id,
+  viewId: `bundle:${b.id}`,
+  label: b.label,
+  blurb: b.note,
+  categories: bundleCategories(b.id),
+  hasMedia: entryHasMedia("bundle", b.id),
+  demoHref: demoHref("bundle", b.id),
+}));
 
-/** Every à-la-carte module as a surface entry, in catalog order. */
-export const MODULE_ENTRIES: readonly SurfaceEntry[] = MODULE_PRICES.map(
-  (m) => ({
-    kind: "module" as const,
-    id: m.id,
-    viewId: `module:${m.id}`,
-    label: m.label,
-    amount: m.amount,
-    blurb: m.blurb,
-    categories: moduleCategories(m),
-    hasMedia: entryHasMedia("module", m.id),
-  }),
-);
+/** Every module as a surface entry, in catalog order. */
+export const MODULE_ENTRIES: readonly SurfaceEntry[] = MODULES.map((m) => ({
+  kind: "module" as const,
+  id: m.id,
+  viewId: `module:${m.id}`,
+  label: m.label,
+  blurb: m.blurb,
+  categories: moduleCategories(m),
+  hasMedia: entryHasMedia("module", m.id),
+  demoHref: demoHref("module", m.id),
+}));
 
 /** Bundles first, then modules — the surface's default (type: all) order. */
 export const ALL_ENTRIES: readonly SurfaceEntry[] = [
@@ -107,21 +104,6 @@ export const ALL_ENTRIES: readonly SurfaceEntry[] = [
 export function entryByViewId(viewId: string): SurfaceEntry | undefined {
   return ALL_ENTRIES.find((e) => e.viewId === viewId);
 }
-
-/** Cross-kind price bands — the modules span $49–$299, the bundles $329–$2,259, so the bands widen to
- *  cover both. Each entry lands in exactly one band (the boundaries partition the whole range). */
-export interface PriceBand {
-  id: string;
-  label: string;
-  test: (amount: number) => boolean;
-}
-
-export const PRICE_BANDS: readonly PriceBand[] = [
-  { id: "under-200", label: "Under $200", test: (a) => a < 200 },
-  { id: "200-499", label: "$200–499", test: (a) => a >= 200 && a <= 499 },
-  { id: "500-999", label: "$500–999", test: (a) => a >= 500 && a <= 999 },
-  { id: "1000-up", label: "$1,000 and up", test: (a) => a >= 1000 },
-];
 
 /** Whether an entry belongs to category `c`. */
 export function inCategory(e: SurfaceEntry, c: Category): boolean {
@@ -136,5 +118,5 @@ export function primaryCategory(e: SurfaceEntry): Category {
 
 export function categoryLabel(c: Category): string {
   if (c === PLATFORM) return "Platform";
-  return BUNDLE_PRICES.find((b) => b.id === c)?.label ?? c;
+  return BUNDLES.find((b) => b.id === c)?.label ?? c;
 }

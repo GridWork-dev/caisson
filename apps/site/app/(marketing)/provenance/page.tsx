@@ -26,16 +26,10 @@ import {
   softwareApplication,
 } from "@/lib/jsonld";
 import { moduleMark } from "@/lib/marks";
-import {
-  bundlePriceById,
-  formatPrice,
-  formatUsd,
-  modulesByBundle,
-} from "@/lib/pricing";
 import { TrackView } from "@/components/track-view";
 
 // Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts);
-// the bespoke controls + pricing sections below stay page-local.
+// the bespoke controls + how-it-ships sections below stay page-local.
 const record = requireBundlePage("provenance");
 
 export const metadata = buildMetadata({
@@ -45,16 +39,6 @@ export const metadata = buildMetadata({
 });
 
 const PAGE_URL = `${SITE_URL}/provenance`;
-
-// Provenance is a first-class BUNDLE (ADR-0257), not an edition — its price comes from BUNDLE_PRICES,
-// and its per-bundle Paddle checkout is wired in W7 (until then the CTAs route to the docs + the
-// marketplace, never a fabricated "coming soon" — ADR-0237 rider 2 V1-live posture).
-const bundle = bundlePriceById("provenance");
-const priceLabel = bundle ? formatPrice(bundle) : "—";
-
-// The bundle's real composed members (registry members map: signing-primitive · audit-worm ·
-// field-crypto), rendered from the pricing catalog so labels + prices never drift.
-const MEMBERS = modulesByBundle("provenance");
 
 // Members that also have a depth page today (field-crypto, audit-worm) link out; signing-primitive
 // has no depth page yet.
@@ -72,7 +56,6 @@ function MemberCard({
   label: string;
   oneLiner: string;
 }) {
-  const price = MEMBERS.find((m) => m.id === id);
   const card = (
     <Card interactive={MEMBER_DETAIL.has(id)}>
       <div
@@ -88,11 +71,6 @@ function MemberCard({
       <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
         {oneLiner}
       </p>
-      {price && (
-        <div style={{ marginTop: "var(--cs-space-4)" }}>
-          <StatusChip label={formatUsd(price.amount)} tone="muted" />
-        </div>
-      )}
     </Card>
   );
   return MEMBER_DETAIL.has(id) ? (
@@ -168,7 +146,6 @@ export default function ProvenancePage() {
               name: "Caisson Provenance",
               description: record.metaDescription,
               url: PAGE_URL,
-              ...(bundle ? { price: bundle } : {}),
             }),
           ),
         }}
@@ -198,8 +175,11 @@ export default function ProvenancePage() {
         lede={record.hero.lede}
         ctas={
           <>
-            <Button href="/marketplace?type=bundles" variant="primary">
-              See the bundles
+            <Button
+              href="/marketplace?view=bundle:provenance"
+              variant="primary"
+            >
+              Run the live demo
             </Button>
             <Button href="/docs" variant="ghost">
               Read the docs
@@ -214,7 +194,7 @@ export default function ProvenancePage() {
               "WORM evidence",
               "Per-tenant field crypto",
             ]}
-            note={`Own the source · ${priceLabel} one-time.`}
+            note="Own the source."
           />
         }
         artifact={heroArtifact}
@@ -240,7 +220,7 @@ export default function ProvenancePage() {
       <Reveal>
         <Section
           title="Three packages, one bundle."
-          lede="Each member is a real workspace dependency, not a manifest claim. Each is also sold standalone, so you can take exactly the primitive you need."
+          lede="Each member is a real workspace dependency, not a manifest claim. Each also works standalone, so you can take exactly the primitive you need."
         >
           <FeatureGrid cols={3}>
             {record.members.map((m) => (
@@ -336,7 +316,7 @@ export default function ProvenancePage() {
       <Reveal>
         <Section
           title="Prove fit in week one."
-          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
+          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <TrialPath />
@@ -351,36 +331,11 @@ export default function ProvenancePage() {
           band="surface"
         >
           <Card accent className="cs-elevate-md">
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                alignItems: "baseline",
-                gap: "var(--cs-space-3)",
-              }}
-            >
-              <span
-                className="cs-num"
-                style={{
-                  fontSize: "var(--cs-text-3xl)",
-                  fontWeight: "var(--cs-weight-semibold)",
-                  letterSpacing: "var(--cs-tracking-tight)",
-                }}
-              >
-                {priceLabel}
-              </span>
-              <span className="cs-tag">One-time license · own the source</span>
-              <StatusChip label="Bundle" tone="muted" />
-            </div>
-            <p
-              className="cs-muted"
-              style={{ marginTop: "var(--cs-space-4)", maxWidth: "60ch" }}
-            >
-              A one-time, perpetual license over all three primitives, composed
-              on the same audited base. Take a single primitive à la carte from
-              the module catalog, or step up to Compliance, which composes
-              Provenance plus fail-closed RLS, the evidence-pack generator, and
-              the framework mappings.
+            <p className="cs-muted" style={{ maxWidth: "60ch" }}>
+              All three primitives, composed on the same audited base. Take a
+              single primitive from the module catalog, or step up to
+              Compliance, which composes Provenance plus fail-closed RLS, the
+              evidence-pack generator, and the framework mappings.
             </p>
             <div className="cs-cta-row">
               <Button href="/marketplace?type=modules" variant="primary">

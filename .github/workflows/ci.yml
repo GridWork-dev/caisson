@@ -18,8 +18,8 @@ on:
 # every non-draft trigger — no `paths:`, and the ONLY permitted `if:` is the draft guard
 # (CAISSON-96): a path-skipped required job never reports and the PR blocks forever, but a DRAFT
 # PR cannot merge anyway, and marking it ready_for_review (in the types list above) fires the full
-# run before merge is possible. ADR-0422 adds the optional path-gated Docker build smoke below;
-# its path gate never conditions a required job. Other jobs (eval · native-ext · token-drift) have
+# run before merge is possible. (oss-pivot PR1: the ADR-0422 site/demos Docker build smoke is
+# retired — both apps are static exports with no container image.) Other jobs (eval · native-ext · token-drift) have
 # moved to quality.yml, where path-filtering and main-only gating are safe because those jobs are
 # not required checks. The full required set is therefore standards-gate · check · registry-index ·
 # oscal-conformance (here) · deterministic (security-scan.yml); scripts/release-readiness.ts is the
@@ -47,55 +47,6 @@ permissions:
   contents: read
 
 jobs:
-  docker-build-changes:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      build: ${{ steps.filter.outputs.build }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-        id: filter
-        with:
-          filters: |
-            build:
-              - 'apps/demos/Dockerfile'
-              - 'apps/site/Dockerfile'
-              - 'apps/demos/**'
-              - 'apps/site/**'
-              - 'package.json'
-              - 'bun.lock'
-              - '.github/workflows/ci.yml'
-
-  docker-build:
-    # ADR-0422: run the actual Bun container build path, which the ordinary Node-backed
-    # Next build in `check` does not exercise. Each app gets its own 8 GB Linux runner.
-    needs: docker-build-changes
-    if: needs.docker-build-changes.outputs.build == 'true'
-    runs-on: ${{ vars.CI_RUNNER_LINUX || 'ubuntu-latest' }}
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        app: [demos, site]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Build Next image through the build stage
-        env:
-          APP: ${{ matrix.app }}
-        run: |
-          free -g
-          available_gb=$(awk '/MemAvailable:/ {print int($2 / 1024 / 1024)}' /proc/meminfo)
-          if [ "$available_gb" -lt 6 ]; then
-            echo "Docker build requires at least 6 GiB available memory; measured ${available_gb} GiB"
-            exit 1
-          fi
-          docker build --target build --progress=plain -f "apps/$APP/Dockerfile" .
-
   # The standards gate (ADR-0021/0022) — the only registry ingress. Three layers, all block merge.
   standards-gate:
     # CAISSON-96 draft guard — the one permitted `if:` on a required check (header comment).
@@ -184,10 +135,11 @@ jobs:
         # can exceed its hook timeout. Halving peak concurrency removes the starvation (local `bun run
         # check` stays full-speed). Tunable if the job runs long.
         run: bunx turbo run build lint typecheck test --no-daemon --concurrency=50% --continue=dependencies-successful && bun run gate
-      - name: public-surface + Paddle catalog + browser-audit skill guards (outside the workspace)
-        # The excerpt secret-scan + source-drift test, preview reader contract, and production
-        # Paddle marker-map validator are load-bearing gates outside turbo — same class as the
-        # registry job's outside-turbo `bun test registry/...`.
+      - name: public-surface + browser-audit skill guards (outside the workspace)
+        # The excerpt secret-scan + source-drift test and the preview reader contract are
+        # load-bearing gates outside turbo — same class as the registry job's outside-turbo
+        # `bun test registry/...`. (oss-pivot PR1 retired the Paddle marker-map validator with the
+        # site price sheet it read.)
         # `.agents/` is outside the root `workspaces` globs too, so the browser-audit skill's
         # scripts have no turbo test task. They gained the reconciler that `tooling/browser-audit`
         # used to own (its package was folded in), so they run here or they run nowhere.
@@ -209,7 +161,7 @@ jobs:
         # railway-deploy and railway-env-sync use injected exec doubles and source-text assertions,
         # and sot-check builds SYNTHETIC throwaway git repos under mkdtempSync rather than reading
         # this working tree — which is why its live-repo DRIFT output does not follow it into CI.
-        run: bun test tools/demo-excerpts tools/demo-preview tools/paddle-catalog-recreate.test.ts scripts/release-readiness.test.ts scripts/gen-shadcn-registry.test.ts tooling/scripts/railway-deploy.test.ts tooling/scripts/sot-check.test.ts tooling/scripts/dts-drift-check.test.ts tooling/scripts/tsgo-agreement.test.ts tooling/scripts/railway-env-sync.test.ts tooling/scripts/vault-parity-check.test.ts tooling/scripts/aeo-probe.test.ts
+        run: bun test tools/demo-excerpts tools/demo-preview scripts/release-readiness.test.ts scripts/gen-shadcn-registry.test.ts tooling/scripts/railway-deploy.test.ts tooling/scripts/sot-check.test.ts tooling/scripts/dts-drift-check.test.ts tooling/scripts/tsgo-agreement.test.ts tooling/scripts/railway-env-sync.test.ts tooling/scripts/vault-parity-check.test.ts tooling/scripts/aeo-probe.test.ts
       # Slow golden-file / testcontainers matrices land here once the compliance
       # edition (P2) has code — kept CI-only, never in the pre-commit hook.
 

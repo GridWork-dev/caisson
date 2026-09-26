@@ -14,11 +14,9 @@ import {
   type IconName,
 } from "@/components";
 import { TrialPath } from "@/components/trial-path";
-import { AddToCartButton } from "@/components/add-to-cart-button";
 import { MediaCarousel } from "@/components/media-carousel";
 import { mediaSlides } from "@/lib/media-manifest";
 import { requireBundlePage, spellCount } from "@/lib/bundle-pages";
-import { bundleCatalogItem, toCartItem } from "@/lib/catalog";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
   breadcrumb,
@@ -28,7 +26,6 @@ import {
 } from "@/lib/jsonld";
 import { moduleMark } from "@/lib/marks";
 import { hasModulePage } from "@/lib/module-pages";
-import { bundlePrice, formatUsd, MODULE_PRICES } from "@/lib/pricing";
 import { TrackView } from "@/components/track-view";
 
 // Hero copy, member list, and FAQ read from the shared bundle content record (lib/bundle-pages.ts);
@@ -43,15 +40,13 @@ export const metadata = buildMetadata({
 
 const PAGE_URL = `${SITE_URL}/local-first`;
 
-// Cart-ready CatalogItem for the peak-intent buy CTAs below (ADR-0192 single add-to-cart buy-verb).
-const _catalogItem = bundleCatalogItem("local-first");
-const bundleCartItem = _catalogItem ? toCartItem(_catalogItem) : undefined;
+// The gallery viewer for this bundle: its live demo, docs, and members in one place.
+const GALLERY_HREF = "/marketplace?view=bundle:local-first";
 
 const ldApp = softwareApplication({
   name: "Caisson Local-first AI",
   description: record.metaDescription,
   url: PAGE_URL,
-  priceId: "local-first",
 });
 
 const ldBreadcrumb = breadcrumb([
@@ -91,9 +86,8 @@ const BASE_MEMBER_ICON: Record<string, IconName> = {
   "license-verify": "key",
 };
 
-// The bundle's real composed packages — read from the shared bundle content record. Priced via a
-// StatusChip when a member is also sold standalone (`MODULE_PRICES`), linking to its module depth
-// page; kernel and license-verify are Apache-2.0 base and render unpriced.
+// The bundle's real composed packages — read from the shared bundle content record, linking to a
+// member's module depth page when one exists.
 const MEMBER_MODULES = record.members;
 
 function MemberModuleCard({
@@ -105,9 +99,7 @@ function MemberModuleCard({
   name: string;
   oneLiner: string;
 }) {
-  const price = MODULE_PRICES.find((m) => m.id === id);
-  // Linkable is gated on the depth page actually existing, not on price truthiness — a member can
-  // be priced (MODULE_PRICES) with no depth page yet, and a Link to it 404s (G5).
+  // Linkable is gated on the depth page actually existing — a Link to a missing one 404s (G5).
   const linkable = hasModulePage(id);
   const icon = BASE_MEMBER_ICON[id] ?? moduleMark(id);
   const card = (
@@ -125,11 +117,6 @@ function MemberModuleCard({
       <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
         {oneLiner}
       </p>
-      {price && (
-        <div style={{ marginTop: "var(--cs-space-4)" }}>
-          <StatusChip label={formatUsd(price.amount)} tone="muted" />
-        </div>
-      )}
     </Card>
   );
   return linkable ? (
@@ -176,21 +163,15 @@ export default function LocalFirstPage() {
         lede={record.hero.lede}
         ctas={
           <>
-            {bundleCartItem && (
-              <AddToCartButton item={bundleCartItem} variant="primary" />
-            )}
+            <Button href={GALLERY_HREF} variant="primary">
+              Run the live demo
+            </Button>
             <Button href="/docs/local-first" variant="ghost">
               Read the docs
             </Button>
           </>
         }
-        credentials={
-          <StatusChip
-            tone="muted"
-            label={`Own the source · ${bundlePrice("local-first")}`}
-            dot
-          />
-        }
+        credentials={<StatusChip tone="muted" label="Own the source" dot />}
         artifact={
           <Terminal
             label="@caisson/field-crypto"
@@ -241,7 +222,7 @@ export default function LocalFirstPage() {
       <Reveal>
         <Section
           title={`${spellCount(MEMBER_MODULES.length)} composed packages.`}
-          lede="Each member is a real workspace dependency. The commercial ones also carry a standalone price; the Apache-2.0 base ships free with every bundle."
+          lede="Each member is a real workspace dependency, composed onto the Apache-2.0 base."
         >
           <FeatureGrid cols={2}>
             {MEMBER_MODULES.map((m) => (
@@ -373,7 +354,7 @@ export default function LocalFirstPage() {
       <Reveal>
         <Section
           title="Own the source. Run it on your machine."
-          lede="This bundle is for teams that cannot send data off the device: regulated data kept local, air-gapped deployments, embedded and edge tooling, or a product that should not need a network call to work at all. It ships the way every Caisson bundle ships: bunx @caisson-sh/cli@latest scaffolds the base, then you add Local-first AI. Two of its composed packages (kernel and license-verify) are Apache-2.0; local-store, field-crypto, local-inference, local-privacy, and local-sync are the commercial layer the bundle license covers."
+          lede="This bundle is for teams that cannot send data off the device: regulated data kept local, air-gapped deployments, embedded and edge tooling, or a product that should not need a network call to work at all. It ships the way every Caisson bundle ships: bunx @caisson-sh/cli@latest scaffolds the base, then you add Local-first AI."
           band="tint"
         />
       </Reveal>
@@ -389,7 +370,7 @@ export default function LocalFirstPage() {
       <Reveal>
         <Section
           title="Prove fit in week one."
-          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack before you commit."
+          lede="Don't take the fit on faith, scaffold the audited base and run it on your own stack."
         >
           <div style={{ marginTop: "var(--cs-space-6)" }}>
             <TrialPath />
@@ -417,9 +398,9 @@ export default function LocalFirstPage() {
               flexWrap: "wrap",
             }}
           >
-            {bundleCartItem && (
-              <AddToCartButton item={bundleCartItem} variant="primary" />
-            )}
+            <Button href={GALLERY_HREF} variant="primary">
+              Run the live demo
+            </Button>
             <Button href="/docs/local-first" variant="ghost">
               Read the docs
             </Button>
