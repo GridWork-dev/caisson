@@ -246,12 +246,12 @@ class OtelPostgresEventSink implements EventSink {
 
 `redactEvent` strips secrets, SQL statements, and stack traces from `attributes`, applied once
 at the sink. `OtelPostgresEventSink` posts one OTLP/HTTP log record per event and throws
-`InternalError` on a non-OK response. Five `.strict()` schemas the buyer dashboard reads:
+`InternalError` on a non-OK response. Five `.strict()` schemas an operations dashboard reads:
 
 | Schema                 | Shape                                                                          |
 | ---------------------- | ------------------------------------------------------------------------------ |
 | `opsEventSchema`       | boundary schema for an externally-supplied `OpsEvent`                          |
-| `evidencePackSchema`   | a WORM-anchored compliance evidence bundle                                     |
+| `evidencePackSchema`   | a WORM-anchored compliance evidence pack                                       |
 | `usageMeteringSchema`  | one metered unit against a feature tag                                         |
 | `evalResultSchema`     | one eval-suite run outcome                                                     |
 | `guardrailBlockSchema` | one guardrail block, `stage`/`category`/policy only, never the flagged content |
@@ -297,7 +297,7 @@ function centsToCreditsProvenance(
 ): RoundedMoney<Cents, Credits>; // { raw: Cents; mode: "up" | "down"; result: Credits }
 ```
 
-`centsToCredits` always rounds down, never over-crediting a buyer. `centsToCreditsProvenance`
+`centsToCredits` always rounds down, never over-crediting a customer. `centsToCreditsProvenance`
 returns the same result plus a `{ raw, mode }` audit record a ledger write can persist; for this
 conversion `mode` is always `"down"` at runtime, though the declared type admits both directions.
 

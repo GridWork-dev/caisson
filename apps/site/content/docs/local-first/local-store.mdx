@@ -76,7 +76,7 @@ holds one tenant's file.
 ## Embedding is an injected seam
 
 `local-store` never calls an embedding model or opens a socket. `Embedder` is an interface your
-app or the consuming bundle wires; `embedOrSkip` treats an absent embedder as a first-class mode:
+app or the consuming module family wires; `embedOrSkip` treats an absent embedder as a first-class mode:
 retrieval runs on the FTS5 leg alone, not an error, not a silent default model.
 
 When you do wire a cloud embedder, `scrubForEgress` runs on every text before it leaves the box,
@@ -116,10 +116,10 @@ rejected, not silently dropped.
 
 `local-store` runs `bun:sqlite` plus the `sqlite-vec` extension on disk, no separate database to
 run or pay for, and no vendor SDK import. It contributes the store/fuse/isolation mechanism only;
-the consuming bundle wires the embedder and the curated content on top.
+the consuming module family wires the embedder and the curated content on top.
 
 <Callout type="info" title="Standalone">
-  `@caisson-sh/local-store` is the retrieval engine inside the Local-first bundle, alongside
+  `@caisson-sh/local-store` is the retrieval engine inside the Local-first family, alongside
   on-device inference and the privacy gate. It also works standalone, to add hybrid
-  search to any stack without the rest of the bundle.
+  search to any stack without the rest of the family.
 </Callout>

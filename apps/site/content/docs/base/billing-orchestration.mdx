@@ -3,7 +3,7 @@ title: Billing orchestration
 description: The multi-provider payment drivers, provider-to-domain-event parsers, and dual-layer webhook idempotency composed on top of the open BillingProvider port.
 ---
 
-`@caisson-sh/billing-orchestration` is the commercial companion to `@caisson-sh/billing`: the open package
+`@caisson-sh/billing-orchestration` is the companion module to `@caisson-sh/billing`: the open package
 owns raw-body signature verification, the `BillingProvider` port, and the `DomainBillingEvent`
 contract; this package composes those primitives into the full verify → parse → checkout →
 idempotency flow for Stripe, Paddle, LemonSqueezy, and Polar.
@@ -113,5 +113,5 @@ providers is a new driver, not a rewrite of call sites. The idempotency claim ta
 GUC, so a claim attempted outside `withTenant` fails a non-blank `CHECK` instead of landing under a
 shared tenant.
 
-Sold standalone as a single SKU; the raw-body signature verifiers and the `DomainBillingEvent`
-contract it builds on stay open in `@caisson-sh/billing`.
+A standalone module; the raw-body signature verifiers and the `DomainBillingEvent`
+contract it builds on stay in `@caisson-sh/billing`.

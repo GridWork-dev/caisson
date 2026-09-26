@@ -3,7 +3,7 @@ title: local-privacy
 description: A default-deny egress boundary every payload crosses before it can leave the process, a strict zero-egress PrivacyPolicy plus the EgressGuard runtime wrapper, with an empty allowlist blocking every host.
 ---
 
-`@caisson-sh/local-privacy` is the Local-first bundle's privacy gate: a strict, zero-egress
+`@caisson-sh/local-privacy` is the Local-first family's privacy gate: a strict, zero-egress
 `PrivacyPolicy` (Zod `.strict()`, closed enums) plus `EgressGuard`, the runtime wrapper over the
 kernel `fetchWithTimeout` chokepoint. The package imports no vendor SDK and makes no live network
 call itself, it only decides, before any socket opens, whether a request is allowed to leave.
@@ -48,7 +48,7 @@ const res = await guard.fetch("https://huggingface.co/model.onnx");
 ## The air-gap default
 
 `ZERO_EGRESS_POLICY` is `local-only` with an empty allowlist, every outbound host blocked,
-with no config to flip. It's the baseline an edition installs unless a deployer explicitly
+with no config to flip. It's the baseline the package installs unless a deployer explicitly
 opts a sanctioned sink in:
 
 ```ts
@@ -99,5 +99,5 @@ chokepoint, the package never opens a socket itself. Errors are the kernel's typ
 the host and scheme in their details, never the full URL, so a blocked path or query string
 can't leak a token or PII into a log.
 
-local-privacy is sold standalone, or as one of the primitives composing the Local-first
-bundle alongside `@caisson-sh/local-inference`, `@caisson-sh/local-store`, and `@caisson-sh/local-sync`.
+local-privacy works standalone, or as one of the primitives composing the Local-first
+family alongside `@caisson-sh/local-inference`, `@caisson-sh/local-store`, and `@caisson-sh/local-sync`.

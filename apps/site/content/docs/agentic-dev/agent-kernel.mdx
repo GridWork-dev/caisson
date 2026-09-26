@@ -7,7 +7,7 @@ description: The engine-neutral agent kernel, agent/skill/rule schema, seven-act
 for agent/skill/rule artifacts, a seven-act lifecycle state machine (spec through ship),
 allow/deny/mutate governance guards, a hooks dispatcher, and an opt-in tamper-evident
 audit-chain recorder. It imports no vendor SDK and runs no LLM, composition mechanism
-only, consumed down-only by both the base `cli`/`mcp-server` and the Agentic-Dev bundle.
+only, consumed down-only by both the base `cli`/`mcp-server` and the Agentic-Dev family.
 
 ## Install
 
@@ -105,19 +105,19 @@ through a hook is structurally impossible.
 
 `AuditedLifecycle` wraps every governed transition with the kernel's
 `chainEntry`/`anchorChain`/`verifyChain` hash-chain primitives, the same mechanism the
-Compliance bundle's `audit-worm` package uses. Off by default; set `audited: true` with a
+Compliance family's `audit-worm` package uses. Off by default; set `audited: true` with a
 store (`InMemoryAuditLifecycleStore` ships for offline/CLI use, or bring your own) and each
 admitted step becomes an append-only, tamper-evident chain entry.
 
 ## Composition
 
 agent-kernel imports no vendor SDK and runs no LLM: it contributes the schema/FSM/
-governance/hooks/audit-chain mechanism, never the engine wiring. It sits below the edition
-line, both base `cli`/`mcp-server` and the Agentic-Dev bundle's curated agent/skill/rule
-content compose it down-only.
+governance/hooks/audit-chain mechanism, never the engine wiring. Both the base
+`cli`/`mcp-server` and the Agentic-Dev family's curated agent/skill/rule content compose it
+down-only.
 
 <Callout type="info" title="Standalone">
-  agent-kernel works on its own and is included in the Agentic-Dev bundle, which wires it
+  agent-kernel works on its own and is included in the Agentic-Dev family, which wires it
   together with [agent-runner](/docs/agentic-dev/agent-runner), the sandboxed
   [tool-exec](/docs/agentic-dev/tool-exec) gate, and the local hybrid memory
   ([local-store](/docs/local-first/local-store)) into one governed loop.

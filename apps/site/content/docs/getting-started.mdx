@@ -146,7 +146,7 @@ bun add @caisson-sh/mcp-server
 
 It is an auth-gated MCP server exposing `list_modules`, `describe_module`, and
 `generate` as tools, so an agent calls them natively instead of shelling out. Host it locally over
-stdio with `runStdioServer`: one process per buyer session, the same pattern Claude Desktop /
+stdio with `runStdioServer`: one process per client session, the same pattern Claude Desktop /
 Claude Code use for any local stdio MCP server:
 
 ```ts

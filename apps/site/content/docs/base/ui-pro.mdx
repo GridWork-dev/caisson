@@ -1,10 +1,10 @@
 ---
 title: UI Pro
-description: The commercial component tier on the open @caisson-sh/ui token floor, an advanced data grid, virtualized tree, ops matrix, audit timeline, and more.
+description: The advanced component tier on the open @caisson-sh/ui token floor, an advanced data grid, virtualized tree, ops matrix, audit timeline, and more.
 ---
 
 `@caisson-sh/ui-pro` layers advanced data-ops and compliance surfaces on the open Apache-2.0
-`@caisson-sh/ui` token floor. It is the components a free kit paywalls, plus domain-composed
+`@caisson-sh/ui` token floor: the heavier interactive components plus domain-composed
 operations views, themed entirely through the same token contract, so re-skinning `@caisson-sh/ui`
 re-skins these too.
 
@@ -27,8 +27,9 @@ It is Apache-2.0 and installs from public npm.
 - **CommandPalette**, **DiffViewer**, **KanbanBoard**: a ⌘K fuzzy command menu, a redaction-aware
   diff viewer, and a drag-drop board.
 - **Tooltip**, **Popover**, **Menu**: the focus-managed/positioning-hard interactive primitives
-  that stay commercial (Tabs/Checkbox/Radio/Switch/Badge/Accordion are the open-base counterparts;
-  the dialog-class primitive is the open `@caisson-sh/ui` `Dialog`, not a ui-pro component).
+  that live in this tier (Tabs/Checkbox/Radio/Switch/Badge/Accordion are the base-floor
+  counterparts; the dialog-class primitive is the open `@caisson-sh/ui` `Dialog`, not a ui-pro
+  component).
 
 Every interactive component ships full keyboard navigation, correct ARIA roles and labels, and
 focus management (trap and restore in overlays), a launch requirement, not a polish item.
@@ -142,7 +143,7 @@ const actions: readonly CommandAction[] = [
 
 ## Pure transforms
 
-The sellable logic behind the interactive components, filtering, sorting, grouping, CSV export,
+The logic behind the interactive components, filtering, sorting, grouping, CSV export,
 tree flattening, chain verification, redaction, date-range presets, fuzzy matching, JSON/line diff,
 floating-position math, and kanban card movement, ships as pure functions exported alongside the
 components (`table-ops`, `virtual`, `tree`, `audit-chain`, `redact`, `date-presets`, `charts`,
@@ -157,5 +158,5 @@ no forking. `DataTablePro` extends the floor `DataTable`'s column/row contract r
 it; `TypeToConfirm` builds on the floor `Dialog` (native `<dialog>`, focus trap, Escape, focus
 return) rather than shipping its own overlay primitive.
 
-`@caisson-sh/ui-pro` is sold as a standalone SKU (not bundled into any of the six persona bundles) and
-included in the Everything bundle.
+`@caisson-sh/ui-pro` is a standalone module (not part of any of the five persona families) and
+included in the Everything family.

@@ -3,12 +3,12 @@ title: Compliance
 description: The compliance wedge, fail-closed evidence collection, an append-only WORM audit chain, per-tenant encryption, and a signed, OSCAL-exportable evidence pack mapped to named framework clauses.
 ---
 
-The **Compliance** bundle turns the guarantees the other modules already enforce, fail-closed
+The **Compliance** family turns the guarantees the other modules already enforce, fail-closed
 RLS, WORM storage, per-tenant encryption, into something you can hand an auditor: a deterministic,
 byte-stable evidence pack that maps each control to a cited clause, and a hard block if any control
 is unresolved rather than a silent guess.
 
-## What's in the bundle
+## What's in the family
 
 - **[compliance-core](/docs/compliance/compliance-core)**: the evidence engine: typed collectors
   that flag or resolve a control, a byte-stable evidence pack, and an OSCAL export. Never
@@ -18,16 +18,16 @@ is unresolved rather than a silent guess.
   requirement ids.
 - **[signing-primitive](/docs/provenance/signing-primitive)**: detached Ed25519 signing over the
   evidence pack's canonical manifest, with an optional RFC-3161 trusted-timestamp
-  countersignature, shared with the Provenance bundle.
+  countersignature, shared with the Provenance family.
 - **[audit-worm](/docs/provenance/audit-worm)**: the append-only SHA-256 audit chain plus S3/GCS/
-  R2 Object-Lock WORM storage the evidence cites, shared with the Provenance bundle.
+  R2 Object-Lock WORM storage the evidence cites, shared with the Provenance family.
 - **[retention-runner](/docs/compliance/retention-runner)**: the CCPA/GDPR right-to-erasure
   runner: fans one subject's erasure across every registered store and writes one reason-tagged
   audit row.
 - **[alerting](/docs/compliance/alerting)**: a five-stage alert pipeline (dedup, rate-cap-to-
   digest, quiet hours, multi-channel send, one audit row), the SOC 2 CC7.2 control.
 - **[field-crypto](/docs/provenance/field-crypto)**: per-tenant field encryption, shared with the
-  AI-Production, Local-first, and Provenance bundles.
+  AI-Production, Local-first, and Provenance families.
 - **oscal-spine**: the complete OSCAL surface — deterministic assessment-plan, assessment-results,
   POA&M, catalog, XML, and ISO 27001 SoA exports, plus the pinned NIST 800-53 catalog and OLIR
   relationship mapping.
@@ -39,11 +39,11 @@ is unresolved rather than a silent guess.
   computed (never freeform) residual, operator overrides recorded as a chained exception rather
   than an edit, crosswalk pointers into any shipped framework pack, and a risk-treatment-plan
   evidence artifact.
-- **trust-page**: the buyer trust-page generator — a self-contained static HTML + JSON page built
-  from an evidence pack and its crosswalk rollup through allowlist-based redaction, hostable
+- **trust-page**: a customer-facing trust-page generator — a self-contained static HTML + JSON page
+  built from an evidence pack and its crosswalk rollup through allowlist-based redaction, hostable
   anywhere to show prospects a compliance posture.
 
-The bundle also carries the free Apache-2.0 base it builds on (`kernel`, `tenancy-rls`, `migrate`).
+The family also carries the Apache-2.0 base it builds on (`kernel`, `tenancy-rls`, `migrate`).
 
 ## Install
 
@@ -85,8 +85,7 @@ canonical manifest and the exact bytes the seal signs (`@caisson-sh/kernel/evide
 row's link recompute, its per-length WORM anchor, and its anchor signature
 (`@caisson-sh/kernel/audit-verify`).
 
-The sanctioned runner for that flow is the commercial `@caisson-sh/verify-pack`. Caisson does not
-distribute it through a package registry, and it is not part of any bundle or module purchase.
+The sanctioned runner for that flow is `@caisson-sh/verify-pack`.
 
 ## Composing with the base
 
@@ -95,7 +94,7 @@ Every collector reads facts gathered at the tenant boundary `@caisson-sh/tenancy
 snapshot.
 
 <Callout type="info" title="Not a compliance certification">
-  The Compliance bundle ships the technical controls the frameworks point at. It
+  The Compliance family ships the technical controls the frameworks point at. It
   does not make an organization compliant; that determination is your
   organization's and its auditor's to make.
 </Callout>

@@ -189,7 +189,7 @@ one id without loading the chain.
 and run every operation through `withTenant`, so they sit directly on the base's RLS
 boundary, the same tenant scoping every other Caisson package uses. `audit-worm` depends
 down on `@caisson-sh/kernel` (the pure chain/version algebra) and `@caisson-sh/tenancy-rls` only;
-it never depends up on an edition or bundle.
+it never depends up on a higher-layer module.
 
 <Callout type="info" title="Not a compliance certification">
   audit-worm ships the technical control an auditor checks for, tamper-evident
@@ -198,6 +198,6 @@ it never depends up on an edition or bundle.
   auditor's to make.
 </Callout>
 
-audit-worm is a paid primitive: sold standalone, or composed at runtime as a real
-`workspace:*` dependency inside the Compliance bundle alongside `@caisson-sh/field-crypto`,
+audit-worm is a base primitive: it works standalone, or composed at runtime as a real
+`workspace:*` dependency inside the Compliance family alongside `@caisson-sh/field-crypto`,
 `@caisson-sh/retention-runner`, and the alert pipeline.

@@ -98,9 +98,9 @@ deliberately.
 ## Composition
 
 Built on `@caisson-sh/kernel` (versioning + errors) and `@caisson-sh/tenancy-rls` (FORCE-RLS); it
-never depends "up" on an edition. It's a base primitive of the **AI-Production** bundle, where
-the inference gateway resolves every `promptRef` through it before rendering and metering a
-call, alongside `ai-meter` and `guardrails`.
+never depends "up" on a higher-layer module. It's a base primitive of the **AI-Production**
+family, where the inference gateway resolves every `promptRef` through it before rendering and
+metering a call, alongside `ai-meter` and `guardrails`.
 
 ## Test
 

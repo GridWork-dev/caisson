@@ -3,12 +3,12 @@ title: Provenance
 description: Cryptographic provenance, detached signing over a canonical manifest, an append-only WORM audit chain, and per-tenant field encryption. Proof, not a promise.
 ---
 
-The **Provenance** bundle is the cryptographic-proof layer: every claim it makes is checkable by a
+The **Provenance** family is the cryptographic-proof layer: every claim it makes is checkable by a
 third party without your keys. A signature verifies or it doesn't; a chain link either matches its
 predecessor's hash or it doesn't; a ciphertext decrypts under the tenant that owns it or it fails
 closed. None of the three guarantees depends on trusting a log entry.
 
-## What's in the bundle
+## What's in the family
 
 - **[signing-primitive](/docs/provenance/signing-primitive)**: per-tenant evidence signing: a
   detached Ed25519 signature over a canonical, chain-anchored manifest body, with an optional
