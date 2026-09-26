@@ -1,8 +1,8 @@
 // `create-caisson` entry (ADR-0004). Parses --name/--module/--deploy/--framework/--out/--dry-run/
 // --help (or a leading bare positional as the project name, e.g. `create-caisson my-app` — the
-// advertised quickstart form), validates the selection against the registry CATALOG, materializes
+// advertised quickstart form), validates the selection against the module CATALOG, materializes
 // to disk via the path-safe FileSetWriter, runs `git init` in the output directory (fail-soft), and
-// prints a next-steps block to stdout. The registry index is resolved via `resolveIndexPath()`
+// prints a next-steps block to stdout. The catalog file is resolved via `resolveIndexPath()`
 // (`./resolve-index-path.ts`, cwd-independent) with an env override for CI / local overrides.
 import { execFile as execFileCb } from "node:child_process";
 import { resolve } from "node:path";
@@ -78,7 +78,7 @@ export function parseArgs(argv: readonly string[]): RawSelection {
   };
 }
 
-/** Validate argv against the registry catalog and return the generation plan (no disk write). */
+/** Validate argv against the module catalog and return the generation plan (no disk write). */
 export function runCli(
   argv: readonly string[],
   deps: { index: RegistryIndex },

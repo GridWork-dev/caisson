@@ -1,12 +1,10 @@
 // resolveIndexPath contract tests (delivery-path fix G3). `resolve-index-path.ts` is a pure module
 // (only node:fs/node:url) so it can be copied OUTSIDE the monorepo and imported standalone — no
 // workspace `node_modules` resolution required — exactly like a real `node_modules/@caisson/cli`
-// install. The "simulated installed layout" test below proves the fix: before this change,
-// `resolveIndexPath()` only ever looked 3 levels above the package for `registry/index.json`, which
-// never exists in a real install.
+// install. The "simulated installed layout" tests prove the bundled catalog is found next to the
+// package root, and that its absence is a named error rather than a path that does not exist.
 import { describe, expect, test } from "bun:test";
 import {
-  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -23,24 +21,6 @@ describe("resolveIndexPath — priority order", () => {
     process.env.CAISSON_REGISTRY_INDEX = "/some/override/index.json";
     try {
       expect(resolveIndexPath()).toBe("/some/override/index.json");
-    } finally {
-      if (saved === undefined) delete process.env.CAISSON_REGISTRY_INDEX;
-      else process.env.CAISSON_REGISTRY_INDEX = saved;
-    }
-  });
-
-  test("falls back to the monorepo dev path when no bundled snapshot exists (this checkout)", () => {
-    const saved = process.env.CAISSON_REGISTRY_INDEX;
-    delete process.env.CAISSON_REGISTRY_INDEX;
-    try {
-      // packages/cli/registry-index.json is a gitignored build artifact — absent on a clean
-      // checkout unless `bun run build` already ran the bundler.
-      const bundled = join(import.meta.dir, "..", "registry-index.json");
-      if (!existsSync(bundled)) {
-        expect(resolveIndexPath()).toBe(
-          join(import.meta.dir, "..", "..", "..", "registry", "index.json"),
-        );
-      }
     } finally {
       if (saved === undefined) delete process.env.CAISSON_REGISTRY_INDEX;
       else process.env.CAISSON_REGISTRY_INDEX = saved;
@@ -84,7 +64,7 @@ describe("resolveIndexPath — simulated installed layout (G3 regression)", () =
     }
   });
 
-  test("with no bundled snapshot present, falls back past the install root (would ENOENT in a real install — the pre-fix bug)", async () => {
+  test("with no bundled catalog present, throws an error naming the build step", async () => {
     const root = mkdtempSync(join(tmpdir(), "caisson-cli-install-noindex-"));
     try {
       const srcDir = join(root, "src");
@@ -94,7 +74,7 @@ describe("resolveIndexPath — simulated installed layout (G3 regression)", () =
         "utf8",
       );
       writeFileSync(join(srcDir, "resolve-index-path.ts"), moduleSource);
-      // Deliberately NO registry-index.json sibling — the pre-fix state of a real install.
+      // Deliberately NO registry-index.json sibling — an un-built checkout.
 
       const saved = process.env.CAISSON_REGISTRY_INDEX;
       delete process.env.CAISSON_REGISTRY_INDEX;
@@ -102,11 +82,9 @@ describe("resolveIndexPath — simulated installed layout (G3 regression)", () =
         const mod = (await import(join(srcDir, "resolve-index-path.ts"))) as {
           resolveIndexPath: () => string;
         };
-        const resolved = mod.resolveIndexPath();
-        // Falls back to the "3 levels up" dev path — outside `root` entirely, and absent, proving
-        // this branch is only ever reachable from an un-built monorepo checkout, never a real install.
-        expect(resolved.startsWith(root)).toBe(false);
-        expect(existsSync(resolved)).toBe(false);
+        expect(() => mod.resolveIndexPath()).toThrow(
+          /module catalog not found .*bun run build/,
+        );
       } finally {
         if (saved === undefined) delete process.env.CAISSON_REGISTRY_INDEX;
         else process.env.CAISSON_REGISTRY_INDEX = saved;

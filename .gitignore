@@ -7,10 +7,9 @@ mirror-out/
 .next/
 *.tsbuildinfo
 
-# CLI registry-index snapshot: a BUILD ARTIFACT copied from registry/index.json by
-# packages/cli/scripts/bundle-registry-index.ts so a published install ships a usable snapshot
-# (delivery-path fix G3) — never hand-edited, never committed (registry/index.json stays the
-# single source of truth, ADR-0047).
+# CLI module catalog: a BUILD ARTIFACT derived from the workspace packages by
+# packages/cli/scripts/bundle-registry-index.ts so a published install ships it — never
+# hand-edited, never committed (each package.json version is the source of truth).
 packages/cli/registry-index.json
 
 # Docs retrieval index: versioned/checksummed build output, rebuilt by services/docs build:index.

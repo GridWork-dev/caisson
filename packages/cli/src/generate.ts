@@ -1,4 +1,4 @@
-// The generator core (ADR-0048/0021/0004). Validates a selection against the registry catalog —
+// The generator core (ADR-0048/0021/0004). Validates a selection against the module catalog —
 // every module id AND version — BEFORE any path construction or subprocess, then materializes a
 // workspace via a deterministic engine seam (in-repo template copy + typed transform, ADR-0048).
 // `templatesEngine` is the real templated drive (ADR-0068/0072): it reads the in-repo `templates/`
@@ -30,7 +30,7 @@ export {
 
 /**
  * Parse + CATALOG-GATE a raw selection. Zod `.strict()` first, then every module id + version is
- * validated against the registry index (`assertKnownModule` re-asserts the slug regex;
+ * validated against the module catalog (`assertKnownModule` re-asserts the slug regex;
  * `assertKnownVersion` blocks a raw version reaching a path). Throws BEFORE any side effect — the
  * generator must never construct a path or spawn a subprocess for an unknown module.
  */

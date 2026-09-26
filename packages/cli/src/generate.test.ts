@@ -380,7 +380,7 @@ describe("generate — ADR-0072 buyer-repo boundary", () => {
     "bun run eval", // eval CI gate
     "build-index.ts", // registry publish/index pipeline
     "append-ledger",
-    "registry/index.json", // the registry index artifact
+    "registry-index.json", // the CLI's bundled module catalog
     "changeset", // publish-time release gate
   ];
 

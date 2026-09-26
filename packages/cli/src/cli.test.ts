@@ -4,7 +4,10 @@
 //     injectable `loadInteractive` (real dynamic `import("./interactive.ts")` by default) so a test
 //     can assert it is NEVER called on a non-interactive path — a spy that THROWS if invoked, so an
 //     accidental interactive-path regression fails loudly instead of silently passing.
-import { describe, expect, mock, test } from "bun:test";
+import { afterAll, describe, expect, mock, test } from "bun:test";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadRegistryIndex } from "@caisson/registry-schema";
 import { HELP, parseArgs, resolveSelection, runCli } from "./cli.ts";
@@ -45,9 +48,12 @@ function neverImport(): Promise<typeof InteractiveModule> {
 }
 const forbiddenImport = mock(neverImport);
 
-const REGISTRY_PATH = fileURLToPath(
-  new URL("../../../registry/index.json", import.meta.url),
-);
+// The spawned CLI reads the fixture catalog above, not the build's workspace catalog, so these
+// end-to-end tests stay independent of the real package versions.
+const INDEX_DIR = mkdtempSync(join(tmpdir(), "caisson-cli-index-"));
+const REGISTRY_PATH = join(INDEX_DIR, "registry-index.json");
+writeFileSync(REGISTRY_PATH, JSON.stringify(INDEX));
+afterAll(() => rmSync(INDEX_DIR, { recursive: true, force: true }));
 
 /** Spawn the real `create-caisson` entry non-interactively and collect its output. */
 async function spawnCli(

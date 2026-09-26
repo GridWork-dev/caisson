@@ -15,9 +15,8 @@ import { z } from "zod";
 import type { GeneratedFileSet } from "./generate.ts";
 
 /** The disk-write seam: materialize a generated file set to `targetDir`. The default writer
- *  (`createFileSetWriter`) lives in this module, so the type is owned here too — keeping the
- *  meter→writer dependency one-directional (no import cycle). By default none is injected, so
- *  generation returns the file set only. */
+ *  (`createFileSetWriter`) lives in this module, so the type is owned here too. `generate` never
+ *  writes; the CLI entry calls a writer after generation, and programmatic callers bring their own. */
 export type FileSetWriter = (
   targetDir: string,
   files: GeneratedFileSet,
