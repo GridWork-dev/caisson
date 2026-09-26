@@ -1,8 +1,8 @@
-// ADR-0112: the buyer MCP awaits the optional `checkRateLimit` PORT before EVERY tool dispatch.
+// ADR-0112: the MCP server awaits the optional `checkRateLimit` PORT before EVERY tool dispatch.
 // Proves: a denied hook (throws RateLimitError) blocks the tool and the handler never runs; the
-// hook fires once per call across base AND edition tools; and an ABSENT hook runs unthrottled
-// (the default backward-compatible contract). The store-backed fail-OPEN behaviour is exercised in
-// services/license (this package is DB-free — it only declares + awaits the seam).
+// hook fires once per call across base AND registered tools; and an ABSENT hook runs unthrottled
+// (the default backward-compatible contract). The store-backed fail-OPEN behaviour belongs to the
+// host's hook implementation (this package is DB-free — it only declares + awaits the seam).
 import { describe, expect, test } from "bun:test";
 import { NotFoundError, RateLimitError } from "@caisson/kernel";
 import { loadRegistryIndex } from "@caisson/registry-schema";
@@ -43,9 +43,7 @@ const index = loadRegistryIndex({
 const TOKEN = "tok_acct_a_000000000000";
 function baseOptions(): McpServerOptions {
   return {
-    tokens: [
-      { token: TOKEN, accountId: "acct_a", entitlements: ["@caisson/auth"] },
-    ],
+    tokens: [{ token: TOKEN, accountId: "acct_a" }],
     index,
     onGenerate: async () => ({ generationId: "gen_1" }),
   };
@@ -72,7 +70,6 @@ describe("ADR-0112 rate-limit hook (mcp-server seam)", () => {
     // A registered base tool whose handler increments a counter — to prove it is never reached.
     server.registerTool({
       name: "probe",
-      requiredEntitlement: null,
       description: "Rate-limit probe fixture.",
       version: "1.0.0",
       audit: { logArgs: true },
@@ -88,16 +85,15 @@ describe("ADR-0112 rate-limit hook (mcp-server seam)", () => {
     expect(handlerRuns).toBe(0); // gated BEFORE dispatch
   });
 
-  test("the hook fires exactly once per call, across base and edition tools", async () => {
+  test("the hook fires exactly once per call, across base and registered tools", async () => {
     const seen: string[] = [];
     const hook: RateLimitHook = async (accountId) => {
       seen.push(accountId);
     };
     const server = createMcpServer({ ...baseOptions(), checkRateLimit: hook });
     server.registerTool({
-      name: "edition_tool",
-      requiredEntitlement: "@caisson/auth",
-      description: "Rate-limit edition-tool fixture.",
+      name: "kit_tool",
+      description: "Rate-limit registered-tool fixture.",
       version: "1.0.0",
       audit: { logArgs: true },
       handler: async () => ({ ok: true }),
@@ -107,11 +103,11 @@ describe("ADR-0112 rate-limit hook (mcp-server seam)", () => {
     await server.handleToolCall(session, "describe_module", {
       name: "@caisson/auth",
     });
-    await server.handleToolCall(session, "edition_tool", {});
+    await server.handleToolCall(session, "kit_tool", {});
     expect(seen).toEqual(["acct_a", "acct_a", "acct_a"]);
   });
 
-  test("getPrompt awaits the hook once, AFTER the invisible-404 (a not-found prompt burns no throttle)", async () => {
+  test("getPrompt awaits the hook once, AFTER the 404 (a not-found prompt burns no throttle)", async () => {
     const seen: string[] = [];
     const hook: RateLimitHook = async (accountId) => {
       seen.push(accountId);

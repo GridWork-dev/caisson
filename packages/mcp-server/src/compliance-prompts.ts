@@ -1,7 +1,6 @@
-// Compliance-edition prompt, registered through the SAME prompt seam the coach uses. One
-// entitlement-gated prompt (`compliance_evidence_walkthrough`) that narrates generating a
-// compliance-edition project — invisible (404) to a caller without the `compliance` slug, per the
-// seam's constant-time gate.
+// Compliance prompt, registered through the SAME prompt seam the coach uses. One prompt
+// (`compliance_evidence_walkthrough`) that narrates generating a compliance project, visible to
+// every authenticated caller once the host opts in.
 //
 // This module imports NOTHING from `server.ts` (it declares the minimal `CompliancePromptRegistrar`
 // slice it needs); `McpServer` is structurally assignable to it, so `server.ts` wires it
@@ -12,13 +11,9 @@
 import { ValidationError } from "@caisson/kernel";
 import type { RegistryIndex } from "@caisson/registry-schema";
 
-/** The default entitlement slug gating the compliance prompt (the `compliance` edition, from
- *  registry-schema's EDITIONS). Overridable so the operator can remap it to whatever SKU lands. */
-export const DEFAULT_COMPLIANCE_ENTITLEMENT = "compliance";
-
-// The compliance-edition module list this prompt tells the buyer to generate. It MIRRORS the
-// compliance edition's membership and must be updated whenever that membership changes — the prompt
-// should never recommend a set that drifts from what the edition actually ships.
+// The compliance module list this prompt tells the caller to generate. It must be updated whenever
+// the compliance composition changes — the prompt should never recommend a set that drifts from
+// what the compliance package actually composes.
 const COMPLIANCE_MODULES = [
   "@caisson/compliance",
   "@caisson/audit-worm",
@@ -26,7 +21,7 @@ const COMPLIANCE_MODULES = [
 ] as const;
 
 // Frameworks the walkthrough can tailor its pointer to — a small closed set validated in-handler.
-// Advisory strings only (no OSCAL frameworkId import); extend deliberately alongside the edition.
+// Advisory strings only (no OSCAL frameworkId import); extend deliberately alongside the package.
 const FRAMEWORKS = ["soc2", "hipaa"] as const;
 
 /**
@@ -36,7 +31,6 @@ const FRAMEWORKS = ["soc2", "hipaa"] as const;
 export interface CompliancePromptRegistrar {
   registerPrompt(registration: {
     name: string;
-    requiredEntitlement: string | null;
     description: string;
     version: string;
     arguments: readonly {
@@ -54,29 +48,18 @@ export interface CompliancePromptRegistrar {
   }): void;
 }
 
-export interface CompliancePromptOptions {
-  /** Edition entitlement gating the prompt. Default `"compliance"`. */
-  readonly requiredEntitlement?: string;
-}
+/** The opt-in marker for the compliance prompt: pass `{}` to register it. It carries no settings. */
+export type CompliancePromptOptions = Readonly<Record<string, never>>;
 
-/**
- * Register the compliance-edition prompt on `server` through the prompt seam. Gated on the
- * `compliance` entitlement (the seam re-checks it timing-safe per get) and invisible (404) to a
- * non-entitled buyer.
- */
+/** Register the compliance prompt on `server` through the prompt seam. */
 export function registerCompliancePrompts(
   server: CompliancePromptRegistrar,
   index: RegistryIndex,
-  options: CompliancePromptOptions,
 ): void {
-  const requiredEntitlement =
-    options.requiredEntitlement ?? DEFAULT_COMPLIANCE_ENTITLEMENT;
-
   server.registerPrompt({
     name: "compliance_evidence_walkthrough",
-    requiredEntitlement,
     description:
-      "Walk through generating a compliance-edition project and where evidence assembly lives.",
+      "Walk through generating a compliance project and where evidence assembly lives.",
     version: "1.0.0",
     arguments: [
       {
@@ -101,8 +84,8 @@ export function registerCompliancePrompts(
       const projectName = args.project_name ?? "my-app";
       // Resolve each module to its CONCRETE latest version: `generate` validates via
       // assertKnownVersion, which only accepts members of entry.versions — the literal string
-      // "latest" is an index pointer and would 400. Fail-closed if the hard-coded edition
-      // membership ever drifts from the live index.
+      // "latest" is an index pointer and would 400. Fail-closed if the hard-coded module list ever
+      // drifts from the live index.
       const modules = COMPLIANCE_MODULES.map((id) => {
         const entry = index.modules.find((m) => m.id === id);
         if (entry === undefined) {
@@ -114,19 +97,11 @@ export function registerCompliancePrompts(
         return { id, version: entry.latest };
       });
       const text = [
-        `Generate a ${framework.toUpperCase()} compliance-edition project scaffold for "${projectName}".`,
+        `Generate a ${framework.toUpperCase()} compliance project scaffold for "${projectName}".`,
         "",
-        "1. Generate the compliance edition — call the generate tool:",
-        JSON.stringify(
-          {
-            projectName,
-            edition: "compliance",
-            modules,
-          },
-          null,
-          2,
-        ),
-        "   generate validates every module against the registry allowlist and your entitlements, then debits credits and writes the scaffold.",
+        "1. Generate the project — call the generate tool:",
+        JSON.stringify({ projectName, modules }, null, 2),
+        "   generate validates every module against the registry catalog, then writes the scaffold.",
         "",
         `2. Assemble ${framework.toUpperCase()}-specific OSCAL evidence packs using the generated project's own compliance tooling — that assembly runs in your project, not on this MCP server.`,
       ].join("\n");

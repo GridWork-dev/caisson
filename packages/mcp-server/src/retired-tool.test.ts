@@ -42,7 +42,6 @@ function makeServer() {
       {
         token: "tok_retired_x0000000000000000",
         accountId: "acct_retired",
-        entitlements: ["@caisson/auth"],
       },
     ],
     index,

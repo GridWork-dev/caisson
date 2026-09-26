@@ -7,7 +7,6 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { loadRegistryIndex } from "@caisson/registry-schema";
 import { createStdioMcpServer } from "./stdio.ts";
-import { DEFAULT_RUN_ENTITLEMENT } from "./run-tools.ts";
 
 const INDEX = loadRegistryIndex({ schemaVersion: 1, modules: [] });
 const TOKEN = "tok_mcp_run_tools_".padEnd(40, "0");
@@ -19,14 +18,13 @@ interface RunToolsHarness {
 }
 
 async function withRunToolsServer(
-  entitlements: string[],
   fn: (h: RunToolsHarness) => Promise<void>,
 ): Promise<void> {
   const started: unknown[] = [];
   const statused: unknown[] = [];
   const server = createStdioMcpServer({
     mcp: {
-      tokens: [{ token: TOKEN, accountId: "acct-1", entitlements }],
+      tokens: [{ token: TOKEN, accountId: "acct-1" }],
       index: INDEX,
       onGenerate: async () => ({ generationId: "g" }),
       runTools: {
@@ -66,87 +64,44 @@ function textOf(result: {
 }
 
 describe("run_start/run_status — the agent-runtime MCP tools (ADR-0360 S5)", () => {
-  test("an entitled buyer can call run_start; the injected host callback receives the validated args", async () => {
-    await withRunToolsServer(
-      [DEFAULT_RUN_ENTITLEMENT],
-      async ({ client, started }) => {
-        const result = await client.callTool({
-          name: "run_start",
-          arguments: { prompt: "book a flight" },
-        });
-        expect(result.isError).toBeUndefined();
-        expect(textOf(result as never)).toMatchObject({
-          runId: "run-1",
-          status: "parked",
-        });
-        expect(started).toEqual([{ prompt: "book a flight" }]);
-      },
-    );
-  });
-
-  test("an entitled buyer can call run_status; the injected host callback receives the validated args", async () => {
-    await withRunToolsServer(
-      [DEFAULT_RUN_ENTITLEMENT],
-      async ({ client, statused }) => {
-        const result = await client.callTool({
-          name: "run_status",
-          arguments: { runId: "run-1" },
-        });
-        expect(result.isError).toBeUndefined();
-        expect(textOf(result as never)).toMatchObject({
-          runState: { status: "parked" },
-          projection: { status: "running" },
-        });
-        expect(statused).toEqual([{ runId: "run-1" }]);
-      },
-    );
-  });
-
-  test("run_start rejects a malformed arg shape before the host callback ever runs", async () => {
-    await withRunToolsServer(
-      [DEFAULT_RUN_ENTITLEMENT],
-      async ({ client, started }) => {
-        const result = await client.callTool({
-          name: "run_start",
-          arguments: { prompt: "" },
-        });
-        expect(result.isError).toBe(true);
-        expect(started).toHaveLength(0);
-      },
-    );
-  });
-
-  test("an UNENTITLED caller is denied fail-closed: run_start/run_status are invisible (404), never a silent success", async () => {
-    await withRunToolsServer([], async ({ client }) => {
-      const startResult = await client.callTool({
-        name: "run_start",
-        arguments: { prompt: "book a flight" },
-      });
-      expect(startResult.isError).toBe(true);
-      const startBody = textOf(startResult as never) as {
-        error?: { code?: string };
-      };
-      expect(startBody.error?.code).toBe("not_found");
-
-      const statusResult = await client.callTool({
-        name: "run_status",
-        arguments: { runId: "run-1" },
-      });
-      expect(statusResult.isError).toBe(true);
-      const statusBody = textOf(statusResult as never) as {
-        error?: { code?: string };
-      };
-      expect(statusBody.error?.code).toBe("not_found");
-    });
-  });
-
-  test("a caller entitled to an UNRELATED slug (e.g. the bundle fold slug) is still denied — the dedicated slug, never the bundle's (ADR-0362)", async () => {
-    await withRunToolsServer(["@caisson/agentic-dev"], async ({ client }) => {
+  test("an authenticated caller can call run_start; the injected host callback receives the validated args", async () => {
+    await withRunToolsServer(async ({ client, started }) => {
       const result = await client.callTool({
         name: "run_start",
         arguments: { prompt: "book a flight" },
       });
+      expect(result.isError).toBeUndefined();
+      expect(textOf(result as never)).toMatchObject({
+        runId: "run-1",
+        status: "parked",
+      });
+      expect(started).toEqual([{ prompt: "book a flight" }]);
+    });
+  });
+
+  test("an authenticated caller can call run_status; the injected host callback receives the validated args", async () => {
+    await withRunToolsServer(async ({ client, statused }) => {
+      const result = await client.callTool({
+        name: "run_status",
+        arguments: { runId: "run-1" },
+      });
+      expect(result.isError).toBeUndefined();
+      expect(textOf(result as never)).toMatchObject({
+        runState: { status: "parked" },
+        projection: { status: "running" },
+      });
+      expect(statused).toEqual([{ runId: "run-1" }]);
+    });
+  });
+
+  test("run_start rejects a malformed arg shape before the host callback ever runs", async () => {
+    await withRunToolsServer(async ({ client, started }) => {
+      const result = await client.callTool({
+        name: "run_start",
+        arguments: { prompt: "" },
+      });
       expect(result.isError).toBe(true);
+      expect(started).toHaveLength(0);
     });
   });
 
@@ -157,7 +112,6 @@ describe("run_start/run_status — the agent-runtime MCP tools (ADR-0360 S5)", (
           {
             token: TOKEN,
             accountId: "acct-1",
-            entitlements: [DEFAULT_RUN_ENTITLEMENT],
           },
         ],
         index: INDEX,

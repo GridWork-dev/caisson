@@ -60,9 +60,9 @@ const PERMISSIVE_INPUT_SCHEMA = { type: "object" as const };
 /**
  * Build (but do not connect) the `@modelcontextprotocol/sdk` `Server`, bound to the buyer-MCP core
  * via `deps.mcp`. Authenticates `deps.bearer` FIRST — fail-closed before any transport exists. Takes
- * the low-level `Server` (not the newer `McpServer` convenience wrapper) because the visible tool
- * set is dynamic per caller (entitlement-scoped, ADR-0076), decided once at connect time from
- * `listTools(session)` rather than statically registered.
+ * the low-level `Server` (not the newer `McpServer` convenience wrapper) because the tool set is
+ * registered at runtime through the seam (ADR-0076), read once at connect time from
+ * `listTools(session)` rather than statically declared.
  */
 export function createStdioMcpServer(deps: StdioServerDeps): Server {
   const mcp = createMcpServer(deps.mcp);
@@ -99,7 +99,7 @@ export function createStdioMcpServer(deps: StdioServerDeps): Server {
         );
         return { content: [{ type: "text", text: JSON.stringify(result) }] };
       } catch (err) {
-        // Tool-level failures (validation/entitlement/not-found/rate-limit) render through the
+        // Tool-level failures (validation/not-found/rate-limit) render through the
         // SAME client-safe envelope every other host boundary uses (`toErrorResponse`, ADR-0019) —
         // surfaced as an MCP `isError` result, never a thrown protocol-level error, so the calling
         // agent can see and self-correct (per the SDK's `CallToolResult.isError` contract).
@@ -112,8 +112,7 @@ export function createStdioMcpServer(deps: StdioServerDeps): Server {
     },
   );
 
-  // Resource wiring, the read-side mirror of the tool wiring above. Only the resources
-  // this caller is entitled to are listed; an unentitled or unknown URI collapses to the same 404.
+  // Resource wiring, the read-side mirror of the tool wiring above. An unknown URI is a 404.
   server.setRequestHandler(ListResourcesRequestSchema, () => ({
     resources: mcp.listResources(session).map((reg) => ({
       uri: reg.uri,
@@ -140,8 +139,7 @@ export function createStdioMcpServer(deps: StdioServerDeps): Server {
       } catch (err) {
         // resources/read has no `isError` result arm (unlike tools/call), so a failure surfaces as
         // a JSON-RPC error carrying the SAME client-safe envelope in `data` (`toErrorResponse`,
-        // ADR-0019). An unentitled URI and an unknown URI both collapse to the identical not_found
-        // envelope (the invisible-resource contract) — never distinguishable.
+        // ADR-0019). An unknown URI surfaces as the not_found envelope.
         const { body } = toErrorResponse(err);
         throw new McpError(
           ErrorCode.InvalidParams,
@@ -152,8 +150,8 @@ export function createStdioMcpServer(deps: StdioServerDeps): Server {
     },
   );
 
-  // Prompt wiring, the prompt-side mirror of the tool/resource wiring above. Only the prompts this
-  // caller is entitled to are listed; an unentitled or unknown name collapses to the same 404.
+  // Prompt wiring, the prompt-side mirror of the tool/resource wiring above. An unknown name is a
+  // 404.
   server.setRequestHandler(ListPromptsRequestSchema, () => ({
     prompts: mcp.listPrompts(session).map((reg) => ({
       name: reg.name,
@@ -185,8 +183,8 @@ export function createStdioMcpServer(deps: StdioServerDeps): Server {
         )) as GetPromptResult;
       } catch (err) {
         // prompts/get has no `isError` result arm (like resources/read) — surface the same
-        // client-safe envelope (`toErrorResponse`, ADR-0019) as a JSON-RPC error; an unentitled and
-        // an unknown name both collapse to the identical not_found envelope (invisible-prompt).
+        // client-safe envelope (`toErrorResponse`, ADR-0019) as a JSON-RPC error; an unknown name
+        // surfaces as the not_found envelope.
         const { body } = toErrorResponse(err);
         throw new McpError(
           ErrorCode.InvalidParams,

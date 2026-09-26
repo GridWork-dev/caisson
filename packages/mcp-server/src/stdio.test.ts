@@ -52,7 +52,6 @@ function deps(): StdioServerDeps {
         {
           token: TOKEN,
           accountId: "acct_stdio",
-          entitlements: ["@caisson/auth"],
         },
       ],
       index,
@@ -123,7 +122,7 @@ describe("stdio transport binding", () => {
       client.connect(clientTransport),
     ]);
 
-    // describe_module is entitlement-gated; this buyer is not entitled to @caisson/billing.
+    // @caisson/billing is not in this fixture's catalog, so describe_module 404s.
     const result = await client.callTool({
       name: "describe_module",
       arguments: { name: "@caisson/billing" },
@@ -131,7 +130,7 @@ describe("stdio transport binding", () => {
     expect(result.isError).toBe(true);
     const content = result.content as { type: string; text: string }[];
     expect(JSON.parse(content[0]?.text ?? "{}")).toMatchObject({
-      error: { code: "not_entitled" },
+      error: { code: "not_found" },
     });
   });
 

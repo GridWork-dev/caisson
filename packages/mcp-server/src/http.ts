@@ -231,8 +231,8 @@ function buildBoundServer(
         };
       } catch (err) {
         // resources/read has no `isError` result arm — surface the same client-safe envelope
-        // (`toErrorResponse`, ADR-0019) as a JSON-RPC error; an unentitled and an unknown URI both
-        // collapse to the identical not_found envelope (the invisible-resource contract).
+        // (`toErrorResponse`, ADR-0019) as a JSON-RPC error; an unknown URI surfaces as the
+        // not_found envelope.
         const { body } = toErrorResponse(err);
         throw new McpError(
           ErrorCode.InvalidParams,
@@ -275,7 +275,7 @@ function buildBoundServer(
         )) as GetPromptResult;
       } catch (err) {
         // prompts/get has no `isError` result arm (like resources/read) — surface the same
-        // client-safe not_found envelope; an unentitled and an unknown name collapse identically.
+        // client-safe not_found envelope for an unknown name.
         const { body } = toErrorResponse(err);
         throw new McpError(
           ErrorCode.InvalidParams,

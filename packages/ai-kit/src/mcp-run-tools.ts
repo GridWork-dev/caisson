@@ -1,7 +1,6 @@
 // The MCP `run_start`/`run_status` host callbacks (ADR-0360, S5 exposure/publish, ADR-0361/0362).
-// `@caisson/mcp-server` is the OPEN Base package that owns the `registerTool` seam
-// (`run-tools.ts` there) but can never import this commercial edition at runtime (the
-// open↔commercial boundary, `checkOpenCommercialBoundary`) — so, exactly like the buyer-facing
+// `@caisson/mcp-server` is the base package that owns the `registerTool` seam (`run-tools.ts`
+// there) and never imports this composition package at runtime — so, exactly like the
 // `generate` tool's `onGenerate` host hook, the ACTUAL loop/store wiring lives HERE and is injected
 // into the server as a plain callback pair at construction time. This mirrors the seam's existing
 // shape, not a new one.
