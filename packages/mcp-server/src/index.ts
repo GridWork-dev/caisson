@@ -1,6 +1,6 @@
 export { createMcpServer, RetiredToolError } from "./server.ts";
 export type {
-  BuyerToken,
+  ClientToken,
   McpSession,
   McpServer,
   McpServerOptions,

@@ -35,7 +35,7 @@ import {
 import { registerRunTools, type RunToolsOptions } from "./run-tools.ts";
 
 /** One issued Bearer token and the account it authenticates. */
-export interface BuyerToken {
+export interface ClientToken {
   token: string;
   accountId: string;
 }
@@ -179,8 +179,8 @@ export class RetiredToolError extends CaissonError {
 }
 
 export interface McpServerOptions {
-  /** Issued buyer tokens (in prod: a DB lookup keyed by token hash). */
-  tokens: readonly BuyerToken[];
+  /** Issued client tokens (in prod: a DB lookup keyed by token hash). */
+  tokens: readonly ClientToken[];
   /**
    * The BUILT registry index (ADR-0021/0047) — the single source of truth the `generate` path
    * validates every requested `{id, version}` against (id AND version), converged with the CLI
@@ -428,7 +428,7 @@ export function createMcpServer(options: McpServerOptions): McpServer {
 
   function authenticate(bearer: string): McpSession {
     // Compare against every token in constant time (no early return) before deciding.
-    let matched: BuyerToken | undefined;
+    let matched: ClientToken | undefined;
     for (const t of options.tokens) {
       if (safeEqualFixed(bearer, t.token)) matched = t;
     }
