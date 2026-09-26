@@ -1,6 +1,6 @@
 // src/gc.ts — dedup-on-write + TTL/GC decay default (ADR-0067). The retention POLICY layered ON TOP
 // of the store's `upsert`-by-id: content dedup so a near-duplicate fact is REINFORCED not copied,
-// a default sliding TTL, and a GC pass that drops expired / decayed / over-cap items. Buyer-config
+// a default sliding TTL, and a GC pass that drops expired / decayed / over-cap items. Adopter-config
 // (`GcConfig`, validated `.strict()` at the boundary) with sane defaults.
 //
 // Engine-neutral + PURE: every function is deterministic for a fixed (`items`, `config`, `now`) — no
@@ -19,7 +19,7 @@ import type { MemoryItem } from "./schema.ts";
 const DEFAULT_DECAY_FLOOR = 0.05;
 
 /**
- * Buyer-config for the retention policy — validated `.strict()` at the boundary (ADR-0002). Every knob
+ * Adopter-config for the retention policy — validated `.strict()` at the boundary (ADR-0002). Every knob
  * is optional with a documented off-state, so the zero-config default is "dedup-on-write only" (no TTL,
  * no decay, no cap): an absent knob never invents a deadline.
  */
@@ -47,7 +47,7 @@ const GcConfigSchema = strictObject({
 /** Boundary-valid retention config. */
 export type GcConfig = z.infer<typeof GcConfigSchema>;
 
-/** Parse untrusted buyer retention config, throwing a redaction-safe `ValidationError` (ADR-0002). */
+/** Parse untrusted adopter retention config, throwing a redaction-safe `ValidationError` (ADR-0002). */
 export function parseGcConfig(input: unknown): GcConfig {
   return parseStrict(GcConfigSchema, input);
 }

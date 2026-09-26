@@ -3,12 +3,13 @@
 // an offline pack verifier can check tamper-evidence against a pinned public key — making the trust
 // root independent of the row-serving API (SECURITY-PREPLAN H2/H4).
 //
-// Domain-separated from the license issuer key ON PURPOSE: an anchor-key compromise must not
-// forge licenses, and rotating the license key must not invalidate anchor-verification history. This
-// mirrors @caisson-sh/license-issue's Ed25519Signer discipline — the key is held as an opaque KeyObject
-// (never enumerated, logged, or JSON-serialized) and loaded from a DEDICATED env var whose VALUE is
-// never echoed in an error. This package NEVER generates or commits a real key; production key
-// material is operator-provisioned (as the license issuer key was, ADR-0107) and injected via env.
+// Domain-separated from any other signing key ON PURPOSE: an anchor-key compromise must not forge
+// signatures issued under a different key, and rotating another key must not invalidate
+// anchor-verification history. This follows the same Ed25519Signer discipline used elsewhere in this
+// repo — the key is held as an opaque KeyObject (never enumerated, logged, or JSON-serialized) and
+// loaded from a DEDICATED env var whose VALUE is never echoed in an error. This package NEVER
+// generates or commits a real key; production key material is operator-provisioned (as other signing
+// keys are, ADR-0107) and injected via env.
 import {
   type KeyObject,
   createPrivateKey,
@@ -36,7 +37,7 @@ export const ANCHOR_SIGNING_KEY_ID_ENV = "CAISSON_ANCHOR_SIGNING_KEY_ID";
 /**
  * The anchor-signing port. `sign` returns a DETACHED 64-byte Ed25519 signature over the EXACT bytes
  * given (the store passes the v2 domain/account-bound anchor envelope). `keyId` is a rotation/lookup
- * label, never a secret. A buyer-supplied KMS asymmetric signer is a drop-in implementation.
+ * label, never a secret. A caller-supplied KMS asymmetric signer is a drop-in implementation.
  */
 export interface AnchorSigner {
   readonly keyId: string;

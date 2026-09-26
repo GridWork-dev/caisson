@@ -1,5 +1,5 @@
 // src/citation-row.ts — citation-row rendering: the one canonical shape a "control cites evidence"
-// row takes across every consumer (the ISO 27001 SoA, the buyer trust page's crosswalk-rollup table).
+// row takes across every consumer (the ISO 27001 SoA, the trust page's crosswalk-rollup table).
 // A thin, validated constructor — not a formatter for a specific output format (HTML/JSON stay the
 // caller's job) — so both consumers get the SAME field bounds and the SAME readiness-language gate on
 // `justification` without re-deriving either.
@@ -14,7 +14,7 @@ const citationRowSchema = strictObject({
   claim: z.string().trim().min(1).max(80),
   /** Free-text rationale — gated by the readiness-language filter (ADR-0080) below. */
   justification: z.string().trim().min(1).max(2000),
-  /** Where the buyer looks for the evidence backing this row (a control id, a pointer, a path). */
+  /** Where the reader looks for the evidence backing this row (a control id, a pointer, a path). */
   evidencePointer: z.string().trim().min(1).max(400).optional(),
 });
 

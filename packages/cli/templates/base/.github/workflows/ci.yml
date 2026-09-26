@@ -8,8 +8,8 @@ on:
 permissions:
   contents: read
 
-# Trimmed buyer-repo CI: build · lint · unit · golden-file for the installed modules.
-# Caisson's internal release machinery and authoring checks are not part of a buyer repo and are
+# Trimmed generated-repo CI: build · lint · unit · golden-file for the installed modules.
+# Caisson's internal release machinery and authoring checks are not part of a generated repo and are
 # intentionally absent from this workflow — this is yours to extend.
 jobs:
   build:

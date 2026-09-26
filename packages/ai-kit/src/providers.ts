@@ -4,7 +4,7 @@
 //
 // This is the LIVE transport: the one path NOT exercised in CI. Every test injects a mock
 // `LanguageModelV4` and never reaches a real adapter, so no provider key, model call, or network
-// request happens in the test suite (the package's zero-live-call invariant). A buyer's BYOK key is read from
+// request happens in the test suite (the package's zero-live-call invariant). An adopter's BYOK key is read from
 // the env var the lane NAMES (`apiKeyEnv`, ADR-0011) — ai-config never reads the key itself; the SDK
 // adapter does, here, at the edge. `openrouter`/`local`/`ollama` are OpenAI-API-compatible, so they
 // ride `@ai-sdk/openai-compatible` (ADR-0201) — NOT `createOpenAI`: the OpenAI
@@ -152,12 +152,12 @@ export function providerFor(
       });
     }
     // `ollama` serves an OpenAI-compatible endpoint, so it rides the same adapter as `local` — the
-    // buyer names the `baseUrl` of their host (no localhost default, per the security floor).
+    // adopter names the `baseUrl` of their host (no localhost default, per the security floor).
     case "local":
     case "ollama":
       if (cfg.baseUrl === undefined) {
         // Fail closed (ADR-0201): `createOpenAI` used to silently fall back to api.openai.com for a
-        // baseUrl-less self-hosted lane — a misdirected live call, never the buyer's host. The
+        // baseUrl-less self-hosted lane — a misdirected live call, never the adopter's host. The
         // compatible adapter REQUIRES a baseURL, and the security floor forbids a localhost default.
         throw new ValidationError(
           "provider baseUrl required for a local/ollama lane",

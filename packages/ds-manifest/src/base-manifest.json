@@ -62,7 +62,7 @@
     },
     {
       "name": "AppShell",
-      "summary": "a buyer-dashboard frame with responsive primary navigation, a persistent top bar, and a scrollable main-content landmark. Recipe-compliant (ADR-0099): co-located CSS reading only `var(--cs-*)`, `data-collapsed` / `data-mobile-nav-open` variants, BEM block `cs-shell`. `\"use client\"` (collapse + mobile-drawer state).",
+      "summary": "an adopter-dashboard frame with responsive primary navigation, a persistent top bar, and a scrollable main-content landmark. Recipe-compliant (ADR-0099): co-located CSS reading only `var(--cs-*)`, `data-collapsed` / `data-mobile-nav-open` variants, BEM block `cs-shell`. `\"use client\"` (collapse + mobile-drawer state).",
       "props": [
         {
           "name": "brand",
@@ -1541,7 +1541,7 @@
           "name": "label",
           "type": "string",
           "optional": false,
-          "doc": "The item being purchased (e.g. a module or edition name) — the same label the full purchase card shows."
+          "doc": "The item being purchased (e.g. a module or bundle name) — the same label the full purchase card shows."
         },
         {
           "name": "price",
@@ -2041,7 +2041,7 @@
     },
     {
       "name": "StatusPill",
-      "summary": "entitlement/license status pill (active / expired / revoked / pending). Sibling to `StatusChip` (the generic glyph+label pill) but scoped to the buyer dashboard's entitlement domain, so callers get a typed `status` instead of a free `tone`. Never colour-alone: a status dot plus the always-present text label carry the meaning together.",
+      "summary": "entitlement/license status pill (active / expired / revoked / pending). Sibling to `StatusChip` (the generic glyph+label pill) but scoped to the adopter dashboard's entitlement domain, so callers get a typed `status` instead of a free `tone`. Never colour-alone: a status dot plus the always-present text label carry the meaning together.",
       "props": [
         {
           "name": "children",

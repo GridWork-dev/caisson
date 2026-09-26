@@ -1,18 +1,18 @@
 /**
  * Named-regime crosswalk model (ADR-0277 data + ADR-0279 claim posture). CLEAN-ROOM, OWN-AUTHORED.
  *
- * A regime crosswalk is the buyer-facing five-column mapping ADR-0277 locks: it answers "how does
+ * A regime crosswalk is the customer-facing five-column mapping ADR-0277 locks: it answers "how does
  * Caisson's compliance bundle line up against MY named regime (SOC 2 / PCI DSS / GDPR)?" without
- * forcing the buyer to build the mapping themselves. It is DISTINCT from the canonical-control
+ * forcing the adopter to build the mapping themselves. It is DISTINCT from the canonical-control
  * catalog crosswalk in `registry/control.ts` (which points a Caisson canonical control at an
  * external requirement id): here the row is anchored on the REGIME control id and names the concrete
- * Caisson module/mechanism plus what the buyer still owns.
+ * Caisson module/mechanism plus what the adopter still owns.
  *
  * The five columns (research memo `crosswalk-claim-language-2026-07-07.md` §c), never dropped:
  *   1. `control`             — the regime control id (e.g. `CC7.2`, `Req 10.3.2`, `Art. 32(1)(a)`).
  *   2. `summary`             — own-authored one-sentence paraphrase of the requirement (clean-room).
  *   3. `mechanism`           — the specific Caisson package + mechanism, never a bundle-level generality.
- *   4. `evidence`            — where the buyer looks for the artifact behind the claim.
+ *   4. `evidence`            — where the reader looks for the artifact behind the claim.
  *   5. `buyerResponsibility` — the LOAD-BEARING column: what Caisson does NOT cover for this control.
  *
  * CLAIM POSTURE (ADR-0279, binding): `claim` is `"implements"` ONLY where a live test or CI artifact
@@ -97,7 +97,7 @@ const rowBase = {
   summary: z.string().trim().min(1).max(600),
   /** The concrete Caisson package + mechanism this row is about (never a bundle-level generality). */
   mechanism: z.string().trim().min(1).max(400),
-  /** Where the buyer finds the artifact behind the claim (a proof pointer, an export, a live proof). */
+  /** Where the reader finds the artifact behind the claim (a proof pointer, an export, a live proof). */
   evidence: z.string().trim().min(1).max(400),
   /** LOAD-BEARING: what Caisson does NOT cover for this control. Required — the row is dishonest without it. */
   buyerResponsibility: z.string().trim().min(1).max(600),
@@ -246,7 +246,7 @@ const CLAIM_LEGEND =
   "CI artifact in the Caisson repository proves the named technical control, and each such row links " +
   "that proof. Neither claim covers the full requirement — see each row's buyer-responsibility column.";
 
-/** The not-covered disclosure: only technical controls are here; the rest is the buyer's, and a gap is a gap. */
+/** The not-covered disclosure: only technical controls are here; the rest is the adopter's, and a gap is a gap. */
 const SCOPE_BOUNDARY =
   "This crosswalk covers only the technical controls the compliance bundle ships. Organizational, " +
   "administrative, and physical controls — policy, personnel, vendor and access management, incident " +

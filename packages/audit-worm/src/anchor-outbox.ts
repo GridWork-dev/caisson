@@ -8,10 +8,10 @@
 //
 // This is a MUTABLE OPERATIONAL table (states transition) — the opposite of the WORM receipt objects,
 // which is exactly why it is a Postgres row, not an ArtifactStore object (ADR-0346 P4). Every method
-// is tenant-scoped through `withTenant` (the buyer `app` role, fail-closed RLS); the cross-tenant
+// is tenant-scoped through `withTenant` (the adopter `app` role, fail-closed RLS); the cross-tenant
 // reconcile read the operator control plane needs rides the `admin_write` policy this schema grants —
 // the SAME established pattern credit_wallet/entitlement_grant use (service-applied operational tables
-// with an admin_write twin), NOT the compliance-edition migration assembler (which owns the buyer's
+// with an admin_write twin), NOT the compliance-edition migration assembler (which owns the adopter's
 // immutable DATA schema — audit_chain/versions/field-crypto). The license service applies this SQL at
 // deploy beside those tables, mirroring CREDIT_SCHEMA_SQL.
 //

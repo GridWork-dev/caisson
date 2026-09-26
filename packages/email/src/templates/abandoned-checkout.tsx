@@ -12,7 +12,7 @@ export interface AbandonedCheckoutLine {
 }
 
 export interface AbandonedCheckoutData {
-  /** The buyer's display name, or their email when no name is on file. */
+  /** The customer's display name, or their email when no name is on file. */
   buyerName: string;
   /** The abandoned cart's lines (labels only). */
   lines: readonly AbandonedCheckoutLine[];

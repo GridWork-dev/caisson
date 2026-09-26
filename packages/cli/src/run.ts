@@ -1,6 +1,6 @@
 // `caisson run start|approve|deny|status` (ADR-0360 U-2/S5, S3+S5 PLAN-gate transport decisions).
 // TWO deliberately different transports on the SAME bin, per verb:
-//   - `approve`/`deny`/`status` — direct service/DB call against the buyer's OWN Postgres, never an
+//   - `approve`/`deny`/`status` — direct service/DB call against the adopter's OWN Postgres, never an
 //     MCP round-trip (S3 lock): operator-side tooling against a deployment the operator already has
 //     DB credentials for, so an MCP hop adds a network auth surface for zero gain.
 //   - `start` — a THIN MCP CLIENT (S5, the `doctor.ts` pattern): opening a governed run needs the

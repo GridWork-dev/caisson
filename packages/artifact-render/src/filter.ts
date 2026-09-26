@@ -1,10 +1,10 @@
 // src/filter.ts — the readiness-language claim filter (ADR-0080 copy law).
 //
-// Every buyer-facing compliance surface in this repo (the pack-format `postureCopy` field, the
+// Every customer-facing compliance surface in this repo (the pack-format `postureCopy` field, the
 // crosswalk-rollup cell `note`, the regime-crosswalk disclaimers) independently re-derives the same
 // rule: Caisson never claims "compliant" / "certified" / "verified" for itself — readiness/posture
 // language only. This is that rule, factored ONE place so a new render path (the ISO 27001 SoA, the
-// buyer trust page) reuses it instead of re-deriving the regex. FAIL CLOSED: a caller that skips this
+// trust page) reuses it instead of re-deriving the regex. FAIL CLOSED: a caller that skips this
 // check ships un-filtered prose, which is why every render primitive in this package (citation rows)
 // routes free-text fields through it before they reach an artifact.
 import { ValidationError } from "@caisson-sh/kernel";

@@ -1,10 +1,10 @@
 // The post-purchase receipt (extends ADR-0203/0252's driver-gated notification pattern to a THIRD
 // channel — email). Sent once per webhook grant, next to the Discord role push and the PostHog
 // purchase capture (the host's post-commit webhook block). One bounded prop set: the
-// buyer's display name, the provider order id, the per-line breakdown (integer minor units,
+// customer's display name, the provider order id, the per-line breakdown (integer minor units,
 // ADR-0007, when a line's own charged amount is known — a sender without per-line amounts passes
 // labels only and the accurate total still rides on `amountTotalMinor`), and the dashboard link —
-// no PII beyond what the buyer
+// no PII beyond what the customer
 // already gave the checkout.
 import {
   EmailBody,
@@ -23,7 +23,7 @@ export interface PurchaseConfirmationLine {
 }
 
 export interface PurchaseConfirmationData {
-  /** The buyer's display name, or their email when no name is on file. */
+  /** The customer's display name, or their email when no name is on file. */
   buyerName: string;
   /** The provider order/transaction id, for support reference. */
   orderId: string;
@@ -33,10 +33,10 @@ export interface PurchaseConfirmationData {
   amountTotalMinor: number;
   /** Per-line purchase breakdown. */
   lines: readonly PurchaseConfirmationLine[];
-  /** The buyer dashboard — license + registry access. */
+  /** The customer dashboard — license + registry access. */
   dashboardUrl: string;
   /**
-   * The buyer's signed license token (ADR-0292 first-mint webhook-push), when the post-commit
+   * The customer's signed license token (ADR-0292 first-mint webhook-push), when the post-commit
    * mint succeeded for this delivery. Omitted when unavailable — the receipt still sends either
    * way; the dashboard link above always re-serves the current token regardless.
    */

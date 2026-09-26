@@ -37,7 +37,7 @@ export type { RevealProps } from "./reveal";
 export { ThemeToggle } from "./theme-toggle";
 export type { ThemeToggleProps } from "./theme-toggle";
 export { THEME_STORAGE_KEY, themeInitScript } from "./theme-init";
-// Dashboard primitives (the buyer-dashboard data-app surface).
+// Dashboard primitives (the adopter-dashboard data-app surface).
 export { AppShell } from "./app-shell";
 export type {
   AppShellNavItem,

@@ -259,11 +259,11 @@ describe("readRunStatus", () => {
 });
 
 // LOW (security audit item 3): this package cannot import @caisson-sh/agent-trajectory's Zod schema
-// at RUNTIME (open↔commercial boundary), so run.ts's raw INSERTs never run parseStrict against
+// at RUNTIME (the down-only layering boundary), so run.ts's raw INSERTs never run parseStrict against
 // it. This test closes the drift risk a different way: prove the EXACT objects appendedEvent()
 // builds for every event kind this file writes parse successfully against the real schema
 // (a devDependency here, never shipped). A future edit to either side that breaks the shape fails
-// this test, not a buyer's production insert.
+// this test, not an adopter's production insert.
 describe("appendedEvent — shape parity with @caisson-sh/agent-trajectory's TrajectoryEvent schema", () => {
   const runId = randomUUID();
 

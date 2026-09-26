@@ -38,7 +38,7 @@ export type RecordedDecision = "allow" | "mutate";
 /**
  * The canonical payload committed to the chain per governed transition. Deterministic and
  * secret-free by construction: only the edge, the admitting decision, and an injected timestamp —
- * never a governance `reason`, a context value, or any buyer secret.
+ * never a governance `reason`, a context value, or any adopter secret.
  */
 export interface LifecycleAuditPayload {
   readonly from: Act;
@@ -59,7 +59,7 @@ export interface AuditLifecycleSnapshot {
 }
 
 /**
- * The store seam the HOST supplies. Sync or async; the engine `await`s both. A production buyer
+ * The store seam the HOST supplies. Sync or async; the engine `await`s both. A production app
  * persists to WORM/append-only storage; CI and the offline CLI use `InMemoryAuditLifecycleStore`.
  */
 export interface AuditLifecycleStore {

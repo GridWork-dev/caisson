@@ -40,7 +40,7 @@ function item(over: {
     : { ...base, expiresAt: over.expiresAt };
 }
 
-describe("parseGcConfig (buyer-config boundary)", () => {
+describe("parseGcConfig (adopter-config boundary)", () => {
   test("fills the decayFloor default and accepts a bare config", () => {
     expect(parseGcConfig({})).toEqual({ decayFloor: 0.05 });
   });

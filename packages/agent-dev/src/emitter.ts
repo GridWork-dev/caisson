@@ -32,7 +32,7 @@
 //
 // The secret scan is intentionally a self-contained refusal guard, NOT a cross-import of
 // `@caisson-sh/local-store`'s `scrubForEgress`: that primitive REDACTS before a cloud embed, whereas the
-// emitter must FAIL LOUDLY so the buyer fixes the authored source rather than ship a silently-mangled
+// emitter must FAIL LOUDLY so the adopter fixes the authored source rather than ship a silently-mangled
 // config — and an emitter has no business depending on the sqlite memory store for one predicate. The
 // detected shapes mirror that guard's contract (industry-standard credential shapes).
 import { mkdirSync, writeFileSync } from "node:fs";

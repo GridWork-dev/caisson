@@ -771,7 +771,7 @@ export const brandGlyphs: Record<RegisteredIconName, IconGlyph> = {
       />
     </svg>
   ),
-  // Trust page: a host-anywhere browser surface exposing only the facts a buyer may inspect.
+  // Trust page: a host-anywhere browser surface exposing only the facts a customer may inspect.
   "trust-page": (p) => (
     <svg viewBox="0 0 24 24" fill="none" {...p}>
       <rect

@@ -3,7 +3,7 @@
  * or verify surface runs the exact same check against the exact same thresholds as the kit's CI
  * gate, instead of a second hand-copied implementation drifting out of sync with it. The theme and
  * functional-token objects are passed in by the caller (no `@caisson-sh/ui` runtime dependency) — any
- * theme shaped like this, including a buyer's own customized one, can be checked.
+ * theme shaped like this, including an adopter's own customized one, can be checked.
  */
 import { clampRgb, formatHex, parse, toGamut, wcagContrast } from "culori";
 

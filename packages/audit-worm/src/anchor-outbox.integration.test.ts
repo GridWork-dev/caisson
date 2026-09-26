@@ -137,7 +137,7 @@ describe("tenant isolation + admin_write reconcile (ADR-0005, ADR-0346 P4)", () 
     await outbox.enqueuePending(keyFor(a, 7));
     await outbox.enqueuePending(keyFor(b, 7));
 
-    // The buyer app role under tenant B cannot see tenant A's row even naming it explicitly (RLS).
+    // The adopter app role under tenant B cannot see tenant A's row even naming it explicitly (RLS).
     const cross = await tp.asTenant(b, async (tx) => {
       const r = await tx.query<{ n: number }>(
         `SELECT count(*)::int AS n FROM anchor_outbox WHERE account_id = $1`,

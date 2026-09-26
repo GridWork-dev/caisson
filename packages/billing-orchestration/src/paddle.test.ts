@@ -59,7 +59,7 @@ describe("event mapping", () => {
 
   test("a multi-item one-time transaction fulfills EVERY line, with quantity (Strix vuln-0005)", () => {
     // The on-site cart opens ONE multi-line Paddle checkout, so Paddle fires ONE transaction.completed
-    // carrying every line in data.items. The pre-fix mapper read only items[0] — the buyer paid for
+    // carrying every line in data.items. The pre-fix mapper read only items[0] — the customer paid for
     // the whole cart and received just the first SKU. All lines (and their quantities) must map, each
     // carrying its own details.line_items join id (a multi-line transaction without per-line ids fails
     // closed — see the credit-uniqueness-collision test below).
@@ -227,7 +227,7 @@ describe("event mapping", () => {
     // Two credit-bearing lines with no details.line_items both read the "" itemId sentinel. Granting
     // them would collide on the credit ledger's (source_event_id, event_type, COALESCE(line_item_id,''))
     // uniqueness key — the second line hits ON CONFLICT DO NOTHING and is silently dropped while the
-    // webhook acks 200, permanently under-granting a cart the buyer paid for in full. The mapper must
+    // webhook acks 200, permanently under-granting a cart the customer paid for in full. The mapper must
     // THROW so verifyAndParse returns a non-2xx and Paddle redelivers.
     const event = {
       event_id: "evt_cart_no_details",
@@ -263,7 +263,7 @@ describe("event mapping", () => {
 
   test("a multi-item transaction with one MALFORMED line fails closed, not a partial grant (Greptile P1)", () => {
     // One line is unreadable (no price id). Silently skipping it would ack the webhook and grant the
-    // buyer only the valid line — a permanent under-grant with no Paddle retry. The mapper must THROW so
+    // customer only the valid line — a permanent under-grant with no Paddle retry. The mapper must THROW so
     // verifyAndParse returns a non-2xx and Paddle redelivers.
     const event = {
       event_id: "evt_cart_bad",
@@ -719,7 +719,7 @@ describe("event mapping", () => {
   test("a partial adjustment with a DUPLICATE item_id fails closed", () => {
     // The adjustment mirror of the transaction-line case above. Two entries sharing one txnitm_ id
     // both target the same grant row, and the applier's per-row adjustment-id anchor refuses the
-    // second as a redelivery — so the refund under-records, the buyer keeps a credit floor higher
+    // second as a redelivery — so the refund under-records, the customer keeps a credit floor higher
     // than they paid for, and the webhook still acks 200. Throw so Paddle redelivers the whole
     // adjustment.
     const event = {
@@ -1297,7 +1297,7 @@ describe("createDiscount — Paddle affiliate discount mint (ADR-0315)", () => {
       description: string;
     };
     expect(parsed.type).toBe("percentage");
-    expect(parsed.amount).toBe("10"); // the operator-locked 10% buyer-facing discount
+    expect(parsed.amount).toBe("10"); // the operator-locked 10% customer-facing discount
     expect(parsed.enabled_for_checkout).toBe(true);
     expect(parsed.recur).toBe(true); // applies across subscription billing periods
     expect(parsed.code).toBe("CAISSONAFF1");

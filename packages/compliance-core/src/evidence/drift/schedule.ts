@@ -7,7 +7,7 @@
 // STRUCTURALLY identical to `@caisson-sh/jobs`'s `TaskDefinition<unknown>`, so a caller with the real
 // package can register it directly — `createPgBossJobQueue([...otherTasks, driftTask])` — with no
 // adapter. Scheduling itself (the cron) is a driver capability (`JobQueue#schedule`, ADR-0256), not
-// this module's job; `DEFAULT_SNAPSHOT_CRON` documents the suggested daily default, buyer-configurable
+// this module's job; `DEFAULT_SNAPSHOT_CRON` documents the suggested daily default, caller-configurable
 // by passing a different cron string to the caller's own `queue.schedule(...)` call.
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -26,7 +26,7 @@ import type { SnapshotAnchorSink } from "./anchor-sink.ts";
 /** The `JobQueue` task name the scheduled snapshot enqueues under. */
 export const COMPLIANCE_SNAPSHOT_TASK = "compliance.snapshot_run";
 
-/** Suggested default cadence (pg-boss 5-field cron, daily at midnight) — buyer-configurable: pass a
+/** Suggested default cadence (pg-boss 5-field cron, daily at midnight) — caller-configurable: pass a
  *  different cron to the caller's own `queue.schedule(COMPLIANCE_SNAPSHOT_TASK, cron)` call. */
 export const DEFAULT_SNAPSHOT_CRON = "0 0 * * *";
 
@@ -64,7 +64,7 @@ export interface ComplianceSnapshotTaskDeps {
   /** Where a fired drift-regression alert is delivered — real `AlertChannel[]` from
    *  @caisson-sh/alerting is directly assignable here (see `alert-sink.ts`). */
   alertChannels: readonly DriftAlertChannel[];
-  /** The `AlertEvent.recipient` every fired alert carries (a buyer-configured address/channel id). */
+  /** The `AlertEvent.recipient` every fired alert carries (a caller-configured address/channel id). */
   alertRecipient: string;
   /** The every-run anchoring seam — real `AuditChainStore`+`AnchorOutbox` wiring from
    *  @caisson-sh/audit-worm is directly assignable here (see `anchor-sink.ts`). */

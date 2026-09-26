@@ -9,14 +9,14 @@ describe("ConfirmDialog", () => {
       <ConfirmDialog
         open
         title="Delete grant"
-        message="This revokes the buyer's access."
+        message="This revokes the customer's access."
         confirmLabel="Delete"
         onConfirm={() => {}}
         onCancel={() => {}}
       />,
     );
     expect(html).toContain('aria-label="Delete grant"');
-    expect(html).toContain("This revokes the buyer&#x27;s access.");
+    expect(html).toContain("This revokes the customer&#x27;s access.");
     expect(html).toContain(">Delete<");
     expect(html).toContain(">Cancel<");
   });

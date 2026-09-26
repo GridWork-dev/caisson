@@ -1,7 +1,7 @@
 // The per-account `checkRateLimit` hook. Proves the three outcomes the mcp-server seam relies on:
 // an under-limit account resolves (allow); an over-limit account throws RateLimitError (429, the
 // ONLY blocking path); and a STORE ERROR fails OPEN — the hook resolves (the tool would run) AND
-// signals an alert through the operator sink, never locking out a buyer.
+// signals an alert through the operator sink, never locking out an adopter.
 import {
   afterAll,
   beforeAll,
@@ -75,7 +75,7 @@ describe("createRateLimitHook", () => {
       onStoreError: (_err, accountId) => alerts.push({ accountId }),
       now: () => T0,
     });
-    // FAIL-OPEN: resolves (the tool would run) — a store fault must not lock out a paying buyer.
+    // FAIL-OPEN: resolves (the tool would run) — a store fault must not lock out an adopter.
     await expect(hook("acct_failopen")).resolves.toBeUndefined();
     // …and it raised an alert through the operator sink (not console.log).
     expect(alerts).toEqual([{ accountId: "acct_failopen" }]);

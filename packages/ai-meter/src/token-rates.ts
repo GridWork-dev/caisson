@@ -3,7 +3,7 @@
 // usage shape into an integer micro-USD cost + integer credit units. The whole path is integer-only
 // (BigInt internally, never a float) so a metered charge is reproducible to the unit — the rounding
 // is fixed and pinned by the `src/__golden__/cost.json` fixture (ADR-0013). The book is
-// `forge.config`-overridable: a buyer parses an override through `parsePriceBook` at the edge.
+// `forge.config`-overridable: an adopter parses an override through `parsePriceBook` at the edge.
 //
 // Algorithm (per leg, then summed): each token leg (non-cached input, cached input, output) is
 // `ceil(tokens * perMTok / 1_000_000)` micro-USD — rounded UP per leg so a partial-cache mix can

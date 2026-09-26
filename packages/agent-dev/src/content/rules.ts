@@ -6,7 +6,7 @@
 // renders this order.
 import { type RuleArtifact, defineRule } from "@caisson-sh/agent-kernel";
 
-/** The default rule set a buyer of the agent-dev edition gets out of the box (engine-neutral). */
+/** The default rule set an adopter of the agent-dev edition gets out of the box (engine-neutral). */
 export const CAISSON_RULES: readonly RuleArtifact[] = [
   defineRule({
     name: "no-any-in-prod",

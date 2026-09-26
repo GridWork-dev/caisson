@@ -414,7 +414,7 @@ export interface LedgerEntry {
   source_event_id: string | null;
   idempotency_key: string | null;
   /** ISO-8601 instant the event was recorded — the row's own `created_at`, the same column the
-   * query orders by. Added for the buyer-dashboard ledger view (ADR-0114), which needs a real
+   * query orders by. Added for the customer-dashboard ledger view (ADR-0114), which needs a real
    * timestamp per entry rather than fabricating one. */
   created_at: string;
 }
@@ -619,7 +619,7 @@ export interface ClawbackInput extends IdempotencySource {
 export interface ClawbackResult {
   /** The wallet balance after the clawback. */
   balance: number;
-  /** Credits actually reclaimed — `min(amount, prior balance)`; 0 when the buyer already spent them. */
+  /** Credits actually reclaimed — `min(amount, prior balance)`; 0 when the customer already spent them. */
   clawedBack: number;
   /** True when this was a no-op replay (the refund's compensating debit already landed). */
   idempotent: boolean;
@@ -628,7 +628,7 @@ export interface ClawbackResult {
 /**
  * Claw back UNSPENT credits granted by a refunded purchase (ADR-0113, the operator-locked money
  * policy). Writes exactly ONE compensating negative `refund_clawback` ledger entry of
- * `min(amount, currentBalance)` — NEVER pushing the wallet negative: if the buyer already spent some or
+ * `min(amount, currentBalance)` — NEVER pushing the wallet negative: if the customer already spent some or
  * all of those credits, only the remainder (down to 0 → no entry) is reclaimed. Idempotent on the
  * supplied id/key (a re-delivered refund does not double-claw). Append-only (ADR-0007): the clawback is
  * a new compensating entry, not a mutation of the original grant. Run inside `withTenant` so the
@@ -833,7 +833,7 @@ export interface ExpiryNoticeInput {
   /** Where the notice goes — resolved by the caller (credits knows accounts, not inboxes). */
   recipient: string;
   emailer: ExpiryNoticeEmailer;
-  /** The CTA link — the buyer credits dashboard. */
+  /** The CTA link — the customer credits dashboard. */
   dashboardUrl: string;
   /** Notice window in days before expiry (ADR-0252 Decision 6b: 30). */
   withinDays?: number;

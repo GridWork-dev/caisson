@@ -48,7 +48,7 @@ export function parseCreditConversion(input: unknown): CreditConversion {
 
 /**
  * Convert an integer US-cent amount to integer credits for a GRANT, rounding DOWN (never over-grant)
- * — the conservative direction when crediting a buyer, mirroring ai-meter's COST path which rounds UP
+ * — the conservative direction when crediting a customer, mirroring ai-meter's COST path which rounds UP
  * (never under-bill). BigInt throughout: no float ever materializes. With the default
  * `microUsdPerCredit = 1000`, 1 cent = 10 credits exactly (no remainder). `cents` must be a
  * non-negative integer — a fractional or negative amount is a caller bug, surfaced loudly, never a

@@ -9,7 +9,7 @@ configuration, and the operations the base exposes. It is a first-class surface,
 ## The contract
 
 Every tool call is **auth-gated**: the Bearer token is checked against the issued token set with a
-constant-time compare (`tokens: readonly BuyerToken[]` in the server config below). A missing or
+constant-time compare (`tokens: readonly ClientToken[]` in the server config below). A missing or
 wrong token is refused before any tool is listed or dispatched.
 
 ```jsonc
@@ -39,7 +39,7 @@ hook for the actual generation.
 function createMcpServer(options: McpServerOptions): McpServer;
 
 interface McpServerOptions {
-  tokens: readonly BuyerToken[]; // issued { token, accountId } pairs (prod: a DB lookup by token hash)
+  tokens: readonly ClientToken[]; // issued { token, accountId } pairs (prod: a DB lookup by token hash)
   index: RegistryIndex; // the built registry index — generate's allowlist
   onGenerate: (ctx: GenerateContext) => Promise<{ generationId: string }>;
   coach?: CoachOptions; // opt-in ai-kit setup-coach tools (see below)

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AppShell — the dashboard application shell every buyer-dashboard screen mounts into:
+ * AppShell — the dashboard application shell every adopter-dashboard screen mounts into:
  * a collapsible left sidebar nav + a persistent top bar (account/actions slot) wrapping
  * a scrollable main content region. Below the `md` rung the sidebar becomes an
  * off-canvas drawer, toggled by a topbar hamburger.
@@ -61,7 +61,7 @@ export interface AppShellProps {
 }
 
 /**
- * AppShell — a buyer-dashboard frame with responsive primary navigation, a persistent top bar,
+ * AppShell — an adopter-dashboard frame with responsive primary navigation, a persistent top bar,
  * and a scrollable main-content landmark. Recipe-compliant (ADR-0099): co-located CSS reading only
  * `var(--cs-*)`, `data-collapsed` / `data-mobile-nav-open` variants, BEM block `cs-shell`.
  * `"use client"` (collapse + mobile-drawer state).

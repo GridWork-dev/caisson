@@ -1,7 +1,7 @@
 // The base operational-telemetry EventSink port (ADR-0075). The ONE contract every edition emits
 // structured ops events through — spend, latency, eval scores, guardrail blocks, generation events.
 // The port is swappable: the default transport is OTel → Postgres (the ADR-0014 Neon spine), but a
-// buyer repoints the backend without touching any emit site.
+// caller repoints the backend without touching any emit site.
 //
 // Two invariants are load-bearing and asserted in the tests:
 //   1. Redaction is applied ONCE, here at the sink, reusing the ADR-0019 discipline — no SQL, no

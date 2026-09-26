@@ -49,7 +49,7 @@ export {
 } from "./providers.ts";
 
 // Metered embeddings (ADR-0213): the same reserve-before/reconcile-after chokepoint as infer(), for
-// a buyer-facing RAG/semantic-search embeddings surface.
+// an adopter-facing RAG/semantic-search embeddings surface.
 export { buildEmbeddingRegistryResolver, embed, embedMany } from "./embed.ts";
 export type {
   EmbeddingModelResolver,
@@ -83,7 +83,7 @@ export type {
 
 // The MCP `run_start`/`run_status` host callbacks (ADR-0360, S5 exposure/publish, ADR-0361/0362):
 // the injected wiring `@caisson-sh/mcp-server`'s open-tier `run-tools.ts` seam calls into, since the
-// open package can never import this commercial edition at runtime.
+// open package can never import this edition at runtime.
 export { buildRunTools } from "./mcp-run-tools.ts";
 export type {
   FieldCryptoContextRunner,

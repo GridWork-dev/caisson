@@ -4,8 +4,8 @@
 // network-surface posture differs from stdio in two load-bearing ways documented in the ADR:
 //
 // 1. STATELESS, per-request auth (ADR-0161 decision 2, Option B): stdio authenticates ONCE per
-//    connection because one process == one buyer session; HTTP has no such 1:1 binding (one
-//    listener serves every buyer), so EVERY request re-extracts `Authorization: Bearer <token>`
+//    connection because one process == one client session; HTTP has no such 1:1 binding (one
+//    listener serves every client), so EVERY request re-extracts `Authorization: Bearer <token>`
 //    and re-runs `mcp.authenticate` before a `Server`/transport is ever built — a missing/invalid
 //    token is a 401 with no transport constructed, mirroring stdio's fail-closed shape per-request
 //    instead of per-connection. `sessionIdGenerator: undefined` keeps the SDK transport itself
@@ -175,7 +175,7 @@ function buildBoundServer(
     capabilities: { tools: {}, resources: {}, prompts: {} },
   };
   const server = new Server(
-    { name: "caisson-buyer-mcp", version: SERVER_VERSION },
+    { name: "caisson-mcp", version: SERVER_VERSION },
     options,
   );
 
@@ -294,7 +294,7 @@ function buildBoundServer(
 }
 
 /**
- * Build a plain `node:http` request handler bound to the buyer-MCP core via `deps.mcp`. Per
+ * Build a plain `node:http` request handler bound to the MCP core via `deps.mcp`. Per
  * request: re-authenticate the Bearer, fail closed with `401` before any `Server`/transport exists
  * (ADR-0161 decision 2), then build a fresh bound `Server` + a stateless
  * `StreamableHTTPServerTransport` (`sessionIdGenerator: undefined`) and hand the request to it.
@@ -333,7 +333,7 @@ export function createHttpMcpHandler(deps: HttpServerDeps): HttpMcpHandler {
     try {
       // Fail-closed BEFORE any transport exists — an unauthenticated caller cannot reach
       // list_tools OR tools/call, mirroring stdio's authenticate-before-transport per request
-      // instead of per connection (this listener has no 1:1 connection-to-buyer binding).
+      // instead of per connection (this listener has no 1:1 connection-to-client binding).
       session = mcp.authenticate(extractBearer(req));
       // Read POST bodies under the byte ceiling ourselves (b719aff8) and hand the parsed value to
       // `handleRequest` below, so the SDK skips its own uncapped `req.json()`. GET (SSE) / DELETE

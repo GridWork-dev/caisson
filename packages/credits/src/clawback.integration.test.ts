@@ -144,7 +144,7 @@ describe("clawback — unspent-only, never-negative (ADR-0113)", () => {
       clawback(tx, { accountId: acct, amount: 5000, sourceEventId: "pi_idem" }),
     );
     expect(once.clawedBack).toBe(5000);
-    // Buyer tops up AFTER the refund; a stale re-delivery of the SAME refund must not claw again.
+    // Customer tops up AFTER the refund; a stale re-delivery of the SAME refund must not claw again.
     await purchaseGrant(acct, 1000, "pi_topup");
     const twice = await withTenant(tp.pg, acct, (tx) =>
       clawback(tx, { accountId: acct, amount: 5000, sourceEventId: "pi_idem" }),

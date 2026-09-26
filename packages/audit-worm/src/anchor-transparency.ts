@@ -5,7 +5,7 @@
 // anchor's canonical bytes ({length, tipHash, genesisHash} — hashes only, zero payload/PII, produced
 // by chain-store's `encodeAnchor`) are imprint-submitted to an RFC-3161 TSA, and the returned receipt
 // is stored as a WORM evidence object. The load-bearing property is HONESTY, not reach: a TSA receipt
-// lives in the buyer's own trust domain, so it is `trusted-timestamped` — NEVER marketed as
+// lives in the adopter's own trust domain, so it is `trusted-timestamped` — NEVER marketed as
 // "externally verifiable". Only the v1.1 `externally-transparent` grade (public log) unlocks that
 // claim; this file must never let v1 produce `externally-transparent` (Fork E, enforced in
 // verify-external's grade tag — a sibling stage).
@@ -53,7 +53,7 @@ export type AnchorGrade = z.infer<typeof anchorGradeSchema>;
 // --- transparency target (Fork F — target-agnostic; v1 = TSA only) -----------------------------
 
 /**
- * A TSA anchor target (v1). `url` is buyer-injected deployment config (Fork C), never a module
+ * A TSA anchor target (v1). `url` is caller-injected deployment config (Fork C), never a module
  * constant; `grade` is pinned to `trusted-timestamped` at the type level so a TSA target can never
  * be constructed claiming the public-log grade.
  */
@@ -102,7 +102,7 @@ export type TransparencyTarget = z.infer<typeof transparencyTargetSchema>;
 /**
  * The stable string id a target is keyed by (receipt key, outbox row). v1 uses the discriminant
  * `kind` because a deployment configures exactly one TSA.
- * ponytail: one target per kind in v1; if a buyer ever configures two same-kind targets, suffix a
+ * ponytail: one target per kind in v1; if an adopter ever configures two same-kind targets, suffix a
  * short hash of the url here (and only here — every keyer routes through this fn).
  */
 export function targetId(target: TransparencyTarget): string {
@@ -432,7 +432,7 @@ const SHA256_OID = "2.16.840.1.101.3.4.2.1";
 const DEFAULT_TSA_TIMEOUT_MS = 20_000;
 
 export interface TsaAnchorLogConfig {
-  /** The buyer-injected TSA endpoint (Fork C) — never a module constant. http or https only. */
+  /** The caller-injected TSA endpoint (Fork C) — never a module constant. http or https only. */
   readonly url: string;
   /** Outbound timeout (ms). Default 20s per the SPEC cadence; below 1s is refused. */
   readonly timeoutMs?: number;

@@ -114,7 +114,7 @@ describe("checkUsage — broken usage yields typed findings", () => {
     expect(f?.loc?.line).toBeGreaterThan(0);
   });
 
-  // Real buyers import from the `@caisson-sh/ui/components` subpath (the root barrel is tokens+theme
+  // Real adopters import from the `@caisson-sh/ui/components` subpath (the root barrel is tokens+theme
   // only) — the headline unknown-component check must fire on that path, not just the bare barrel.
   test("a hallucinated import from the real /components subpath is flagged", () => {
     const real = `import { Button, Frobnicate } from "@caisson-sh/ui/components";\n<Frobnicate />`;
@@ -140,7 +140,7 @@ describe("checkUsage — version skew from package.json", () => {
   });
 });
 
-describe("checkUsage — contrast gate over a buyer theme", () => {
+describe("checkUsage — contrast gate over an adopter theme", () => {
   test("a flattened theme (fg == bg) raises a contrast finding", () => {
     const flattened: ContrastTheme = { ...darkTheme, fg: darkTheme.bg };
     const findings = checkUsage(manifest, {

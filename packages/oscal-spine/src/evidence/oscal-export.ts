@@ -1,7 +1,7 @@
 // src/evidence/oscal-export.ts — OSCAL export adapter (ADR-0058; ADR-0047 un-wired-seam ethos).
 //
 // The compliance edition's canonical output is the deterministic, signed Caisson evidence pack.
-// SOME buyers feed a GRC platform (FedRAMP, OpenSCAP, drawio-grade automation) that speaks NIST OSCAL
+// SOME adopters feed a GRC platform (FedRAMP, OpenSCAP, drawio-grade automation) that speaks NIST OSCAL
 // instead. This adapter is the EXPORT SEAM: it maps an already-generated, already-validated
 // `EvidencePackManifest` into OSCAL v1.2.2 document bodies —
 //   - Security Assessment Results (SAR, root `assessment-results`): one finding per control, one
@@ -233,7 +233,7 @@ export interface OscalExportOptions {
   /**
    * `import-ap` href for the SAR. When omitted (the default), `import-ap` resolves to a shipped
    * back-matter resource that rlinks the canonical Caisson per-framework AP (ADR-0179). Supply this to
-   * point at a buyer-hosted assessment plan instead — then no Caisson AP back-matter resource is emitted.
+   * point at an adopter-hosted assessment plan instead — then no Caisson AP back-matter resource is emitted.
    */
   readonly assessmentPlanHref?: string;
   /**
@@ -381,7 +381,7 @@ function buildOscalAssessmentResults(
 
   // ADR-0179/0231: resolve `import-ap` to a shipped per-framework AP fragment — a back-matter resource
   // `#uuid` (resolvable in-document) whose rlink points at the AP. The ADR-0231 bundle path supplies a
-  // RELATIVE in-bundle href + SHA-256 `hashes[]` (`assessmentPlan`); a buyer-supplied `assessmentPlanHref`
+  // RELATIVE in-bundle href + SHA-256 `hashes[]` (`assessmentPlan`); a caller-supplied `assessmentPlanHref`
   // overrides + ships no AP resource; a bare call falls back to the legacy `caissonAssessmentPlanUrl`.
   let importApHref: string;
   let backMatter: OscalBackMatter | undefined;
@@ -602,7 +602,7 @@ export function toOscalBundle(
  * `createOscalHttpTransport` below is the live implementation: a neutral HTTPS-POST adapter (no
  * vendor-specific GRC protocol — the backlog row that opened this seam names no concrete GRC
  * platform, so this ships the OSCAL-ecosystem-conventional shape and stops there; a vendor-specific
- * dialect is a follow-on fork once a real buyer names their ingest endpoint).
+ * dialect is a follow-on fork once a real adopter names their ingest endpoint).
  */
 export interface OscalExportTransport {
   deliver(bundle: OscalExportBundle): Promise<void>;
@@ -611,7 +611,7 @@ export interface OscalExportTransport {
 /**
  * Live delivery config. `destinationUrl` is validated https-only + non-private/non-loopback at
  * construction (`assertSafePublicUrl` — the same kernel SSRF-literal guard `@caisson-sh/alerting`'s
- * webhook/Slack/Telegram channels use for buyer-supplied destinations) AND re-checked (DNS-resolved)
+ * webhook/Slack/Telegram channels use for caller-supplied destinations) AND re-checked (DNS-resolved)
  * at the fetch seam inside `postOscalDocument`, so `deliver` stays safe even for a config object
  * built directly rather than through this schema — the same "guard at both seams" idiom alerting's
  * webhook/Slack/Telegram/Discord channels use.

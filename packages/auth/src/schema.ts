@@ -1,4 +1,4 @@
-// The account-membership schema (ADR-0176 — buyer accounts are multi-user organizations). The tenant
+// The account-membership schema (ADR-0176 — adopter accounts are multi-user organizations). The tenant
 // key stays the opaque `account_id` (nothing downstream changed); this table is the ONLY new schema —
 // it resolves which users belong to an account and with what role. In prod this is a numbered Drizzle
 // migration (ADR-0014); the DDL is owned here (the credits/schema.ts pattern).

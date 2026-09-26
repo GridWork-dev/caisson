@@ -51,7 +51,7 @@
   {
     "control": "A.9.99",
     "applicable": "unresolved",
-    "justification": "No Caisson crosswalk row maps this control to a shipped technical mechanism; applicability is not resolved by this generator and remains the buyer's own ISMS scoping decision.",
+    "justification": "No Caisson crosswalk row maps this control to a shipped technical mechanism; applicability is not resolved by this generator and remains the adopter's own ISMS scoping decision.",
     "status": "unresolved"
   }
 ]

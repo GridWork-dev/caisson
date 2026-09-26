@@ -15,7 +15,7 @@
 //
 // CITATION-ROW RENDERING (SPEC piece 2 item 3): every row is passed through
 // `@caisson-sh/artifact-render`'s `renderCitationRow` before it reaches the OSCAL shape — the same
-// readiness-language gate (ADR-0080) and field bounds the buyer trust page's rows carry, so a
+// readiness-language gate (ADR-0080) and field bounds the trust page's rows carry, so a
 // justification string can never smuggle a "compliant"/"certified"/"verified" claim into the export.
 //
 // DETERMINISM (mirrors oscal-catalog-export.ts): `now` + `newId` are injected; rows are sorted by

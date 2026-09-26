@@ -4,7 +4,7 @@
 // baseline AND each eval clears its own absolute `threshold`. The baseline is the eval equivalent of
 // a `matchGolden` fixture (ADR-0013): committed, reviewed, and rewritten ONLY through the sanctioned
 // `BLESS` path (mirroring `@caisson-sh/testing` `golden.ts`). This is run as a DISTINCT turbo `eval`
-// task in the monorepo — never a required CI job inside a generated buyer repo (ADR-0072).
+// task in the monorepo — never a required CI job inside a generated repo (ADR-0072).
 //
 // THIS module is the file-I/O half only: load, gate, write. The gate's RULES — the boundary schema,
 // `compareToBaseline`, `assertRunEligibleForBaseline`, and the BLESS merge — live in the node-free

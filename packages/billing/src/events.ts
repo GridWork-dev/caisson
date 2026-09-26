@@ -1,7 +1,7 @@
 // The provider-agnostic domain event (ADR-0017) — the OPEN billing contract. No provider type escapes
-// the seam: the rest of the base consumes only DomainBillingEvent, and generated buyer hosts typecheck
-// against this open schema alone. The provider->DomainBillingEvent mappers themselves are the
-// commercial half (@caisson-sh/billing-orchestration, ADR-0249 G3); the CONTRACT stays here, open.
+// the seam: the rest of the base consumes only DomainBillingEvent, and generated hosts typecheck
+// against this open schema alone. The provider->DomainBillingEvent mappers themselves live in the
+// paired package (@caisson-sh/billing-orchestration, ADR-0249 G3); the CONTRACT stays here, open.
 // `sourceEventId` is the provider event id — it flows straight into the credit wallet's idempotency key
 // (ADR-0007/0023) so a replayed webhook grants exactly once. `accountId` is resolved from the
 // subscription's metadata on a cycle invoice (or the Checkout Session's metadata on a one-time purchase)
@@ -98,7 +98,7 @@ export const DomainBillingEventSchema = z.discriminatedUnion("type", [
     ),
   }),
   // ADR-0294: a chargeback/dispute — Paddle's merchant-of-record bank-initiated event, distinct
-  // from a refund (which the merchant/buyer initiates). ALERT-ONLY: the mapper below never grants,
+  // from a refund (which the merchant/customer initiates). ALERT-ONLY: the mapper below never grants,
   // revokes, or claws from this event — Paddle absorbs the dispute financially, and an operator
   // reviews + acts manually via the existing admin revoke lever (ADR-0225). `paymentId` joins back
   // to the original transaction for the alert's context; no money/entitlement effect reads it.

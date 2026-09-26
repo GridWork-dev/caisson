@@ -7,7 +7,7 @@
 // the `validateArtifactSet` check.
 import { type SkillArtifact, defineSkill } from "@caisson-sh/agent-kernel";
 
-/** The default skill set a buyer of the agent-dev edition gets out of the box (engine-neutral). */
+/** The default skill set an adopter of the agent-dev edition gets out of the box (engine-neutral). */
 export const CAISSON_SKILLS: readonly SkillArtifact[] = [
   defineSkill({
     name: "spec-first",

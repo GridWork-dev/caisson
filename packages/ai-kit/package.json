@@ -1,7 +1,7 @@
 {
   "name": "@caisson-sh/ai-kit",
   "version": "0.6.5",
-  "description": "AI Production Kit edition: metered inference, streaming, and embeddings composing prompt-registry + ai-meter + guardrails + ai-config behind Vercel AI SDK v7.",
+  "description": "AI Production Kit package: metered inference, streaming, and embeddings composing prompt-registry + ai-meter + guardrails + ai-config behind Vercel AI SDK v7.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

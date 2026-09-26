@@ -301,7 +301,7 @@ describe("openai-compatible backends resolve the CHAT path (ADR-0201)", () => {
 
   test("a local/ollama lane without baseUrl fails closed (no api.openai.com / localhost fallback)", () => {
     // createOpenAI used to silently default a baseUrl-less self-hosted lane to api.openai.com —
-    // a misdirected live call. The compatible path requires the buyer's host (ADR-0201).
+    // a misdirected live call. The compatible path requires the adopter's host (ADR-0201).
     for (const provider of ["local", "ollama"] as const) {
       expect(() =>
         defaultProviders(
@@ -383,7 +383,7 @@ describe("parseAiSettings — the ADR-0160 config fields (region / apiVersion / 
   });
 });
 
-describe("providerFor — SSRF guard on a buyer-supplied baseUrl (critic-gap R2)", () => {
+describe("providerFor — SSRF guard on a caller-supplied baseUrl (critic-gap R2)", () => {
   const openaiLane = (baseUrl: string): AiSettings["lanes"][string] => ({
     provider: "openai",
     model: "m",

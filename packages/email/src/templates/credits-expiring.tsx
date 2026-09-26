@@ -9,7 +9,7 @@ export interface CreditsExpiringData {
   credits: number;
   /** The grant's expiry date, YYYY-MM-DD. */
   expiresOn: string;
-  /** The buyer credits dashboard. */
+  /** The customer credits dashboard. */
   url: string;
 }
 

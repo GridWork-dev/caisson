@@ -4,9 +4,9 @@
 // (schema.ts). No schema change anywhere else — withTenant/RLS/entitlements/licenses are untouched.
 //
 // SCOPE (ADR-0257 §1.3): this file keeps only the login-critical SESSION-RESOLUTION half
-// (`resolveUserAccounts` / `ensurePersonalAccount` / `selectActiveAccount`) — it runs on every buyer
+// (`resolveUserAccounts` / `ensurePersonalAccount` / `selectActiveAccount`) — it runs on every
 // login (apps/site getSession), so it stays in the open Apache-2.0 substrate. The owner-gated MANAGE
-// half (`listAccountMembers` / `addAccountMember` / `assertCanManageMembers`) moved to the commercial
+// half (`listAccountMembers` / `addAccountMember` / `assertCanManageMembers`) moved to
 // `@caisson-sh/org-controls`, which re-uses `AccountMembership` + `Role` from here.
 import { withTenant, withUser, type Transactor } from "@caisson-sh/tenancy-rls";
 

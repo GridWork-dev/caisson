@@ -1,6 +1,6 @@
 // src/render.ts — the trust-page generator. A PURE function (no I/O, no clock, no id minting — the
 // un-wired-seam ethos, ADR-0047): given an evidence-pack manifest, returns a deployable self-contained
-// static page (HTML) and a machine-readable data file (JSON) a buyer hosts anywhere. Neither output
+// static page (HTML) and a machine-readable data file (JSON) an adopter hosts anywhere. Neither output
 // fetches the other at runtime — each is independently self-contained.
 //
 // Permanent non-goals (never scaffolded): no auth, no sign-off, no hosted comments, no NDA-gating.
@@ -46,7 +46,7 @@ function sortedEntries(facts: FlatFacts): Array<[string, unknown]> {
  *  data (framework/reference/claim/status/evidencePointer, the last being the cell's own
  *  canonicalControlIds joined — see the CROSSWALK_ROLLUP_ROWS_KEY doc in facts.ts). Justification is
  *  own-authored, readiness-language-safe prose built from the cell's already-safe enum fields (never
- *  the buyer's free text); `renderCitationRow` also gates `control` + `claim` (defense in depth). */
+ *  the adopter's free text); `renderCitationRow` also gates `control` + `claim` (defense in depth). */
 function crosswalkRollupRows(manifest: EvidencePackManifest): CitationRow[] {
   return manifest.crosswalkRollup.cells.map((cell) =>
     renderCitationRow({
@@ -127,7 +127,7 @@ ${renderCrosswalkSection(rows)}
 }
 
 /**
- * Generate the buyer trust page. Every fact is filtered through the caller's `allowlist` before
+ * Generate the trust page. Every fact is filtered through the caller's `allowlist` before
  * either output is built (a field absent from it never renders, in JSON or HTML), and every rendered
  * string passes the readiness-language gate (`@caisson-sh/artifact-render`'s `assertReadinessLanguage`)
  * — this generator cannot ship a "compliant"/"certified"/"verified" claim even if the underlying

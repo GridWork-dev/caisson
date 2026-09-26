@@ -1,5 +1,5 @@
 // Per-account abuse-throttle store (implements the credits abuse-throttle design). A SERVER-SIDE
-// token bucket so one licensed buyer cannot exhaust shared capacity. One row per account in
+// token bucket so one adopter cannot exhaust shared capacity. One row per account in
 // `rate_limit`; each check refills lazily by elapsed time then consumes a single token — done as ONE
 // atomic conditional UPDATE (the refilled count is computed in SQL from `now - last_refill_ms`,
 // clamped to capacity, decremented and stamped in the same statement; the UPDATE's WHERE makes "had a
@@ -14,11 +14,11 @@
 //
 // Fail-OPEN is NOT decided here — `checkRateLimit` returns a typed allowed/denied decision and lets
 // its caller (see account-hook.ts) choose to allow + alert on a store error. A DENY (out of tokens)
-// is the only signal that ever blocks a buyer.
+// is the only signal that ever blocks an adopter.
 //
-// Originally implemented inside the license-issuer service; hoisted into this shared base package so
+// Originally implemented inside a separate licensing service; hoisted into this shared base package so
 // the reference app composing the base substrate can wire per-account throttling without depending on
-// a commercial service (see account-hook.ts for the composition seam).
+// that other service (see account-hook.ts for the composition seam).
 import type { TenantExecutor } from "@caisson-sh/tenancy-rls";
 import { buildTenantPolicySql } from "@caisson-sh/tenancy-rls";
 
@@ -39,7 +39,7 @@ export interface RateLimitConfig {
 /**
  * The STATIC global default. A per-account row may override any of these columns; a freshly
  * auto-provisioned row inherits these. 120 tokens, refilling 120 every 60s ⇒ a sustained ~120
- * tool-calls/minute with a full 120-call burst. Tuned to throttle abuse, not normal buyer use.
+ * tool-calls/minute with a full 120-call burst. Tuned to throttle abuse, not normal adopter use.
  */
 export const DEFAULT_RATE_LIMIT: RateLimitConfig = {
   capacity: 120,
