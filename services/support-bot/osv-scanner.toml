@@ -1,8 +1,0 @@
-# OSV-Scanner suppression policy for services/support-bot (SPEC-security-scan-findings-triage,
-# ADR-0315). osv-scanner config does NOT propagate from the repo root into child directories, so
-# the accept for a finding in this dir's uv.lock must live here, beside the lockfile. See the
-# matching dated row in docs/security/tooling-playbook.md (Accepted findings).
-#
-# No active ignores. CVE-2025-71176 (pytest <9, dev-only tmpdir DoS) was accepted 2026-07-10 while
-# pinned `pytest>=8.3,<9`; pytest is now 9.1.1 (fixed), so the accept was removed as stale —
-# osv-scanner warns on an unused ignore entry.

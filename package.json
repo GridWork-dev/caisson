@@ -8,10 +8,7 @@
       "packages/*",
       "apps/*",
       "registry",
-      "services/license",
-      "services/docs",
-      "services/intel",
-      "services/betterstack-adapter"
+      "services/license"
     ],
     "catalog": {
       "zod": "^4.0.0",
@@ -37,16 +34,16 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build --no-daemon",
-    "lint": "turbo run lint --no-daemon && oxlint deploy",
+    "lint": "turbo run lint --no-daemon",
     "lint:repo": "oxlint .",
-    "test": "turbo run test --no-daemon && bun test deploy/*.test.ts",
+    "test": "turbo run test --no-daemon",
     "test:e2e": "turbo run test:e2e --no-daemon",
     "test:live": "turbo run test:live --no-daemon --env-mode=loose",
     "test:live:all": "turbo run test:live --no-daemon --env-mode=loose",
     "eval": "turbo run eval --no-daemon",
     "gate": "bun packages/kernel/src/gate.ts",
-    "typecheck": "turbo run typecheck --no-daemon && tsc -p deploy/tsconfig.json",
-    "check": "turbo run build lint typecheck test --no-daemon && oxlint deploy && tsc -p deploy/tsconfig.json && bun test deploy/*.test.ts && bun run gate",
+    "typecheck": "turbo run typecheck --no-daemon",
+    "check": "turbo run build lint typecheck test --no-daemon && bun run gate",
     "sot": "bun tooling/scripts/sot-check.ts",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",

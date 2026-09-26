@@ -4,12 +4,12 @@ rules:
     severity: ERROR
     message: >-
       Compare tokens/secrets with hmac.compare_digest(), never ==/!= (timing side channel).
-      See services/support-bot billing_grant.py bearer_ok(). (identity/security.md.)
+      (identity/security.md.)
     metadata:
       category: security
       cwe: "CWE-208: Observable Timing Discrepancy"
       references:
-        - services/support-bot/src/caisson_support_bot/billing_grant.py
+        - identity/security.md
     patterns:
       - pattern-either:
           - patterns:

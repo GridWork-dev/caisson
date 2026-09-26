@@ -5,5 +5,5 @@
     "rootDir": ".",
     "resolveJsonModule": true
   },
-  "include": ["schema", "scripts", "worker"]
+  "include": ["schema", "scripts"]
 }

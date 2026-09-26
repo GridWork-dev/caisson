@@ -2,8 +2,7 @@ name: security-scan
 # The deterministic security layer (SAST + supply-chain), split into its own workflow per the
 # ci.yml convention. REQUIRED since the ADR-0327 scan-gate flip (sequenced after the CAISSON-95
 # pinning in this same change): `deterministic` joins the required-check set — check ·
-# standards-gate · registry-index · oscal-conformance · deterministic (· support-bot, added by
-# ADR-0414 — see that workflow's header). As with the others,
+# standards-gate · registry-index · oscal-conformance · deterministic. As with the others,
 # "required" is discipline on this free-plan private repo (no enforced branch protection): the
 # convention is enforced by scripts/release-readiness.ts (REQUIRED_CHECKS) and review practice,
 # not a GitHub gate. `semgrep-pro` stays advisory (dormant until its token is provisioned).
@@ -11,7 +10,7 @@ name: security-scan
 #
 # Scanner installs are version-pinned + digest-verified against tools/security/versions.env
 # (CAISSON-95) — no curl|sh from a moving main branch, no floating `latest`. The only third-party
-# marketplace action is the SHA-pinned astral-sh/setup-uv (same pin as support-bot.yml). No SARIF
+# marketplace action is the SHA-pinned astral-sh/setup-uv. No SARIF
 # upload to the GitHub Security tab — that needs Advanced Security, which this private free-plan
 # repo doesn't have; the SARIF set is saved as a downloadable artifact instead.
 #
@@ -36,8 +35,8 @@ permissions:
   contents: read
 
 jobs:
-  # Deterministic layer: semgrep floor rules + p/security-audit, ruff flake8-bandit (support-bot),
-  # trivy, osv-scanner, trufflehog (verified-only), Dockerfile digest gate (advisory). SEMGREP_JOBS=1
+  # Deterministic layer: semgrep floor rules + p/security-audit, trivy, osv-scanner, trufflehog
+  # (verified-only), Dockerfile digest gate (advisory). SEMGREP_JOBS=1
   # dodges the semgrep-core io_uring crash the fleet box can hit under parallelism.
   deterministic:
     # CAISSON-96 draft guard — drafts skip; the ready_for_review trigger runs the full scan.
@@ -54,7 +53,7 @@ jobs:
           persist-credentials: false
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
-          version: "0.12.2" # pinned (same pin as support-bot.yml; no drift)
+          version: "0.12.2" # pinned
       - name: base rescan contract tests (offline)
         run: python3 -B -m unittest discover -s tools/security -p test_*images.py -v
       - name: runtime OS upgrade contract tests (offline)
@@ -78,7 +77,6 @@ jobs:
           export PATH="$HOME/.local/bin:$PATH"
           mkdir -p "$HOME/.local/bin"
           uv tool install "semgrep==${SEMGREP_VERSION}"
-          uv tool install "ruff==${RUFF_VERSION}"
           tmp="$(mktemp -d)"
           curl -sSfL --retry 5 --retry-delay 3 --retry-all-errors -o "$tmp/trivy.tgz" "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
           echo "${TRIVY_SHA256}  $tmp/trivy.tgz" | sha256sum -c -
@@ -93,7 +91,7 @@ jobs:
           install -m755 "$tmp/osv-scanner" "$HOME/.local/bin/osv-scanner"
           rm -rf "$tmp"
           # Re-assert every tool resolved — a missing tool must hard-fail the job, never silent-skip.
-          for t in semgrep ruff trivy trufflehog osv-scanner; do
+          for t in semgrep trivy trufflehog osv-scanner; do
             command -v "$t" >/dev/null || { echo "::error::$t missing after install — scan layer would silently skip"; exit 1; }
           done
       - name: security scan (SAST + supply-chain)
@@ -172,7 +170,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
         with:
-          version: "0.12.2" # pinned (same pin as support-bot.yml; no drift)
+          version: "0.12.2" # pinned
       # One guarded step: skip cleanly (installing nothing) when the token is absent; otherwise
       # install the PINNED semgrep (CAISSON-95, tools/security/versions.env) and run the Pro
       # platform-policy scan (interfile/cross-function taint). The custom floor rules run in the

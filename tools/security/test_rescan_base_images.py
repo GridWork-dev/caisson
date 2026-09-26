@@ -63,7 +63,6 @@ class RescanTests(unittest.TestCase):
         self.assertIn("steps.scanners.outcome == 'success'", workflow)
         self.assertIn("continue-on-error: true # R335", workflow)
         self.assertIn("persist-credentials: false", workflow)
-        self.assertNotIn("schedule:", (root / ".github/workflows/publish-image.yml").read_text())
 
 
 if __name__ == "__main__":
