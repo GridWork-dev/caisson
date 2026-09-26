@@ -1,3 +1,5 @@
+> **SUPERSEDED 2026-09-25 by ADR-0428 — see `outputs/specs/oss-pivot/SPEC.md`.** The whole repo goes public; the mirror model below is retired.
+
 # SPEC — OSS mirror launch program (sandbox audit → curated history → release train → public flip + GTM)
 
 **Status: LOCKED — ADR-0318 (2026-07-10, two picker rounds). Fork outcomes: F1 keep vessel ·
