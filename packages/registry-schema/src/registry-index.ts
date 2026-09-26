@@ -1,7 +1,7 @@
 /**
- * Registry index schema — the catalog the CLI + buyer agent + docs all read (ADR-0021/0004).
- * The index is BUILT from the published registry by a CI-only writer (ADR-0021) — it is not a
- * source mirror and is never hand-appended. Each version carries a gate-provenance record.
+ * Module catalog schema — the index the CLI and the MCP server validate a selection against
+ * (ADR-0021/0004). `@caisson/cli` derives it at build time from the workspace packages (name and
+ * version from each package.json, the rest from its manifest); it is never hand-edited.
  */
 import { readFileSync } from "node:fs";
 import { z } from "zod";
@@ -22,15 +22,14 @@ export const RegistryVersion = z
   .object({
     version: semver,
     manifest: ModuleManifest,
-    /** ISO 8601; stamped by CI at publish (never Date.now() in the build script). */
-    publishedAt: z.string().datetime(),
+    /** ISO 8601 publish time. Optional: a catalog derived from the workspace has none. */
+    publishedAt: z.string().datetime().optional(),
     /**
-     * Provenance of the green standards-gate run that admitted this version:
-     * "<ci-run-id>@<commit-sha>". This RECORDS provenance — it is NOT the access control. The
-     * index is writable only by the CI build job (branch protection + CODEOWNERS, ADR-0021); a
-     * hand-edited entry never lands because the file is regenerated from the registry, not appended.
+     * Provenance of the gate run that admitted this version, "<ci-run-id>@<commit-sha>". It
+     * records provenance, it is not the access control. Optional: a catalog derived from the
+     * workspace has none.
      */
-    gateAttestation: z.string().min(1),
+    gateAttestation: z.string().min(1).optional(),
   })
   .strict();
 
@@ -57,21 +56,21 @@ export function loadRegistryIndex(raw: unknown): RegistryIndex {
 }
 
 /**
- * Read + parse the on-disk registry index (the static CI-built file, ADR-0047). Parse-or-throw — a
- * malformed/tampered file raises rather than yielding a half-typed object. The single sanctioned
- * file read path for `create-caisson` + the buyer MCP.
+ * Read + parse an on-disk catalog file. Parse-or-throw — a malformed/tampered file raises rather
+ * than yielding a half-typed object. The single sanctioned file read path for `create-caisson` +
+ * the MCP server.
  */
 export function loadRegistryIndexFromFile(path: string): RegistryIndex {
   return loadRegistryIndex(JSON.parse(readFileSync(path, "utf8")));
 }
 
-/** The generator allowlist (ADR-0021/0004/0008). */
+/** The set of generatable module ids (ADR-0021/0004/0008). */
 export function moduleAllowlist(index: RegistryIndex): Set<string> {
   return new Set(index.modules.map((m) => m.id));
 }
 
 /**
- * Validate a caller-supplied module id against the registry BEFORE any path construction or
+ * Validate a caller-supplied module id against the catalog BEFORE any path construction or
  * subprocess. Re-asserts the slug regex as defense-in-depth (do not trust the index shape alone),
  * then narrows to the branded ModuleId.
  */
@@ -86,14 +85,14 @@ export function assertKnownModule(
   }
   if (!moduleAllowlist(index).has(id)) {
     throw new Error(
-      `unknown module id (not in registry allowlist): ${JSON.stringify(id)}`,
+      `unknown module id (not in the module catalog): ${JSON.stringify(id)}`,
     );
   }
 }
 
 /**
- * Validate a caller-supplied VERSION against that module's published versions BEFORE it reaches a
- * path/exec arg (ADR-0021 — the allowlist must cover the version, not just the id; a raw version
+ * Validate a caller-supplied VERSION against that module's catalog versions BEFORE it reaches a
+ * path/exec arg (ADR-0021 — the catalog must cover the version, not just the id; a raw version
  * string is a path-traversal surface otherwise).
  */
 export function assertKnownVersion(
