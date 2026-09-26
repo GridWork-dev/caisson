@@ -1,6 +1,6 @@
 // The Paddle->domain event mapper (ADR-0108). Maps a verified Paddle Billing webhook payload to the
 // SAME provider-agnostic DomainBillingEvent union the Stripe driver produces (./events.ts) — no Paddle
-// type escapes the package; services/license consumes only DomainBillingEvent either way.
+// type escapes the package; a host consumes only DomainBillingEvent either way.
 //
 // Paddle's `transaction.completed` is the ONE event Paddle fires for BOTH a one-time purchase AND every
 // subscription charge (the initial automatic charge AND each renewal) — there is no Stripe-style split
@@ -9,7 +9,7 @@
 // `subscription_id` is therefore NEVER a one-time purchase.completed — mirroring the Stripe driver's
 // checkout.session.completed subscription-mode guard — it routes instead through the cycle/
 // invoice-equivalent path (mapped onto the existing `invoice.paid` union member, which is what the
-// services/license cycle->grant mapper already reads regardless of provider).
+// host's cycle->grant mapper already reads regardless of provider).
 //
 // The tenant resolves from `custom_data.account_id`, stamped at checkout and propagated NATIVELY by
 // Paddle onto the transaction + subscription — this removes the Stripe driver's
@@ -319,7 +319,7 @@ export function parsePaddleEvent(
         // Paddle's `origin` says HOW the charge arose (verified against developer.paddle.com's
         // transaction.completed reference + the subscription-created/renewed simulator scenarios,
         // 2026-07-01), mapped onto the billingReason vocabulary the cycle->grant gate
-        // (services/license GRANTING_REASONS) recognizes:
+        // (a host's GRANTING_REASONS set) recognizes:
         //   web | api                → the subscription's FIRST charge (Paddle.js checkout / an
         //                              API-created transaction, e.g. provider.ts createCheckout)
         //                              → "subscription_create" (grants)

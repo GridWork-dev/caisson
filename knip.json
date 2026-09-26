@@ -11,8 +11,7 @@
       "ignoreDependencies": ["playwright"]
     },
     "apps/*": {},
-    "registry": {},
-    "services/license": {}
+    "registry": {}
   },
   "ignore": ["**/dist/**", "**/*.d.ts", "**/CHANGELOG.md"]
 }

@@ -20,7 +20,6 @@
     "@caisson/ai-meter": "workspace:*",
     "@caisson/audit-harness": "workspace:*",
     "@caisson/audit-worm": "workspace:*",
-    "@caisson/license-issue": "workspace:*",
     "@caisson/local-store": "workspace:*",
     "@caisson/prompt-registry": "workspace:*",
     "@caisson/ui": "workspace:*",

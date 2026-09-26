@@ -6,9 +6,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[2]
-TARGETS = {
-    "services/license/Dockerfile": ["migrate", "runtime"],
-}
+TARGETS = {}
 BUN = "oven/bun:1.4.2-slim@sha256:cb3bbbb08e13a4a2ff400f24c7a2a1d5efa83f6ef8544d52d95a519631e2fc61"
 UPGRADE = "RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && rm -rf /var/lib/apt/lists/*"
 

@@ -2,8 +2,7 @@
 // switches the live merchant-of-record to Paddle — both implementations satisfy the ONE open port
 // (@caisson/billing `BillingProvider`), so a provider swap is a new driver, not a rewrite. Each driver
 // composes the OPEN raw-body signature verifier (@caisson/billing) with this package's parser +
-// checkout REST call; the full purchase->entitlement->license->grant orchestration lives in
-// services/license. Commercial half of the billing carve (ADR-0249 G3).
+// checkout REST call; the purchase->grant orchestration lives in the host application.
 import { z } from "zod";
 import { fetchWithTimeout, InternalError, parseStrict } from "@caisson/kernel";
 import {
@@ -165,8 +164,8 @@ export function createPaddleBilling(config: PaddleConfig): BillingProvider {
       // mapper later reads off `transaction.completed.discount_id`.
       const baseUrl = paddleApiBase(config.env);
       // amount "10" = the operator-LOCKED 10% buyer-facing discount (ADR-0315). Fixed program
-      // parameter, not a per-mint input — the store's AFFILIATE_DISCOUNT_PCT mirrors it, but this
-      // package cannot depend "up" on services/license (ADR-0003), so the locked value is inlined.
+      // parameter, not a per-mint input — this package cannot depend "up" on the host that owns
+      // the discount program (ADR-0003), so the locked value is inlined.
       const body = {
         description: input.description,
         type: "percentage",

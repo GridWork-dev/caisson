@@ -42,16 +42,6 @@ export interface Domain {
 }
 
 /**
- * The COMMERCIAL packages a buyer never receives (public-surface.md §2 "Internal-only"). Every
- * other commercial package is edition-delivered or à-la-carte, so the buyer reads its source.
- */
-const INTERNAL_COMMERCIAL_PKGS = new Set([
-  "platform-reads",
-  "pricebook",
-  "license-issue",
-]);
-
-/**
  * Dirs never enumerated as a tree unit (build / vendor / scratch). A REVIEWED constant — every
  * addition is a visible diff and a review line-item, per the SPEC coverage-gate risk note: an
  * over-broad ignore silently re-opens the under-scan.
@@ -82,9 +72,9 @@ function readDirs(abs: string): string[] {
 }
 
 /**
- * Classify one `packages/<name>` unit from its `package.json` `license`. Apache-2.0 → oss-source; a
- * commercial package is internal-only iff named in the reviewed set, else sold-source. THROWS when
- * the dir has no readable package.json — an unclassifiable tree unit is the under-scan, made loud.
+ * Classify one `packages/<name>` unit from its `package.json` `license`. Apache-2.0 → oss-source,
+ * anything else → sold-source. THROWS when the dir has no readable package.json — an
+ * unclassifiable tree unit is the under-scan, made loud.
  */
 function classifyPackage(root: string, name: string): SurfaceClass {
   let raw: string;
@@ -98,8 +88,7 @@ function classifyPackage(root: string, name: string): SurfaceClass {
     );
   }
   const license = (JSON.parse(raw) as { license?: string }).license;
-  if (license === "Apache-2.0") return "oss-source";
-  return INTERNAL_COMMERCIAL_PKGS.has(name) ? "internal-only" : "sold-source";
+  return license === "Apache-2.0" ? "oss-source" : "sold-source";
 }
 
 /** A per-dir domain whose root owns everything under `<container>/<name>`. */

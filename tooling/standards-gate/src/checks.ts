@@ -202,18 +202,15 @@ export function checkExternalAgpl(pkgs: Pkg[], root: string): Finding[] {
 }
 
 /**
- * `packages/` members that are internal engineering plumbing and will NEVER enter the sold
- * registry index — each one's own package.json `description` already says so in prose; this set
- * just makes that an enforced, auditable fact instead of a manifest-pending warning nobody will
- * ever clear. NOT inferred from `private: true` (several sellable modules may set that too for
- * unrelated npm-publish-prevention reasons) — every entry here is a deliberate opt-in with its
- * own one-line rationale, so a real future module can't slip past `manifest-pending` by accident.
+ * `packages/` members that are internal engineering plumbing and will NEVER enter the registry
+ * index — each one's own package.json `description` already says so in prose; this set just makes
+ * that an enforced, auditable fact instead of a manifest-pending warning nobody will ever clear.
+ * NOT inferred from `private: true` — every entry here is a deliberate opt-in with its own one-line
+ * rationale, so a real future module can't slip past `manifest-pending` by accident.
  */
 const NEVER_PUBLISHED = new Set([
-  // The private brand layer (glyphs/wordmark) — apps consume it directly, never a registry SKU.
+  // The private brand layer (glyphs/wordmark) — apps consume it directly, never a registry module.
   "@caisson/brand",
-  // The ordered platform migration chain — internal engineering plumbing, not a buyer module.
-  "@caisson/platform-migrations",
 ]);
 
 /**
@@ -651,10 +648,10 @@ export async function checkRlsEquivalence(
  */
 const PROSE_SCAN_DOC_FILES = ["README.md", "AGENTS.md", "CHANGELOG.md"];
 
-/** True for a package/app dir this gate scans — the rubric's oss-source/sold-source/buyer-runtime class. */
+/** True for a package/app dir this gate scans — the published packages plus the public site. */
 function isProseScanTarget(relDir: string): boolean {
   if (relDir.startsWith("packages/")) return true;
-  return relDir === "apps/site" || relDir === "services/license";
+  return relDir === "apps/site";
 }
 
 /**

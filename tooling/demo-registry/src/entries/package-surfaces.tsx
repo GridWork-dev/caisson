@@ -1,15 +1,11 @@
 "use client";
 
-// @caisson/demo-registry — the six per-package `./ui` surfaces. Each is a headless-data-in,
+// @caisson/demo-registry — the five per-package `./ui` surfaces. Each is a headless-data-in,
 // SSR-safe component that renders whatever domain data it is HANDED (no DB, no fetch) — exactly
 // the shape a demo needs: static sample data in, a live render out. Only StoreSearch is genuinely
 // controlled (query state); it gets a small wrapper.
 import { useState } from "react";
 import { ChainViewer } from "@caisson/audit-worm/ui";
-import {
-  IssuanceLog,
-  type IssuedLicenseRecord,
-} from "@caisson/license-issue/ui";
 import { StoreSearch, type StoreSearchResult } from "@caisson/local-store/ui";
 import { PromptBrowser } from "@caisson/prompt-registry/ui";
 import { UsageChart, type UsageEventDatum } from "@caisson/ai-meter/ui";
@@ -28,25 +24,6 @@ const CHAIN_ENTRIES = [
     prevHash: "a".repeat(64),
     payload: { event: "locked" },
     hash: "b".repeat(64),
-  },
-];
-
-const LICENSE_RECORDS: IssuedLicenseRecord[] = [
-  {
-    licenseId: "9f2a0c11-4b7e-4a5f-8b2e-2c3d4e5f6a7b",
-    tier: "pro",
-    entitlements: ["compliance", "ai-production"],
-    major: 1,
-    expiry: null,
-    issuedAt: "2026-06-01T12:00:00Z",
-  },
-  {
-    licenseId: "1a2b3c4d-5e6f-4a5b-9c8d-0e1f2a3b4c5d",
-    tier: "community",
-    entitlements: ["local-first"],
-    major: 1,
-    expiry: "2026-05-01T00:00:00Z",
-    issuedAt: "2026-01-15T09:30:00Z",
   },
 ];
 
@@ -160,16 +137,6 @@ export const PACKAGE_SURFACE_ENTRIES: CatalogEntry[] = [
         verification={{ valid: true, brokenAt: null }}
       />
     ),
-  },
-  {
-    id: "license-issue.issuance-log",
-    name: "IssuanceLog",
-    package: "@caisson/license-issue",
-    tier: "per-package-ui",
-    description:
-      "The admin-side issued-license ledger — tier, live/expired status, entitlement count.",
-    variants: ["active", "expired"],
-    render: () => <IssuanceLog records={LICENSE_RECORDS} />,
   },
   {
     id: "local-store.store-search",

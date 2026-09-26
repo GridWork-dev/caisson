@@ -196,10 +196,6 @@
         "typescript": "catalog:",
       },
     },
-    "packages/agentic-dev": {
-      "name": "@caisson/agentic-dev",
-      "version": "0.2.5",
-    },
     "packages/ai-config": {
       "name": "@caisson/ai-config",
       "version": "0.3.10",
@@ -291,10 +287,6 @@
         "react",
         "react-dom",
       ],
-    },
-    "packages/ai-production": {
-      "name": "@caisson/ai-production",
-      "version": "0.2.3",
     },
     "packages/alerting": {
       "name": "@caisson/alerting",
@@ -549,10 +541,6 @@
         "typescript": "catalog:",
       },
     },
-    "packages/everything": {
-      "name": "@caisson/everything",
-      "version": "0.3.2",
-    },
     "packages/field-crypto": {
       "name": "@caisson/field-crypto",
       "version": "1.1.2",
@@ -633,52 +621,6 @@
         "@caisson/tsconfig": "workspace:*",
         "typescript": "catalog:",
       },
-    },
-    "packages/license-issue": {
-      "name": "@caisson/license-issue",
-      "version": "1.0.9",
-      "dependencies": {
-        "@caisson/kernel": "workspace:*",
-        "@caisson/license-verify": "workspace:*",
-      },
-      "devDependencies": {
-        "@caisson/registry-schema": "workspace:*",
-        "@caisson/testing": "workspace:*",
-        "@caisson/tsconfig": "workspace:*",
-        "@caisson/ui": "workspace:*",
-        "@types/react": "catalog:",
-        "@types/react-dom": "catalog:",
-        "react": "catalog:",
-        "react-dom": "catalog:",
-        "typescript": "catalog:",
-      },
-      "peerDependencies": {
-        "@caisson/ui": "workspace:^",
-        "react": "^19.0.0",
-        "react-dom": "^19.0.0",
-      },
-      "optionalPeers": [
-        "@caisson/ui",
-        "react",
-        "react-dom",
-      ],
-    },
-    "packages/license-verify": {
-      "name": "@caisson/license-verify",
-      "version": "0.3.10",
-      "dependencies": {
-        "@caisson/kernel": "workspace:*",
-        "zod": "catalog:",
-      },
-      "devDependencies": {
-        "@caisson/testing": "workspace:*",
-        "@caisson/tsconfig": "workspace:*",
-        "typescript": "catalog:",
-      },
-    },
-    "packages/local-first": {
-      "name": "@caisson/local-first",
-      "version": "0.2.3",
     },
     "packages/local-inference": {
       "name": "@caisson/local-inference",
@@ -849,58 +791,6 @@
         "typescript": "catalog:",
       },
     },
-    "packages/platform-migrations": {
-      "name": "@caisson/platform-migrations",
-      "version": "0.3.5",
-      "dependencies": {
-        "@caisson/ai-meter": "workspace:*",
-        "@caisson/auth": "workspace:*",
-        "@caisson/billing-orchestration": "workspace:*",
-        "@caisson/credits": "workspace:*",
-        "@caisson/kernel": "workspace:*",
-        "@caisson/migrate": "workspace:*",
-        "@caisson/service-license": "workspace:*",
-      },
-      "devDependencies": {
-        "@caisson/testing": "workspace:*",
-        "@caisson/tsconfig": "workspace:*",
-        "@electric-sql/pglite": "catalog:",
-        "typescript": "catalog:",
-      },
-      "peerDependencies": {
-        "@electric-sql/pglite": "*",
-      },
-      "optionalPeers": [
-        "@electric-sql/pglite",
-      ],
-    },
-    "packages/platform-reads": {
-      "name": "@caisson/platform-reads",
-      "version": "0.3.1",
-      "dependencies": {
-        "@caisson/tenancy-rls": "workspace:*",
-      },
-      "devDependencies": {
-        "@caisson/service-license": "workspace:*",
-        "@caisson/testing": "workspace:*",
-        "@caisson/tsconfig": "workspace:*",
-        "typescript": "catalog:",
-      },
-    },
-    "packages/pricebook": {
-      "name": "@caisson/pricebook",
-      "version": "0.8.5",
-      "dependencies": {
-        "@caisson/kernel": "workspace:*",
-        "@caisson/registry-schema": "workspace:*",
-        "zod": "catalog:",
-      },
-      "devDependencies": {
-        "@caisson/testing": "workspace:*",
-        "@caisson/tsconfig": "workspace:*",
-        "typescript": "catalog:",
-      },
-    },
     "packages/prompt-registry": {
       "name": "@caisson/prompt-registry",
       "version": "1.1.2",
@@ -929,10 +819,6 @@
         "react",
         "react-dom",
       ],
-    },
-    "packages/provenance": {
-      "name": "@caisson/provenance",
-      "version": "0.2.3",
     },
     "packages/rate-limit": {
       "name": "@caisson/rate-limit",
@@ -1138,40 +1024,6 @@
         "typescript": "catalog:",
       },
     },
-    "services/license": {
-      "name": "@caisson/service-license",
-      "version": "0.1.5",
-      "dependencies": {
-        "@aws-sdk/client-s3": "catalog:",
-        "@caisson/alerting": "workspace:*",
-        "@caisson/audit-worm": "workspace:*",
-        "@caisson/billing": "workspace:*",
-        "@caisson/billing-orchestration": "workspace:*",
-        "@caisson/credits": "workspace:*",
-        "@caisson/email": "workspace:*",
-        "@caisson/jobs": "workspace:*",
-        "@caisson/kernel": "workspace:*",
-        "@caisson/license-issue": "workspace:*",
-        "@caisson/license-verify": "workspace:*",
-        "@caisson/observability": "workspace:*",
-        "@caisson/org-controls": "workspace:*",
-        "@caisson/platform-reads": "workspace:*",
-        "@caisson/pricebook": "workspace:*",
-        "@caisson/rate-limit": "workspace:*",
-        "@caisson/registry-schema": "workspace:*",
-        "@caisson/tenancy-rls": "workspace:*",
-        "pg": "catalog:",
-        "tldts": "^7.4.5",
-      },
-      "devDependencies": {
-        "@caisson/auth": "workspace:*",
-        "@caisson/testing": "workspace:*",
-        "@caisson/tsconfig": "workspace:*",
-        "@types/bun": "catalog:",
-        "@types/pg": "catalog:",
-        "typescript": "catalog:",
-      },
-    },
     "tooling/audit-harness": {
       "name": "@caisson/audit-harness",
       "version": "1.0.3",
@@ -1206,7 +1058,6 @@
         "@caisson/ai-meter": "workspace:*",
         "@caisson/audit-harness": "workspace:*",
         "@caisson/audit-worm": "workspace:*",
-        "@caisson/license-issue": "workspace:*",
         "@caisson/local-store": "workspace:*",
         "@caisson/prompt-registry": "workspace:*",
         "@caisson/ui": "workspace:*",
@@ -1463,8 +1314,6 @@
 
     "@caisson/agent-trajectory": ["@caisson/agent-trajectory@workspace:packages/agent-trajectory"],
 
-    "@caisson/agentic-dev": ["@caisson/agentic-dev@workspace:packages/agentic-dev"],
-
     "@caisson/ai-config": ["@caisson/ai-config@workspace:packages/ai-config"],
 
     "@caisson/ai-evals": ["@caisson/ai-evals@workspace:packages/ai-evals"],
@@ -1472,8 +1321,6 @@
     "@caisson/ai-kit": ["@caisson/ai-kit@workspace:packages/ai-kit"],
 
     "@caisson/ai-meter": ["@caisson/ai-meter@workspace:packages/ai-meter"],
-
-    "@caisson/ai-production": ["@caisson/ai-production@workspace:packages/ai-production"],
 
     "@caisson/alerting": ["@caisson/alerting@workspace:packages/alerting"],
 
@@ -1507,8 +1354,6 @@
 
     "@caisson/email": ["@caisson/email@workspace:packages/email"],
 
-    "@caisson/everything": ["@caisson/everything@workspace:packages/everything"],
-
     "@caisson/field-crypto": ["@caisson/field-crypto@workspace:packages/field-crypto"],
 
     "@caisson/frameworks-pack": ["@caisson/frameworks-pack@workspace:packages/frameworks-pack"],
@@ -1519,13 +1364,7 @@
 
     "@caisson/kernel": ["@caisson/kernel@workspace:packages/kernel"],
 
-    "@caisson/license-issue": ["@caisson/license-issue@workspace:packages/license-issue"],
-
-    "@caisson/license-verify": ["@caisson/license-verify@workspace:packages/license-verify"],
-
     "@caisson/lint-policy": ["@caisson/lint-policy@workspace:tooling/lint-policy"],
-
-    "@caisson/local-first": ["@caisson/local-first@workspace:packages/local-first"],
 
     "@caisson/local-inference": ["@caisson/local-inference@workspace:packages/local-inference"],
 
@@ -1545,15 +1384,7 @@
 
     "@caisson/oscal-spine": ["@caisson/oscal-spine@workspace:packages/oscal-spine"],
 
-    "@caisson/platform-migrations": ["@caisson/platform-migrations@workspace:packages/platform-migrations"],
-
-    "@caisson/platform-reads": ["@caisson/platform-reads@workspace:packages/platform-reads"],
-
-    "@caisson/pricebook": ["@caisson/pricebook@workspace:packages/pricebook"],
-
     "@caisson/prompt-registry": ["@caisson/prompt-registry@workspace:packages/prompt-registry"],
-
-    "@caisson/provenance": ["@caisson/provenance@workspace:packages/provenance"],
 
     "@caisson/rate-limit": ["@caisson/rate-limit@workspace:packages/rate-limit"],
 
@@ -1564,8 +1395,6 @@
     "@caisson/retention-runner": ["@caisson/retention-runner@workspace:packages/retention-runner"],
 
     "@caisson/risk-register": ["@caisson/risk-register@workspace:packages/risk-register"],
-
-    "@caisson/service-license": ["@caisson/service-license@workspace:services/license"],
 
     "@caisson/signing-primitive": ["@caisson/signing-primitive@workspace:packages/signing-primitive"],
 

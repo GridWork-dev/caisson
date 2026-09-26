@@ -299,9 +299,8 @@ export function findAiOverviewItem(node: unknown, depth = 0): unknown | null {
   return null;
 }
 
-/** Fire one `aeo_citation_probe` PostHog event. NEVER throws (same config-gated,
- * never-throw contract as `services/license/src/posthog-capture.ts`'s purchase capture) —
- * an analytics miss must never fail the probe run. */
+/** Fire one `aeo_citation_probe` PostHog event. NEVER throws (config-gated, never-throw
+ * contract) — an analytics miss must never fail the probe run. */
 async function capturePostHogProbe(
   key: string,
   host: string,

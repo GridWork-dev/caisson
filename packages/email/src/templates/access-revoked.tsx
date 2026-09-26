@@ -1,6 +1,6 @@
 // The revoke/refund buyer-facing notice (G27, buyer-lifecycle audit 2026-07-07): fired post-commit
-// from the SAME seam as the purchase/renewal confirmations (services/license/src/app.ts's webhook
-// handler) whenever a subscription cancel or a refund actually revoked an active grant. Before this
+// from the SAME seam as the purchase/renewal confirmations (the host's webhook handler)
+// whenever a subscription cancel or a refund actually revoked an active grant. Before this
 // template, `subscription.canceled`/`refund.completed` returned NO_EFFECT and fired nothing — a
 // buyer found entitlements silently gone on their next dashboard visit. One bounded prop set, no
 // entitlement listing (the mapper surfaces only "something was revoked", not which ids — the

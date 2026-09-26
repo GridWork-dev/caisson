@@ -7,8 +7,7 @@
       "tooling/*",
       "packages/*",
       "apps/*",
-      "registry",
-      "services/license"
+      "registry"
     ],
     "catalog": {
       "zod": "^4.0.0",

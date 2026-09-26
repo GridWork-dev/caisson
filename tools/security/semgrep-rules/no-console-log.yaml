@@ -4,12 +4,12 @@ rules:
     severity: ERROR
     message: >-
       No console.log/debug/info in product code — use process.stderr.write() (the
-      sanctioned sink, e.g. services/license/src/app.ts) or a structured logger.
+      sanctioned sink) or a structured logger.
       console.error/console.warn are allowed. (identity/security.md, CLAUDE.md coding standards.)
     metadata:
       category: best-practice
       references:
-        - services/license/src/app.ts
+        - identity/security.md
     patterns:
       - pattern-either:
           - pattern: console.log(...)

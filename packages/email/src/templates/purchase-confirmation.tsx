@@ -1,10 +1,10 @@
 // The post-purchase receipt (extends ADR-0203/0252's driver-gated notification pattern to a THIRD
 // channel — email). Sent once per webhook grant, next to the Discord role push and the PostHog
-// purchase capture (services/license/src/app.ts's post-commit block). One bounded prop set: the
+// purchase capture (the host's post-commit webhook block). One bounded prop set: the
 // buyer's display name, the provider order id, the per-line breakdown (integer minor units,
-// ADR-0007, when a line's own charged amount is known — services/license's SKU attribution
-// (`SkuLine`) does not carry one today, so the wired sender passes labels only and the accurate
-// total still rides on `amountTotalMinor`), and the dashboard link — no PII beyond what the buyer
+// ADR-0007, when a line's own charged amount is known — a sender without per-line amounts passes
+// labels only and the accurate total still rides on `amountTotalMinor`), and the dashboard link —
+// no PII beyond what the buyer
 // already gave the checkout.
 import {
   EmailBody,
