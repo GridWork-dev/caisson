@@ -29,13 +29,13 @@ individual module's bundle membership because membership in it is implicit. That
 ## Install
 
 ```bash
-export CAISSON_LICENSE_TOKEN=<your registry token>
-bunx @caisson-sh/cli@latest --name caisson-app --edition everything
+bunx @caisson-sh/cli@latest --name caisson-app --module <id@version>
 cd caisson-app
 bun install
 ```
 
-`--edition everything` auto-selects the Everything bundle's current modules, the command above scaffolds the whole bundle. Add or swap individual picks with `--module <id@version>`; see [Getting started](/docs/getting-started) for the full flag reference.
+Repeat `--module <id@version>` once per module you want. Every module installs from public npm,
+no token needed; see [Getting started](/docs/getting-started) for the full flag reference.
 
 ## How it composes
 
@@ -50,8 +50,6 @@ Everything sits on the same open-core [base substrate](/docs/base) as every othe
 `@caisson/kernel`, `@caisson/tenancy-rls`, `@caisson/ui`, `@caisson/billing`, and the rest of the
 Apache-2.0 packages, and adds the full commercial layer on top.
 
-## Entitlement
+## License
 
-Everything is a commercial bundle (`LicenseRef-Caisson-Commercial`), one-time perpetual, the same
-model as every other bundle. A purchase grants every member module's entitlement id, checked
-offline against the license.
+Every module here is Apache-2.0 and installs from public npm.
