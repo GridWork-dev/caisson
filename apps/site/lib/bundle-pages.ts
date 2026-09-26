@@ -1,24 +1,25 @@
-// The bundle content record — the shared, typed SOT for the six bundles' reusable page content,
-// the sibling of `lib/module-pages.ts` for modules. Each of the five hand-authored bundle pages
-// (`/compliance`, `/ai-kit`, `/local-first`, `/agentic-dev`, `/provenance`) reads its hero copy,
-// member list, and FAQ from here so the same content powers both the standalone SEO page and the
-// marketplace card viewer (`components/preview-dialog.tsx`). The `everything` bundle has no
-// standalone page (it lives on the marketplace surface); its entry exists only to power the viewer.
+// The module-family content record — the shared, typed SOT for the six module families' reusable
+// page content, the sibling of `lib/module-pages.ts` for modules. Each of the five hand-authored
+// module-family pages (`/compliance`, `/ai-kit`, `/local-first`, `/agentic-dev`, `/provenance`)
+// reads its hero copy, member list, and FAQ from here so the same content powers both the
+// standalone SEO page and the marketplace card viewer (`components/preview-dialog.tsx`). The
+// `everything` entry has no standalone page (it lives on the marketplace surface); its entry
+// exists only to power the viewer.
 //
 // SCOPE — what lives here vs. what stays in the page: this record holds the content the pop-out
 // REUSES (hero, definition, members, faq) plus the page metadata, so a claim never drifts between
 // the page and the pop-out. Each page's PAGE-UNIQUE bespoke prose — the "what it composes" and
-// "who it's for" narratives, the colored-token hero/terminal artifacts, and the pricing-ladder
-// cards — stays inline in the page: it is not pop-out-reused, and shattering that bespoke JSX into a
-// data record would trade byte-identical SEO output for zero reuse. Keep every claim true-to-built
-// (ADR-0082) and V1-live (ADR-0237 rider 2).
+// "who it's for" narratives, and the colored-token hero/terminal artifacts — stays inline in the
+// page: it is not pop-out-reused, and shattering that bespoke JSX into a data record would trade
+// byte-identical SEO output for zero reuse. Keep every claim true-to-built (ADR-0082) and V1-live
+// (ADR-0237 rider 2).
 
 import type { BundleId } from "./catalog";
 
 // Spelled-out counts for composition headings (e.g. "Seven composed packages.") — small, fixed
-// vocabulary matching the site's existing voice ("Fourteen packages, one bundle.", "Five technical
-// controls…"). Never hand-type a count word beside a `.map()`-rendered grid (ADR-0082 F6): always
-// derive it from the same array the grid renders, through this one spot.
+// vocabulary matching the site's existing voice ("Fourteen packages, one module family.", "Five
+// technical controls…"). Never hand-type a count word beside a `.map()`-rendered grid (ADR-0082
+// F6): always derive it from the same array the grid renders, through this one spot.
 const COUNT_WORDS = [
   "Zero",
   "One",
@@ -44,9 +45,9 @@ export function spellCount(n: number): string {
   return COUNT_WORDS[n] ?? String(n);
 }
 
-/** One composed member of a bundle — the id (a MODULES id or a base-package slug), its display
- *  name as the page renders it, and the customer-facing one-liner. Priced/linked state is derived by
- *  the page (a member with a MODULES row shows its price and links to its depth page). */
+/** One composed member of a module family — the id (a MODULES id or a base-package slug), its
+ *  display name as the page renders it, and the reader-facing one-liner. Linked state is derived
+ *  by the page (a member with a MODULES row links to its depth page). */
 export interface BundlePageMember {
   id: string;
   name: string;
@@ -54,7 +55,7 @@ export interface BundlePageMember {
 }
 
 export interface BundlePageRecord {
-  /** = BundleId — the bundle's stable id and the card-viewer deep-link (`?view=bundle:<slug>`; the
+  /** = BundleId — the module family's stable id and the card-viewer deep-link (`?view=bundle:<slug>`; the
    *  legacy `?b=<slug>` still resolves as an alias). */
   slug: BundleId;
   /** Short page-title (the `<title>` head, not the H1). */
@@ -66,8 +67,8 @@ export interface BundlePageRecord {
   hero: { eyebrow: string; title: string; lede: string };
   /** 40-70 word "what it is" for the pop-out (mirrors ModulePageRecord.definition). */
   definition: string;
-  /** The bundle's composed members, in the order the page renders them (includes base packages that
-   *  have no standalone SKU — those render unpriced and unlinked). */
+  /** The module family's composed members, in the order the page renders them (includes base
+   *  packages that have no standalone module page — those render unlinked). */
   members: readonly BundlePageMember[];
   /** Visible FAQ — also the source of the page's FAQPage JSON-LD. */
   faq: readonly { question: string; answer: string }[];
@@ -78,20 +79,20 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     slug: "compliance",
     metaTitle: "Compliance",
     metaDescription:
-      "Fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, alerting, and a retention runner, composed into one bundle and shipped with a SOC 2 / HIPAA evidence-pack generator. Caisson ships the technical controls and generates the evidence; the certification is your auditor's.",
+      "Fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, alerting, and a retention runner, composed into one module family and shipped with a SOC 2 / HIPAA evidence-pack generator. Caisson ships the technical controls and generates the evidence; the certification is your auditor's.",
     hero: {
       eyebrow: "Compliance-grade infrastructure for regulated SaaS",
       title: "Audit-ready from the first commit.",
-      lede: "Compliance delivers fourteen packages in one bundle: tenant isolation that fails closed, evidence that can't be overwritten, and machine-readable OSCAL exports backed by a pinned NIST catalog. Own the source, wire it in before your first customer, and hand an auditor an artifact instead of a slide deck.",
+      lede: "Compliance delivers fourteen packages in one module family: tenant isolation that fails closed, evidence that can't be overwritten, and machine-readable OSCAL exports backed by a pinned NIST catalog. Own the source, wire it in before your first customer, and hand an auditor an artifact instead of a slide deck.",
     },
     definition:
-      "Compliance delivers fourteen @caisson-sh/* packages in one bundle: fail-closed tenant isolation, an append-only audit chain over S3 Object-Lock WORM, per-tenant field encryption, alerting, a retention runner, an access-review campaign engine, an AI risk register, a buyer-facing trust page, and a dedicated OSCAL spine that maps evidence into machine-readable assessment, catalog, and ISO 27001 SoA artifacts. Own the source, and wire it in before your first customer shares a row.",
+      "Compliance delivers fourteen @caisson-sh/* packages in one module family: fail-closed tenant isolation, an append-only audit chain over S3 Object-Lock WORM, per-tenant field encryption, alerting, a retention runner, an access-review campaign engine, an AI risk register, a public trust page, and a dedicated OSCAL spine that maps evidence into machine-readable assessment, catalog, and ISO 27001 SoA artifacts. Own the source, and wire it in before your first customer shares a row.",
     members: [
       {
         id: "kernel",
         name: "Kernel",
         oneLiner:
-          "Typed config/schema, the SHA-256 chain primitive, and append-only versioning that the rest of the bundle builds on.",
+          "Typed config/schema, the SHA-256 chain primitive, and append-only versioning that the rest of the module family builds on.",
       },
       {
         id: "tenancy-rls",
@@ -179,9 +180,9 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
           "No. Caisson ships the technical controls those frameworks require and generates the evidence to prove them. Certification comes from an auditor assessing your whole program, the organizational controls and the audit itself remain yours.",
       },
       {
-        question: "Which packages does the bundle actually compose?",
+        question: "Which packages does the module family actually compose?",
         answer:
-          "Ten direct workspace dependencies are wired at runtime and re-exported through the bundle's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. compliance-core and frameworks-pack both depend on and re-export oscal-spine, so the OSCAL package is a real shared dependency in that runtime graph. Access reviews, the AI risk register, and the trust-page generator are three further standalone modules in the same bundle. Nothing on this page is a manifest claim without code behind it.",
+          "Ten direct workspace dependencies are wired at runtime and re-exported through the module family's own entry point: kernel, tenancy-rls, field-crypto, audit-worm, migrate, alerting, retention-runner, compliance-core, frameworks-pack, and signing-primitive. compliance-core and frameworks-pack both depend on and re-export oscal-spine, so the OSCAL package is a real shared dependency in that runtime graph. Access reviews, the AI risk register, and the trust-page generator are three further standalone modules in the same module family. Nothing on this page is a manifest claim without code behind it.",
       },
       {
         question: "Do I own the source?",
@@ -195,12 +196,12 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     metaTitle: "AI Production Kit",
     metaDescription: `A metered infer()/embed() gateway on Vercel AI SDK v7: Postgres-atomic token metering with a per-tenant circuit breaker, typed input/output guardrails, and versioned prompts, composed behind one chokepoint. Own the source.`,
     hero: {
-      eyebrow: "AI-Production bundle",
+      eyebrow: "AI-Production module family",
       title: "One gateway between your code and the model.",
       lede: "infer() and embed() are the only door to a model in this kit: every call resolves a versioned prompt, reserves against a per-tenant spend cap, crosses a guardrail on the way in and out, and reconciles usage in the same Postgres transaction as the result. Vercel AI SDK v7 sits behind it; your route handler calls infer(lane, input) and never touches a provider SDK directly. That door fronts all seven modules below: versioned prompts, metering, guardrails, and AI config on the call path; field encryption, the eval harness, and the credit ledger securing the data, the model swaps, and the spend behind it.",
     },
     definition:
-      "The AI-Production bundle puts one metered gateway between your code and the model: infer() and embed() resolve a versioned prompt, reserve against a per-tenant spend cap, cross input and output guardrails, and reconcile usage in the same Postgres transaction as the result. Vercel AI SDK v7 behind one fail-closed chokepoint.",
+      "The AI-Production module family puts one metered gateway between your code and the model: infer() and embed() resolve a versioned prompt, reserve against a per-tenant spend cap, cross input and output guardrails, and reconcile usage in the same Postgres transaction as the result. Vercel AI SDK v7 behind one fail-closed chokepoint.",
     members: [
       {
         id: "prompt-registry",
@@ -242,7 +243,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         id: "ai-config",
         name: "AI config",
         oneLiner:
-          "Provider-agnostic config resolver plus a buyer settings file: the lane-to-provider mapping infer() reads to pick a model. Base substrate, composed in at no separate module price.",
+          "Provider-agnostic config resolver plus a settings file: the lane-to-provider mapping infer() reads to pick a model. Base substrate, composed in with no separate install step.",
       },
     ],
     faq: [
@@ -266,14 +267,14 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
   {
     slug: "local-first",
     metaTitle: "Local-first AI",
-    metaDescription: `Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, offline sync, and hybrid sqlite-vec + FTS5 search into one Caisson bundle (own the source).`,
+    metaDescription: `Local-first AI composes on-device ONNX inference, a zero-egress privacy gate, offline sync, and hybrid sqlite-vec + FTS5 search into one Caisson module family (own the source).`,
     hero: {
       eyebrow: "Local-first AI · Own the source",
       title: "Your data stays on the device by default.",
       lede: "The compute seam runs inference on-device by default; the privacy gate makes a hosted call an explicit opt-in, not a default you discover in a network trace. Vector search and sync run against local files, nothing round-trips to a vendor unless you allow it in writing.",
     },
     definition:
-      "Local-first AI composes on-device ONNX inference, a default-deny privacy egress gate, offline two-way sync, and hybrid sqlite-vec + FTS5 search into one bundle. Inference runs on-device by default; a hosted call is an explicit opt-in, never a default you discover in a network trace. Own the source.",
+      "Local-first AI composes on-device ONNX inference, a default-deny privacy egress gate, offline two-way sync, and hybrid sqlite-vec + FTS5 search into one module family. Inference runs on-device by default; a hosted call is an explicit opt-in, never a default you discover in a network trace. Own the source.",
     members: [
       {
         id: "local-store",
@@ -309,7 +310,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         id: "kernel",
         name: "@caisson-sh/kernel",
         oneLiner:
-          "The governance kernel underneath every bundle: typed config, the shared error model, and security primitives.",
+          "The governance kernel underneath every module family: typed config, the shared error model, and security primitives.",
       },
     ],
     faq: [
@@ -321,13 +322,13 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       {
         question: "What does the on-device model need to run?",
         answer:
-          "The ONNX backend runs a MiniLM-class model via transformers.js. The @huggingface/transformers runtime is an optional peer you install yourself (it is not bundled in the package), and the model weights are first-run-fetched and SHA-256 hash-verified before use. Air-gapped buyers pre-seed the cache and run fully offline.",
+          "The ONNX backend runs a MiniLM-class model via transformers.js. The @huggingface/transformers runtime is an optional peer you install yourself (it is not bundled in the package), and the model weights are first-run-fetched and SHA-256 hash-verified before use. Air-gapped deployments pre-seed the cache and run fully offline.",
       },
       {
         question:
-          "Can I use just the vector store instead of the whole bundle?",
+          "Can I use just the vector store instead of the whole module family?",
         answer:
-          "Yes. @caisson-sh/local-store also works standalone, as do on-device inference, the sync engine, and the privacy gate. The full Local-first AI bundle composes all seven packages.",
+          "Yes. @caisson-sh/local-store also works standalone, as do on-device inference, the sync engine, and the privacy gate. The full Local-first AI module family composes all seven packages.",
       },
     ],
   },
@@ -337,19 +338,19 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     metaDescription:
       "A governed-agent kernel for TypeScript codebases: typed agent/skill/rule schema, a guarded 7-act lifecycle, a sandboxed agent runner with a from-scratch scrubbed env, local hybrid memory, and a default-deny tool-exec gate. Own the source.",
     hero: {
-      eyebrow: "Agentic-Dev bundle",
+      eyebrow: "Agentic-Dev module family",
       title:
         "A governed agent lifecycle, plus a sandboxed runner to execute it.",
       lede: "Agents declare their model lane, their tools, and their blast radius up front. A lifecycle state machine refuses to advance a run that failed verify. And when it's time to actually spawn an agent, the runner builds its child environment from scratch, never a spread of your process env, so a credential you never intended to hand over cannot leak into the sandbox.",
     },
     definition:
-      "The Agentic-Dev bundle is a governed-agent kernel plus a sandboxed runner to execute it: a typed agent/skill/rule schema, a guarded 7-act lifecycle that reopens PLAN when VERIFY fails, local hybrid memory, and a default-deny tool-exec gate, with a child environment built from scratch so a credential can't leak into the sandbox.",
+      "The Agentic-Dev module family is a governed-agent kernel plus a sandboxed runner to execute it: a typed agent/skill/rule schema, a guarded 7-act lifecycle that reopens PLAN when VERIFY fails, local hybrid memory, and a default-deny tool-exec gate, with a child environment built from scratch so a credential can't leak into the sandbox.",
     members: [
       {
         id: "agent-kernel",
         name: "Agent kernel",
         oneLiner:
-          "Typed agent/skill/rule schema plus the guarded 7-act lifecycle FSM and hooks dispatcher, one of the bundle's composed pieces, alongside local memory and the tool-exec gate.",
+          "Typed agent/skill/rule schema plus the guarded 7-act lifecycle FSM and hooks dispatcher, one of the module family's composed pieces, alongside local memory and the tool-exec gate.",
       },
       {
         id: "agent-runner",
@@ -385,12 +386,12 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       {
         question: "Can I use just the kernel or just the runner?",
         answer:
-          "Yes. Every member of the Agentic-Dev bundle also composes on its own onto your existing Caisson base: the agent kernel, the agent runner, the trajectory log, local hybrid memory (also a member of the Local-first bundle), and the tool-exec gate.",
+          "Yes. Every member of the Agentic-Dev module family also composes on its own onto your existing Caisson base: the agent kernel, the agent runner, the trajectory log, local hybrid memory (also a member of the Local-first module family), and the tool-exec gate.",
       },
       {
         question: "Does the runner or the kernel ever hold a credential?",
         answer:
-          "No. Construction of the three pieces the bundle factory composes (kernel, memory, tool-exec gate) holds no credential and makes no network or LLM call. The agent runner ships as its own package alongside the bundle; its buildEngineEnv() step is the one place a secret could reach a spawned process, and a ship-blocking leak-guard test attacks it with a polluted parent env and asserts the exact child env key set.",
+          "No. Construction of the three pieces the module family's factory composes (kernel, memory, tool-exec gate) holds no credential and makes no network or LLM call. The agent runner ships as its own package alongside the module family; its buildEngineEnv() step is the one place a secret could reach a spawned process, and a ship-blocking leak-guard test attacks it with a polluted parent env and asserts the exact child env key set.",
       },
     ],
   },
@@ -402,10 +403,10 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     hero: {
       eyebrow: "Cryptographic provenance",
       title: "Prove the record wasn't tampered with.",
-      lede: "Provenance composes three primitives into one bundle: detached signing that a third party verifies without your keys, an append-only audit chain where a single altered row breaks every link after it, and per-tenant field encryption sealed at rest. Own the source, and hand an auditor a signature instead of a promise.",
+      lede: "Provenance composes three primitives into one module family: detached signing that a third party verifies without your keys, an append-only audit chain where a single altered row breaks every link after it, and per-tenant field encryption sealed at rest. Own the source, and hand an auditor a signature instead of a promise.",
     },
     definition:
-      "Provenance composes three cryptographic primitives into one bundle: detached Ed25519 + RFC-3161 signing a third party can verify without your keys, an append-only SHA-256 audit chain where one altered row breaks every link after it, and per-tenant field encryption sealed at rest. The proof travels with the artifact.",
+      "Provenance composes three cryptographic primitives into one module family: detached Ed25519 + RFC-3161 signing a third party can verify without your keys, an append-only SHA-256 audit chain where one altered row breaks every link after it, and per-tenant field encryption sealed at rest. The proof travels with the artifact.",
     // Provenance renders its members from `modulesByBundle("provenance")`; the ids/names below match
     // that catalog order and those labels exactly, and the one-liners are the page's customer copy.
     members: [
@@ -435,7 +436,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
           "Provenance is the cryptographic core: signing, the WORM audit chain, and field encryption, the three primitives that prove a record is authentic and untampered. Compliance wraps those in the full regulated-SaaS stack: fail-closed RLS, the evidence-pack generator, the framework mappings, alerting, and retention. Every Provenance module is also in Compliance, so Compliance owners already have it.",
       },
       {
-        question: "Which packages does the bundle compose?",
+        question: "Which packages does the module family compose?",
         answer:
           "Three real workspace dependencies: @caisson-sh/signing-primitive (detached Ed25519 + RFC-3161), @caisson-sh/audit-worm (the SHA-256 audit chain plus the S3 Object-Lock adapter), and @caisson-sh/field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM). Nothing on this page is a manifest claim without composed code behind it.",
       },
@@ -450,22 +451,22 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     slug: "everything",
     metaTitle: "Everything",
     metaDescription:
-      "The Everything bundle: every Caisson module family and every module, composed on the same audited base.",
+      "Everything: every Caisson module family and every module, composed on the same audited base.",
     hero: {
-      eyebrow: "Everything bundle",
+      eyebrow: "Everything",
       title: "The whole catalog, one composition.",
-      lede: "The Everything bundle is exactly what it says: every module family and every module, the full catalog, composed on the same audited base.",
+      lede: "Everything is exactly what it says: every module family and every module, the full catalog, composed on the same audited base.",
     },
     definition:
-      "The Everything bundle is the whole catalog: every module family and every module, composed on the same audited base. Only the private brand layer is excluded.",
-    // The Everything bundle is the whole catalog by construction; the pop-out renders a catalog
+      "Everything is the whole catalog: every module family and every module, composed on the same audited base. Only the private brand layer is excluded.",
+    // Everything is the whole catalog by construction; the pop-out renders a catalog
     // summary rather than a fixed member list, so this stays empty.
     members: [],
     faq: [],
   },
 ];
 
-/** The bundle content record for a bundle id, or `undefined` for an unknown id. */
+/** The module-family content record for a bundle id, or `undefined` for an unknown id. */
 export function bundlePageRecord(slug: string): BundlePageRecord | undefined {
   return BUNDLE_PAGES.find((b) => b.slug === slug);
 }
@@ -475,7 +476,9 @@ export function bundlePageRecord(slug: string): BundlePageRecord | undefined {
 export function requireBundlePage(slug: BundleId): BundlePageRecord {
   const record = bundlePageRecord(slug);
   if (record === undefined) {
-    throw new Error(`bundle-pages.ts: no content record for bundle "${slug}"`);
+    throw new Error(
+      `bundle-pages.ts: no content record for module family "${slug}"`,
+    );
   }
   return record;
 }

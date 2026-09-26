@@ -32,7 +32,7 @@ export default function AgenticDevOpengraphImage() {
         fontFamily: "monospace",
       }}
     >
-      {/* Top — wordmark + edition label */}
+      {/* Top — wordmark + module-family label */}
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
         <span style={{ fontSize: 34, color: C.fg, fontWeight: 600 }}>
           caisson
@@ -51,7 +51,7 @@ export default function AgenticDevOpengraphImage() {
         </span>
       </div>
 
-      {/* Body — waterline bar + edition headline */}
+      {/* Body — waterline bar + headline */}
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         {/* Waterline motif */}
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -94,7 +94,9 @@ export default function AgenticDevOpengraphImage() {
           paddingTop: 28,
         }}
       >
-        <span>A bundle on the audited Caisson base · own the source</span>
+        <span>
+          A module family on the audited Caisson base · own the source
+        </span>
         <span style={{ background: C.surface, padding: "8px 16px" }}>
           caisson.sh/agentic-dev
         </span>

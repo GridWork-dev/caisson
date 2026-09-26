@@ -25,7 +25,7 @@ export interface ModulePageArtifact {
 }
 
 export interface ModulePageRecord {
-  /** = CatalogModule.id — the cart key, route param, and mark key. */
+  /** = CatalogModule.id — the route param and mark key. */
   slug: string;
   metaTitle: string;
   metaDescription: string;
@@ -186,7 +186,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     slug: "retention-runner",
     metaTitle: "Retention Runner, CCPA/GDPR Erasure Module | Caisson",
     metaDescription:
-      "The right-to-erasure runner in Caisson's Compliance bundle: multi-store erasure, per-target failure isolation, one audit row per run, scheduled or on request.",
+      "The right-to-erasure runner in Caisson's Compliance module family: multi-store erasure, per-target failure isolation, one audit row per run, scheduled or on request.",
     heroOneLiner:
       "One erasure request, every store, one audit row, even when a target fails.",
     definition:
@@ -285,7 +285,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         body: "createEmailChannel, createWebhookChannel, createSlackChannel, and createTelegramChannel all implement the same AlertChannel port; deliverAll() runs them via Promise.all and catches every throw into a failed DeliveryResult, so one channel being down never blocks the others.",
       },
       {
-        title: "SSRF-guarded buyer-supplied destinations",
+        title: "SSRF-guarded user-supplied destinations",
         body: "Webhook, Slack, and Telegram config URLs pass @caisson-sh/kernel's assertSafePublicUrl at the Zod schema boundary and assertSafePublicUrlResolved again at the fetch call (a DNS-rebinding recheck), and every outbound POST sets redirect: \"error\" so a 3xx can't hop the request to a private host after the check.",
       },
       {
@@ -392,7 +392,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "What audit store does the standalone module require?",
         answer:
-          "You inject a CampaignChainStore implementing append() and load(); the real AuditChainStore satisfies that narrow port. A standalone purchase gives you the campaign package, not a hosted chain. The Compliance bundle grants access-review and audit-worm together if you want both source packages.",
+          "You inject a CampaignChainStore implementing append() and load(); the real AuditChainStore satisfies that narrow port. Installing access-review standalone gives you the campaign package, not a hosted chain. The Compliance module family composes access-review and audit-worm together if you want both source packages.",
       },
     ],
   },
@@ -470,7 +470,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     heroOneLiner:
       "A fact absent from the allowlist reaches neither HTML nor JSON, and the default page exposes aggregate posture without tenant or control detail.",
     definition:
-      "trust-page is a pure generator that turns an EvidencePackManifest into self-contained HTML and JSON for a buyer-hosted trust page. flattenManifestFacts defines the only fields that can appear; generateTrustPage filters that universe through DEFAULT_TRUST_PAGE_ALLOWLIST before rendering either output and rejects prohibited readiness claims. It adds no auth, comments, sign-off, hosting, or runtime fetch.",
+      "trust-page is a pure generator that turns an EvidencePackManifest into self-contained HTML and JSON for a self-hosted trust page. flattenManifestFacts defines the only fields that can appear; generateTrustPage filters that universe through DEFAULT_TRUST_PAGE_ALLOWLIST before rendering either output and rejects prohibited readiness claims. It adds no auth, comments, sign-off, hosting, or runtime fetch.",
     included: [
       {
         title: "A finite fact ceiling before redaction",
@@ -486,7 +486,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "HTML and JSON are independently self-contained",
-        body: "generateTrustPage() returns a TrustPage-shaped pair of complete static HTML and newline-terminated JSON. Neither output fetches the other at runtime, and sorted fact keys keep both stable across caller allowlist order, so a buyer can host either artifact anywhere without a Caisson service.",
+        body: "generateTrustPage() returns a TrustPage-shaped pair of complete static HTML and newline-terminated JSON. Neither output fetches the other at runtime, and sorted fact keys keep both stable across caller allowlist order, so you can host either artifact anywhere without a Caisson service.",
       },
       {
         title: "Readiness language is enforced",
@@ -668,7 +668,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Does this eval gate get wired into CI on the app I generate?",
         answer:
-          "No. The eval CLI runs as a distinct turbo eval task inside this monorepo only, it is never injected into a generated buyer repo as a required CI job. You own your own eval cadence once you generate.",
+          "No. The eval CLI runs as a distinct turbo eval task inside this monorepo only, it is never injected into a generated project repo as a required CI job. You own your own eval cadence once you generate.",
       },
     ],
   },
@@ -838,11 +838,11 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Pluggable embedder port, no bundled model",
-        body: "Embedder is an interface the bundle wires, this package never calls a model or opens a socket. embedOrSkip treats an absent embedder as a first-class mode: retrieval runs on the FTS5 floor alone, not an error, not a silent default model.",
+        body: "Embedder is an interface your app wires, this package never calls a model or opens a socket. embedOrSkip treats an absent embedder as a first-class mode: retrieval runs on the FTS5 floor alone, not an error, not a silent default model.",
       },
       {
         title: "Cloud-egress secret scrub",
-        body: "When a buyer does wire a cloud embedder, scrubForEgress runs on every text before it leaves the box, stripping PEM key blocks, URL userinfo passwords, secret-named assignments, and bare token shapes. guardEmbedder and createCloudEmbedder apply it structurally, not as an opt-in step.",
+        body: "When you do wire a cloud embedder, scrubForEgress runs on every text before it leaves the box, stripping PEM key blocks, URL userinfo passwords, secret-named assignments, and bare token shapes. guardEmbedder and createCloudEmbedder apply it structurally, not as an opt-in step.",
       },
       {
         title: "Dedup-on-write + retention GC",
@@ -878,7 +878,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "Do I have to bring my own embedding model?",
         answer:
-          "Yes. Embedder is an interface the bundle or your app wires, local-store bundles no model and never calls one. With no embedder configured, retrieval runs on the FTS5 leg alone, which is a documented zero-config mode, not a degraded one.",
+          "Yes. Embedder is an interface your app wires, local-store bundles no model and never calls one. With no embedder configured, retrieval runs on the FTS5 leg alone, which is a documented zero-config mode, not a degraded one.",
       },
       {
         question: "How is tenant data kept apart?",
@@ -896,11 +896,11 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     slug: "agent-kernel",
     metaTitle: "Agent Kernel, Governed Agent Lifecycle FSM | Caisson",
     metaDescription:
-      "Agent Kernel: the agent/skill/rule schema, seven-act lifecycle FSM, and hooks dispatcher behind Caisson's Agentic-Dev bundle. No vendor SDK, usable standalone.",
+      "Agent Kernel: the agent/skill/rule schema, seven-act lifecycle FSM, and hooks dispatcher behind Caisson's Agentic-Dev module family. No vendor SDK, usable standalone.",
     heroOneLiner:
       "The guarded agent lifecycle FSM: VERIFY failing reopens PLAN, there's no edge to SHIP.",
     definition:
-      "Agent kernel is the engine-neutral base for governed AI agent work: a Zod schema for agent/skill/rule artifacts, a seven-act lifecycle state machine (spec through ship), allow/deny/mutate governance guards, a hooks dispatcher, and an opt-in tamper-evident audit-chain recorder. It imports no vendor SDK and runs no LLM: composition only, consumed by both the base CLI and the Agentic-Dev bundle.",
+      "Agent kernel is the engine-neutral base for governed AI agent work: a Zod schema for agent/skill/rule artifacts, a seven-act lifecycle state machine (spec through ship), allow/deny/mutate governance guards, a hooks dispatcher, and an opt-in tamper-evident audit-chain recorder. It imports no vendor SDK and runs no LLM: composition only, consumed by both the base CLI and the Agentic-Dev module family.",
     included: [
       {
         title: "Browser-safe entry point",
@@ -928,7 +928,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Opt-in tamper-evident audit chain",
-        body: "AuditedLifecycle wraps every governed transition with the kernel's chainEntry/anchorChain/verifyChain hash-chain primitives, the same mechanism the Compliance bundle's audit-worm package uses. Off by default; set audited: true and each admitted step becomes an append-only, tamper-evident chain entry.",
+        body: "AuditedLifecycle wraps every governed transition with the kernel's chainEntry/anchorChain/verifyChain hash-chain primitives, the same mechanism the Compliance module family's audit-worm package uses. Off by default; set audited: true and each admitted step becomes an append-only, tamper-evident chain entry.",
       },
     ],
     artifact: {
@@ -945,7 +945,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "Does agent-kernel call an LLM or import a vendor SDK?",
         answer:
-          "No. Its own package.json says it plainly: engine-neutral, no vendor SDK, no LLM call; the schema, FSM, governance, hooks, and audit-chain primitives are composition mechanism only, consumed down-only by the base cli/mcp-server and by the Agentic-Dev bundle.",
+          "No. Its own package.json says it plainly: engine-neutral, no vendor SDK, no LLM call; the schema, FSM, governance, hooks, and audit-chain primitives are composition mechanism only, consumed down-only by the base cli/mcp-server and by the Agentic-Dev module family.",
       },
       {
         question:
@@ -1126,7 +1126,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     heroOneLiner:
       "A default-deny allowlist maps every command an agent is allowed to run, call anything not on it, and NotFoundError refuses the call before a process ever spawns.",
     definition:
-      "tool-exec is Caisson's governed tool-call gate, composed live into the Agentic-Dev edition surface: a default-deny allowlist maps a logical command name to a real executable and a Zod-`.strict()` argv schema, validated with parseStrict before spawn and passed to execFile as an array, never a shell string. A two-phase propose/execute split lets an external approval step run between validation and the actual spawn.",
+      "tool-exec is Caisson's governed tool-call gate, composed live into the Agentic-Dev module family: a default-deny allowlist maps a logical command name to a real executable and a Zod-`.strict()` argv schema, validated with parseStrict before spawn and passed to execFile as an array, never a shell string. A two-phase propose/execute split lets an external approval step run between validation and the actual spawn.",
     included: [
       {
         title: "Browser-safe entry point",
@@ -1195,11 +1195,11 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     slug: "org-controls",
     metaTitle: "Org Controls, Cross-Tenant Admin-Write RLS | Caisson",
     metaDescription:
-      "The commercial cross-tenant admin-write RLS layer (a separate admin_write Postgres role, one role-scoped policy) plus WorkOS SSO, a Clerk verifier, and owner-gated member management, carved out of the open tenancy-rls floor.",
+      "The cross-tenant admin-write RLS layer (a separate admin_write Postgres role, one role-scoped policy) plus WorkOS SSO, a Clerk verifier, and owner-gated member management, carved out of the open tenancy-rls floor.",
     heroOneLiner:
-      "admin_write is a second Postgres role your buyer-facing tenant-isolation policy never matches, so your own operator control plane can write across every tenant without the app role ever gaining that reach.",
+      "admin_write is a second Postgres role your user-facing tenant-isolation policy never matches, so your own operator control plane can write across every tenant without the app role ever gaining that reach.",
     definition:
-      "org-controls is the cross-tenant admin-write RLS layer carved out of the open tenancy-rls floor, plus the org-plan surfaces around it: WorkOS SSO sign-in, a Clerk session-verification driver, and the owner-gated multi-user membership surface. The free tenancy-rls package still enforces the buyer app role's fail-closed single-tenant isolation; this paid layer adds the separate admin_write role your own operator control plane mutates through.",
+      "org-controls is the cross-tenant admin-write RLS layer carved out of the open tenancy-rls floor, plus the org-plan surfaces around it: WorkOS SSO sign-in, a Clerk session-verification driver, and the owner-gated multi-user membership surface. tenancy-rls still enforces your app role's fail-closed single-tenant isolation; this layer adds the separate admin_write role your own operator control plane mutates through.",
     included: [
       {
         title: "Browser-safe entry point",
@@ -1226,8 +1226,8 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         body: "createClerkSessionVerifier verifies a Clerk session JWT (networkless when jwtKey is supplied, live JWKS fetch otherwise) and clerkClaimsToSessionContext maps its claims onto the kernel's SessionContext. An active Organization with no role claim maps to the least-privileged seat, never the owner default, closing a privilege-escalation path a reshaped custom token could otherwise open.",
       },
       {
-        title: "Fail-closed entitlement gate",
-        body: "holdsOrgControls is the predicate a members-management surface gates through: an empty active-entitlement set denies by default, and it accepts either the bare org-controls purchase id or the full @caisson-sh/org-controls module id, correct whichever form a standalone purchase or bundle grant carries.",
+        title: "Fail-closed access gate",
+        body: "holdsOrgControls is a predicate a members-management surface can gate through: an empty active-grant set denies by default, and it accepts either the bare org-controls slug or the full @caisson-sh/org-controls module id, correct whichever form your own access-control system uses.",
       },
     ],
     artifact: {
@@ -1245,9 +1245,9 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     faq: [
       {
         question:
-          "Does the admin_write role bypass tenant isolation for ordinary buyer requests too?",
+          "Does the admin_write role bypass tenant isolation for ordinary user requests too?",
         answer:
-          "No, admin_write is a completely separate Postgres role from app, and withAdminWrite is the only seam that ever assumes it. Every buyer request still runs under the app role's own TO app tenant-isolation policy; RLS OR-combines permissive policies by role, so a TO admin_write policy never matches app and never widens what a buyer connection sees.",
+          "No, admin_write is a completely separate Postgres role from app, and withAdminWrite is the only seam that ever assumes it. Every user request still runs under the app role's own TO app tenant-isolation policy; RLS OR-combines permissive policies by role, so a TO admin_write policy never matches app and never widens what a user connection sees.",
       },
       {
         question:
@@ -1265,7 +1265,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Does the admin-write role split make our access-control posture SOC 2 compliant?",
         answer:
-          "No single module does that. org-controls ships the technical control an auditor checks for role-based access segregation (a DB-enforced split between the buyer app role and the cross-tenant admin_write role, gated by a fail-closed guard that refuses to run as SUPERUSER or BYPASSRLS) not a certification. Compliance status is your organization's and your auditor's call.",
+          "No single module does that. org-controls ships the technical control an auditor checks for role-based access segregation (a DB-enforced split between the app role and the cross-tenant admin_write role, gated by a fail-closed guard that refuses to run as SUPERUSER or BYPASSRLS) not a certification. Compliance status is your organization's and your auditor's call.",
       },
     ],
   },
@@ -1428,11 +1428,11 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     slug: "ui-pro",
     metaTitle: "UI Pro, Zero-Radix Interactive Components | Caisson",
     metaDescription:
-      "Fourteen commercial React components on the open @caisson-sh/ui floor: Tooltip/Popover/Menu hand-rolled with zero Radix and zero @floating-ui, plus a filterable/groupable/virtualized data grid, a hash-chain audit timeline, and redaction-aware payload and diff viewers.",
+      "Fourteen React components on the open @caisson-sh/ui floor: Tooltip/Popover/Menu hand-rolled with zero Radix and zero @floating-ui, plus a filterable/groupable/virtualized data grid, a hash-chain audit timeline, and redaction-aware payload and diff viewers.",
     heroOneLiner:
       "The interactive layer @caisson-sh/ui doesn't ship, Tooltip, Popover, and Menu hand-rolled against zero Radix and zero @floating-ui, plus the data grid, hash-chain audit timeline, and diff viewer a real dashboard needs.",
     definition:
-      "ui-pro is the commercial component tier built on the open @caisson-sh/ui floor: a hand-rolled, zero-Radix, zero-@floating-ui interactive layer (Tooltip, Popover, Menu) plus eleven sellable data surfaces, an advanced data grid, virtualized tree, ops/coverage matrix, hash-chain audit timeline, redaction-aware payload and diff viewers, type-to-confirm, date-range picker, charts, kanban board, and command palette.",
+      "ui-pro is the interactive component tier built on the open @caisson-sh/ui floor: a hand-rolled, zero-Radix, zero-@floating-ui interactive layer (Tooltip, Popover, Menu) plus eleven further data surfaces, an advanced data grid, virtualized tree, ops/coverage matrix, hash-chain audit timeline, redaction-aware payload and diff viewers, type-to-confirm, date-range picker, charts, kanban board, and command palette.",
     included: [
       {
         title: "Tooltip, Popover, Menu, zero Radix, zero @floating-ui",
@@ -1489,9 +1489,9 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "Separate tier by design: the open @caisson-sh/ui floor keeps a basic table with single sort/filter/pagination; DataTablePro adds the filter builder, grouping/aggregation, column pin/hide, CSV export, and row virtualization on top, and it composes the open kit's own Button and Select rather than duplicating them.",
       },
       {
-        question: "Which edition or bundle does ui-pro come with?",
+        question: "Which module family does ui-pro come with?",
         answer:
-          'No persona bundle (buying Compliance, AI-Production, Local-first, Agentic-Dev, or Provenance never silently includes it (standalone placement, no persona-bundle membership at v1), and buying it never silently requires one of them. The whole-catalog Everything bundle is the one exception: it grants every sellable module by construction, ui-pro included) pinned by a registry test literally named "ui-pro is IN the Everything membership."',
+          'None by default — ui-pro has no persona module-family membership at v1 (installing Compliance, AI-Production, Local-first, Agentic-Dev, or Provenance never silently includes it, and installing ui-pro never silently requires one of them). The whole-catalog Everything is the one exception: it includes every module by construction, ui-pro included, pinned by a registry test literally named "ui-pro is IN the Everything membership."',
       },
     ],
   },
@@ -1519,7 +1519,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Every rented call meters exactly once",
-        body: "#emitMeter builds one UsageMetering record (integer quantity, a fresh idempotencyKey per call) and hands it to the buyer-wired MeterSink before the result returns; if the sink throws, the call fails, because a paid call that can't be recorded must not silently succeed.",
+        body: "#emitMeter builds one UsageMetering record (integer quantity, a fresh idempotencyKey per call) and hands it to your own wired MeterSink before the result returns; if the sink throws, the call fails, because a metered call that can't be recorded must not silently succeed.",
       },
       {
         title: "Four wire dialects, one RentedTransport port",
@@ -1574,7 +1574,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     heroOneLiner:
       "An empty allowlist blocks every outbound host by default, a request only egresses if a typed sink names the exact host and why.",
     definition:
-      "local-privacy is the Local-first edition's runtime egress boundary: a closed-enum PrivacyPolicy (Zod .strict(), \"local-only\" the sole mode) declares zero-egress-by-default, and EgressGuard enforces it in front of the kernel's fetchWithTimeout chokepoint. A host must be allowlisted for one of exactly two sanctioned sink kinds (model-fetch or rented-backend) before a socket ever opens; an empty or omitted allowlist blocks everything.",
+      "local-privacy is the Local-first module family's runtime egress boundary: a closed-enum PrivacyPolicy (Zod .strict(), \"local-only\" the sole mode) declares zero-egress-by-default, and EgressGuard enforces it in front of the kernel's fetchWithTimeout chokepoint. A host must be allowlisted for one of exactly two sanctioned sink kinds (model-fetch or rented-backend) before a socket ever opens; an empty or omitted allowlist blocks everything.",
     included: [
       {
         title: "Closed-enum policy, not a config flag",
@@ -1624,7 +1624,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "What happens if I don't configure an allowlist at all?",
         answer:
-          "Every outbound host is blocked. allowlist defaults to [] in privacyPolicySchema, and ZERO_EGRESS_POLICY (local-only with an empty allowlist) is the air-gap baseline the edition installs unless a deployer explicitly opts a sanctioned sink in. There is no implicit host and no silent fallback to a hosted provider.",
+          "Every outbound host is blocked. allowlist defaults to [] in privacyPolicySchema, and ZERO_EGRESS_POLICY (local-only with an empty allowlist) is the air-gap baseline the package installs unless a deployer explicitly opts a sanctioned sink in. There is no implicit host and no silent fallback to a hosted provider.",
       },
       {
         question:
@@ -1784,7 +1784,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Do I need @caisson-sh/compliance-core to use this, or does it work on its own?",
         answer:
-          "No. frameworks-pack works on its own with @caisson-sh/kernel, zod, and its @caisson-sh/oscal-spine dependency. You get the framework catalogs, five regime crosswalks, and the re-exported pinned NIST reference data. compliance-core is the separate evidence-pack engine; all three packages ship in the Compliance bundle.",
+          "No. frameworks-pack works on its own with @caisson-sh/kernel, zod, and its @caisson-sh/oscal-spine dependency. You get the framework catalogs, five regime crosswalks, and the re-exported pinned NIST reference data. compliance-core is the separate evidence-pack engine; all three packages ship in the Compliance module family.",
       },
     ],
   },
@@ -1796,7 +1796,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     heroOneLiner:
       "One package owns every OSCAL artifact, conformance fixture, and pinned NIST reference your compliance pipeline depends on.",
     definition:
-      "oscal-spine is Caisson's commercial OSCAL boundary. It turns structural evidence-pack and framework inputs into deterministic OSCAL v1.2.2 assessment plans, assessment results, POA&M fragments, catalogs, XML, and ISO 27001 SoA components. The same package owns the byte-pinned NIST SP 800-53 rev5 catalog and the own-authored OLIR relationship crosswalk checked against it.",
+      "oscal-spine is Caisson's OSCAL boundary. It turns structural evidence-pack and framework inputs into deterministic OSCAL v1.2.2 assessment plans, assessment results, POA&M fragments, catalogs, XML, and ISO 27001 SoA components. The same package owns the byte-pinned NIST SP 800-53 rev5 catalog and the own-authored OLIR relationship crosswalk checked against it.",
     included: [
       {
         title: "Browser-safe entry point",
@@ -1820,7 +1820,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Parent imports remain source-compatible",
-        body: "@caisson-sh/compliance-core and @caisson-sh/frameworks-pack both depend on and re-export oscal-spine. Existing buyers keep their import paths; buyers who need neither parent can purchase the OSCAL surface directly.",
+        body: "@caisson-sh/compliance-core and @caisson-sh/frameworks-pack both depend on and re-export oscal-spine. Existing consumers keep their import paths; anyone who needs neither parent can install the OSCAL surface directly.",
       },
     ],
     artifact: {
@@ -1845,7 +1845,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Will existing compliance-core or frameworks-pack imports break?",
         answer:
-          "No. Both parent packages depend on and re-export oscal-spine, so their existing OSCAL, NIST catalog, and crosswalk imports keep resolving. The standalone package adds a direct purchase path without removing the compatibility paths.",
+          "No. Both parent packages depend on and re-export oscal-spine, so their existing OSCAL, NIST catalog, and crosswalk imports keep resolving. The standalone package adds a direct install path without removing the compatibility paths.",
       },
       {
         question:
@@ -1870,8 +1870,8 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         body: "Import @caisson-sh/signing-primitive/browser inside a client bundle for the verify half: the signable-payload construction, verifyEvidenceSignature over the same @noble/ed25519 primitive the server signs with, and the RFC-3161 test double (Node 20.12 or later). A relying party can check your evidence pack entirely in their own browser. The signing identity stays off that entry on purpose, a tenant seed does not belong in a bundle users download, and every browser-entry export is also on the main entry.",
       },
       {
-        title: "Per-tenant Ed25519Signer, never the license key",
-        body: "Ed25519Signer holds a 32-byte tenant seed in a private #secretKey field, never logged or serialized; construction throws ValidationError on an empty keyId or a wrong-length key. It is deliberately distinct from Caisson's own license-issuer key, a buyer proves provenance of their own evidence with their own identity.",
+        title: "Per-tenant Ed25519Signer, always your own key",
+        body: "Ed25519Signer holds a 32-byte tenant seed in a private #secretKey field, never logged or serialized; construction throws ValidationError on an empty keyId or a wrong-length key. It is a key you generate and hold yourself, so you prove provenance of your own evidence with your own identity.",
       },
       {
         title: "Detached, bound to the chain tip",
@@ -1913,9 +1913,9 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
           "No, no module makes an organization compliant; that determination is your organization's and its auditor's to make. signing-primitive ships the technical control an auditor checks for provenance: a detached Ed25519 signature under your own tenant key, bound to the WORM chain's tip hash, and generates the evidence a third party can verify without ever holding your secret.",
       },
       {
-        question: "Does this use the same key as the Caisson license?",
+        question: "Does this use a shared platform key, or my own?",
         answer:
-          "No, by design. Ed25519Signer holds a per-tenant seed that's distinct from Caisson's own license-issuer key, a buyer proves provenance of their own evidence with their own identity, never Caisson's. The two keys sign for different trust models and are never interchangeable.",
+          "Your own, by design. Ed25519Signer holds a per-tenant seed you generate and control, so you prove provenance of your own evidence with your own identity. Two tenants' keys are never interchangeable.",
       },
       {
         question:

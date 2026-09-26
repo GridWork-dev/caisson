@@ -4,9 +4,9 @@ import { Icon } from "@/components";
 import type { TruthfulSignal } from "@/lib/trust-signals";
 
 /** The shared truthful-signals row (ADR-0374 lock 2) — reuses the already-shipping chip-as-`<Link>`
- *  pattern (`preview-dialog.tsx`'s bundle-membership badges already render `<Link className="cs-chip">`)
- *  so this adds zero new CSS and zero new component primitive. No `tone="accent"` on any chip — that
- *  budget stays reserved for the real buy CTA and the real "Save $X" chip (ADR-0078 §8). */
+ *  pattern (`preview-dialog.tsx`'s module-family-membership badges already render `<Link
+ *  className="cs-chip">`) so this adds zero new CSS and zero new component primitive. No
+ *  `tone="accent"` on any chip — that budget stays reserved for the real primary CTA (ADR-0078 §8). */
 export function TruthfulSignals({
   signals,
   lead,

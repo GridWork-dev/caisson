@@ -28,7 +28,7 @@ const STACK_COMPAT: readonly string[] = ["TypeScript", "Composes on the base"];
 interface ViewModel {
   entry: SurfaceEntry;
   mark: string;
-  kindLabel: "Module" | "Bundle";
+  kindLabel: "Module" | "Module family";
   slides: readonly MediaSlide[];
   faq: readonly { question: string; answer: string }[];
   footer: { href: string; label: string } | null;
@@ -148,7 +148,7 @@ function bundleViewModel(
   return {
     entry,
     mark: isBundleId(entry.id) ? BUNDLE_MARKS[entry.id] : "bundle",
-    kindLabel: "Bundle",
+    kindLabel: "Module family",
     slides,
     faq: record?.faq ?? [],
     footer:

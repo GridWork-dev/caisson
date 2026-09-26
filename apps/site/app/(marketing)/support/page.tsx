@@ -13,7 +13,7 @@ export const metadata = buildMetadata({
 const supportAreas = [
   {
     title: "Product and documentation",
-    body: "Tell us what you are building, which bundle or module you are using, and link the relevant documentation page when possible.",
+    body: "Tell us what you are building, which module family or module you are using, and link the relevant documentation page when possible.",
     subject: "Caisson product support",
   },
 ] as const;

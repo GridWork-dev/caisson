@@ -28,8 +28,9 @@ export interface NavCard {
   icon?: IconName;
 }
 
-/** A named sub-list inside a panel (e.g. the merged Marketplace panel's "Bundles" / "Marketplace"
- *  groups) — used instead of a flat `cards` list when a panel has more than one card family. */
+/** A named sub-list inside a panel (e.g. the merged Marketplace panel's "Module families" /
+ *  "Marketplace" groups) — used instead of a flat `cards` list when a panel has more than one
+ *  card family. */
 export interface NavCardGroup {
   heading: string;
   cards: readonly NavCard[];
@@ -40,7 +41,7 @@ export interface NavPanelSpec {
   lede?: string;
   /** A single flat card list, no sub-heading (e.g. Resources). Mutually exclusive with `groups`. */
   cards?: readonly NavCard[];
-  /** Two or more headed card groups inside one panel (e.g. Marketplace's Bundles | Marketplace). */
+  /** Two or more headed card groups inside one panel (e.g. Marketplace's Module families | Marketplace). */
   groups?: readonly NavCardGroup[];
   foot?: readonly { href: string; label: string; desc: string }[];
 }

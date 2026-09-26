@@ -39,7 +39,7 @@ export function ExcerptsSection({
             status={
               <StatusChip
                 tone="muted"
-                label={ex.licensePosture ?? "commercial"}
+                label={ex.licensePosture ?? "Apache-2.0"}
               />
             }
             code={ex.content}

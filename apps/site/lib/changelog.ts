@@ -17,6 +17,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_ENTRIES: readonly ChangelogEntry[] = [
   {
+    slug: "open-source",
+    date: "2026-09-26",
+    title: "Caisson is open source",
+    body: "Every package is now Apache-2.0 and published to public npm as @caisson-sh/*, and the source is on GitHub. Nothing is sold any more: no prices, licenses, license keys or private registry. The module families stay as a way to browse the catalog, and create-caisson scaffolds a project from any of them. The entries below describe the commercial product as it was when each shipped.",
+    tags: ["open-source", "apache-2.0", "release"],
+  },
+  {
     slug: "kernel-browser-safe-v0-6",
     date: "2026-07-30",
     version: "v0.6",

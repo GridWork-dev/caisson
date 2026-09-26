@@ -1,3 +1,4 @@
+// OPERATOR REVIEW: rewritten for the open-source model on 2026-09-26; review before launch.
 import Link from "next/link";
 
 import { Button, Card, Hero, Reveal, Section } from "@/components";
@@ -10,17 +11,12 @@ import { SUBPROCESSORS } from "@/lib/subprocessors";
 // from this page's graph — own the dependency explicitly, same as the compare page:
 import "@caisson-sh/ui/components/sku-matrix.css";
 
-const STATUS_PAGE_URL = "https://caisson.betteruptime.com";
-
 export const metadata = buildMetadata({
   title: "Trust",
   description:
-    "Live and historical availability for the Caisson surfaces you depend on, the third parties that process data for the Caisson service, the shipped security posture, and a security contact — the answers a procurement review asks for, in one place.",
+    "The third party that processes data for caisson.sh, the shipped security posture, and a security contact, in one place.",
   path: "/trust",
 });
-
-// The public surfaces the status page monitors — all live and unauthenticated.
-const MONITORED = ["The website", "The registry (module resolution)"] as const;
 
 // The shipped security surfaces, each a live page on this site — stated at its honest grade.
 const SECURITY_LINKS: readonly { href: string; label: string; note: string }[] =
@@ -57,12 +53,12 @@ export default function TrustPage() {
 
       <Hero
         eyebrow="Trust"
-        title="Availability, subprocessors, and the security story."
-        lede="What a procurement review checks, in one place: live and historical availability for the surfaces a Caisson deployment depends on, the third parties that process data for the Caisson service, the shipped security posture, and a name to email when you need more."
+        title="Subprocessors and the security story."
+        lede="Caisson is open-source software that runs on your own infrastructure — there is no Caisson-hosted service to depend on. This page covers the one third party that processes data for caisson.sh itself, the shipped security posture, and a name to email when you need more."
         ctas={
           <>
-            <Button href={STATUS_PAGE_URL} external variant="primary">
-              Status page
+            <Button href="/security" variant="primary">
+              Security posture
             </Button>
             <Button href="mailto:security@caisson.sh" external variant="ghost">
               security@caisson.sh
@@ -70,39 +66,6 @@ export default function TrustPage() {
           </>
         }
       />
-
-      {/* ===== Availability ===== */}
-      <Reveal>
-        <Section
-          band="tint"
-          eyebrow="Availability"
-          title="A live status page."
-          lede="We publish live status and incident history for the public surfaces a Caisson deployment resolves against. The page shows measured availability — what actually happened — never a promised number."
-        >
-          <Card accent>
-            <p className="cs-status" style={{ color: "var(--cs-accent)" }}>
-              Monitored surfaces
-            </p>
-            <ul
-              style={{
-                marginTop: "var(--cs-space-4)",
-                marginBottom: "var(--cs-space-6)",
-                paddingLeft: "var(--cs-space-5)",
-                display: "grid",
-                gap: "var(--cs-space-2)",
-                maxWidth: "60ch",
-              }}
-            >
-              {MONITORED.map((s) => (
-                <li key={s}>{s}</li>
-              ))}
-            </ul>
-            <Button href={STATUS_PAGE_URL} external variant="primary">
-              Open the status page
-            </Button>
-          </Card>
-        </Section>
-      </Reveal>
 
       {/* ===== Security posture ===== */}
       <Reveal>
@@ -166,7 +129,7 @@ export default function TrustPage() {
       <Section
         eyebrow="Subprocessors"
         title="Who processes what."
-        lede="Caisson the product runs inside your own infrastructure, and your application data stays there. The services below process data for the Caisson service itself — this website, email, support, monitoring, and inference — not your application data."
+        lede="Caisson the software runs inside your own infrastructure, and your application data stays there. The service below processes data for the Caisson service itself — this website — not your application data."
       >
         <div
           className="cs-matrix__frame"
@@ -226,7 +189,7 @@ export default function TrustPage() {
           <a href="mailto:security@caisson.sh" className="cs-link">
             security@caisson.sh
           </a>
-          . For contracts, tax, or entity documents, email{" "}
+          . For anything else, email{" "}
           <a href="mailto:support@caisson.sh" className="cs-link">
             support@caisson.sh
           </a>

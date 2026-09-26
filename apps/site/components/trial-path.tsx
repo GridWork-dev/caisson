@@ -1,25 +1,25 @@
 // "Prove fit in week one" — the trial-path emphasis (research-response wave, ADR-0272 §3). The
-// research names integration fit as the objection that kills deals; the neutralizer already ships —
-// the create-caisson generator + the Railway/Fly/Vercel deploy templates it emits. This surfaces
-// that path at peak purchase intent: on the bundle pages and inside the module/bundle pop-outs.
+// research names integration fit as the objection that kills adoption; the neutralizer already
+// ships — the create-caisson generator + the Railway/Fly/Vercel deploy templates it emits. This
+// surfaces that path early: on the module-family pages and inside the module/module-family pop-outs.
 //
 // No eval-license framing (that product is ADR-0274 / Track E2, not built). No future/roadmap
-// framing (ADR-0237). Every command is true-to-built: `bunx @caisson-sh/cli@latest my-app` is the
-// generator invocation the docs (content/docs/cli/create-caisson.mdx) show verbatim, and
-// Railway/Fly/Vercel are the three deploy filesets the generator emits (packages/cli/src/__golden__/
+// framing (ADR-0237). Every command is true-to-built: `bunx --package @caisson-sh/cli
+// create-caisson` is the generator invocation, and Railway/Fly/Vercel are the three deploy
+// filesets the generator emits (packages/cli/src/__golden__/
 // generated-fileset-deploy-{railway,fly,vercel}.json).
 //
 // Server-safe (no client hooks) so it renders in the server bundle pages AND the "use client"
 // pop-out dialogs unchanged.
 import { Button, CodeBlock, Icon } from "@/components";
 
-const SCAFFOLD_CODE = `$ bunx @caisson-sh/cli@latest my-app
+const SCAFFOLD_CODE = `$ bunx --package @caisson-sh/cli create-caisson
 $ cd my-app
 $ bun install
 # ready to run — deploy from the Railway, Fly, or Vercel template`;
 
 export interface TrialPathProps {
-  /** Compact form for the module/bundle pop-out dialogs (tighter, no code block). */
+  /** Compact form for the module/module-family pop-out dialogs (tighter, no code block). */
   compact?: boolean;
 }
 
@@ -50,9 +50,11 @@ export function TrialPath({ compact = false }: TrialPathProps) {
           }}
         >
           Scaffold the audited base with{" "}
-          <code className="mono">bunx @caisson-sh/cli@latest my-app</code>, then
-          deploy from the Railway, Fly, or Vercel template the generator emits —
-          running on your own stack, with source you own.
+          <code className="mono">
+            bunx --package @caisson-sh/cli create-caisson
+          </code>
+          , then deploy from the Railway, Fly, or Vercel template the generator
+          emits — running on your own stack, with source you own.
         </p>
         <Button
           href="/docs/cli/create-caisson"

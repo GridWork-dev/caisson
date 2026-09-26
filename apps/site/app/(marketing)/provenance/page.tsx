@@ -202,7 +202,7 @@ export default function ProvenancePage() {
       <Reveal>
         <Section
           title="What it composes"
-          lede="The Provenance bundle is a real runtime composition of three @caisson-sh/* packages, not marketing copy: signing-primitive (detached Ed25519 + RFC-3161 signing over evidence bundles and audit roots), audit-worm (the append-only SHA-256 audit chain plus the S3 Object-Lock WORM adapter), and field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM field encryption). Every member is a workspace dependency re-exported through the bundle's own entry point, and every one is also a member of Compliance, so a Compliance owner already holds the whole set."
+          lede="The Provenance module family is a real runtime composition of three @caisson-sh/* packages, not marketing copy: signing-primitive (detached Ed25519 + RFC-3161 signing over evidence bundles and audit roots), audit-worm (the append-only SHA-256 audit chain plus the S3 Object-Lock WORM adapter), and field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM field encryption). Every member is a workspace dependency re-exported through the module family's own entry point, and every one is also a member of Compliance, so a Compliance owner already holds the whole set."
         />
       </Reveal>
 
@@ -210,14 +210,14 @@ export default function ProvenancePage() {
       <Section>
         <MediaCarousel
           slides={mediaSlides("bundle", "provenance")}
-          label="Provenance bundle media"
+          label="Provenance module family media"
         />
       </Section>
 
       {/* ===== The three composed packages ===== */}
       <Reveal>
         <Section
-          title="Three packages, one bundle."
+          title="Three packages, one module family."
           lede="Each member is a real workspace dependency, not a manifest claim. Each also works standalone, so you can take exactly the primitive you need."
         >
           <FeatureGrid cols={3}>

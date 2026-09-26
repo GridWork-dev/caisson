@@ -34,7 +34,7 @@ describe("demo-excerpts manifest", () => {
 
       test("carries the fixed manifest shape", () => {
         expect(entry.approvedBy).toBe("operator");
-        expect(entry.licensePosture).toBe("commercial-display-only");
+        expect(entry.licensePosture).toBe("Apache-2.0");
         expect(entry.sourceCommit).toMatch(/^[0-9a-f]{40}$/);
         expect(entry.content.length).toBeGreaterThan(0);
       });
