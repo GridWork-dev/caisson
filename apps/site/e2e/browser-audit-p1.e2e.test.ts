@@ -493,4 +493,56 @@ describe("browser-audit P1 graduation — deterministic Playwright over a local 
     },
     TEST_TIMEOUT,
   );
+
+  test(
+    "docs code tokens follow the theme: OS scheme when unpinned, data-theme when pinned",
+    async () => {
+      if (browser === null) throw new Error("browser not initialized");
+      for (const colorScheme of ["dark", "light"] as const) {
+        const ctx = await browser.newContext({
+          viewport: DESKTOP,
+          colorScheme,
+        });
+        try {
+          const page = await ctx.newPage();
+          await goto(page, "/docs/getting-started");
+          for (const pin of [null, "light", "dark"] as const) {
+            const want = pin ?? colorScheme;
+            const wrong = await page.evaluate(
+              ({ pin, want }) => {
+                const root = document.documentElement;
+                if (pin === null) root.removeAttribute("data-theme");
+                else root.setAttribute("data-theme", pin);
+                const spans = Array.from(
+                  document.querySelectorAll("pre code span.line > span"),
+                );
+                // the span's own --shiki-<want> custom prop, resolved to rgb() by a probe
+                const probe = document.createElement("i");
+                const out = spans.filter((s) => {
+                  probe.style.color = `var(--shiki-${want})`;
+                  s.appendChild(probe);
+                  const expected = getComputedStyle(probe).color;
+                  probe.remove();
+                  return getComputedStyle(s).color !== expected;
+                });
+                return { total: spans.length, wrong: out.length };
+              },
+              { pin, want },
+            );
+            expect(
+              wrong.total,
+              "no highlighted code on the page",
+            ).toBeGreaterThan(10);
+            expect(
+              wrong.wrong,
+              `OS ${colorScheme}, data-theme ${pin ?? "unset"}: tokens not on the ${want} theme`,
+            ).toBe(0);
+          }
+        } finally {
+          await ctx.close();
+        }
+      }
+    },
+    TEST_TIMEOUT,
+  );
 });

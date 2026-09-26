@@ -92,17 +92,34 @@
  * ADR-0100) — so in dark mode every token kept its LIGHT color and code blocks read as faded /
  * illegible. These are the two `.dark`-gated rules from fumadocs-ui/css/lib/shiki.css copied
  * VERBATIM (block-code + inline-code twins), re-keyed to our attribute. The `@custom-variant dark`
- * above only re-points Tailwind `dark:` utilities; it cannot reach these literal selectors. */
-[data-theme="dark"] .shiki:not(.not-fumadocs-codeblock *) {
+ * above only re-points Tailwind `dark:` utilities; it cannot reach these literal selectors.
+ * Keyed on the same 3-prong resolution as tokens.css (dark is the un-attributed default, the OS
+ * light preference flips an unpinned visitor): keyed on [data-theme="dark"] alone, an unpinned
+ * visitor got dark surfaces with light-theme tokens, 1.04:1 contrast. */
+:root:not([data-theme="light"]) .shiki:not(.not-fumadocs-codeblock *) {
   code span {
     color: var(--shiki-dark);
     font-style: var(--shiki-dark-font-style);
   }
 }
 
-[data-theme="dark"] code.shiki:not(.not-fumadocs-code *) span {
+:root:not([data-theme="light"]) code.shiki:not(.not-fumadocs-code *) span {
   color: var(--shiki-dark);
   font-style: var(--shiki-dark-font-style);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .shiki:not(.not-fumadocs-codeblock *) {
+    code span {
+      color: var(--shiki-light);
+      font-style: var(--shiki-light-font-style);
+    }
+  }
+
+  :root:not([data-theme="dark"]) code.shiki:not(.not-fumadocs-code *) span {
+    color: var(--shiki-light);
+    font-style: var(--shiki-light-font-style);
+  }
 }
 
 /* ===== Docs mobile shell root-cause fix (visual-audit remediation, ADR-0374 W1 P0).
