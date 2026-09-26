@@ -1,0 +1,33 @@
+# Railway service config — services/license (@caisson/service-license). ADR-0110/0113/0139, Stage-2.
+#
+# Dashboard settings for THIS service (the build context must be the repo root, see Dockerfile header):
+#   Root Directory       = /                             (repo root — the Docker build context)
+#   Config-as-code path  = services/license/railway.toml (this file)
+#
+# Service env vars (set in the Railway service — NEVER committed):
+#   DATABASE_URL                 (required — Railway Postgres; the issuer's tenant Transactor)
+#   CAISSON_LICENSE_SIGNING_KEY  (required — base64 PKCS8 Ed25519 seed; fail-closed via Ed25519Signer.fromEnv)
+#   LICENSE_ISSUE_TOKEN          (required — Bearer gating POST /issue; fail-closed)
+#   PADDLE_WEBHOOK_SECRET        (required for POST /webhook; unset ⇒ provider null ⇒ 401)
+#   PADDLE_API_KEY               (optional — only the unexercised checkout path uses it)
+#   PADDLE_ENV                   ("sandbox" | "production"; defaults to production)
+#   SUPPORT_BOT_URL              (optional — ADR-0203 post-grant Discord role push; unset ⇒ push disabled)
+#   SUPPORT_BOT_GRANT_TOKEN      (optional — must match the bot's BILLING_GRANT_TOKEN; unset ⇒ push disabled)
+#   PORT                         (Railway injects; server binds it)
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "services/license/Dockerfile"
+
+[deploy]
+# Apply the platform DB schema ONCE per deploy, before the issuer (or the site) serves: the `app`
+# RLS role + every FORCE-RLS platform table + the better-auth tables. Idempotent + forward-only via
+# the @caisson/migrate ledger. This service's image is the FULL workspace (COPY . .), so it can run
+# the site's migrate orchestrator; the site's own standalone image cannot (migrate is not traced
+# into it). Deploy order therefore puts caisson-license before caisson-site.
+preDeployCommand = "bun apps/site/lib/deploy-migrate.ts"
+healthcheckPath = "/health"
+# 30s, not docs' 300: the issuer binds the socket immediately (it opens a lazy pg pool, it does not
+# embed a corpus at boot).
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+numReplicas = 1

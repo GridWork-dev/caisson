@@ -46,7 +46,6 @@ describe("deriveDomains — the mechanical tree partition (ADR-0233, Fork A)", (
     expect(byId.get("packages/compliance")?.class).toBe("sold-source"); // edition, buyer reads it
     expect(byId.get("tooling/audit-harness")?.class).toBe("internal-only");
     expect(byId.get("tooling/demo-registry")?.class).toBe("internal-only");
-    expect(byId.get("apps/admin")?.class).toBe("internal-only");
     expect(byId.get("apps/site")?.class).toBe("buyer-runtime");
     expect(byId.get("root-config")?.class).toBe("internal-only");
     expect(byId.get("oss-mirror")?.class).toBe("oss-source");

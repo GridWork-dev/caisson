@@ -74,17 +74,16 @@ describe("applicableDimensions — the sparse class → lens matrix", () => {
     expect(applicableDimensions("buyer-runtime", "apps/site")).toContain("D8");
     expect(applicableDimensions("buyer-runtime", "apps/demos")).toContain("D8");
     expect(applicableDimensions("internal-only", "apps/admin")).toContain("D8");
-    // All FIVE services/* ARE buyer-runtime but are backend APIs with nothing to render — a
-    // class-keyed D8 would have manufactured five dead cells here while silently dropping admin.
-    // Enumerated from deriveDomains rather than hand-typed: the hand-typed four missed the Python
-    // support-bot, which readDirs sweeps in like any other service dir.
+    // services/* ARE buyer-runtime but are backend APIs with nothing to render — a class-keyed D8
+    // would have manufactured dead cells here. Enumerated from deriveDomains rather than
+    // hand-typed (oss-pivot PR2 retired every services/* dir except services/license).
     const services = deriveDomains()
       .filter(
         (d) => d.class === "buyer-runtime" && d.id.startsWith("services/"),
       )
       .map((d) => d.id);
-    expect(services).toHaveLength(5);
-    expect(services).toContain("services/support-bot");
+    expect(services).toHaveLength(1);
+    expect(services).toContain("services/license");
     for (const svc of services) {
       expect(applicableDimensions("buyer-runtime", svc)).not.toContain("D8");
     }

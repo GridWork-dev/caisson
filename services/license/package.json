@@ -1,0 +1,52 @@
+{
+  "name": "@caisson/service-license",
+  "version": "0.1.5",
+  "private": true,
+  "description": "Merchant-of-Record billing webhook + idempotent credit grants + account-entitlement store/resolver + the Ed25519 offline-license ISSUER HTTP surface (ADR-0089/0017/0071/0108). A gated invoice.paid grants cycle credits AND the plan's entitlements; the lazy bearer-gated POST /issue signs an account's resolved entitlements into a license token via @caisson/license-issue.",
+  "license": "LicenseRef-Caisson-Commercial",
+  "type": "module",
+  "exports": {
+    ".": {
+      "bun": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tscn -p tsconfig.json",
+    "lint": "oxlint src",
+    "test": "bun test --timeout 60000 ./src",
+    "test:live": "bun test ./live",
+    "start": "bun run src/deploy.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "catalog:",
+    "@caisson/alerting": "workspace:*",
+    "@caisson/audit-worm": "workspace:*",
+    "@caisson/billing": "workspace:*",
+    "@caisson/billing-orchestration": "workspace:*",
+    "@caisson/credits": "workspace:*",
+    "@caisson/email": "workspace:*",
+    "@caisson/jobs": "workspace:*",
+    "@caisson/kernel": "workspace:*",
+    "@caisson/license-issue": "workspace:*",
+    "@caisson/license-verify": "workspace:*",
+    "@caisson/observability": "workspace:*",
+    "@caisson/org-controls": "workspace:*",
+    "@caisson/platform-reads": "workspace:*",
+    "@caisson/pricebook": "workspace:*",
+    "@caisson/rate-limit": "workspace:*",
+    "@caisson/registry-schema": "workspace:*",
+    "@caisson/tenancy-rls": "workspace:*",
+    "pg": "catalog:",
+    "tldts": "^7.4.5"
+  },
+  "devDependencies": {
+    "@caisson/auth": "workspace:*",
+    "@caisson/testing": "workspace:*",
+    "@caisson/tsconfig": "workspace:*",
+    "@types/bun": "catalog:",
+    "@types/pg": "catalog:",
+    "typescript": "catalog:"
+  }
+}

@@ -1,10 +1,13 @@
 #!/usr/bin/env bun
 /**
- * release-readiness.ts — the ADR-0318 R3 gate. Every check must be GREEN before the release
- * train's propagation legs run; any red exits nonzero and the train stops before touching an
- * external surface. Run by .github/workflows/release-train.yml on the release SHA, and locally:
+ * release-readiness.ts — the ADR-0318 R3 gate. Every check must be GREEN before a release trains;
+ * any red exits nonzero and the train stops before touching an external surface. Run locally:
  *
  *   bun scripts/release-readiness.ts --tag v2026.07.30 [--sha <sha>] [--local]
+ *
+ * (oss-pivot PR2: release-train.yml, the only workflow that ran this directly, is retired with the
+ * R2/tarball publish pipeline it verified before. This gate is unreachable from CI until a
+ * replacement release workflow calls it.)
  *
  * Checks (R3, locked; #0 added by ADR-0325):
  *   0. Release SHA on main — the tag targets a commit that is an ancestor of origin/main (the
@@ -20,9 +23,6 @@
  *   4. `bun run sot` green — the SoT drift tool (ADR-ceiling parity, frontmatter/docs freshness,
  *      archive integrity, tracker-vs-PR reality, changeset preflight). Doubles as the R3
  *      docs-freshness check.
- *   4b. Registry coverage invariants (CAISSON-85/86) — every module's `latest` has a tarball row
- *      (hard), no advertised version outside the frozen pre-sidecar backlog is rowless, and every
- *      served member pin resolves served+tarball-backed (advertise-follows-upload, static half).
  *   5. R4 audit artifact on file — outputs/audit/release-audit-<tag>.md (the fresh full
  *      SHIP-audit-lane review of the cumulative diff since the last release tag).
  *   6. Per-release checklist complete — docs/releases/<tag>-checklist.md exists with ZERO
@@ -35,7 +35,6 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { z } from "zod";
-import { checkRegistryCoverage } from "../registry/scripts/coverage-invariants";
 
 const REPO = resolve(import.meta.dir, "..");
 export const REQUIRED_CHECKS = [
@@ -46,11 +45,6 @@ export const REQUIRED_CHECKS = [
   // ADR-0327 scan-gate flip (CAISSON-95): the deterministic security layer joins the required
   // set once its installers are pinned — which landed in the same change as this line.
   "deterministic",
-  // ADR-0414: the Python gate for services/support-bot, promoted out of advisory in the same
-  // change that gave that service an automated Railway deploy. Its paths filter was removed in
-  // the same commit — this list treats a check that never reported as `missing`, so a
-  // path-scoped required check would red readiness on every release that did not touch the bot.
-  "support-bot",
   // R359 / CR-05: source scans cannot stand in for the enforcing runtime-image matrix.
   "runtime-images-gate",
 ] as const;
@@ -270,36 +264,6 @@ function checkSot(): void {
   }
 }
 
-// --- 4b. registry coverage invariants (CAISSON-85/86) --------------------------------------------
-function checkRegistryCoverageGate(): void {
-  // Static advertise-follows-upload proof: every module's latest has a tarball row (hard), no
-  // advertised version outside the frozen pre-sidecar backlog is rowless, and every served member
-  // pin resolves served+tarball-backed. Same invariants the registry-index CI job enforces via
-  // coverage-invariants.test.ts — re-run here so the train's readiness verdict is self-contained.
-  try {
-    const report = checkRegistryCoverage({
-      indexPath: join(REPO, "registry/index.json"),
-      sidecarPath: join(REPO, "registry/tarballs.json"),
-    });
-    const detail = report.ok
-      ? "latest/version/pin coverage all green (advertise-follows-upload)"
-      : `latest: [${report.latest.join(", ")}] versions: [${report.versions
-          .slice(0, 3)
-          .join(
-            ", ",
-          )}${report.versions.length > 3 ? ", …" : ""}] pins: [${report.pins
-          .slice(0, 3)
-          .join(", ")}${report.pins.length > 3 ? ", …" : ""}]`;
-    record("registry coverage (85/86)", report.ok, detail);
-  } catch (err) {
-    record(
-      "registry coverage (85/86)",
-      false,
-      `coverage check failed to run: ${String(err)}`,
-    );
-  }
-}
-
 // --- 5. R4 audit artifact ------------------------------------------------------------------------
 const releaseRef = z.string().regex(/^v[0-9][A-Za-z0-9._-]{0,100}$/);
 const auditBindingSchema = z
@@ -510,7 +474,6 @@ if (import.meta.main) {
   checkChangesetsDrained();
   checkChangelogs();
   checkSot();
-  checkRegistryCoverageGate();
   checkAuditArtifact(tag, sha);
   checkChecklist(tag, sha);
   if (local) checkLiveHybrid();

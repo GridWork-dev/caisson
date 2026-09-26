@@ -313,12 +313,12 @@ function evidenceClasses(): ClassSpec[] {
     {
       id: "registry-test-suite",
       title:
-        "Registry workspace test suite (schema · index builder · worker · evidence pack)",
+        "Registry workspace test suite (schema · index builder · evidence pack)",
       claimLevel: "implements",
       proofSource: "verified-in-pack",
-      proof: "bun test registry/schema registry/scripts registry/worker",
+      proof: "bun test registry/schema registry/scripts",
       claim:
-        "The registry workspace tests (schema, index builder, worker seam, and this pack's own assembler) ran green at this commit; the captured summary is included. The full 38-package suite is the package-test-suite class.",
+        "The registry workspace tests (schema, index builder, and this pack's own assembler) ran green at this commit; the captured summary is included. The full 38-package suite is the package-test-suite class.",
       fileNames: ["test-summary.txt"],
     },
     {
@@ -400,7 +400,6 @@ function main(): void {
     "test",
     "registry/schema",
     "registry/scripts",
-    "registry/worker",
   ]);
 
   const repository = process.env.GITHUB_REPOSITORY?.trim();

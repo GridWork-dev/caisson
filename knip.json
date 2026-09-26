@@ -12,12 +12,7 @@
     },
     "apps/*": {},
     "registry": {},
-    "services/license": {},
-    "services/docs": {
-      "ignoreDependencies": ["sqlite-vec"]
-    },
-    "services/intel": {},
-    "services/betterstack-adapter": {}
+    "services/license": {}
   },
   "ignore": ["**/dist/**", "**/*.d.ts", "**/CHANGELOG.md"]
 }

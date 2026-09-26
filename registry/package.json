@@ -2,7 +2,7 @@
   "name": "@caisson/registry",
   "version": "0.0.26",
   "private": true,
-  "description": "Registry SERVICE (commercial, ADR-0097): the CI index builder + gated publish + Cloudflare worker read-path (ADR-0021/0047). Re-exports the open @caisson/registry-schema contract.",
+  "description": "Registry SERVICE (commercial, ADR-0097): the CI index builder (ADR-0021/0047). Re-exports the open @caisson/registry-schema contract.",
   "license": "LicenseRef-Caisson-Commercial",
   "type": "module",
   "exports": {
@@ -19,20 +19,16 @@
   },
   "scripts": {
     "build": "tscn -p tsconfig.json",
-    "lint": "oxlint schema scripts worker",
-    "test": "bun test ./schema ./scripts ./worker"
+    "lint": "oxlint schema scripts",
+    "test": "bun test ./schema ./scripts"
   },
   "dependencies": {
-    "@caisson/license-verify": "workspace:*",
-    "@caisson/pricebook": "workspace:*",
     "@caisson/registry-schema": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/license-issue": "workspace:*",
     "@caisson/testing": "workspace:*",
     "@caisson/tsconfig": "workspace:*",
-    "typescript": "catalog:",
-    "wrangler": "4.119.0"
+    "typescript": "catalog:"
   }
 }

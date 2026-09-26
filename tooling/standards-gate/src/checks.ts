@@ -1472,11 +1472,7 @@ const PROSE_SCAN_DOC_FILES = ["README.md", "AGENTS.md", "CHANGELOG.md"];
 /** True for a package/app dir this gate scans — the rubric's oss-source/sold-source/buyer-runtime class. */
 function isProseScanTarget(relDir: string): boolean {
   if (relDir.startsWith("packages/")) return true;
-  return (
-    relDir === "apps/site" ||
-    relDir === "services/license" ||
-    relDir === "services/docs"
-  );
+  return relDir === "apps/site" || relDir === "services/license";
 }
 
 /**

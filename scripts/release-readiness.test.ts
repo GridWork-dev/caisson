@@ -323,7 +323,7 @@ describe("REQUIRED_CHECKS — the release-readiness gate's own input", () => {
 
   test("the set is non-empty, deduplicated, and at full strength", () => {
     // Guard the guard: a floor below the real size lets one silently drop out.
-    expect(REQUIRED_CHECKS.length).toBeGreaterThanOrEqual(7);
+    expect(REQUIRED_CHECKS.length).toBeGreaterThanOrEqual(6);
     expect(new Set(REQUIRED_CHECKS).size).toBe(REQUIRED_CHECKS.length);
     // And the parse itself must have found something, or every check below is vacuous.
     expect(byName.size).toBeGreaterThan(10);
@@ -366,14 +366,6 @@ describe("REQUIRED_CHECKS — the release-readiness gate's own input", () => {
       return reasons.map((r) => `${name} (${hit.file}) — ${r}`);
     });
     expect(conditional).toEqual([]);
-  });
-
-  test("support-bot is in the set — ADR-0414 promoted it before automating its deploy", () => {
-    // Pinned by name, not just by the structural rules above: the promotion is the whole reason
-    // deploy-railway.yml is allowed to ship this service automatically. Dropping it back to
-    // advisory silently restores "a red bot deploys anyway", which no structural check would catch.
-    expect(REQUIRED_CHECKS).toContain("support-bot");
-    expect(byName.get("support-bot")?.file).toBe("support-bot.yml");
   });
 
   test("runtime images aggregate is required by release readiness", () => {
