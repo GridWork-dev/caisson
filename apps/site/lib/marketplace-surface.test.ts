@@ -11,6 +11,7 @@ import {
   primaryCategory,
 } from "./marketplace-surface";
 import { BUNDLES, MODULES } from "./catalog";
+import { MODULE_PAGES } from "./module-pages";
 
 describe("marketplace surface entries", () => {
   test("ALL_ENTRIES is every bundle + every module, bundles first", () => {
@@ -31,19 +32,22 @@ describe("marketplace surface entries", () => {
     expect(entryByViewId("module:does-not-exist")).toBeUndefined();
   });
 
-  test("demoHref points at the entry's own poke in the static /demos zone (a family borrows its hero's)", () => {
+  test("demoHref points at the module page framing the entry's poke (a family borrows its hero's)", () => {
+    const pages = new Set(MODULE_PAGES.map((r) => r.slug));
     for (const e of ALL_ENTRIES) {
       const poke = mediaSlides(e.kind, e.id).find(
         (s) => s.kind === "poke",
       )?.poke;
-      expect(e.demoHref).toBe(poke ? `/demos/embed/${poke}` : null);
+      expect(e.demoHref).toBe(poke ? `/marketplace/modules/${poke}` : null);
+      // The link resolves: every poke has a pre-rendered module page.
+      if (poke) expect(pages.has(poke)).toBe(true);
     }
     // Non-vacuous: every module but ui-pro has a demo, and the compliance family borrows field-crypto.
     expect(MODULE_ENTRIES.filter((e) => e.demoHref !== null).length).toBe(
       MODULES.length - 1,
     );
     expect(entryByViewId("bundle:compliance")?.demoHref).toBe(
-      "/demos/embed/field-crypto",
+      "/marketplace/modules/field-crypto",
     );
   });
 

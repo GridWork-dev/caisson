@@ -421,7 +421,7 @@ function SurfaceCard({
         <span className={styles.cardMetaLead}>
           <Icon name={mark} />
           <span className={`cs-num ${styles.cardEyebrow}`}>{eyebrow}</span>
-          {e.hasMedia && (
+          {e.demoHref !== null && (
             <span className={styles.mediaTag}>
               <Icon name="gauge" />
               demo

@@ -98,7 +98,7 @@ function bodySections(record: ModulePageRecord): readonly PageSection[] {
       // renders `record.artifact` as a framed CodeBlock, so the carousel would otherwise repeat it.
       kind: "custom",
       node: (
-        <Section eyebrow="Media" title="See it work">
+        <Section id="demo" eyebrow="Media" title="See it work">
           <MediaCarousel
             slides={mediaSlides("module", record.slug, {
               omitCodeArtifact: true,
@@ -137,7 +137,8 @@ function ModuleRail({ mod }: { mod: CatalogModule }) {
           <EntryLinks
             label={mod.label}
             docsHref={entryDocsHrefs()[`module:${mod.id}`]}
-            demoHref={entry?.demoHref ?? null}
+            // This page frames the demo itself, so the rail jumps to it instead of self-linking.
+            demoHref={entry?.demoHref ? "#demo" : null}
           />
           <p className="cs-footnote">
             {mod.bundles.length === 0 ? (

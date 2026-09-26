@@ -1,7 +1,7 @@
 import { Button } from "./button";
 
-/** A gallery entry's two destinations: its docs page and its live demo. The demo lives in the
- *  separate `/demos` static export, so it is a hard navigation (plain `<a>`), never next/link. */
+/** A gallery entry's two destinations: its docs page and the module page that frames its live
+ *  demo (or, on that module page itself, an in-page anchor to the framed demo). */
 export function EntryLinks({
   label,
   docsHref,
@@ -22,7 +22,6 @@ export function EntryLinks({
       {demoHref ? (
         <Button
           href={demoHref}
-          hard
           variant="primary"
           aria-label={`${label} live demo`}
         >

@@ -42,15 +42,16 @@ export interface SurfaceEntry {
   /** True when the viewer shows real media (an authored diagram, a produced video, or a live demo) —
    *  not just the brand placeholder. Drives the media facet + the card badge. */
   hasMedia: boolean;
-  /** The entry's live demo in the `/demos` zone (a module's own poke, or a family's borrowed hero
-   *  poke), or null when it has none. */
+  /** The module page that frames the entry's live demo (a module's own, or a family's borrowed hero
+   *  module's), or null when it has none. */
   demoHref: string | null;
 }
 
-/** The static `/demos` embed URL for an entry's interactive poke, if it has one. */
+/** The module page framing an entry's interactive poke, if it has one. Every poke id is also a
+ *  module-page slug (marketplace-surface.test pins it), so the link always resolves. */
 function demoHref(kind: EntryKind, id: string): string | null {
   const poke = mediaSlides(kind, id).find((s) => s.kind === "poke")?.poke;
-  return poke ? `/demos/embed/${poke}` : null;
+  return poke ? `/marketplace/modules/${poke}` : null;
 }
 
 function moduleCategories(m: CatalogModule): readonly Category[] {
