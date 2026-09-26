@@ -6,13 +6,12 @@ rules:
       Non-constant-time comparison of a token/credential/signature. Use crypto.timingSafeEqual()
       (fixed-length: length-guard then compare) or hash-both-sides-then-timingSafeEqual
       (variable-length) — never ===/==/!=/!== on a token, key, password hash, or HMAC
-      signature. See packages/kernel/src/crypto.ts and identity/security.md.
+      signature. See packages/kernel/src/crypto.ts.
     metadata:
       category: security
       cwe: "CWE-208: Observable Timing Discrepancy"
       references:
         - packages/kernel/src/crypto.ts
-        - identity/security.md
     patterns:
       - pattern-either:
           - patterns:

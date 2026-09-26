@@ -5,11 +5,9 @@ rules:
     message: >-
       No console.log/debug/info in product code — use process.stderr.write() (the
       sanctioned sink) or a structured logger.
-      console.error/console.warn are allowed. (identity/security.md, CLAUDE.md coding standards.)
+      console.error/console.warn are allowed. (CLAUDE.md coding standards.)
     metadata:
       category: best-practice
-      references:
-        - identity/security.md
     patterns:
       - pattern-either:
           - pattern: console.log(...)

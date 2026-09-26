@@ -4,12 +4,9 @@ rules:
     severity: ERROR
     message: >-
       Compare tokens/secrets with hmac.compare_digest(), never ==/!= (timing side channel).
-      (identity/security.md.)
     metadata:
       category: security
       cwe: "CWE-208: Observable Timing Discrepancy"
-      references:
-        - identity/security.md
     patterns:
       - pattern-either:
           - patterns:

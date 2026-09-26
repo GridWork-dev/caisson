@@ -4,12 +4,10 @@ rules:
     severity: WARNING
     message: >-
       A request-body z.object() at an HTTP boundary should chain .strict() to reject unknown
-      fields (identity/security.md Input validation). Exception: third-party provider webhook
-      envelopes (e.g. Paddle) intentionally stay loose — see packages/billing-orchestration.
+      fields. Exception: third-party provider webhook envelopes (e.g. Paddle) intentionally stay
+      loose — see packages/billing-orchestration.
     metadata:
       category: security
-      references:
-        - identity/security.md
     patterns:
       - pattern: z.object($SHAPE)
       # pattern-not-inside (containment) suppresses the inner z.object() node when it is
