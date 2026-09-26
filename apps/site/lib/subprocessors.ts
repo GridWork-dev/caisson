@@ -25,8 +25,12 @@ export interface Subprocessor {
 export const SUBPROCESSORS: readonly Subprocessor[] = [
   {
     processor: "Cloudflare",
-    purpose: "Hosts caisson.sh as a static site: DNS, edge delivery, and WAF.",
-    dataCategories: ["Request metadata (IP address, user agent)"],
+    purpose:
+      "Hosts caisson.sh as a static site (DNS, edge delivery, WAF) and runs its cookieless Web Analytics.",
+    dataCategories: [
+      "Request metadata (IP address, user agent)",
+      "Aggregate page-view and page-load measurements",
+    ],
     region: "Global edge network",
   },
 ];

@@ -100,8 +100,23 @@ try {
         <RootProvider theme={{ enabled: false }} search={{ SearchDialog }}>
           {children}
         </RootProvider>
-        {/* Plausible — cookieless, no consent banner, env-gated on NEXT_PUBLIC_PLAUSIBLE_DOMAIN
-            (ADR-0118, supersedes the ADR-0047 raw <Script> wiring). */}
+        {/* Cloudflare Web Analytics, manual snippet: cookieless, and the site token is public.
+            Automatic edge injection stays off (an injected beacon broke hydration here before).
+            Loaded only on caisson.sh: Cloudflare accepts reports from the registered hostname
+            alone, so on localhost, CI and the workers.dev preview it would only log CORS errors
+            and count test traffic. Its two origins are the only third-party CSP entries
+            (lib/security-headers.ts); /legal/privacy describes it. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if (location.hostname === "caisson.sh") {
+  var s = document.createElement("script");
+  s.type = "module";
+  s.src = "https://static.cloudflareinsights.com/beacon.min.js";
+  s.setAttribute("data-cf-beacon", '{"token": "32f0acb326dd41ce82d58616cd111026"}');
+  document.body.appendChild(s);
+}`,
+          }}
+        />
       </body>
     </html>
   );
