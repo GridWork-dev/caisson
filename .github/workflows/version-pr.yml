@@ -66,7 +66,7 @@ jobs:
       - name: refresh generator template pins and Next starter golden
         run: |
           set -euo pipefail
-          bun registry/scripts/sync-generator-template-pins.ts
+          bun tooling/scripts/sync-generator-template-pins.ts
           (
             cd packages/cli
             BLESS=1 bun test ./src/generate.test.ts -t "framework=next composes the Next.js starter"

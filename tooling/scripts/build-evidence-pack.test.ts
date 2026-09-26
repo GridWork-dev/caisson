@@ -1,4 +1,4 @@
-// registry/scripts/build-evidence-pack.test.ts — the assembler is the tested unit (the producers in
+// tooling/scripts/build-evidence-pack.test.ts — the assembler is the tested unit (the producers in
 // main() are CI shell orchestration). Covers: manifest schema round-trip, per-file hash verification,
 // fail-loud on a missing declared file, and the ADR-0279/0275 honesty invariants in the schema.
 import { describe, expect, test } from "bun:test";

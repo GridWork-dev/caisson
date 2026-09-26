@@ -1,4 +1,4 @@
-// registry/scripts/build-evidence-pack.ts — the CI build-provenance evidence pack (ADR-0275).
+// tooling/scripts/build-evidence-pack.ts — the CI build-provenance evidence pack (ADR-0275).
 //
 // This aggregates the evidence CI ALREADY produces-and-discards (the standards-gate output, the
 // registry index byte-identity proof, the test run) into ONE versioned, downloadable artifact —
@@ -21,8 +21,8 @@
 // that they "block merges" (this repo has no enforced branch protection; claiming otherwise would be
 // exactly the overclaim ADR-0279 bans).
 //
-// registry/ is a workspace member but this script (like build-index.ts) imports only zod + node
-// built-ins + relative siblings — no @caisson/* — so it runs standalone under `bun` in CI.
+// tooling/scripts/ has no package.json: this script imports only zod (from the root install) + node
+// built-ins — no @caisson/* — so it runs standalone under `bun` in CI.
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
@@ -230,13 +230,13 @@ export function assembleEvidencePack(
 
 // ---------------------------------------------------------------------------------------------------
 // main(): run the cheap producers into a staging dir, then assemble. Invoked by the CI evidence-pack
-// job as a single `bun registry/scripts/build-evidence-pack.ts`. The heavy/cross-runner proofs (the
+// job as a single `bun tooling/scripts/build-evidence-pack.ts`. The heavy/cross-runner proofs (the
 // full turbo suite, the Java oscal-cli NIST validation) are their own required jobs at this same SHA
 // — referenced here, not re-run (that would double CI). WORM is operator-run (ADR-0224).
 // ---------------------------------------------------------------------------------------------------
 
-const REGISTRY_DIR = join(import.meta.dir, "..");
-const REPO_ROOT = join(REGISTRY_DIR, "..");
+const REPO_ROOT = join(import.meta.dir, "..", "..");
+const REGISTRY_DIR = join(REPO_ROOT, "registry");
 
 interface RunResult {
   readonly out: string;
@@ -400,6 +400,7 @@ function main(): void {
     "test",
     "registry/schema",
     "registry/scripts",
+    "tooling/scripts/build-evidence-pack.test.ts",
   ]);
 
   const repository = process.env.GITHUB_REPOSITORY?.trim();
