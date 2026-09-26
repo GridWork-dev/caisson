@@ -15,7 +15,6 @@
 /docs/ai-kit /docs/ai-production 301
 /docs/ai-kit/* /docs/ai-production/:splat 301
 /docs/base/credits /docs/ai-production/credits 301
-/docs/compliance/compliance /docs/compliance 301
 
 # ADR-0428 L10: pages retired with the open-source pivot.
 /marketplace/plans /marketplace 301
