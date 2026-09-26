@@ -1,14 +1,11 @@
-// Registry manifest (ADR-0020). Local inference is a commercial local-first module carved out of
-// @caisson/local-ai by ADR-0258. It depends down on @caisson/local-privacy for the EgressGuard seam.
+// Registry manifest: must agree with package.json on id, version, license and the @caisson/*
+// dependency set (the standards gate fails the build on drift).
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/local-inference",
   version: pkg.version,
-  kind: "base",
-  tier: "paid",
-  priceCents: 24900,
   license: pkg.license,
   dependencies: ["@caisson/kernel", "@caisson/local-privacy"],
   description:

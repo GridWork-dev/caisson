@@ -32,10 +32,7 @@ const index = loadRegistryIndex({
           manifest: {
             id: "@caisson/auth",
             version: "0.1.0",
-            kind: "base",
-            tier: "paid",
-            priceCents: 4900,
-            license: "LicenseRef-Caisson-Commercial",
+            license: "Apache-2.0",
             description: "Fixture module for the HTTP transport test.",
           },
           publishedAt: "2026-06-27T00:00:00.000Z",

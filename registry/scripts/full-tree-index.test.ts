@@ -116,38 +116,17 @@ describe("full-tree registry backfill (ADR-0021/0111)", () => {
     }
   });
 
-  test("edition member versions pin to real published versions (never the 0.0.0 sentinel)", () => {
-    const entries = parseLedger(readFileSync(LEDGER_PATH, "utf8"));
-    // Every (id, version) pair ever published — the truth a `members` snapshot must agree with.
-    // Set-membership rather than latest-only: once the ledger carries more than one release
-    // (ADR-0208 republish), an OLDER edition entry legitimately pins the member versions that
-    // were current at ITS publish. What can never appear is a pair that was never published —
-    // which still catches the "0.0.0" sentinel and unpublished-version drift (the gap that let
-    // three editions ship 0.0.0 member pins through CI — ADR-0111/0077).
-    const publishedPairs = new Set(entries.map((e) => `${e.id}@${e.version}`));
-    // The ONE sanctioned phantom, HISTORICAL only: everything@0.2.0/0.2.1 named @caisson/ui-pro
-    // at the 0.0.0 sentinel before that package shipped (first publish 2026-07-07 — ui-pro@0.1.0;
-    // everything@0.2.2 pins the real version). Append-only history keeps those two lines forever,
-    // so the exemption is scoped to exactly them — a phantom pin in any NEW entry fails this test.
-    const sanctionedPhantoms = new Set(["@caisson/ui-pro@0.0.0"]);
-    const phantomSanctionedIn = new Set([
-      "@caisson/everything@0.2.0",
-      "@caisson/everything@0.2.1",
-    ]);
-    const stale: string[] = [];
-    for (const e of entries) {
-      const members = e.manifest?.members;
-      if (!members) continue;
-      for (const [memberId, version] of Object.entries(members)) {
-        const pair = `${memberId}@${version}`;
-        const sanctioned =
-          sanctionedPhantoms.has(pair) &&
-          phantomSanctionedIn.has(`${e.id}@${e.version}`);
-        if (!publishedPairs.has(pair) && !sanctioned) {
-          stale.push(`${e.id} → ${pair}`);
-        }
-      }
+  test("every ledger manifest carries only the catalog fields (no price, tier or membership)", () => {
+    const allowed = [
+      "dependencies",
+      "description",
+      "id",
+      "license",
+      "stability",
+      "version",
+    ];
+    for (const e of parseLedger(readFileSync(LEDGER_PATH, "utf8"))) {
+      expect(Object.keys(e.manifest).sort()).toEqual(allowed);
     }
-    expect(stale).toEqual([]);
   });
 });

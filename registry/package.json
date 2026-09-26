@@ -2,7 +2,7 @@
   "name": "@caisson/registry",
   "version": "0.0.26",
   "private": true,
-  "description": "Registry SERVICE (commercial, ADR-0097): the CI index builder (ADR-0021/0047). Re-exports the open @caisson/registry-schema contract.",
+  "description": "The CI-built module catalog: the ledger, the index builder (ADR-0021/0047), and a re-export of the @caisson/registry-schema contract.",
   "license": "LicenseRef-Caisson-Commercial",
   "type": "module",
   "exports": {

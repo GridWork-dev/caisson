@@ -22,10 +22,7 @@ function catalogModule(id: string) {
         manifest: {
           id,
           version: "0.1.0",
-          kind: "base",
-          tier: "paid",
-          priceCents: 4900,
-          license: "LicenseRef-Caisson-Commercial",
+          license: "Apache-2.0",
           description: `Fixture module ${id}.`,
         },
         publishedAt: "2026-06-27T00:00:00.000Z",

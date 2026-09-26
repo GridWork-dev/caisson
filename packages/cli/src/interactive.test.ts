@@ -40,15 +40,8 @@ function resetQueues(): void {
 const manifest = (id: string, description: string) => ({
   id,
   version: "0.3.0",
-  kind: "primitive" as const,
-  editions: [] as never[],
-  tier: "paid" as const,
-  priceCents: 100,
-  license: "LicenseRef-Caisson-Commercial" as const,
+  license: "Apache-2.0" as const,
   dependencies: [] as never[],
-  entry: "src/index.ts",
-  agents: "AGENTS.md",
-  golden: null,
   stability: "alpha" as const,
   description,
 });

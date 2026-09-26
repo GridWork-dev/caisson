@@ -1,20 +1,11 @@
-// Registry manifest. Loaded by @caisson/standards-gate; must agree with package.json on
-// id/version/license/dependencies. `kind: "base"` — this is shared abuse-throttle infrastructure any
-// composition may wire in, not an edition or a compliance primitive.
-//
-// Open Base ships free: tier `oss`, no priceCents. Dependencies are DOWN-ONLY and open-only: this
-// package depends on @caisson/kernel (the RateLimitError type), @caisson/mcp-server (the buyer-MCP
-// composition), and @caisson/tenancy-rls (the fail-closed RLS transaction wrapper the per-account
-// store runs inside), all open Base — never on an edition or a commercial service.
+// Registry manifest: must agree with package.json on id, version, license and the @caisson/*
+// dependency set (the standards gate fails the build on drift).
 import pkg from "./package.json";
 import { defineModule } from "../../registry/schema/module-manifest";
 
 export default defineModule({
   id: "@caisson/rate-limit",
   version: pkg.version,
-  kind: "base",
-  tier: "oss",
-  priceCents: null,
   license: pkg.license,
   dependencies: [
     "@caisson/kernel",

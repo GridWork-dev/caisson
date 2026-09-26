@@ -24,18 +24,10 @@ const pub = (id: string, version: string) => ({
   manifest: {
     id,
     version,
-    kind: "primitive",
-    editions: [],
-    tier: "paid",
-    priceCents: 100,
-    license: "LicenseRef-Caisson-Commercial",
+    license: "Apache-2.0",
     dependencies: [],
-    members: {},
-    entry: "src/index.ts",
-    agents: "AGENTS.md",
-    golden: null,
-    stability: "alpha",
     description: "x",
+    stability: "alpha",
   },
 });
 const delist = (id: string) => ({
@@ -161,18 +153,10 @@ describe("registry index builder (ADR-0021/0047)", () => {
       manifest: {
         id,
         version,
-        kind: "primitive" as const,
-        editions: [] as never[],
-        tier: "paid" as const,
-        priceCents: 100,
-        license: "LicenseRef-Caisson-Commercial" as const,
+        license: "Apache-2.0" as const,
         dependencies: [] as never[],
-        members: {} as Record<string, string>,
-        entry: "src/index.ts",
-        agents: "AGENTS.md",
-        golden: null,
-        stability: "alpha" as const,
         description: "x",
+        stability: "alpha" as const,
       },
     });
     const index = buildIndex([
@@ -202,18 +186,10 @@ describe("registry index builder (ADR-0021/0047)", () => {
       manifest: {
         id: "@caisson/x",
         version: "0.1.0",
-        kind: "primitive" as const,
-        editions: [] as never[],
-        tier: "paid" as const,
-        priceCents: 100,
-        license: "LicenseRef-Caisson-Commercial" as const,
+        license: "Apache-2.0" as const,
         dependencies: [] as never[],
-        members: {} as Record<string, string>,
-        entry: "src/index.ts",
-        agents: "AGENTS.md",
-        golden: null,
-        stability: "alpha" as const,
         description: "x",
+        stability: "alpha" as const,
       },
     };
     expect(() => buildIndex([e, e])).toThrow(/duplicate version/);

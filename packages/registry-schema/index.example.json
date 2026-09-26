@@ -12,17 +12,10 @@
           "manifest": {
             "id": "@caisson/auth",
             "version": "0.1.0",
-            "kind": "base",
-            "editions": [],
-            "tier": "paid",
-            "priceCents": 4900,
             "license": "LicenseRef-Caisson-Commercial",
             "dependencies": ["@caisson/kernel"],
-            "entry": "src/index.ts",
-            "agents": "AGENTS.md",
-            "golden": null,
-            "stability": "alpha",
-            "description": "Authentication (sessions/JWT), provider-agnostic."
+            "description": "Authentication (sessions/JWT), provider-agnostic.",
+            "stability": "alpha"
           }
         }
       ]
@@ -38,22 +31,10 @@
           "manifest": {
             "id": "@caisson/local-ai",
             "version": "0.1.0",
-            "kind": "edition",
-            "editions": ["local-ai"],
-            "tier": "paid",
-            "priceCents": 4900,
             "license": "LicenseRef-Caisson-Commercial",
             "dependencies": ["@caisson/kernel", "@caisson/ai-config"],
-            "members": {
-              "@caisson/local-ai": "0.1.0",
-              "@caisson/kernel": "0.1.0",
-              "@caisson/ai-config": "0.1.0"
-            },
-            "entry": "src/index.ts",
-            "agents": "AGENTS.md",
-            "golden": "golden/",
-            "stability": "alpha",
-            "description": "Local-first AI edition: compute seam + privacy gate + sqlite-vec ANN + offline Ed25519 license."
+            "description": "Local-first AI kit: compute seam + privacy gate + sqlite-vec ANN.",
+            "stability": "alpha"
           }
         }
       ]

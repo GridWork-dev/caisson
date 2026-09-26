@@ -41,15 +41,8 @@ function execFileAsync(
 const manifest = (id: string, version: string) => ({
   id,
   version,
-  kind: "primitive" as const,
-  editions: [] as never[],
-  tier: "paid" as const,
-  priceCents: 100,
-  license: "LicenseRef-Caisson-Commercial" as const,
+  license: "Apache-2.0" as const,
   dependencies: [] as never[],
-  entry: "src/index.ts",
-  agents: "AGENTS.md",
-  golden: null,
   stability: "alpha" as const,
   description: "x",
 });

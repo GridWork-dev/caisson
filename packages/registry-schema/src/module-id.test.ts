@@ -9,10 +9,7 @@ import { assertKnownModule, loadRegistryIndex } from "./registry-index";
 const validManifest: ModuleManifestInput = {
   id: "@caisson/field-crypto",
   version: "0.1.0",
-  kind: "primitive",
-  tier: "paid",
-  priceCents: 4900,
-  license: "LicenseRef-Caisson-Commercial",
+  license: "Apache-2.0",
   dependencies: ["@caisson/kernel"],
   description:
     "Field encryption column custom-type + per-tenant key derivation.",
