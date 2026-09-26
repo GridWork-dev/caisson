@@ -16,10 +16,10 @@ below assumes.
 
 Legend: **BUILT** = `src/` implementation + `*.test.ts` present on disk. **SPEC-ONLY** =
 ADR locked, no implementation. Build state is per the working tree; it does NOT assert
-CI-green, app-wiring, or production-readiness (run `bun test` / `turbo build` to confirm).
-Counts for the base rows below carry forward from the 2026-06-28 pass (unaffected by the carve);
-`docs/build-state.md`'s per-package table is machine-regenerated (`ADR-0253`) and is the source to
-re-verify against.
+CI-green or production-readiness (run `bun test` / `turbo build` to confirm). Counts for
+the base rows below carry forward from the 2026-06-28 pass (unaffected by the carve);
+re-verify against the working tree directly — there is no longer a separate
+machine-regenerated build-state document.
 
 | Mechanism                                                              | Package                                  | src / test files (non-test `.ts` / `*.test.ts`) | State |
 | ---------------------------------------------------------------------- | ---------------------------------------- | ----------------------------------------------- | ----- |
@@ -30,7 +30,6 @@ re-verify against.
 | Field-crypto (HKDF + AES-256-GCM + envelope + crypto-shred + KMS port) | `packages/field-crypto`                  | 19 / 14                                         | BUILT |
 | Credit gate (debit-before-spend, 402)                                  | `packages/credits`                       | 3 / 2                                           | BUILT |
 | Billing webhook (HMAC)                                                 | `packages/billing`                       | 4 / 1                                           | BUILT |
-| License/entitlement verify (Ed25519 offline)                           | `packages/license-verify`                | 4 / 2                                           | BUILT |
 | Session/JWT seam                                                       | `packages/auth`                          | 3 / 1                                           | BUILT |
 | WORM ArtifactStore + chain-store + version-store                       | `packages/audit-worm`                    | 7 / 6                                           | BUILT |
 | Evidence-pack generation (collectors, pack-format, crosswalk rollup)   | `packages/compliance-core` (`evidence/`) | 13 / 9                                          | BUILT |
@@ -105,7 +104,7 @@ exact relative paths from the repo root.
     Per-tenant isolation by `{account_id}/...` key-prefix through `assertSafeKey`. DB
     `retain_until` stays provably equal to the object `RetainUntilDate`.
   - **Retention mode** - **GOVERNANCE is the default everywhere** (bypassable, dev-safe);
-    **COMPLIANCE** (SEC 17a-4 grade, root-proof, irreversible) is **buyer-opt-in per evidence
+    **COMPLIANCE** (SEC 17a-4 grade, root-proof, irreversible) is **opt-in per evidence
     class behind a typed irreversible-opt-in guard**; never selected by a default, a test, or
     `LocalArtifactStore`. Safe-by-default, not footgun-by-default.
 - **Owning ADRs:** `knowledge/decisions/ADR-0006-worm-audit-chain-field-crypto.md` (umbrella) ·
@@ -149,7 +148,7 @@ exact relative paths from the repo root.
     deletion receipts instead of treating a request retry as proof of idempotent erasure.
   - **KMS port (`FieldKeyProvider`):** `DerivedKeyProvider` serves zero-infrastructure dev/self-hosted
     deployments; `KmsKeyProvider` drives the shipped AWS, GCP, and Azure envelope-encryption clients.
-    Caisson's hosted site requires Azure, prefetches historical DEKs into a disposable request
+    A production deployment on one of these prefetches historical DEKs into a disposable request
     context, and fails closed on any KMS loss. Vault remains a future port implementation.
 - **Owning ADRs:** `knowledge/decisions/ADR-0043-field-crypto-per-tenant-keys.md` (HKDF + port,
   amends 0006) · `knowledge/decisions/ADR-0045-field-crypto-aead-cipher.md` (AES-256-GCM) ·
@@ -162,23 +161,24 @@ exact relative paths from the repo root.
 
 ### 4. Evidence-pack signing
 
-- **Boundary:** a SOC2/HIPAA evidence pack must prove the BUYER's provenance over its own bytes.
-- **Threat:** signing the buyer's evidence with Caisson's identity (wrong trust model); a pack
-  that does not bind to the audit-chain state at generation time; non-reproducible signed bytes.
-- **Mitigation:** **per-tenant Ed25519** signing key, **distinct from the Caisson license-issuer
-  key** (ADR-0010). Detached signature via `@noble/ed25519` (same curve as the license issuer -
-  one verify primitive across the product). Signed payload = the `canonicalize`d evidence
-  `manifest.json` concatenated with the **audit-chain tip-hash anchor** (ties the pack to the
-  WORM-anchored chain state). An RFC-3161 trusted timestamp countersigns. Signer behind a port so
-  buyer-supplied KMS is a drop-in; DSSE/in-toto + Sigstore/Rekor are an un-wired premium seam.
+- **Boundary:** a SOC2/HIPAA evidence pack must prove the TENANT's provenance over its own bytes.
+- **Threat:** signing the tenant's evidence with the platform operator's own identity (wrong trust
+  model); a pack that does not bind to the audit-chain state at generation time; non-reproducible
+  signed bytes.
+- **Mitigation:** **per-tenant Ed25519** signing key, distinct from any other signing key the
+  deployment holds. Detached signature via `@noble/ed25519` (one verify primitive across the
+  product). Signed payload = the `canonicalize`d evidence `manifest.json` concatenated with the
+  **audit-chain tip-hash anchor** (ties the pack to the WORM-anchored chain state). An RFC-3161
+  trusted timestamp countersigns. Signer behind a port so a self-hosted KMS is a drop-in; DSSE/
+  in-toto + Sigstore/Rekor are an un-wired seam.
 - **Owning ADR:** `knowledge/decisions/ADR-0056-evidence-pack-signing.md` (supplies the key +
   scheme ADR-0006 left undefined). Impl (post-`ADR-0257` §1 carve): `packages/signing-primitive/src/sign.ts`,
   `packages/compliance-core/src/evidence/generate.ts`.
 
 ### 5. Credit gate (the 402 spend boundary)
 
-- **Boundary:** every metered spend path (codegen, AI feature) must charge an integer-credit
-  wallet before doing work.
+- **Boundary:** every metered spend path in an app built on the `credits` package (e.g. an
+  AI-inference call) must charge an integer-credit wallet before doing work.
 - **Threat:** spend-then-debit lets a crash leave free work; floating-point credits drift;
   a retried request double-debits; an empty wallet does work for free.
 - **Mitigation:** credits are **integer units, never floats**; the wallet ledger is **append-only**
@@ -190,28 +190,7 @@ details: { required: <int>, balance: <int> } } }`; clients branch on the `code`.
   `knowledge/decisions/ADR-0024-credit-idempotency-index.md` · 402 shape in
   `knowledge/decisions/ADR-0019-error-model.md`. Impl: `packages/credits/src/credits.ts`.
 
-### 6. Licensing + entitlement (offline-verifiable)
-
-- **Boundary:** a paid module/edition loads only for an entitled buyer; verification must work
-  without phone-home (local-first), and survive a module being added to an edition later.
-- **Threat:** an online-only check breaks local-first and adds a failure mode; a single global
-  license kills a-la-carte commerce; a token that snapshots edition membership drifts from the
-  registry; symmetric comparison of an asymmetric signature.
-- **Mitigation:** a buyer **license is an Ed25519 offline-verifiable token** (from PUBLIC
-  `tessera`'s kit, never pro-private `media-pipeline`) carrying entitlements + tier + expiry,
-  revocable via `services/license`. Verify with **`crypto.verify()` (asymmetric - NOT
-  `timingSafeEqual`)**; fail-safe-to-free for OSS tiers. The token carries **what was bought**
-  (edition/bundle/module ids), not the expanded leaf set; a **resolver expands edition/bundle ->
-  member-module slugs from the registry INDEX** (the single membership source) at gate time, so a
-  module added to an edition reaches entitled buyers with no re-issue. Opaque Bearer/registry
-  tokens still compare timing-safe. Licensing is now uniform-commercial across every package and
-  edition (no AGPL flank; ADR-0023 + ADR-0050/0083).
-- **Owning ADRs:** `knowledge/decisions/ADR-0010-licensing-open-core-boundary.md` (model) ·
-  `knowledge/decisions/ADR-0071-entitlement-expansion-registry-graph.md` (edition->slug expansion) ·
-  buyer MCP gate `knowledge/decisions/ADR-0008-buyer-mcp-server-auth.md`. Impl:
-  `packages/license-verify/src/{verify,token,claims}.ts`.
-
-### 7. Typed error model (`CaissonError`) - the leak-control boundary
+### 6. Typed error model (`CaissonError`) - the leak-control boundary
 
 - **Boundary:** errors crossing the package graph must propagate with a stable `code`, a mapped
   HTTP status, and a redaction-safe envelope - never a raw `Error`, stack, or SQL string.
@@ -222,19 +201,19 @@ details: { required: <int>, balance: <int> } } }`; clients branch on the `code`.
   stack, no secret); an unknown throw is coerced to `InternalError` (500, generic message; the
   original is logged server-side, never serialized). Load-bearing rows:
 
-  | Class                      | code                   | HTTP    | No-leak rule                                                      |
-  | -------------------------- | ---------------------- | ------- | ----------------------------------------------------------------- |
-  | `TenancyError`             | `not_found`            | **404** | RLS denial is 404, NEVER 403 (a 403 leaks cross-tenant existence) |
-  | `InsufficientCreditsError` | `insufficient_credits` | **402** | the exact credit-gate shape (row 5)                               |
-  | `EntitlementError`         | `not_entitled`         | 403     | license/entitlement failure (row 6)                               |
-  | `GuardrailError`           | (422)                  | **422** | a guardrail block (AI-Kit, ADR-0063) - added to this hierarchy    |
-  | `InternalError`            | `internal_error`       | 500     | the only class an unknown throw becomes (generic message)         |
+  | Class                      | code                   | HTTP    | No-leak rule                                                          |
+  | -------------------------- | ---------------------- | ------- | --------------------------------------------------------------------- |
+  | `TenancyError`             | `not_found`            | **404** | RLS denial is 404, NEVER 403 (a 403 leaks cross-tenant existence)     |
+  | `InsufficientCreditsError` | `insufficient_credits` | **402** | the exact credit-gate shape (row 5)                                   |
+  | `EntitlementError`         | `not_entitled`         | 403     | a generic entitlement-check failure an app built on Caisson can throw |
+  | `GuardrailError`           | (422)                  | **422** | a guardrail block (AI-Kit, ADR-0063) - added to this hierarchy        |
+  | `InternalError`            | `internal_error`       | 500     | the only class an unknown throw becomes (generic message)             |
 
 - **Owning ADRs:** `knowledge/decisions/ADR-0019-error-model.md` (hierarchy + 402 shape + 404
   rule) · `GuardrailError` added by `knowledge/decisions/ADR-0063-ai-kit-guardrails.md`. Impl:
   `packages/kernel/src/errors.ts`.
 
-### 8. Guardrails (AI-Kit input/output enforcement) - fail-closed
+### 7. Guardrails (AI-Kit input/output enforcement) - fail-closed
 
 - **Boundary:** the single metered-inference gateway moderates content and strips PII at its
   input and output points before/after provider egress.
@@ -244,8 +223,8 @@ details: { required: <int>, balance: <int> } } }`; clients branch on the `code`.
   the seam). PII that must be retained encrypted **reuses field-crypto `sealField`/`openField`
   (ADR-0055), never a bespoke path**. Hard policies **fail closed** (a guardrail error or
   moderator timeout blocks the call); `failOpen` is a documented per-policy opt-in only. A block
-  throws `GuardrailError` (422) and emits to the audit/observability bus without up-importing an
-  edition.
+  throws `GuardrailError` (422) and emits to the audit/observability bus without up-importing a
+  bundle.
 - **Owning ADR:** `knowledge/decisions/ADR-0063-ai-kit-guardrails.md`. Impl:
   `packages/guardrails/src/{guard,pii,moderator}.ts`.
 
@@ -264,8 +243,7 @@ re-derive them:
 | Unknown envelope version/alg throws, never guesses ("flag, never guess") | a wrong-cipher guess is a silent corruption             | ADR-0046, ADR-0006                |
 | Encryption boundary == RLS tenant boundary                               | one key per tenant; one compromise != all tenants       | ADR-0043, ADR-0005                |
 | `details` allowlisted per error class; unknown throw -> generic 500      | no SQL/stack/secret reaches the client                  | ADR-0019                          |
-| Ed25519 license verified with `crypto.verify()`, NOT `timingSafeEqual`   | asymmetric signature, not a secret compare              | specs/01 invariant 3, ADR-0010    |
-| Opaque Bearer/registry tokens compared with `crypto.timingSafeEqual`     | timing side-channel on secret compare                   | gridwork security floor, specs/01 |
+| Opaque Bearer tokens compared with `crypto.timingSafeEqual`              | timing side-channel on secret compare                   | gridwork security floor, specs/01 |
 | COMPLIANCE retention never selected by a default/test/LocalArtifactStore | one bad `retainUntilDate` bricks a bucket for years     | ADR-0051                          |
 
 ---
@@ -288,8 +266,6 @@ re-derive them:
 | Evidence signed with wrong identity                   | per-tenant Ed25519, distinct from issuer key            | ADR-0056           |
 | Free work on crash / double-debit                     | integer credits, debit-before-spend, DB idempotency     | ADR-0007, ADR-0024 |
 | Empty-wallet free spend                               | exact 402 `insufficient_credits` envelope               | ADR-0019, ADR-0007 |
-| License check breaks offline                          | Ed25519 offline verify, fail-safe-to-free               | ADR-0010           |
-| Edition-membership token drift                        | resolver expands from registry index, not token         | ADR-0071           |
 | Stack/SQL leak to client                              | typed `CaissonError` + allowlisted `details`            | ADR-0019           |
 | Moderator outage passes unmoderated traffic           | guardrails fail-closed; opt-in `failOpen` only          | ADR-0063           |
 | Second PII crypto attack surface                      | guardrails reuse field-crypto, no bespoke path          | ADR-0063, ADR-0055 |
@@ -302,9 +278,9 @@ re-derive them:
 | -------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | The full architecture + 7 cross-cutting invariants             | `specs/01-architecture.md`                                               |
 | Engineering invariants (TS-strict, integer money, `.strict()`) | `knowledge/decisions/ADR-0002-engineering-invariants.md`                 |
-| Every locked/open security fork                                | `docs/state/decisions-and-forks.md`                                      |
+| Every locked security decision                                 | `knowledge/decisions/`                                                   |
 | Auth/session/RLS seam (where `account_id` comes from)          | `knowledge/decisions/ADR-0015-auth-session-rls-seam.md`                  |
-| Buyer MCP server auth + write-surface gating                   | `knowledge/decisions/ADR-0008-buyer-mcp-server-auth.md`                  |
+| MCP server auth + write-surface gating                         | `knowledge/decisions/ADR-0008-buyer-mcp-server-auth.md`                  |
 | The gridwork global security floor (general principles)        | inherited from `gridwork-core` `identity/security.md` (not in this repo) |
 
 > The gridwork security floor is referenced as the global baseline; its file lives in the

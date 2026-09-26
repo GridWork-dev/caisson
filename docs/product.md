@@ -1,5 +1,9 @@
 # Product
 
+> **2026-09-26 — open-source pivot (ADR-0428).** Caisson is now free and open source under
+> Apache-2.0 and nothing is sold. The commercial framing below (editions, bundles, pricing,
+> licensing) is historical; the packages remain.
+
 > impeccable strategic doc. Derived from the locked concept specs — `specs/03-design-framework.md`
 > (design center), `specs/04-voice-and-brand.md` (voice), ADR-0040 (positioning), ADR-0041 (name
 > Caisson). On conflict, those locked specs/ADRs win; this file operationalizes them for design work.
@@ -23,9 +27,9 @@ product
   load-bearing parts a boilerplate skips. They are a peer engineer, not a "customer to be wowed."
 - **Buyer's app end-users (shipped `ui` package):** operators of regulated SaaS dashboards — dense,
   data-heavy, keyboard-driven workflows (credit ledgers, audit trails, entitlements).
-- **Internal (the design gallery):** the operator, using the `apps/admin` design gallery (absorbed
-  `apps/studio`, ADR-0140) to pick, document, and lock the design system — the same A/B/C
-  decision-surface pattern proven in Wardfile.
+- **Internal (the design gallery):** the operator, previously using a dedicated design-gallery app
+  (retired in the open-source pivot, ADR-0428) to pick, document, and lock the design system — the
+  same A/B/C decision-surface pattern proven in Wardfile.
 
 ## Product Purpose
 
