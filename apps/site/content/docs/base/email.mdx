@@ -146,14 +146,7 @@ type EmailTemplateId =
   | "magic-link"
   | "password-reset"
   | "verify-email"
-  | "credits-expiring"
-  | "updates-window-expiring"
-  | "purchase-confirmation"
-  | "subscription-payment-received"
-  | "renewal-confirmation"
-  | "access-revoked"
-  | "waitlist-welcome"
-  | "nurture-follow-up";
+  | "credits-expiring";
 
 function isEmailTemplateId(template: string): template is EmailTemplateId;
 ```

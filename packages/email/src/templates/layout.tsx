@@ -14,13 +14,11 @@
 import {
   Body,
   Button,
-  CodeInline,
   Container,
   Head,
   Heading,
   Hr,
   Html,
-  Link,
   Preview,
   Text,
 } from "react-email";
@@ -135,8 +133,7 @@ export function EmailLayout({
             className="em-footer"
             style={{ fontSize: 12, color: BRAND_COLOR.fgMuted, margin: 0 }}
           >
-            Caisson, fail-closed by construction. {footerNote} Questions? Email
-            support@caisson.sh.
+            Caisson, fail-closed by construction. {footerNote}
           </Text>
         </Container>
       </Body>
@@ -156,48 +153,6 @@ export function EmailBody({
     >
       {children}
     </Text>
-  );
-}
-
-/** An order id, license token, or CLI command inline in body prose — real ids/commands read as
- *  unstyled plain text otherwise (ADR-0078's numeral/id law, visual-audit id 310b6b3f5ee240a0). */
-export function EmailMono({
-  children,
-}: {
-  children: ReactNode;
-}): React.ReactElement {
-  return (
-    <CodeInline
-      style={{
-        fontSize: 13,
-        color: BRAND_COLOR.fg,
-        backgroundColor: BRAND_COLOR.surface,
-        border: `1px solid ${BRAND_COLOR.border}`,
-        borderRadius: 4,
-        padding: "1px 5px",
-      }}
-    >
-      {children}
-    </CodeInline>
-  );
-}
-
-/** A real hyperlink inline in body prose (e.g. a URL spelled out in text) — plain text never
- *  reads as clickable in an email client (same id as EmailMono above). */
-export function EmailLink({
-  href,
-  children,
-}: {
-  href: string;
-  children: ReactNode;
-}): React.ReactElement {
-  return (
-    <Link
-      href={href}
-      style={{ color: BRAND_COLOR.accent, textDecoration: "underline" }}
-    >
-      {children}
-    </Link>
   );
 }
 
