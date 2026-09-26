@@ -72,18 +72,17 @@ const PIECES = [
     body: "Embeddings indexed with sqlite-vec ANN, queried on disk. Semantic recall with zero round-trips to a vector cloud and nothing to leak from one.",
   },
   {
-    icon: "cpu" as const,
-    label: "Offline license",
-    body: "License verification that works air-gapped: signature-checked on the device, no phone-home, no remote kill switch. The library keeps running when the network does not.",
+    icon: "git-branch" as const,
+    label: "Offline sync",
+    body: "A two-way sync engine for devices that drop off the network: changesets, tombstones, a logical clock, and a reconcile pass that converges when the device reconnects.",
   },
 ] as const;
 
-// Base substrate predates the F6 sellable-module mark set — kernel and license-verify never got a
-// standalone SKU or bespoke mark, so they resolve through this local map (matches the compliance/
-// ai-kit/agentic-dev pages' same-shaped exception). Sellable members resolve via `moduleMark`.
+// Base substrate predates the F6 module mark set — the kernel never got a bespoke mark, so it
+// resolves through this local map (matches the compliance/ai-kit/agentic-dev pages' same-shaped
+// exception). Every other member resolves via `moduleMark`.
 const BASE_MEMBER_ICON: Record<string, IconName> = {
   kernel: "caisson",
-  "license-verify": "key",
 };
 
 // The bundle's real composed packages — read from the shared bundle content record, linking to a
@@ -206,7 +205,7 @@ export default function LocalFirstPage() {
       {/* ===== The compute seam ===== */}
       <Section
         title="On-device by default, hosted by opt-in."
-        lede="The Local-first bundle composes @caisson/kernel, @caisson/local-store, @caisson/license-verify, @caisson/field-crypto, @caisson/local-privacy, @caisson/local-inference, and @caisson/local-sync. @caisson/local-inference provides the InferenceBackend port and runs on-device by default: a MiniLM-class ONNX model via transformers.js, fetched on first use and SHA-256 hash-verified before it touches your data. Hosted inference is explicit opt-in. The same interface offers metered, egress-guarded transports for OpenRouter, Azure OpenAI, and AWS Bedrock, all disabled until configured."
+        lede="The Local-first bundle composes @caisson/kernel, @caisson/local-store, @caisson/field-crypto, @caisson/local-privacy, @caisson/local-inference, and @caisson/local-sync. @caisson/local-inference provides the InferenceBackend port and runs on-device by default: a MiniLM-class ONNX model via transformers.js, fetched on first use and SHA-256 hash-verified before it touches your data. Hosted inference is explicit opt-in. The same interface offers metered, egress-guarded transports for OpenRouter, Azure OpenAI, and AWS Bedrock, all disabled until configured."
         band="tint"
       />
 
@@ -309,7 +308,7 @@ export default function LocalFirstPage() {
       <Reveal>
         <Section
           title="All local."
-          lede="@caisson/local-store gives you hybrid retrieval: sqlite-vec ANN and FTS5 merged by Reciprocal-Rank-Fusion, degrading to an FTS-only path if the vector leg fails, semantic search with nothing indexed by a vector cloud vendor. Isolation is file-per-tenant: the resolved file path is the tenant boundary. On top, the bundle ships a built two-way sync engine (changesets, tombstones, a logical clock, and a reconcile pass with a convergence test) for when a device needs to catch up, plus offline Ed25519 license verification that checks the signature locally with no phone-home and no remote kill switch."
+          lede="@caisson/local-store gives you hybrid retrieval: sqlite-vec ANN and FTS5 merged by Reciprocal-Rank-Fusion, degrading to an FTS-only path if the vector leg fails, semantic search with nothing indexed by a vector cloud vendor. Isolation is file-per-tenant: the resolved file path is the tenant boundary. On top, the bundle ships a built two-way sync engine (changesets, tombstones, a logical clock, and a reconcile pass with a convergence test) for when a device needs to catch up."
           band="surface"
         />
       </Reveal>

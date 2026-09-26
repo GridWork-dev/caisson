@@ -210,13 +210,13 @@ export function AiProductionCrossSection() {
 
 // ===== bundle:local-first =====
 // Seam = modulesByBundle("local-first"): local-store, local-sync, local-inference,
-// local-privacy, field-crypto. Base = the manifest's kernel + license-verify (both Apache-2.0 base
-// packages). Bedrock = SQLite: local-store's store.ts runs raw bun:sqlite plus the sqlite-vec
-// vec0 extension and FTS5, on disk, one file per tenant (the catalog.ts blurb) — never Postgres.
+// local-privacy, field-crypto. Base = the kernel. Bedrock = SQLite: local-store's store.ts runs
+// raw bun:sqlite plus the sqlite-vec vec0 extension and FTS5, on disk, one file per tenant (the
+// catalog.ts blurb) — never Postgres.
 export function LocalFirstCrossSection() {
   return (
     <Sheet
-      title="The Local-first bundle in cross-section: five commercial members at the module seam, composing onto the kernel and license-verify base, on an on-device SQLite bedrock"
+      title="The Local-first bundle in cross-section: five members at the module seam, composing onto the kernel base, on an on-device SQLite bedrock"
       bar="bundle: local-first · cross-section · 5 members drawn"
     >
       <Strata
@@ -227,10 +227,7 @@ export function LocalFirstCrossSection() {
           { x: 162, y: 58, w: 140, label: "local-privacy" },
           { x: 88, y: 80, w: 140, label: "field-crypto" },
         ]}
-        base={[
-          { x: 14, w: 90, label: "kernel" },
-          { x: 112, w: 140, label: "license-verify" },
-        ]}
+        base={[{ x: 117, w: 90, label: "kernel" }]}
         bedrock={[{ x: 112, w: 100, label: "SQLite" }]}
       />
     </Sheet>

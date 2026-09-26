@@ -3,8 +3,6 @@ import Link from "next/link";
 import { Button, Hero, Icon, Reveal, Section } from "@/components";
 import { ExcerptsSection } from "@/components/demo/excerpts-section";
 import styles from "@/components/demo/demo.module.css";
-import { loadDemoPreview } from "@/components/demo/preview-data";
-import { PreviewPane } from "@/components/demo/preview-pane";
 // T3 seam: the append-only, secret-scanned excerpt manifest (apps/site/lib/demo-excerpts). Rendered
 // read-only; an empty array (manifest not yet landed / flag off) renders the section's graceful state.
 // Export name follows the repo's data-array convention (MODULES / STACK_AXES); this is the
@@ -17,7 +15,7 @@ import { buildMetadata } from "@/lib/metadata";
 export const metadata = buildMetadata({
   title: "Try Caisson — read the real source",
   description:
-    "Read the actual module source and watch a real build-and-test transcript of the demo app. No install, no signup.",
+    "Read the actual module source, whole files as they exist in the repo. No install, no signup.",
   path: "/demo",
 });
 
@@ -26,9 +24,7 @@ export const metadata = buildMetadata({
 const EXCERPTS_ENABLED =
   process.env.NEXT_PUBLIC_DEMO_EXCERPTS_ENABLED !== "false";
 
-export default async function DemoPage() {
-  const preview = await loadDemoPreview();
-
+export default function DemoPage() {
   const ldBreadcrumb = breadcrumb([
     { name: "Home", path: "/" },
     { name: "Try it", path: "/demo" },
@@ -44,7 +40,7 @@ export default async function DemoPage() {
       <Hero
         eyebrow="Try it"
         title="Prove it runs."
-        lede="Read the actual source of the modules and watch a real build-and-test transcript of the demo app. No install, no signup — the code, not a video."
+        lede="Read the actual source of the modules. No install, no signup — the code, not a video."
         ctas={
           <>
             <Button href="#source" variant="primary">
@@ -57,27 +53,7 @@ export default async function DemoPage() {
         }
       />
 
-      {/* ===== 1. The shared live preview (T4 artifact) ===== */}
-      <Reveal>
-        <Section
-          band="surface"
-          eyebrow="It actually runs"
-          title="A real build-and-test transcript of the demo app."
-          lede="This is the shared demo app — one project we build through the normal pipeline and capture verbatim: install, build, test, and the evidence walkthrough. It is real output, not the visitor's own artifact, and not a screenshot."
-        >
-          <div style={{ marginTop: "var(--cs-space-6)" }}>
-            {preview !== null ? (
-              <PreviewPane preview={preview} />
-            ) : (
-              <p className="cs-muted" style={{ maxWidth: "60ch" }}>
-                The shared build transcript is being refreshed.
-              </p>
-            )}
-          </div>
-        </Section>
-      </Reveal>
-
-      {/* ===== 2. Read the real source (T3 excerpts) ===== */}
+      {/* ===== 1. Read the real source (T3 excerpts) ===== */}
       {EXCERPTS_ENABLED && (
         <Reveal>
           <Section
@@ -94,7 +70,7 @@ export default async function DemoPage() {
         </Reveal>
       )}
 
-      {/* ===== 3. The ladder (F4): read here → run the demos → run it on your stack ===== */}
+      {/* ===== 2. The ladder (F4): read here → run the demos → run it on your stack ===== */}
       <Reveal>
         <Section
           eyebrow="What's next"
@@ -109,7 +85,7 @@ export default async function DemoPage() {
               n={1}
               here
               title="Touch it here"
-              body="Read the real source and the build transcript on this page — zero signup, right now."
+              body="Read the real source on this page — zero signup, right now."
             />
             <LadderRung
               n={2}

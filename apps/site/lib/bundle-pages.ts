@@ -270,7 +270,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     hero: {
       eyebrow: "Local-first AI · Own the source",
       title: "Your data stays on the device by default.",
-      lede: "The compute seam runs inference on-device by default; the privacy gate makes a hosted call an explicit opt-in, not a default you discover in a network trace. Vector search, sync, and license verification all run against local files, nothing round-trips to a vendor unless you allow it in writing.",
+      lede: "The compute seam runs inference on-device by default; the privacy gate makes a hosted call an explicit opt-in, not a default you discover in a network trace. Vector search and sync run against local files, nothing round-trips to a vendor unless you allow it in writing.",
     },
     definition:
       "Local-first AI composes on-device ONNX inference, a default-deny privacy egress gate, offline two-way sync, and hybrid sqlite-vec + FTS5 search into one bundle. Inference runs on-device by default; a hosted call is an explicit opt-in, never a default you discover in a network trace. Own the source.",
@@ -280,12 +280,6 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         name: "@caisson/local-store",
         oneLiner:
           "Hybrid retrieval: sqlite-vec ANN plus FTS5, merged by Reciprocal-Rank-Fusion, with an FTS-only fallback if the vector leg fails.",
-      },
-      {
-        id: "license-verify",
-        name: "@caisson/license-verify",
-        oneLiner:
-          "Offline Ed25519 license verification: checks the signature on the device, fails safe to the community tier if it cannot verify.",
       },
       {
         id: "field-crypto",
