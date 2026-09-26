@@ -7,7 +7,7 @@ status: live
 
 ## Current state (2026-08-25)
 
-**ADR ceiling is `0427`; the latest release tag is `v2026.08.18`.** Its release-train `propagate`
+**ADR ceiling is `0428`; the latest release tag is `v2026.08.18`.** Its release-train `propagate`
 leg FAILED at the `mirror-sync` "verify export — test" step and has not been re-run, so the tag
 exists but its propagation is unproven — do not read the tag alone as "shipped" (`gh run view
 32196107596`). The prior tag `v2026.08.06.1` was signed and cut 2026-08-06 on

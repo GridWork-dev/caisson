@@ -1,7 +1,7 @@
 ---
-updated: 2026-09-05
+updated: 2026-09-25
 status: live
-adr_ceiling: 0427
+adr_ceiling: 0428
 ---
 
 # Decisions & Forks — live board
@@ -15,6 +15,18 @@ narrative below. The operative catalog is Compliance $1,649, Everything $2,259, 
 `oscal-spine` $249; the amended merge point is before the first release train.
 
 ## Locked (→ ADRs / specs)
+
+The 2026-09-25 open-source pivot picker (three rounds) locks nine forks. Every package goes
+Apache-2.0 and sales stop. The real history is rewritten and this repo is flipped public; the
+490 PR refs keep pre-rewrite commits reachable, a residual the operator accepted, so every
+credential is revoked first. The only running surface is a static caisson.sh on Cloudflare. The
+launch is one coordinated day after a quiet soak. The repo transfers to `GridWork-dev`, the npm
+scope renames in-repo to `@caisson-sh`, the ADRs stay public (scrubbed) while all other internal
+docs are stripped, Caisson Software LLC stays the copyright holder, and the community moves to
+GitHub Discussions only. It supersedes the ADR-0318 mirror program. F-demos and the site's design
+direction stay open until the W3 design options:
+[ADR-0428](../../knowledge/decisions/ADR-0428-open-source-pivot.md) · spec
+`outputs/specs/oss-pivot/SPEC.md` · plan `outputs/plans/oss-pivot/PLAN.md`.
 
 S8_REPAIRS_2 locks atomic approval rejection and defined expiry:
 [ADR-0427](../../knowledge/decisions/ADR-0427-reject-and-expire-pending-tool-approvals.md).

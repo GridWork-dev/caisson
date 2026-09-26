@@ -1,5 +1,5 @@
 ---
-updated: 2026-09-14
+updated: 2026-09-25
 status: live
 grounds:
   - knowledge/decisions/
@@ -7,7 +7,7 @@ grounds:
 
 # ADR index
 
-Current ADR ceiling: **0427** — S8 tool approvals support rejection and expiry.
+Current ADR ceiling: **0428** — open-source pivot: Apache-2.0 everywhere, sales stop, public repo on GridWork-dev.
 
 Canonical catalog of every Architecture Decision Record in `knowledge/decisions/`. This
 file is a **synthesized view** (number -> title -> domain -> status -> supersession). It does
@@ -1124,6 +1124,7 @@ ADR-0088 numbering split held — no collision).
 | [0425](../knowledge/decisions/ADR-0425-bind-release-audit-to-reviewed-parent.md) | R370 binds R4 to reviewed_sha and proves the final successor changes only the tag audit and checklist; supersedes CR-06 self-reference. |
 | [0426](../knowledge/decisions/ADR-0426-fail-closed-commerce-account-resolution.md) | R371 separates strict commerce account resolution from dashboard availability fallback; supersedes that resolver choice in ADR-0424. |
 | [0427](../knowledge/decisions/ADR-0427-reject-and-expire-pending-tool-approvals.md) | S8_REPAIRS_2 adds atomic rejection and fifteen-minute pending approval expiry; extends ADR-0423 with bounded capacity reclamation. |
+| [0428](../knowledge/decisions/ADR-0428-open-source-pivot.md) | Open-source pivot (nine picker locks): every package Apache-2.0, sales stop, real history rewritten and this repo flipped public on `GridWork-dev` (PR-ref residual accepted, every credential revoked first), static Cloudflare site only, `@caisson-sh` in-repo scope, ADRs kept scrubbed, Discussions only; supersedes ADR-0318 and the open-core, registry-delivery, Railway-hosting, catalog and Blacksmith ADRs it lists. |
 
 ---
 
