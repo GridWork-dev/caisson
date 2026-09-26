@@ -12,9 +12,9 @@ import {
 } from "bun:test";
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
-import { RateLimitError } from "@caisson/kernel";
-import { type TestPg, newTestPg } from "@caisson/testing";
-import type { Transactor } from "@caisson/tenancy-rls";
+import { RateLimitError } from "@caisson-sh/kernel";
+import { type TestPg, newTestPg } from "@caisson-sh/testing";
+import type { Transactor } from "@caisson-sh/tenancy-rls";
 import { RATE_LIMIT_SCHEMA_SQL } from "./account-store.ts";
 import { createRateLimitHook } from "./account-hook.ts";
 

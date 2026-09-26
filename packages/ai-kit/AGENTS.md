@@ -1,4 +1,4 @@
-# AGENTS — @caisson/ai-kit
+# AGENTS — @caisson-sh/ai-kit
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or an app
 must know to run language and embedding features through the metered gateway. The AI Production Kit
@@ -8,7 +8,7 @@ reserve-before-provider-call chokepoint (ADR-0059/0213).
 ## Language inference
 
 ```ts
-import { infer } from "@caisson/ai-kit";
+import { infer } from "@caisson-sh/ai-kit";
 
 const res = await infer(
   "chat", // an ai-config lane (provider + model)
@@ -54,7 +54,7 @@ defaultProviders(settings))` (a `createProviderRegistry` over the ai-config lane
 - Address a prompt by `name`, `name@<n>` (version), or `name@<alias>` (e.g. `prod`/`canary`) — swap
   the alias to change the live prompt with no redeploy. Untrusted `vars` are validated by the
   version's strict schema and escaped at render; they can only fill a content slot, never forge a role.
-- Cost normalizes through `@caisson/ai-meter`'s versioned price book into **integer credits** (never a
+- Cost normalizes through `@caisson-sh/ai-meter`'s versioned price book into **integer credits** (never a
   float). AI SDK v7's all-step usage is the billing source. Primary counts must be present,
   nonnegative integers whose derived ledger values fit PostgreSQL `integer`. Missing/malformed
   language reports reconcile against a ledger-safe consumed estimate without refunding below the
@@ -67,7 +67,7 @@ defaultProviders(settings))` (a `createProviderRegistry` over the ai-config lane
 ## Metered embeddings (ADR-0213)
 
 ```ts
-import { embed, embedMany } from "@caisson/ai-kit";
+import { embed, embedMany } from "@caisson-sh/ai-kit";
 
 const one = await embed("embeddings", "some text", {
   tx,

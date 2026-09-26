@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { AuthzError, ValidationError } from "@caisson/kernel/browser";
+import { AuthzError, ValidationError } from "@caisson-sh/kernel/browser";
 import {
   PrivacyDecisionGuard,
   createPrivacyDecisionGuard,

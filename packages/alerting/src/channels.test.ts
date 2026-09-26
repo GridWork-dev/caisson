@@ -13,7 +13,7 @@ import {
   DiscordConfigSchema,
 } from "./index.ts";
 import type { AlertChannel, AlertEvent } from "./index.ts";
-import { createCaptureEmailer } from "@caisson/email";
+import { createCaptureEmailer } from "@caisson-sh/email";
 
 const event: AlertEvent = {
   id: "evt_1",

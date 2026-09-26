@@ -1,17 +1,17 @@
 // src/evidence/drift/schedule.ts — `runComplianceSnapshot`: the scheduled drift-monitor task
-// (ADR-0371, SPEC item 1). Same shape as `@caisson/retention-runner`'s `defineRetentionTask` on the
-// `@caisson/jobs` `JobQueue` port (`{name, schema, handler}`, payload validated at the boundary,
+// (ADR-0371, SPEC item 1). Same shape as `@caisson-sh/retention-runner`'s `defineRetentionTask` on the
+// `@caisson-sh/jobs` `JobQueue` port (`{name, schema, handler}`, payload validated at the boundary,
 // deps injected rather than read from module scope) — but compliance-core stays dependency-free of
-// @caisson/jobs (the same down-only-composability posture the package already holds toward
-// @caisson/audit-worm/@caisson/alerting): `defineComplianceSnapshotTask` returns an object
-// STRUCTURALLY identical to `@caisson/jobs`'s `TaskDefinition<unknown>`, so a caller with the real
+// @caisson-sh/jobs (the same down-only-composability posture the package already holds toward
+// @caisson-sh/audit-worm/@caisson-sh/alerting): `defineComplianceSnapshotTask` returns an object
+// STRUCTURALLY identical to `@caisson-sh/jobs`'s `TaskDefinition<unknown>`, so a caller with the real
 // package can register it directly — `createPgBossJobQueue([...otherTasks, driftTask])` — with no
 // adapter. Scheduling itself (the cron) is a driver capability (`JobQueue#schedule`, ADR-0256), not
 // this module's job; `DEFAULT_SNAPSHOT_CRON` documents the suggested daily default, buyer-configurable
 // by passing a different cron string to the caller's own `queue.schedule(...)` call.
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { strictObject, type JsonValue } from "@caisson/kernel";
+import { strictObject, type JsonValue } from "@caisson-sh/kernel";
 import type { EvidencePack } from "../generate.ts";
 import { snapshotFromManifest, type ComplianceSnapshot } from "./types.ts";
 import { diffSnapshots, type ControlStatusTransition } from "./diff.ts";
@@ -36,7 +36,7 @@ export const snapshotTaskPayloadSchema = strictObject({
 });
 export type SnapshotTaskPayload = z.infer<typeof snapshotTaskPayloadSchema>;
 
-/** A `TaskDefinition`-shaped object — structurally identical to `@caisson/jobs`'s
+/** A `TaskDefinition`-shaped object — structurally identical to `@caisson-sh/jobs`'s
  *  `TaskDefinition<T>`, so a caller holding the real package can pass this straight into
  *  `createPgBossJobQueue`/`createInMemoryQueue` with no adapter. */
 export interface DriftTaskDefinition<T> {
@@ -62,12 +62,12 @@ export interface ComplianceSnapshotTaskDeps {
    *  returned — `isTransitionSuppressed` itself checks expiry against `now`). */
   loadDeviations(accountId: string): Promise<readonly AcceptedDeviation[]>;
   /** Where a fired drift-regression alert is delivered — real `AlertChannel[]` from
-   *  @caisson/alerting is directly assignable here (see `alert-sink.ts`). */
+   *  @caisson-sh/alerting is directly assignable here (see `alert-sink.ts`). */
   alertChannels: readonly DriftAlertChannel[];
   /** The `AlertEvent.recipient` every fired alert carries (a buyer-configured address/channel id). */
   alertRecipient: string;
   /** The every-run anchoring seam — real `AuditChainStore`+`AnchorOutbox` wiring from
-   *  @caisson/audit-worm is directly assignable here (see `anchor-sink.ts`). */
+   *  @caisson-sh/audit-worm is directly assignable here (see `anchor-sink.ts`). */
   anchorSink: SnapshotAnchorSink;
   /** Injected clock; defaults to the real clock. Never call `Date.now()`/`new Date()` inline below. */
   now?: () => Date;
@@ -158,7 +158,7 @@ export async function runComplianceSnapshotOnce(
 
 /**
  * Define `runComplianceSnapshot` as a `TaskDefinition`-shaped object (mirrors
- * `@caisson/retention-runner`'s `defineRetentionTask`). Register it on a real `JobQueue` (the
+ * `@caisson-sh/retention-runner`'s `defineRetentionTask`). Register it on a real `JobQueue` (the
  * in-memory driver in dev/test; pg-boss/Trigger.dev in prod) and schedule it with
  * `queue.schedule(COMPLIANCE_SNAPSHOT_TASK, cron)` (default: `DEFAULT_SNAPSHOT_CRON`, daily).
  */

@@ -7,7 +7,7 @@
 // client-side navigation click, not a server action, so it stays inside `analytics.ts`'s
 // existing env-gated no-op contract.
 import Link from "next/link";
-import { Button } from "@caisson/ui/components";
+import { Button } from "@caisson-sh/ui/components";
 import { trackEvent } from "@/lib/analytics";
 
 export function DocsCta({

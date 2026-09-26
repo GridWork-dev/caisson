@@ -80,8 +80,8 @@ describe("publish readiness (ADR-0111)", () => {
     expect(off).toEqual([]);
   });
 
-  describe("@caisson/cli (the npx bin, ADR-0092/0111)", () => {
-    const cli = pkgs.find((p) => p.pj.name === "@caisson/cli");
+  describe("@caisson-sh/cli (the npx bin, ADR-0092/0111)", () => {
+    const cli = pkgs.find((p) => p.pj.name === "@caisson-sh/cli");
 
     test("exists in the publishable set", () => {
       expect(cli).toBeDefined();

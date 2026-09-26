@@ -1,21 +1,21 @@
 "use client";
 
 // The trust-page module's poke (ADR-0378 lock 2) — a live, deterministic run of the package's
-// allowlist-based redaction gate. This component drives the REAL `@caisson/trust-page` and
-// `@caisson/artifact-render` code, not a mirror: the kernel `.` barrel is browser-safe (the node-only
-// half moved to "@caisson/kernel/node"), so both packages now bundle into a client component and the
+// allowlist-based redaction gate. This component drives the REAL `@caisson-sh/trust-page` and
+// `@caisson-sh/artifact-render` code, not a mirror: the kernel `.` barrel is browser-safe (the node-only
+// half moved to "@caisson-sh/kernel/node"), so both packages now bundle into a client component and the
 // hand-ported `trust-page-logic.ts` mirror this file used to import is deleted. Nothing here fetches,
 // persists, or measures the visitor; `generateTrustPage` is pure (no I/O, no clock, no id minting).
 import { useId, useMemo, useState } from "react";
-import { Checkbox } from "@caisson/ui/components";
-import { redactToAllowlist, type FlatFacts } from "@caisson/artifact-render";
-import type { EvidencePackManifest } from "@caisson/compliance-core";
+import { Checkbox } from "@caisson-sh/ui/components";
+import { redactToAllowlist, type FlatFacts } from "@caisson-sh/artifact-render";
+import type { EvidencePackManifest } from "@caisson-sh/compliance-core";
 import {
   CROSSWALK_ROLLUP_ROWS_KEY,
   DEFAULT_TRUST_PAGE_ALLOWLIST,
   flattenManifestFacts,
   generateTrustPage,
-} from "@caisson/trust-page";
+} from "@caisson-sh/trust-page";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./trust-page-poke.module.css";
@@ -149,7 +149,7 @@ export default function TrustPagePoke() {
 
   return (
     <PokeShell
-      label="@caisson/trust-page"
+      label="@caisson-sh/trust-page"
       title="Toggle a fact into the allowlist. Watch it, and only it, reach the page."
     >
       <div className={styles.layout}>

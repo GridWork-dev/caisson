@@ -15,7 +15,7 @@ import {
   setDefaultTimeout,
   test,
 } from "bun:test";
-import { type TestPg, newTestPg } from "@caisson/testing";
+import { type TestPg, newTestPg } from "@caisson-sh/testing";
 import { withAdvisoryXactLock } from "./advisory-lock.ts";
 
 setDefaultTimeout(30_000);

@@ -6,7 +6,7 @@
 //
 //   resolve → reserve (cap/credit-check) → provider call → record usage → reconcile
 //
-// The reservation carries NO `maxOutputTokens` — `@caisson/ai-meter`'s reserve schema requires it
+// The reservation carries NO `maxOutputTokens` — `@caisson-sh/ai-meter`'s reserve schema requires it
 // `positive()` when supplied, and an embedding call has no output-token concept — so the estimate
 // rounds up over the meter's `DEFAULT_OUTPUT_TOKENS` phantom output budget (the same estimator
 // `infer()` uses). The ACTUAL usage this file reconciles against always carries `outputTokens: 0`,
@@ -23,17 +23,17 @@ import {
 } from "ai";
 import type { Embedding, EmbeddingModelUsage } from "ai";
 import type { EmbeddingModelV4, ProviderV4 } from "@ai-sdk/provider";
-import type { AiSettings } from "@caisson/ai-config";
-import { resolveProvider } from "@caisson/ai-config";
-import { estimateUsage, reconcile, reserve } from "@caisson/ai-meter";
+import type { AiSettings } from "@caisson-sh/ai-config";
+import { resolveProvider } from "@caisson-sh/ai-config";
+import { estimateUsage, reconcile, reserve } from "@caisson-sh/ai-meter";
 import type {
   MeterConfig,
   ReconcileResult,
   ReserveResult,
   Usage,
-} from "@caisson/ai-meter";
-import { withTenant } from "@caisson/tenancy-rls";
-import type { Transactor } from "@caisson/tenancy-rls";
+} from "@caisson-sh/ai-meter";
+import { withTenant } from "@caisson-sh/tenancy-rls";
+import type { Transactor } from "@caisson-sh/tenancy-rls";
 import {
   assertUsageFitsLedger,
   canPersistUsage,

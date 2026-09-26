@@ -14,17 +14,21 @@
 // concern), `signEvidencePack`, `signaturesEqual`, and the SYNC `timestampCountersignsSignature`.
 // That last one keeps its `boolean` return and its constant-time `safeEqualFixed` compare: making it
 // async would break every existing caller, so this module adds `timestampCountersignsSignatureAsync`
-// alongside it (the `hashChainLinkAsync` precedent in @caisson/kernel) rather than changing it.
+// alongside it (the `hashChainLinkAsync` precedent in @caisson-sh/kernel) rather than changing it.
 //
 // EVERY name here is re-exported by sign.ts, so the `.` barrel is unchanged for buyers, and the
 // `./browser` entry is a strict SUBSET of it (pinned by browser-safety.test.ts).
 import * as ed from "@noble/ed25519";
-import { canonicalize, ValidationError, type JsonValue } from "@caisson/kernel";
+import {
+  canonicalize,
+  ValidationError,
+  type JsonValue,
+} from "@caisson-sh/kernel";
 
 /**
  * The minimal structural shape this module signs: any JSON-serializable, byte-stable manifest body
  * carrying the WORM audit-chain anchor whose tip hash gets bound into the signed payload. The
- * evidence-pack manifest (@caisson/compliance-core) satisfies this shape structurally; the signer
+ * evidence-pack manifest (@caisson-sh/compliance-core) satisfies this shape structurally; the signer
  * deliberately does not depend on that package, so the signing surface stands alone.
  */
 export interface SignableManifest {

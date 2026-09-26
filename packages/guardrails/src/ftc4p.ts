@@ -5,7 +5,7 @@
 // violates (prominence / presentation / placement / proximity). No LLM in the hot path — a judge can
 // layer on top via the `Moderator` port, never inside this evaluator.
 import { z } from "zod";
-import { strictObject } from "@caisson/kernel";
+import { strictObject } from "@caisson-sh/kernel";
 import { customModerator } from "./moderator.ts";
 import type { Moderator } from "./moderator.ts";
 

@@ -1,6 +1,6 @@
 "use client";
 
-// The ui-pro module's `component` media slide (ADR-0290) — two real premium @caisson/ui-pro
+// The ui-pro module's `component` media slide (ADR-0290) — two real premium @caisson-sh/ui-pro
 // components (the advanced data grid + the hash-chain audit timeline) rendered live with static
 // sample data, so the buyer sees the actual product, not a placeholder. No sort/filter/export props
 // are wired: a slide never pulls interactive state, it's a still frame of a real component. Loaded
@@ -12,7 +12,7 @@ import {
   type AuditEntry,
   DataTablePro,
   type DataTableProColumn,
-} from "@caisson/ui-pro/components";
+} from "@caisson-sh/ui-pro/components";
 
 import { MediaFrame } from "./media-frame";
 

@@ -5,7 +5,7 @@
 // inside `withTenant`, so RLS scopes every read/write to the calling tenant (ADR-0005).
 // The scope constant, the state vocabulary and `SpendCapError` moved to ./contracts.ts (ADR-0396) so
 // the browser entry can reach them without this file's store edges; the names are unchanged.
-import type { TenantExecutor } from "@caisson/tenancy-rls";
+import type { TenantExecutor } from "@caisson-sh/tenancy-rls";
 import { SpendCapError } from "./contracts.ts";
 import type { BreakerState, BreakerStatus } from "./contracts.ts";
 import { SPEND_BREAKER_TABLE } from "./schema.ts";

@@ -4,8 +4,8 @@
 // fail-closed and append-only: a name is exactly one of active/retired/unknown, never two at once,
 // and there is no `unretireTool`.
 import { describe, expect, test } from "bun:test";
-import { NotFoundError, ValidationError } from "@caisson/kernel";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+import { NotFoundError, ValidationError } from "@caisson-sh/kernel";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
 import { createMcpServer, RetiredToolError } from "./index.ts";
 
 // A minimal but VALID built index — these tests never call `generate`.
@@ -13,13 +13,13 @@ const index = loadRegistryIndex({
   schemaVersion: 1,
   modules: [
     {
-      id: "@caisson/auth",
+      id: "@caisson-sh/auth",
       latest: "0.1.0",
       versions: [
         {
           version: "0.1.0",
           manifest: {
-            id: "@caisson/auth",
+            id: "@caisson-sh/auth",
             version: "0.1.0",
             license: "Apache-2.0",
             description: "Fixture module.",

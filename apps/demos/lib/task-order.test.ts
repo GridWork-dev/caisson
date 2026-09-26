@@ -8,15 +8,21 @@ describe("demos generated route types", () => {
     const graph = JSON.parse(
       execFileSync(
         resolve(root, "node_modules/.bin/turbo"),
-        ["run", "build", "typecheck", "--filter=@caisson/demos", "--dry=json"],
+        [
+          "run",
+          "build",
+          "typecheck",
+          "--filter=@caisson-sh/demos",
+          "--dry=json",
+        ],
         { cwd: root, encoding: "utf8", timeout: 30_000 },
       ),
     ) as { tasks: { taskId: string; dependencies: string[] }[] };
 
     const typecheck = graph.tasks.find(
-      (task) => task.taskId === "@caisson/demos#typecheck",
+      (task) => task.taskId === "@caisson-sh/demos#typecheck",
     );
     expect(typecheck).toBeDefined();
-    expect(typecheck?.dependencies).toContain("@caisson/demos#build");
+    expect(typecheck?.dependencies).toContain("@caisson-sh/demos#build");
   });
 });

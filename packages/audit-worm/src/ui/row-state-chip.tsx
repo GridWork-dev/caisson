@@ -1,14 +1,14 @@
 // The per-row six-state verification chip (per-row verification SPEC). Shared by ChainViewer (T-U2)
 // and ProofPanel (T-U1) so the state -> label/glyph mapping never drifts between them.
 //
-// FREEZE GUARD (Kickoff S): `@caisson/ui` is frozen this wave, and its `StatusChip` ships only three
+// FREEZE GUARD (Kickoff S): `@caisson-sh/ui` is frozen this wave, and its `StatusChip` ships only three
 // tones (`accent | success | muted`) — NOT the positive/critical/warning/info names the PLAN's freeze
 // guard assumed. So the six states are mapped onto those three tones, and the DISTINCTION between them
 // is carried by the label + glyph, never colour alone (which is also the a11y-correct contract the
-// component documents). A genuinely-new tone would be a `@caisson/ui` change, blocked by the freeze.
-import { StatusChip } from "@caisson/ui/components";
-import type { IconName, StatusChipTone } from "@caisson/ui/components";
-import type { RowState } from "@caisson/kernel/audit-verify";
+// component documents). A genuinely-new tone would be a `@caisson-sh/ui` change, blocked by the freeze.
+import { StatusChip } from "@caisson-sh/ui/components";
+import type { IconName, StatusChipTone } from "@caisson-sh/ui/components";
+import type { RowState } from "@caisson-sh/kernel/audit-verify";
 
 /** `server-asserted` is not a kernel row state — it labels a verdict the SERVER returned that the
  *  client could NOT independently recompute (e.g. a missing anchor), kept visibly distinct from a

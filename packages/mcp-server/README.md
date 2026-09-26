@@ -1,4 +1,4 @@
-# @caisson/mcp-server
+# @caisson-sh/mcp-server
 
 Bearer-authenticated MCP server over the Caisson module catalog.
 
@@ -20,12 +20,12 @@ the same timing-safe Bearer gate.
 
 URIs follow a stable `caisson://<namespace>/<name>` scheme:
 
-| URI                                      | Content                                                                                          |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `caisson://registry/index`               | The full module registry catalog (modules and versions) as JSON.                                 |
-| `caisson://design-system/components`     | The open `@caisson/ui` component roster as JSON (present only when the host wires `dsManifest`). |
-| `caisson://design-system/tokens`         | The `@caisson/ui` design tokens (themes, functional colours, fonts) as JSON.                     |
-| `caisson://design-system/pro-components` | The `@caisson/ui-pro` component roster as JSON (present only when a pro manifest is wired).      |
+| URI                                      | Content                                                                                             |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `caisson://registry/index`               | The full module registry catalog (modules and versions) as JSON.                                    |
+| `caisson://design-system/components`     | The open `@caisson-sh/ui` component roster as JSON (present only when the host wires `dsManifest`). |
+| `caisson://design-system/tokens`         | The `@caisson-sh/ui` design tokens (themes, functional colours, fonts) as JSON.                     |
+| `caisson://design-system/pro-components` | The `@caisson-sh/ui-pro` component roster as JSON (present only when a pro manifest is wired).      |
 
 The design-system resources are an additional protocol front over the SAME pure read functions the
 `list_components` / `get_tokens` tools use — one data layer, two fronts.
@@ -50,7 +50,7 @@ construction like the coach tools they narrate.
 ## Local design-system discovery MCP
 
 `discovery-bin.ts` is a separate, **local stdio-only** MCP a coding agent runs to discover the open
-`@caisson/ui` kit — no bearer, no network listener. It exposes three read tools
+`@caisson-sh/ui` kit — no bearer, no network listener. It exposes three read tools
 (`list_components`, `describe_component`, `get_tokens`) over the committed base component manifest.
 Configure it in your MCP client:
 
@@ -59,7 +59,7 @@ Configure it in your MCP client:
   "mcpServers": {
     "caisson-ds": {
       "command": "node",
-      "args": ["node_modules/@caisson/mcp-server/dist/discovery-bin.js"]
+      "args": ["node_modules/@caisson-sh/mcp-server/dist/discovery-bin.js"]
     }
   }
 }

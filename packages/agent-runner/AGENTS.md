@@ -1,4 +1,4 @@
-# AGENTS — @caisson/agent-runner
+# AGENTS — @caisson-sh/agent-runner
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or a governed
 composition must know to spawn agent runs safely.
@@ -43,7 +43,7 @@ the leak-guard pattern.
 ## Out of scope (ADR-0186)
 
 Multi-agent orchestration, hosted run UI, SDK (non-CLI) backends, and cost metering
-(`@caisson/ai-meter` wiring) are deferred. Transcript parsing expects the stream-json shape (one
+(`@caisson-sh/ai-meter` wiring) are deferred. Transcript parsing expects the stream-json shape (one
 JSON object per line, `assistant`/`result` events); a provider CLI must emit that contract.
 
 ## Entry points

@@ -9,7 +9,7 @@ import { resolve } from "node:path";
 import {
   type RegistryIndex,
   loadRegistryIndexFromFile,
-} from "@caisson/registry-schema";
+} from "@caisson-sh/registry-schema";
 import {
   type GeneratedFileSet,
   type RawSelection,
@@ -49,7 +49,7 @@ export function parseArgs(argv: readonly string[]): RawSelection {
       framework = value;
       i++;
     } else if (flag === "--module") {
-      // Split on the LAST "@" so a scoped id (@caisson/x) keeps its leading "@".
+      // Split on the LAST "@" so a scoped id (@caisson-sh/x) keeps its leading "@".
       const at = value === undefined ? -1 : value.lastIndexOf("@");
       if (value === undefined || at <= 0) {
         throw new Error(
@@ -98,7 +98,7 @@ Usage:
 
 Flags:
   --name <slug>          Project name (a-z, 0-9, kebab slug; max 64 chars)
-  --module <id@version>  @caisson module (repeatable; exact semver version)
+  --module <id@version>  @caisson-sh module (repeatable; exact semver version)
   --deploy <target>      Add a deploy config: railway | fly | vercel (default: none)
   --framework <target>   Add a framework starter: next — a wired Next.js App-Router app
                           demonstrating auth/tenancy/billing/jobs/email/ai-config wiring on the

@@ -1,4 +1,4 @@
-// @caisson/demo-registry — the Zod-typed entry contract. Validated at module load
+// @caisson-sh/demo-registry — the Zod-typed entry contract. Validated at module load
 // (see registry.ts) so a typo'd id/tier/duplicate entry fails fast in `bun test`, not silently in
 // the admin UI. This schema covers the DESCRIPTIVE metadata only (id/name/package/tier/description/
 // variant labels) — the live `render()` closure is a runtime-only field (a React element factory has
@@ -21,7 +21,7 @@ export const catalogEntryMetaSchema = z
     id: z.string().min(1),
     /** Display name (e.g. "Button"). */
     name: z.string().min(1),
-    /** The owning package, e.g. "@caisson/ui". */
+    /** The owning package, e.g. "@caisson-sh/ui". */
     package: z.string().min(1),
     tier: licenseTierSchema,
     description: z.string().min(1),

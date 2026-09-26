@@ -1,12 +1,12 @@
-# @caisson/ui-pro — authoring contract
+# @caisson-sh/ui-pro — authoring contract
 
 The advanced component tier. Consume it from an application; nothing under
 `packages/` may depend on it (it is a leaf).
 
 ## Rules
 
-- Import components from `@caisson/ui-pro/components`.
-- Every component themes through the `@caisson/ui` token contract (`var(--cs-*)`).
+- Import components from `@caisson-sh/ui-pro/components`.
+- Every component themes through the `@caisson-sh/ui` token contract (`var(--cs-*)`).
   Never hardcode a brand value.
 - The data-ops components (`DataTablePro`, `OpsMatrix`, `PayloadViewer`) build on
   the open floor primitives — pass the same column/row and value contracts.

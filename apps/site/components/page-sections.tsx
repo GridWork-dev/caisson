@@ -1,6 +1,6 @@
 // <PageSections> — the ONE server component that renders a PageSpec's ordered PageSection[]
 // (renderer SPEC §3, glossary SPEC Task 2). A plain exhaustive `switch (section.kind)`; every arm
-// composes an existing @caisson/ui / site primitive (ADR-0099) — no plugin registry, no config
+// composes an existing @caisson-sh/ui / site primitive (ADR-0099) — no plugin registry, no config
 // loader, no per-section theming. The `never` default arm makes an unmapped `kind` a compile
 // error, not a silent blank.
 import { Fragment, type ReactNode } from "react";

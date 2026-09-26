@@ -1,8 +1,8 @@
-// @caisson/audit-harness/ui — the audit matrix viewer (ADR-0250 G2c/G2d). A headless-data-in
+// @caisson-sh/audit-harness/ui — the audit matrix viewer (ADR-0250 G2c/G2d). A headless-data-in
 // surface: it renders the reconciled `Finding` ledger + the `CoverageRow` grid the harness produced
 // (no run, no filesystem). Pivots coverage into a domain × dimension matrix (latest round wins),
-// then lists the findings. `@caisson/audit-harness` is private tooling — this surface ships only
-// with the admin/tooling app. Composes the `@caisson/ui` floor; presentational + SSR-safe.
+// then lists the findings. `@caisson-sh/audit-harness` is private tooling — this surface ships only
+// with the admin/tooling app. Composes the `@caisson-sh/ui` floor; presentational + SSR-safe.
 import type { CSSProperties } from "react";
 import {
   DataTable,
@@ -10,12 +10,12 @@ import {
   MetricStat,
   Section,
   StatusChip,
-} from "@caisson/ui/components";
+} from "@caisson-sh/ui/components";
 import type {
   DataTableColumn,
   DataTableProps,
   StatusChipTone,
-} from "@caisson/ui/components";
+} from "@caisson-sh/ui/components";
 import { DIMENSIONS } from "../dimensions.ts";
 import type { Finding, FindingSeverity, FindingStatus } from "../findings.ts";
 import type { CoverageRow } from "../coverage.ts";

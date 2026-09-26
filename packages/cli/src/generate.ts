@@ -7,7 +7,7 @@ import {
   type RegistryIndex,
   assertKnownModule,
   assertKnownVersion,
-} from "@caisson/registry-schema";
+} from "@caisson-sh/registry-schema";
 import { templatesEngine } from "./engine-templates.ts";
 import {
   type GeneratedFileSet,
@@ -16,7 +16,7 @@ import {
 } from "./seam.ts";
 
 // Re-export the generator contract from its leaf module so external importers keep importing the
-// `Selection` schema/type + the engine seam types from `@caisson/cli` (via `./generate.ts`)
+// `Selection` schema/type + the engine seam types from `@caisson-sh/cli` (via `./generate.ts`)
 // unchanged. The declarations live in `seam.ts` to keep engine implementations off a build cycle.
 export {
   DEPLOY_TARGETS,

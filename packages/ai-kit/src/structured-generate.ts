@@ -5,7 +5,7 @@
 // JSON, validate it against the caller's Zod schema, and THROW a typed `StructuredGenerateError`
 // (never return null/undefined/empty) on a refusal, invalid JSON, or a schema mismatch.
 import type { z } from "zod";
-import { CaissonError } from "@caisson/kernel";
+import { CaissonError } from "@caisson-sh/kernel";
 import { infer } from "./gateway.ts";
 import type { InferInput, InferOptions, InferResult } from "./gateway.ts";
 

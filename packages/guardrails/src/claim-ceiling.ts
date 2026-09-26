@@ -5,7 +5,7 @@
 // outrunning what was actually measured. Pure and deterministic (no network/LLM call); the caller
 // owns wiring it into a SHIP-gate or a standalone copy-review CLI.
 import { z } from "zod";
-import { strictObject, CaissonError } from "@caisson/kernel";
+import { strictObject, CaissonError } from "@caisson-sh/kernel";
 
 /**
  * The claim ladder, weakest evidence bar to strongest. A claim tagged `minTier` may only run in

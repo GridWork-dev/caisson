@@ -22,7 +22,11 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, test } from "bun:test";
-import { AuthzError, InternalError, fetchWithTimeout } from "@caisson/kernel";
+import {
+  AuthzError,
+  InternalError,
+  fetchWithTimeout,
+} from "@caisson-sh/kernel";
 import {
   DEFAULT_ONNX_MODEL,
   EMBEDDING_DIM,

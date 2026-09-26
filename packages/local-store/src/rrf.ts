@@ -5,7 +5,7 @@
 // what `vecLeg`/`ftsLeg` produce) and returns the fused ranking. That keeps it free of `bun:sqlite`,
 // `sqlite-vec`, and every node builtin — the reason it is also the whole of the package's
 // `./browser` entry point (`browser-safety.test.ts` proves that by a static source-graph walk).
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 
 /** RRF constant — standard 60; dampens the weight of any single ranking. */
 export const RRF_K = 60;

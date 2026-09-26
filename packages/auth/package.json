@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/auth",
+  "name": "@caisson-sh/auth",
   "version": "0.4.5",
   "description": "Provider-agnostic authentication: EdDSA-JWT account tokens, a session contract, and multi-user account membership over row-level security. better-auth is the reference session provider.",
   "license": "Apache-2.0",
@@ -21,12 +21,12 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/kernel": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*"
+    "@caisson-sh/kernel": "workspace:*",
+    "@caisson-sh/tenancy-rls": "workspace:*"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

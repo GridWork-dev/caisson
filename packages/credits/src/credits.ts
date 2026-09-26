@@ -4,18 +4,18 @@
 // RETURNING` so a retried grant/debit is absorbed WITHOUT aborting the surrounding transaction
 // (a caught 23505 would poison it). Run inside `withTenant` so RLS scopes the ledger.
 import { randomUUID } from "node:crypto";
-import { withAdvisoryXactLock } from "@caisson/jobs";
+import { withAdvisoryXactLock } from "@caisson-sh/jobs";
 import {
   InsufficientCreditsError,
   ValidationError,
   type Credits,
   type RoundedMoney,
-} from "@caisson/kernel";
-import { type FeatureTag, FeatureTagSchema } from "@caisson/registry-schema";
-import type { TenantExecutor } from "@caisson/tenancy-rls";
+} from "@caisson-sh/kernel";
+import { type FeatureTag, FeatureTagSchema } from "@caisson-sh/registry-schema";
+import type { TenantExecutor } from "@caisson-sh/tenancy-rls";
 // The pure half (ADR-0396): the event-type vocabulary, the positive-integer money rule, and the
 // FIFO waterfall this file's `debit` walks. It lives in its own database-free module so a client
-// surface can import it (`@caisson/credits/browser`) without the FIFO rule being reimplemented.
+// surface can import it (`@caisson-sh/credits/browser`) without the FIFO rule being reimplemented.
 import { assertPositiveInt, planFifoDebit } from "./fifo.ts";
 import type { DebitEventType, GrantEventType } from "./fifo.ts";
 
@@ -818,7 +818,7 @@ export async function sweepExpiredGrants(
 }
 
 /**
- * The minimal structural slice of `@caisson/email`'s `Emailer` port — declared locally so the
+ * The minimal structural slice of `@caisson-sh/email`'s `Emailer` port — declared locally so the
  * credits package needs no email dependency; any real `Emailer` satisfies it.
  */
 export interface ExpiryNoticeEmailer {

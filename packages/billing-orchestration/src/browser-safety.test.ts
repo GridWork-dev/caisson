@@ -1,14 +1,14 @@
 // The browser-safety contract for `./browser` (ADR-0396). Proven by a STATIC SOURCE-GRAPH WALK, never
 // by a build: a bundler does not FAIL on a node builtin, it SUBSTITUTES one (turbopack swaps in
 // crypto-browserify and the client chunk silently grows ~428KB, exit 0). This package is the sharpest
-// case for that — its `.` barrel reaches node:crypto through @caisson/billing's signature verifiers and
-// reaches `pg` through @caisson/tenancy-rls, so "the site built fine" would have proven nothing.
+// case for that — its `.` barrel reaches node:crypto through @caisson-sh/billing's signature verifiers and
+// reaches `pg` through @caisson-sh/tenancy-rls, so "the site built fine" would have proven nothing.
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
-} from "@caisson/testing/module-graph";
+} from "@caisson-sh/testing/module-graph";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../..");
 const BROWSER_ENTRY = join(import.meta.dir, "browser.ts");
@@ -32,7 +32,7 @@ describe("`./browser` is browser-safe", () => {
 
   test("guard the guard: the walk crossed the package boundary into kernel", () => {
     // The entry's own subgraph is two files, so files.length can never carry the cross-package
-    // claim — this is the assertion that fails if @caisson/* resolution silently goes blind and
+    // claim — this is the assertion that fails if @caisson-sh/* resolution silently goes blind and
     // greens on nothing.
     expect(walk.files).toContain(
       "packages/billing-orchestration/src/event-keys.ts",
@@ -78,7 +78,7 @@ describe("`./browser` is browser-safe", () => {
       workspaceRoot: WORKSPACE_ROOT,
     });
     expect(barrel.unresolved).toEqual([]);
-    // Reached ONLY through the bare specifier @caisson/billing, so this doubles as proof that the
+    // Reached ONLY through the bare specifier @caisson-sh/billing, so this doubles as proof that the
     // walker follows workspace exports maps rather than stopping at the first package edge.
     expect(
       barrel.offenders.some(

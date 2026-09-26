@@ -1,12 +1,12 @@
 // src/facts.ts — flatten an evidence pack into the flat scalar fact record the allowlist redaction
-// (`@caisson/artifact-render`'s `redactToAllowlist`) operates over, plus the default allowlist.
+// (`@caisson-sh/artifact-render`'s `redactToAllowlist`) operates over, plus the default allowlist.
 //
 // ALLOWLIST-BASED REDACTION IS BINDING (SPEC piece 3 item 2): a field absent from the allowlist NEVER
 // renders — no exceptions, no "safe by construction" carve-out for a content class. `flattenManifestFacts`
 // therefore defines the UNIVERSE of facts a trust page could possibly render; `generateTrustPage`'s
 // caller decides which of them actually reach the page by widening `allowlist` beyond the default.
-import type { EvidencePackManifest } from "@caisson/compliance-core";
-import type { FlatFacts } from "@caisson/artifact-render";
+import type { EvidencePackManifest } from "@caisson-sh/compliance-core";
+import type { FlatFacts } from "@caisson-sh/artifact-render";
 
 /**
  * The sentinel allowlist entry (not a fact key) that gates whether the crosswalk-rollup citation-row

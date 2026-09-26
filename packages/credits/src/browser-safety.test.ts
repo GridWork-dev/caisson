@@ -9,7 +9,7 @@ import { join } from "node:path";
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
-} from "@caisson/testing/module-graph";
+} from "@caisson-sh/testing/module-graph";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../..");
 const BROWSER_ENTRY = join(import.meta.dir, "browser.ts");
@@ -31,8 +31,8 @@ describe("`./browser` is browser-safe", () => {
     ).toEqual([{ file: "packages/kernel/src/config.ts", spec: "process" }]);
   });
 
-  test("guard the guard: the walk crossed into @caisson/kernel, not just this package", () => {
-    // fifo.ts's only non-relative edge is the kernel barrel. If @caisson/* resolution went blind
+  test("guard the guard: the walk crossed into @caisson-sh/kernel, not just this package", () => {
+    // fifo.ts's only non-relative edge is the kernel barrel. If @caisson-sh/* resolution went blind
     // the offender list would be empty for the wrong reason, so the crossing is asserted directly.
     expect(walk.files).toContain("packages/credits/src/fifo.ts");
     expect(walk.files.some((f) => f.startsWith("packages/kernel/src/"))).toBe(

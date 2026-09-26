@@ -1,4 +1,4 @@
-// @caisson/ai-evals — the PURE half of the regression-vs-baseline gate: the baseline file's
+// @caisson-sh/ai-evals — the PURE half of the regression-vs-baseline gate: the baseline file's
 // boundary schema, the comparison, the pre-BLESS eligibility check, and the BLESS merge. No file
 // I/O, no `process`, no node builtin — `baseline.ts` keeps the load/save transport and delegates
 // here, so the gate's rules have exactly ONE implementation and this module can also ride the

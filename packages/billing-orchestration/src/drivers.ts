@@ -1,17 +1,21 @@
 // The Stripe + Paddle BillingProvider drivers (ADR-0017). Stripe was the original driver; ADR-0108
 // switches the live merchant-of-record to Paddle — both implementations satisfy the ONE open port
-// (@caisson/billing `BillingProvider`), so a provider swap is a new driver, not a rewrite. Each driver
-// composes the OPEN raw-body signature verifier (@caisson/billing) with this package's parser +
+// (@caisson-sh/billing `BillingProvider`), so a provider swap is a new driver, not a rewrite. Each driver
+// composes the OPEN raw-body signature verifier (@caisson-sh/billing) with this package's parser +
 // checkout REST call; the purchase->grant orchestration lives in the host application.
 import { z } from "zod";
-import { fetchWithTimeout, InternalError, parseStrict } from "@caisson/kernel";
+import {
+  fetchWithTimeout,
+  InternalError,
+  parseStrict,
+} from "@caisson-sh/kernel";
 import {
   verifyStripeWebhook,
   verifyPaddleWebhook,
   type BillingProvider,
   type StripeConfig,
   type PaddleConfig,
-} from "@caisson/billing";
+} from "@caisson-sh/billing";
 import { parseStripeEvent, StripeEventSchema } from "./stripe-events.ts";
 import { parsePaddleEvent, PaddleEventSchema } from "./paddle-events.ts";
 

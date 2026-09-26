@@ -1,4 +1,4 @@
-# @caisson/observability
+# @caisson-sh/observability
 
 Vendor-neutral OpenTelemetry bootstrap: instrumentation only, pointed at any OTLP-compatible
 backend via one endpoint config.
@@ -8,7 +8,7 @@ backend via one endpoint config.
 ## Install
 
 ```bash
-bun add @caisson/observability
+bun add @caisson-sh/observability
 ```
 
 ## Use
@@ -17,7 +17,7 @@ bun add @caisson/observability
 import {
   initObservability,
   shutdownObservability,
-} from "@caisson/observability";
+} from "@caisson-sh/observability";
 
 // Boots a NodeSDK + OTLP/HTTP exporter when OTEL_EXPORTER_OTLP_ENDPOINT is set; a no-op otherwise.
 initObservability();

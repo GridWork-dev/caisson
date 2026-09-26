@@ -20,7 +20,7 @@
  * Not product code — an operational one-shot. Bounded-timeout fetch + 429 backoff.
  */
 import { readFileSync } from "node:fs";
-import { fetchWithTimeout } from "@caisson/kernel";
+import { fetchWithTimeout } from "@caisson-sh/kernel";
 
 const API = "https://discord.com/api/v10";
 const TOKEN = process.env.DISCORD_TOKEN ?? "";

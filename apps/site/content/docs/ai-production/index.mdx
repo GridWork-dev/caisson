@@ -68,9 +68,9 @@ wallet is the ledger the spend cap debits against.
 
 ## Composing with the base
 
-AI-Production reads the tenant id from `@caisson/tenancy-rls`'s bound context, so a spend cap is
+AI-Production reads the tenant id from `@caisson-sh/tenancy-rls`'s bound context, so a spend cap is
 never checked against the wrong tenant's budget. Guardrails and the eval harness run independent
-of billing, wire `@caisson/billing` separately if a spend cap should also gate a subscription
+of billing, wire `@caisson-sh/billing` separately if a spend cap should also gate a subscription
 tier.
 
 ## License

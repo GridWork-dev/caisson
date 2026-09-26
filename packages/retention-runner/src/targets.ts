@@ -1,8 +1,8 @@
-// @caisson/retention-runner — the `ErasureTarget` port + drivers (ADR-0135). Each target erases one
+// @caisson-sh/retention-runner — the `ErasureTarget` port + drivers (ADR-0135). Each target erases one
 // store for a subject; `runErasure` (`./run-erasure.ts`) fans out to every registered target with
 // per-target error isolation. The three reference drivers below take an INJECTED minimal client
 // interface — the real S3/pg client is a documented seam (no aws-sdk/pg dependency in this package,
-// mirroring `@caisson/email`'s Resend seam and ADR-0150's single-install invariant).
+// mirroring `@caisson-sh/email`'s Resend seam and ADR-0150's single-install invariant).
 
 /** The port every erasure store implements: erase one subject's data, or throw. */
 export interface ErasureTarget {

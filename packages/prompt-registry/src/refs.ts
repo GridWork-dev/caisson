@@ -1,13 +1,13 @@
 // The pure addressing half of the registry (ADR-0061): the slug vocabulary every registry input
 // bounds its fields with, plus `name@selector` parsing. It lives apart from registry.ts for one
 // structural reason — registry.ts value-imports `./schema.ts`, whose `buildTenantPolicySql` edge
-// pulls `@caisson/tenancy-rls` and the `pg` driver into the module graph. Nothing here reaches a
+// pulls `@caisson-sh/tenancy-rls` and the `pg` driver into the module graph. Nothing here reaches a
 // database, a driver, or a Node builtin, so this module (and render.ts) is what the `./browser`
 // entry is made of (ADR-0396).
 //
 // Names and behaviour are unchanged by the extraction: registry.ts imports the field schemas and
 // the parser from here, so there is exactly one slug definition and exactly one parser.
-import { parseStrict } from "@caisson/kernel";
+import { parseStrict } from "@caisson-sh/kernel";
 import { z } from "zod";
 
 /** A prompt name / alias slug — bounded, lowercase, no `@` (the addressing delimiter). */

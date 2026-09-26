@@ -1,6 +1,6 @@
 // Polar billing driver + event mapper (ADR-0175) — a buyer-facing Merchant-of-Record `BillingProvider`
 // driver. Polar->domain event mapping + REST checkout creation. The raw-body Standard Webhooks signature
-// verifier (`verifyPolarWebhook`) stays OPEN in @caisson/billing (uniform rule: signature-verify open
+// verifier (`verifyPolarWebhook`) stays OPEN in @caisson-sh/billing (uniform rule: signature-verify open
 // for all four providers); this commercial file composes it (ADR-0249 G3). NO new dependency —
 // hand-rolled over Polar's REST API, mirroring the Stripe/Paddle drivers' no-SDK posture. Dormant: only
 // constructed when the buyer supplies credentials. Platform MoR stays Paddle (ADR-0116).
@@ -12,13 +12,13 @@ import {
   fetchWithTimeout,
   parseStrict,
   strictObject,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   verifyPolarWebhook,
   type BillingProvider,
   type PolarConfig,
   type DomainBillingEvent,
-} from "@caisson/billing";
+} from "@caisson-sh/billing";
 
 function polarApiBase(env: PolarConfig["env"]): string {
   return env === "sandbox"

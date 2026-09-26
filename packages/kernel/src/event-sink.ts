@@ -181,7 +181,7 @@ function toOtlpLogPayload(event: OpsEvent): Record<string, unknown> {
         resource: { attributes: resourceAttributes },
         scopeLogs: [
           {
-            scope: { name: "@caisson/kernel" },
+            scope: { name: "@caisson-sh/kernel" },
             logRecords: [
               {
                 timeUnixNano: `${Date.parse(event.timestamp) * 1_000_000}`,

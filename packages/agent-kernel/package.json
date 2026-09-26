@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/agent-kernel",
+  "name": "@caisson-sh/agent-kernel",
   "version": "0.8.0",
   "description": "Engine-neutral agent kernel: agent/skill/rule Zod schema + lifecycle act FSM + hooks dispatcher. The shared base layer cli/mcp-server and the Agentic-Dev bundle compose down-only — no vendor SDK, no LLM call.",
   "license": "Apache-2.0",
@@ -26,12 +26,12 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/kernel": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

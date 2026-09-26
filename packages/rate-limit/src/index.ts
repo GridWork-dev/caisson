@@ -1,4 +1,4 @@
-// @caisson/rate-limit — shared abuse-throttle primitives: an in-memory per-IP fixed-window
+// @caisson-sh/rate-limit — shared abuse-throttle primitives: an in-memory per-IP fixed-window
 // token-bucket limiter (for unauth surfaces, keyed on the client IP) and a Postgres-backed
 // per-account token-bucket store (for authenticated surfaces, RLS-scoped). Extracted so every
 // consuming service imports ONE shared implementation instead of hand-copying it.

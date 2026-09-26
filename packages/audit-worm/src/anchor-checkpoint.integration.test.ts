@@ -18,7 +18,7 @@ import { readFileSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { newTestPg, type TestPg } from "@caisson/testing";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import { assertSafeKey, type ArtifactStore } from "./store.ts";
 import { LocalArtifactStore } from "./store.local.ts";
 import { ANCHOR_OUTBOX_SCHEMA_SQL, AnchorOutbox } from "./anchor-outbox.ts";

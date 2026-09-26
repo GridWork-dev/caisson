@@ -1,12 +1,12 @@
 // The spend-policy DECISION vocabulary (ADR-0060), with no store attached: the aggregation scope,
 // the breaker's state shape, and the 402 a closed wallet raises. Extracted verbatim from breaker.ts
 // (ADR-0396) so `./browser` can carry the money path's decisions without dragging schema.ts — and
-// through it `@caisson/tenancy-rls` — into a client bundle. A move, not a rename: every name here
+// through it `@caisson-sh/tenancy-rls` — into a client bundle. A move, not a rename: every name here
 // keeps its place on the `.` barrel.
 //
 // The DB-bound half (readBreaker/assertBreakerClosed/tripBreaker/resetBreaker) stays in breaker.ts
 // and is deliberately NOT re-exported here — it needs a `TenantExecutor` and never joins `./browser`.
-import { CaissonError } from "@caisson/kernel";
+import { CaissonError } from "@caisson-sh/kernel";
 
 /** The default aggregation scope a policy/breaker/window key on when the caller does not specify. */
 export const DEFAULT_SCOPE = "account";

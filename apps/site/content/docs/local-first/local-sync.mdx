@@ -3,7 +3,7 @@ title: local-sync
 description: Two-way offline sync for per-tenant SQLite files, a changeset log, a hybrid-logical-clock last-writer-wins merge, and tombstone-aware convergence.
 ---
 
-`@caisson/local-sync` converges any number of per-tenant replicas onto one canonical local
+`@caisson-sh/local-sync` converges any number of per-tenant replicas onto one canonical local
 store. It's an application-layer changeset log, `bun:sqlite` exposes no
 `sqlite3session_*` API, so this is the in-house analog, paired with a hybrid-logical-clock
 (HLC) last-writer-wins merge and a durable tombstone index, so a stale batch can't
@@ -25,13 +25,13 @@ resurrect a row a peer already deleted.
 ## Install
 
 ```bash
-bun add @caisson/local-sync
+bun add @caisson-sh/local-sync
 ```
 
 ## Quickstart
 
 ```ts
-import { ChangesetLog, reconcileReplicas } from "@caisson/local-sync";
+import { ChangesetLog, reconcileReplicas } from "@caisson-sh/local-sync";
 import { Database } from "bun:sqlite";
 
 const log = ChangesetLog.open(new Database(":memory:"), "tenant-a");
@@ -61,7 +61,7 @@ log.assertApplicable(changeset); // throws TenancyError: tenant-partition
 reconnects late can't undo a delete another peer already made durable:
 
 ```ts
-import { reconcileWithTombstones, gcTombstones } from "@caisson/local-sync";
+import { reconcileWithTombstones, gcTombstones } from "@caisson-sh/local-sync";
 
 const { live, tombstones } = reconcileWithTombstones(priorTombstones, changesets);
 // live: converged live rows, delete-excluded
@@ -75,12 +75,12 @@ guard is against resurrection by a stale, lower-stamped batch, not against later
 
 ## Composition
 
-`local-sync` sits over the base kernel (`@caisson/kernel`) for its error model
+`local-sync` sits over the base kernel (`@caisson-sh/kernel`) for its error model
 (`TenancyError`, `ValidationError`) and boundary parsing, a peer-supplied changeset is
 untrusted input, validated `.strict()` before it touches the merge. It composes into the
 Local-first bundle alongside `local-store`, `local-inference`, and `local-privacy`.
 
 <Callout type="info" title="Apache-2.0">
-  `@caisson/local-sync` is Apache-2.0, installable on its own or with the rest of the
+  `@caisson-sh/local-sync` is Apache-2.0, installable on its own or with the rest of the
   Local-first family.
 </Callout>

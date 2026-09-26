@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import { acceptDeviation, isTransitionSuppressed } from "./deviation.ts";
 import type { ComplianceSnapshot } from "./types.ts";
 import type { ControlStatusTransition } from "./diff.ts";

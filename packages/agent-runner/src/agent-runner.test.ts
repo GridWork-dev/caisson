@@ -6,7 +6,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import { NotFoundError, ValidationError } from "@caisson/kernel";
+import { NotFoundError, ValidationError } from "@caisson-sh/kernel";
 import type { AgentRunner, ProviderConfigInput, RunStatus } from "./index.ts";
 import { ProviderConfig, createAgentRunner, summarize } from "./index.ts";
 

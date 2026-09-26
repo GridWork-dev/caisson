@@ -1,5 +1,5 @@
 // The base mcp-server's `checkRateLimit` port needs a concrete backing store to actually throttle
-// anything — @caisson/mcp-server declares the port but ships DB-free on purpose (no Postgres
+// anything — @caisson-sh/mcp-server declares the port but ships DB-free on purpose (no Postgres
 // dependency added to that package). This hook backs the port with the RLS-scoped token-bucket store
 // in account-store.ts, so any authenticated host that owns a tenant-scoped Postgres connection gains
 // a per-account abuse throttle just by wiring this in.
@@ -11,13 +11,13 @@
 //                                    abuse-throttle, NOT an auth boundary; an infrastructure fault
 //                                    must never lock out a paying buyer. The alert sink is the
 //                                    caller's telemetry/error surface, never `console.log`.
-import { RateLimitError } from "@caisson/kernel";
+import { RateLimitError } from "@caisson-sh/kernel";
 import {
   createMcpServer,
   type McpServer,
   type McpServerOptions,
-} from "@caisson/mcp-server";
-import { withTenant, type Transactor } from "@caisson/tenancy-rls";
+} from "@caisson-sh/mcp-server";
+import { withTenant, type Transactor } from "@caisson-sh/tenancy-rls";
 import {
   checkRateLimit,
   type RateLimitConfig,

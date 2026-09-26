@@ -1,4 +1,4 @@
-# AGENTS — @caisson/agent-kernel
+# AGENTS — @caisson-sh/agent-kernel
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or a downstream
 edition must know to wire the agent kernel correctly.
@@ -7,7 +7,7 @@ edition must know to wire the agent kernel correctly.
 
 - **Engine-neutral.** This package imports NO vendor SDK and runs NO LLM. It is the schema/FSM/hooks
   **mechanism** only. The model/engine wiring belongs to the consuming edition, never here.
-- **Down-only (ADR-0022).** `@caisson/agent-kernel` is `kind: base`; it may be consumed by base
+- **Down-only (ADR-0022).** `@caisson-sh/agent-kernel` is `kind: base`; it may be consumed by base
   (`cli`, `mcp-server`) and by the Agentic-Dev bundle, but it MUST NEVER import a bundle. Agentic-Dev
   pins this kernel alongside the runner, tool-exec, memory, and AI-config primitives.
 - **`.strict()` at the boundary.** Every artifact is parsed through the Zod `.strict()` union — unknown
@@ -21,7 +21,7 @@ edition must know to wire the agent kernel correctly.
 - **Two entry points.** `.` is the full node-capable surface; `./browser` is the browser-safe subset
   (schema + authoring helpers, lifecycle FSM, governance, redacting logger). A client bundle imports
   `./browser`, never `.` — the barrel reaches `node:child_process` through `hooks.ts` and
-  `node:crypto` through `audit-lifecycle.ts`'s `@caisson/kernel/node` edge. A module joins
+  `node:crypto` through `audit-lifecycle.ts`'s `@caisson-sh/kernel/node` edge. A module joins
   `./browser` only if its whole graph passes the package's static source-graph walk
   (`src/browser-safety.test.ts`), and every `./browser` name must also exist on `.`.
 - **Flag-never-guess transitions.** The lifecycle FSM exposes only the legal-transition adjacency. An
@@ -66,7 +66,7 @@ check into a guard. `isAllow`/`isDeny`/`isMutate` narrow a `HookResult` to its v
 ## Audited lifecycle (opt-in tamper-evident record)
 
 `AuditedLifecycle` wraps the FSM with an OPT-IN recording layer: every ADMITTED transition is
-chained into the shipped kernel compliance substrate (`@caisson/kernel`'s audit-chain + append-only
+chained into the shipped kernel compliance substrate (`@caisson-sh/kernel`'s audit-chain + append-only
 version lineage), so the run's transition history is tamper-**evident** — an altered, reordered,
 dropped, or rewritten step fails `verifyChain` against the anchor. A VETOED transition (`deny`) is
 never recorded as having happened. The host supplies any `AuditLifecycleStore`
@@ -76,7 +76,7 @@ off, transitions are still FSM-validated but nothing is recorded.
 ## Redacting logger
 
 `makeRedactingLogger(sink)` builds a `log(event)` function that redacts `event` through
-`@caisson/kernel`'s `scrubDeep` (credential-span redaction + secret/PHI-named subtree drop) before
+`@caisson-sh/kernel`'s `scrubDeep` (credential-span redaction + secret/PHI-named subtree drop) before
 handing one JSON Lines record to the host-supplied `sink`. This is the default redaction pass any
 audit-trail event (a `LifecycleAuditPayload`, or a host-defined event shape) should run through
 before it reaches a persisted sink. `toRedactedJsonlLine(event)` is the pure redact-and-serialize

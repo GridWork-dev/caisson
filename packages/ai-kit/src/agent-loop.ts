@@ -55,14 +55,14 @@ import {
   type ToolSet,
 } from "ai";
 import { z } from "zod";
-import type { AiSettings } from "@caisson/ai-config";
-import { resolveProvider } from "@caisson/ai-config";
+import type { AiSettings } from "@caisson-sh/ai-config";
+import { resolveProvider } from "@caisson-sh/ai-config";
 import {
   TRAJECTORY_VERSION,
   type RunStateStore,
   type TrajectoryEvent,
   type TrajectoryStore,
-} from "@caisson/agent-trajectory";
+} from "@caisson-sh/agent-trajectory";
 import {
   BUNDLED_PRICE_BOOK,
   CREDIT_CONVERSION,
@@ -71,13 +71,13 @@ import {
   reconcile,
   reserve,
   resolvePriceEntry,
-} from "@caisson/ai-meter";
-import type { MeterConfig, ReconcileResult, Usage } from "@caisson/ai-meter";
-import { guardInput, guardOutput } from "@caisson/guardrails";
-import { withTenant } from "@caisson/tenancy-rls";
-import type { Transactor } from "@caisson/tenancy-rls";
-import { ConflictError, parseStrict } from "@caisson/kernel";
-import type { CreditConversion } from "@caisson/kernel";
+} from "@caisson-sh/ai-meter";
+import type { MeterConfig, ReconcileResult, Usage } from "@caisson-sh/ai-meter";
+import { guardInput, guardOutput } from "@caisson-sh/guardrails";
+import { withTenant } from "@caisson-sh/tenancy-rls";
+import type { Transactor } from "@caisson-sh/tenancy-rls";
+import { ConflictError, parseStrict } from "@caisson-sh/kernel";
+import type { CreditConversion } from "@caisson-sh/kernel";
 import type { GuardConfig, ModelResolver } from "./gateway.ts";
 import { canPersistUsage, normalizeLanguageUsage } from "./usage.ts";
 

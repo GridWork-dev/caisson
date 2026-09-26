@@ -1,15 +1,15 @@
 // src/evidence/drift/alert-sink.ts — the drift-regression alert event + delivery port (ADR-0371,
 // SPEC item 3).
 //
-// `DriftAlertEvent` mirrors @caisson/alerting's `AlertEvent` shape field-for-field (id/type/severity/
+// `DriftAlertEvent` mirrors @caisson-sh/alerting's `AlertEvent` shape field-for-field (id/type/severity/
 // tenantId/recipient/dedupeKey/title/body/createdAt): compliance-core stays dependency-free of
-// @caisson/alerting — the same precedent `external-anchor.ts` already set for @caisson/audit-worm
+// @caisson-sh/alerting — the same precedent `external-anchor.ts` already set for @caisson-sh/audit-worm
 // ("only the two grade literals are load-bearing here"). Because the shapes match exactly, a caller
-// wires the REAL `AlertChannel[]` from @caisson/alerting straight into `deliverToAll` — TypeScript's
+// wires the REAL `AlertChannel[]` from @caisson-sh/alerting straight into `deliverToAll` — TypeScript's
 // structural typing makes it assignable with no adapter, satisfying "route through the existing
 // AlertChannel port, no new transport" without adding a runtime dependency to this package.
 import { z } from "zod";
-import { strictObject } from "@caisson/kernel";
+import { strictObject } from "@caisson-sh/kernel";
 
 export const DRIFT_ALERT_EVENT_TYPE = "compliance.drift_regression";
 
@@ -27,14 +27,14 @@ export const driftAlertEventSchema = strictObject({
 });
 export type DriftAlertEvent = z.infer<typeof driftAlertEventSchema>;
 
-/** The delivery result shape — structurally identical to @caisson/alerting's `DeliveryResult`. */
+/** The delivery result shape — structurally identical to @caisson-sh/alerting's `DeliveryResult`. */
 export interface DriftDeliveryResult {
   readonly channel: string;
   readonly ok: boolean;
   readonly error?: string;
 }
 
-/** The minimal delivery port — structurally identical to @caisson/alerting's `AlertChannel`, so a
+/** The minimal delivery port — structurally identical to @caisson-sh/alerting's `AlertChannel`, so a
  *  real channel (email/webhook/Slack/Telegram/Discord/capture) is directly assignable here. */
 export interface DriftAlertChannel {
   readonly name: string;
@@ -73,7 +73,7 @@ export function buildDriftAlertEvent(input: {
 }
 
 /** Deliver `event` to every channel, isolating one failing/throwing channel from the rest — mirrors
- *  @caisson/alerting's own `deliverAll` per-channel isolation contract. */
+ *  @caisson-sh/alerting's own `deliverAll` per-channel isolation contract. */
 export async function deliverToAll(
   event: DriftAlertEvent,
   channels: readonly DriftAlertChannel[],

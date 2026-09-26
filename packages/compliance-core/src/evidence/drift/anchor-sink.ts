@@ -1,16 +1,16 @@
 // src/evidence/drift/anchor-sink.ts — the every-snapshot anchoring port (ADR-0371, SPEC item 5).
 //
-// Mirrors @caisson/audit-worm's real anchoring seam (`AuditChainStore.append` + `AnchorOutbox`) by
-// SHAPE only — compliance-core stays dependency-free of @caisson/audit-worm, the same precedent
+// Mirrors @caisson-sh/audit-worm's real anchoring seam (`AuditChainStore.append` + `AnchorOutbox`) by
+// SHAPE only — compliance-core stays dependency-free of @caisson-sh/audit-worm, the same precedent
 // `external-anchor.ts` already set ("only the two grade literals are load-bearing here"; the receipt
 // itself is embedded verbatim, already validated by audit-worm on the WORM write). A caller wires
 // this port with the real `AuditChainStore.append` (returns `{entry, anchor}`; `anchor` already
 // carries `{length, tipHash}`) and `AnchorOutbox.enqueuePending` (`{accountId, target, anchorLength,
 // anchorDigest}`) — no new transport, no new anchoring mechanism, exactly the existing seam.
 import { createHash } from "node:crypto";
-import { canonicalize, type JsonValue } from "@caisson/kernel";
+import { canonicalize, type JsonValue } from "@caisson-sh/kernel";
 
-/** The minted anchor's identity — mirrors `@caisson/kernel`'s `AuditChainAnchor` `{length, tipHash}`. */
+/** The minted anchor's identity — mirrors `@caisson-sh/kernel`'s `AuditChainAnchor` `{length, tipHash}`. */
 export interface SnapshotAnchorResult {
   readonly length: number;
   readonly tipHash: string;

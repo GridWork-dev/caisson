@@ -8,7 +8,7 @@
 // `deriveTenantKeyAsync` derives from the SAME vocabulary, not a second copy of it; both names are
 // re-exported here unchanged.
 import { hkdfSync } from "node:crypto";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import { TENANT_KEY_BYTES, deriveInfo } from "./portable.ts";
 
 export {

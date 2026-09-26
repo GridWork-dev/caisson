@@ -19,9 +19,9 @@ describe("CATALOG_ENTRIES", () => {
   test("listPackages enumerates every owning package once", () => {
     const packages = listPackages();
     expect(new Set(packages).size).toBe(packages.length);
-    expect(packages).toContain("@caisson/ui");
-    expect(packages).toContain("@caisson/ui-pro");
-    expect(packages).toContain("@caisson/audit-worm");
+    expect(packages).toContain("@caisson-sh/ui");
+    expect(packages).toContain("@caisson-sh/ui-pro");
+    expect(packages).toContain("@caisson-sh/audit-worm");
   });
 
   test("every entry declares at least one variant and a non-empty description", () => {

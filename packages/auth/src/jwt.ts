@@ -8,7 +8,7 @@ import {
   verify as cryptoVerify,
   type KeyObject,
 } from "node:crypto";
-import { AuthnError } from "@caisson/kernel";
+import { AuthnError } from "@caisson-sh/kernel";
 import type { Role, SessionContext } from "./session.ts";
 
 export interface AccountClaims {

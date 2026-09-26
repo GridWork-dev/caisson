@@ -7,11 +7,11 @@
 // proves the arithmetic + the sequential "second racer sees the first's committed claw" behavior
 // against real PGlite.
 import { describe, expect, test } from "bun:test";
-import type { TenantExecutor } from "@caisson/tenancy-rls";
+import type { TenantExecutor } from "@caisson-sh/tenancy-rls";
 import { outstandingClaw } from "./credits.ts";
 
 /** A `TenantExecutor` that records every query instead of touching Postgres (mirrors
- *  `@caisson/jobs`'s `advisory-lock.test.ts` recording double). */
+ *  `@caisson-sh/jobs`'s `advisory-lock.test.ts` recording double). */
 function recordingTx(): TenantExecutor & {
   readonly queries: ReadonlyArray<{
     sql: string;

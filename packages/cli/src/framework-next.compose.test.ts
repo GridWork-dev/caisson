@@ -1,16 +1,16 @@
 // The ADR-0287 exit gate: the generated Next.js starter is not just golden-fixtured (generate.test.ts)
 // — it is actually written to disk and typechecked with `tsc --noEmit` against REAL Next/React/pg/
-// @caisson/* packages (the generator composition-test lineage). The run dir sits under
+// @caisson-sh/* packages (the generator composition-test lineage). The run dir sits under
 // `packages/cli/dist/` (gitignored) so Node/tsc module resolution walks UP to THIS
 // package's own `node_modules` — which is why `next`/`react`/`react-dom`/`pg`/the seven
-// base-substrate `@caisson/*` packages this template wires are real `devDependencies` of
-// `@caisson/cli` (turbo's `test: { dependsOn: ["^build"] }` builds their `dist/` first).
+// base-substrate `@caisson-sh/*` packages this template wires are real `devDependencies` of
+// `@caisson-sh/cli` (turbo's `test: { dependsOn: ["^build"] }` builds their `dist/` first).
 import { afterEach, describe, test } from "bun:test";
 import { execFile as execFileCb } from "node:child_process";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
 import { generate } from "./generate.ts";
 import { createFileSetWriter } from "./writer.ts";
 
@@ -57,16 +57,16 @@ const INDEX = loadRegistryIndex({
   schemaVersion: 1,
   modules: [
     {
-      id: "@caisson/field-crypto",
+      id: "@caisson-sh/field-crypto",
       latest: "0.1.0",
-      versions: [version("0.1.0", "@caisson/field-crypto")],
+      versions: [version("0.1.0", "@caisson-sh/field-crypto")],
     },
   ],
 });
 
 const SELECTION = {
   projectName: "acme-next-app",
-  modules: [{ id: "@caisson/field-crypto", version: "0.1.0" }],
+  modules: [{ id: "@caisson-sh/field-crypto", version: "0.1.0" }],
   framework: "next",
 } as const;
 

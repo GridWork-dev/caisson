@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { checkContrast } from "@caisson/ds-manifest";
+import { checkContrast } from "@caisson-sh/ds-manifest";
 import {
   codeTokensDark,
   codeTokensLight,
@@ -12,7 +12,7 @@ import {
 
 /**
  * The manifest package owns the one browser-equivalent gamut mapping and WCAG pair matrix.
- * @caisson/ui supplies only its live token objects here, so neither thresholds nor color math can
+ * @caisson-sh/ui supplies only its live token objects here, so neither thresholds nor color math can
  * drift between the kit's CI gate and the agent-facing doctor.
  */
 describe("WCAG contrast matrix — both modes (ADR-0101 gate #2)", () => {

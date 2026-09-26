@@ -1,4 +1,4 @@
-# @caisson/auth — agent usage note
+# @caisson-sh/auth — agent usage note
 
 Provides the EdDSA-JWT account-token contract, the session interface backed by better-auth,
 and multi-user account-membership resolution (owner/seat roles) over Postgres RLS.
@@ -11,7 +11,7 @@ and multi-user account-membership resolution (owner/seat roles) over Postgres RL
 - `generateAccountKeyPair()` / `signAccountJwt(claims, privateKey, opts?)` /
   `verifyAccountJwt(token, publicKey, opts?)` — Ed25519 account-token issue and verify. Tokens
   are short-lived; the `sub` claim carries the tenant-scoped user ID that feeds Postgres RLS
-  (passes into `withTenant` from `@caisson/tenancy-rls`).
+  (passes into `withTenant` from `@caisson-sh/tenancy-rls`).
 - `resolveUserAccounts(db, userId)` / `ensurePersonalAccount(db, userId)` /
   `selectActiveAccount(memberships, requestedAccountId?)` / `listAccountMembers(db, accountId)` /
   `addAccountMember(db, actorRole, accountId, userId, role?)` / `assertCanManageMembers(role)` —
@@ -22,7 +22,7 @@ and multi-user account-membership resolution (owner/seat roles) over Postgres RL
   verified user id + email. Config (client id, API key, redirect URI) is injected — never
   hardcode provider URLs or client secrets in code.
 - Never compare token strings with `===`; use `safeEqualFixed`/`safeEqualVariable` from
-  `@caisson/kernel`.
+  `@caisson-sh/kernel`.
 
 ## Scope
 

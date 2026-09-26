@@ -1,7 +1,7 @@
 # Rekor v2 hermetic verify fixtures
 
 Committed pins that let `verifyExternal`'s `externally-transparent` (Rekor) path verify with **zero
-live TUF/Rekor fetch** (spike decision #4). First `__fixtures__` dir in `@caisson/audit-worm`.
+live TUF/Rekor fetch** (spike decision #4). First `__fixtures__` dir in `@caisson-sh/audit-worm`.
 
 | File                  | What                                                                                           | Source                                                                             |
 | --------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |

@@ -17,7 +17,7 @@
 // Fail-closed: a degenerate `rowId` is rejected up front, and any AAD mismatch (wrong row, column,
 // tenant, or key version) surfaces as an AEAD authentication failure on decrypt — never a silent
 // wrong-plaintext read.
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import { type AeadCipher, aesGcm, cipherForAlg } from "./cipher.ts";
 import { parseEnvelope, serializeEnvelope } from "./envelope.ts";
 import { buildAad } from "./aad.ts";

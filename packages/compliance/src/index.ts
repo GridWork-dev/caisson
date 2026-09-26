@@ -1,7 +1,7 @@
-// @caisson/compliance — the compliance evidence kit (the hero, ADR-0040). A COMPOSITION of base
-// packages, never a fork (ADR-0003): it imports DOWN onto `@caisson/audit-worm` (WORM + audit chain
-// + locked versions), `@caisson/field-crypto` (tenant-scoped field encryption + crypto-shred), and
-// `@caisson/tenancy-rls` (the RLS tenant boundary), all over the `@caisson/kernel` integrity algebra.
+// @caisson-sh/compliance — the compliance evidence kit (the hero, ADR-0040). A COMPOSITION of base
+// packages, never a fork (ADR-0003): it imports DOWN onto `@caisson-sh/audit-worm` (WORM + audit chain
+// + locked versions), `@caisson-sh/field-crypto` (tenant-scoped field encryption + crypto-shred), and
+// `@caisson-sh/tenancy-rls` (the RLS tenant boundary), all over the `@caisson-sh/kernel` integrity algebra.
 //
 // The leg this package ships: seed a tenant → write encrypted SEC/HIPAA fields under
 // `withTenantCrypto` (crypto nested INSIDE the RLS scope, fail-closed) → lock an append-only artifact
@@ -11,11 +11,11 @@
 // evidentiary record stays in the WORM chain.
 
 // --- Control model + own-authored framework packs — the carved framework catalogs. -------------
-export * from "@caisson/frameworks-pack";
+export * from "@caisson-sh/frameworks-pack";
 
 // --- Evidence engine + per-tenant signer — the carved compliance-core + signing-primitive. ------
-export * from "@caisson/compliance-core";
-export * from "@caisson/signing-primitive";
+export * from "@caisson-sh/compliance-core";
+export * from "@caisson-sh/signing-primitive";
 
 // --- OSCAL signed evidence-bundle — the composition of the engine + the signer, kept here. ------
 export * from "./evidence/oscal-bundle.ts";

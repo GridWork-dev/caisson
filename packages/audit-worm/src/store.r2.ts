@@ -30,7 +30,7 @@ import {
   NotFoundError,
   ValidationError,
   fetchWithTimeout,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import { z } from "zod";
 import type { S3Sendable } from "./store.s3.ts";
 import {

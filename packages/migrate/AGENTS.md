@@ -1,7 +1,7 @@
-# @caisson/migrate — agent contract
+# @caisson-sh/migrate — agent contract
 
 The base migration **assembler + runner** (ADR-0070/0090). One assembler, one runner, owned here;
-`@caisson/cli` and `@caisson/compliance` import them — never
+`@caisson-sh/cli` and `@caisson-sh/compliance` import them — never
 copy them (a re-introduced `assemble`/`readPackageMigrations` copy outside this package violates
 the owned-once contract).
 
@@ -19,19 +19,19 @@ owns numbered, forward-only `migrations/NNNN_*.sql`. This package:
 
 ## Public API
 
-| Symbol                                                  | Use                                                                          |
-| ------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `SelectedPackage`                                       | A package selected into a composition: `{ slug, dir, dependsOn }`.           |
-| `readPackageMigrations(pkg)`                            | Read one package's `migrations/NNNN_*.sql` → kernel `PackageMigrations`.     |
-| `assembleSelected(packages)`                            | Read + merge a selection into a `MigrationAssembly`.                         |
-| `emitMigrationFileSet(assembly)`                        | Assembly → `EmittedFileSet` (`migrations/NNNN_*.sql` + ledger).              |
-| `EmittedFile` / `EmittedFileSet`                        | The file-emit primitive (`{ path, content }`), shared with the generator.    |
-| `MigrationApplier`                                      | The runner port: `applied()` + `apply(migration)` (one tx).                  |
-| `runMigrations(assembly, applier)`                      | Apply forward-only; skip recorded; fail-closed on checksum drift (ADR-0006). |
-| `pgMigrationApplier(pool)` (from `@caisson/migrate/pg`) | A node-postgres `MigrationApplier` for a live Postgres `Pool`.               |
+| Symbol                                                     | Use                                                                          |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `SelectedPackage`                                          | A package selected into a composition: `{ slug, dir, dependsOn }`.           |
+| `readPackageMigrations(pkg)`                               | Read one package's `migrations/NNNN_*.sql` → kernel `PackageMigrations`.     |
+| `assembleSelected(packages)`                               | Read + merge a selection into a `MigrationAssembly`.                         |
+| `emitMigrationFileSet(assembly)`                           | Assembly → `EmittedFileSet` (`migrations/NNNN_*.sql` + ledger).              |
+| `EmittedFile` / `EmittedFileSet`                           | The file-emit primitive (`{ path, content }`), shared with the generator.    |
+| `MigrationApplier`                                         | The runner port: `applied()` + `apply(migration)` (one tx).                  |
+| `runMigrations(assembly, applier)`                         | Apply forward-only; skip recorded; fail-closed on checksum drift (ADR-0006). |
+| `pgMigrationApplier(pool)` (from `@caisson-sh/migrate/pg`) | A node-postgres `MigrationApplier` for a live Postgres `Pool`.               |
 
 ## Invariants
 
-- Merge authority lives in `@caisson/kernel` + this package — never an edition (ADR-0070).
-- Down-only: depends on `@caisson/kernel`, never on `@caisson/cli` or an edition (ADR-0003).
+- Merge authority lives in `@caisson-sh/kernel` + this package — never an edition (ADR-0070).
+- Down-only: depends on `@caisson-sh/kernel`, never on `@caisson-sh/cli` or an edition (ADR-0003).
 - Deterministic: same inputs → byte-identical assembly + emitted file set (golden-stable).

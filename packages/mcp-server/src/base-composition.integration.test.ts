@@ -12,13 +12,13 @@ import {
 } from "bun:test";
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
-import { newTestPg, type TestPg } from "@caisson/testing";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import {
   generateAccountKeyPair,
   signAccountJwt,
   verifyAccountJwt,
   type SessionContext,
-} from "@caisson/auth";
+} from "@caisson-sh/auth";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
@@ -28,17 +28,17 @@ import {
   debit,
   grant,
   type CreditResult,
-} from "@caisson/credits";
-import type { BillingProvider } from "@caisson/billing";
-import { createStripeBilling } from "@caisson/billing-orchestration";
+} from "@caisson-sh/credits";
+import type { BillingProvider } from "@caisson-sh/billing";
+import { createStripeBilling } from "@caisson-sh/billing-orchestration";
 import {
   AuthnError,
   asCredits,
   parseStrict,
   toErrorResponse,
-} from "@caisson/kernel";
-import { loadRegistryIndex } from "@caisson/registry-schema";
-import { withTenant, type Transactor } from "@caisson/tenancy-rls";
+} from "@caisson-sh/kernel";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
+import { withTenant, type Transactor } from "@caisson-sh/tenancy-rls";
 import { z } from "zod";
 import { createMcpServer, type McpServerOptions } from "./index.ts";
 

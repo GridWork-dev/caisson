@@ -5,7 +5,7 @@ import { describe, expect, test } from "bun:test";
 import type {
   RunProjection,
   ToolCallProjection,
-} from "@caisson/agent-trajectory";
+} from "@caisson-sh/agent-trajectory";
 import {
   trajectoryApprovalComplianceGrader,
   trajectoryBudgetAdherenceGrader,

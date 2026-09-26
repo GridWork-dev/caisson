@@ -12,16 +12,19 @@ import {
   NotFoundError,
   RateLimitError,
   ValidationError,
-} from "@caisson/kernel";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+} from "@caisson-sh/kernel";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
 import {
   darkTheme,
   functionalDark,
   functionalLight,
   fonts,
   lightTheme,
-} from "@caisson/ui/tokens";
-import { loadBaseManifest, type ComponentManifest } from "@caisson/ds-manifest";
+} from "@caisson-sh/ui/tokens";
+import {
+  loadBaseManifest,
+  type ComponentManifest,
+} from "@caisson-sh/ds-manifest";
 import {
   createMcpServer,
   type DesignTokens,
@@ -34,13 +37,13 @@ const INDEX = loadRegistryIndex({
   schemaVersion: 1,
   modules: [
     {
-      id: "@caisson/auth",
+      id: "@caisson-sh/auth",
       latest: "0.1.0",
       versions: [
         {
           version: "0.1.0",
           manifest: {
-            id: "@caisson/auth",
+            id: "@caisson-sh/auth",
             version: "0.1.0",
             license: "Apache-2.0",
             description: "Fixture module A.",
@@ -51,13 +54,13 @@ const INDEX = loadRegistryIndex({
       ],
     },
     {
-      id: "@caisson/billing",
+      id: "@caisson-sh/billing",
       latest: "0.2.0",
       versions: [
         {
           version: "0.2.0",
           manifest: {
-            id: "@caisson/billing",
+            id: "@caisson-sh/billing",
             version: "0.2.0",
             license: "Apache-2.0",
             description: "Fixture module B.",
@@ -78,7 +81,7 @@ const TOKENS: DesignTokens = {
 };
 const PRO_MANIFEST: ComponentManifest = {
   schemaVersion: 1,
-  generatedFor: { pkg: "@caisson/ui-pro", version: "0.1.0" },
+  generatedFor: { pkg: "@caisson-sh/ui-pro", version: "0.1.0" },
   components: [
     {
       name: "DataTablePro",
@@ -131,8 +134,8 @@ describe("registry-index resource (full catalog to any authenticated caller)", (
     };
     // Every module in the built index — discovery is the point.
     expect(index.modules.map((m) => m.id).sort()).toEqual([
-      "@caisson/auth",
-      "@caisson/billing",
+      "@caisson-sh/auth",
+      "@caisson-sh/billing",
     ]);
   });
 

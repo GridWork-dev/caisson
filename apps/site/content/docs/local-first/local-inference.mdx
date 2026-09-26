@@ -3,10 +3,10 @@ title: local-inference
 description: The InferenceBackend seam over a MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use, on-device by default.
 ---
 
-`@caisson/local-inference` is one `InferenceBackend` port (`embed()` and `complete()`)
+`@caisson-sh/local-inference` is one `InferenceBackend` port (`embed()` and `complete()`)
 with three implementations sharing it: a deterministic offline stub, an on-device ONNX
 embedder, and metered rented-provider transports. Every outbound byte, on-device or
-rented, routes through the same `@caisson/local-privacy` egress gate.
+rented, routes through the same `@caisson-sh/local-privacy` egress gate.
 
 ## What it does
 
@@ -16,21 +16,21 @@ rented, routes through the same `@caisson/local-privacy` egress gate.
   hash-verified before use. `RentedInferenceBackend` wraps a metered `RentedTransport`
   behind the same port.
 - **`EMBEDDING_DIM` is the locked contract.** Every backend's `embed()` result is exactly
-  this many floats, the width `@caisson/local-store`'s `vec0` table is opened with. A
+  this many floats, the width `@caisson-sh/local-store`'s `vec0` table is opened with. A
   mismatch throws at the store's dim-guard rather than silently padding or truncating.
 - **Egress stays purpose-bound.** The ONNX and rented backends both route outbound calls
-  through a `@caisson/local-privacy` `EgressGuard`, re-exported here.
+  through a `@caisson-sh/local-privacy` `EgressGuard`, re-exported here.
 
 ## Install
 
 ```bash
-bun add @caisson/local-inference
+bun add @caisson-sh/local-inference
 ```
 
 ## Quickstart
 
 ```ts
-import { StubInferenceBackend, EMBEDDING_DIM } from "@caisson/local-inference";
+import { StubInferenceBackend, EMBEDDING_DIM } from "@caisson-sh/local-inference";
 
 // deterministic, offline — no model, no socket
 const backend = new StubInferenceBackend({ dim: EMBEDDING_DIM });
@@ -51,7 +51,7 @@ Completion is intentionally unsupported on this backend; wire a rented backend f
 generation.
 
 ```ts
-import { OnnxEmbeddingBackend, DEFAULT_ONNX_MODEL } from "@caisson/local-inference";
+import { OnnxEmbeddingBackend, DEFAULT_ONNX_MODEL } from "@caisson-sh/local-inference";
 
 const backend = new OnnxEmbeddingBackend({
   ...DEFAULT_ONNX_MODEL,
@@ -74,13 +74,13 @@ the initial seed.
 construct unless its endpoint host is HTTPS and explicitly allowlisted as a
 `rented-backend` sink in the privacy policy, there is no way to reach a hosted provider
 without that opt-in, and no silent fallback. Every call emits one metered record through
-a `meter` sink before returning; the caller wires that sink to `@caisson/credits` or
+a `meter` sink before returning; the caller wires that sink to `@caisson-sh/credits` or
 leaves it a no-op in tests.
 
 ## Composition
 
-Both real backends share `@caisson/local-privacy`'s `EgressGuard`: re-exported from this
+Both real backends share `@caisson-sh/local-privacy`'s `EgressGuard`: re-exported from this
 package so a consumer doesn't need a second import for the same policy. `embed()` output
-feeds `@caisson/local-store`'s `vec0` table directly; the dimension must match at open time.
+feeds `@caisson-sh/local-store`'s `vec0` table directly; the dimension must match at open time.
 
 Apache-2.0, installs from public npm.

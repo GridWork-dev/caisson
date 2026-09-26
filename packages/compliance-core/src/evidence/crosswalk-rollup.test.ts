@@ -6,7 +6,7 @@ import {
   regimeCrosswalks,
   soc2Tsc,
   type Framework,
-} from "@caisson/frameworks-pack";
+} from "@caisson-sh/frameworks-pack";
 import {
   computeCrosswalkRollup,
   controlStatusFromEvidence,

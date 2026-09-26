@@ -71,11 +71,11 @@ jobs:
           bun add "typescript@${{ steps.base-pin.outputs.version }}"
       - name: resolve this PR's tsc-native bin
         id: head-bin
-        # tsc-native is a devDep of @caisson/tsconfig only, not hoisted to the repo-root
+        # tsc-native is a devDep of @caisson-sh/tsconfig only, not hoisted to the repo-root
         # node_modules under bun's workspace layout — bun installs it as a symlink into its
         # content-addressed store, so `-L` (follow symlinks) is required. Scoped to
         # tooling/tsconfig/node_modules specifically (not a repo-wide find): other packages can
-        # carry their OWN transitive tsc-native copy (e.g. through @caisson/testing), and an
+        # carry their OWN transitive tsc-native copy (e.g. through @caisson-sh/testing), and an
         # unscoped find can silently grab the wrong one in directory-traversal order.
         run: |
           set -e

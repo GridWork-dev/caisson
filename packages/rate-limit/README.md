@@ -1,4 +1,4 @@
-# @caisson/rate-limit
+# @caisson-sh/rate-limit
 
 Shared abuse-throttle primitives.
 

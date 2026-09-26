@@ -52,7 +52,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/field-crypto/browser inside a client bundle, a Cloudflare Worker, or any other WebCrypto-only runtime for the same HKDF derivation, AES-256-GCM seal and open, row-bound AAD, and envelope codec the server runs, over crypto.subtle and Uint8Array instead of node:crypto and Buffer (Node 20.12 or later). The main entry keeps the full surface including the KMS and Drizzle halves, every browser-entry export is also on it, and both directions of the interop are pinned byte-for-byte against the same fixtures.",
+        body: "Import @caisson-sh/field-crypto/browser inside a client bundle, a Cloudflare Worker, or any other WebCrypto-only runtime for the same HKDF derivation, AES-256-GCM seal and open, row-bound AAD, and envelope codec the server runs, over crypto.subtle and Uint8Array instead of node:crypto and Buffer (Node 20.12 or later). The main entry keeps the full surface including the KMS and Drizzle halves, every browser-entry export is also on it, and both directions of the interop are pinned byte-for-byte against the same fixtures.",
       },
       {
         title: "Fail-closed on every read and write",
@@ -194,7 +194,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/retention-runner/browser inside a client bundle for the request contract, the ErasureTarget port with all three reference drivers, the audit-sink port with its in-memory driver, and runErasure itself. The scheduling half stays on the main entry, which keeps the complete node-capable surface, and every browser-entry export is also on it.",
+        body: "Import @caisson-sh/retention-runner/browser inside a client bundle for the request contract, the ErasureTarget port with all three reference drivers, the audit-sink port with its in-memory driver, and runErasure itself. The scheduling half stays on the main entry, which keeps the complete node-capable surface, and every browser-entry export is also on it.",
       },
       {
         title: "Three reference erasure targets",
@@ -209,8 +209,8 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         body: "erasureReasonSchema is a closed Zod enum, auto_90d, ccpa_request, or operator_manual; an unrecognized reason fails parseStrict before any target runs. The row lands in retention_audit (migration 0001), and migration 0002 adds FORCE ROW LEVEL SECURITY scoped to app.current_account so one tenant's erasure history can't leak into another's query.",
       },
       {
-        title: "Recurring auto_90d sweep on @caisson/jobs",
-        body: "defineRetentionTask returns a TaskDefinition for @caisson/jobs; enqueueAutoSweep enqueues it under a singletonKey of `${tenantId}:${subjectId}` so a long-running erasure can't double-run for the same subject while distinct subjects still sweep in parallel.",
+        title: "Recurring auto_90d sweep on @caisson-sh/jobs",
+        body: "defineRetentionTask returns a TaskDefinition for @caisson-sh/jobs; enqueueAutoSweep enqueues it under a singletonKey of `${tenantId}:${subjectId}` so a long-running erasure can't double-run for the same subject while distinct subjects still sweep in parallel.",
       },
       {
         title: "Deterministic, testable runs",
@@ -233,7 +233,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Does retention runner delete data automatically, or do I trigger it myself?",
         answer:
-          "Both. auto_90d is the recurring scheduled sweep, enqueueAutoSweep puts one job per subject due for erasure onto a @caisson/jobs queue. ccpa_request and operator_manual are one-shot calls straight into runErasure with no queue involved, for a subject request or an operator-initiated erasure.",
+          "Both. auto_90d is the recurring scheduled sweep, enqueueAutoSweep puts one job per subject due for erasure onto a @caisson-sh/jobs queue. ccpa_request and operator_manual are one-shot calls straight into runErasure with no queue involved, for a subject request or an operator-initiated erasure.",
       },
       {
         question:
@@ -266,7 +266,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/alerting/browser inside a client bundle for the event contract, all three decision stages, the delivery port with its isolation wrapper and capture driver, the audit port with its in-memory driver, and processAlert itself. The five network drivers stay on the main entry, which keeps the complete node-capable surface, and every browser-entry export is also on it.",
+        body: "Import @caisson-sh/alerting/browser inside a client bundle for the event contract, all three decision stages, the delivery port with its isolation wrapper and capture driver, the audit port with its in-memory driver, and processAlert itself. The five network drivers stay on the main entry, which keeps the complete node-capable surface, and every browser-entry export is also on it.",
       },
       {
         title: "Dedup on an open incident's key",
@@ -286,7 +286,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "SSRF-guarded buyer-supplied destinations",
-        body: "Webhook, Slack, and Telegram config URLs pass @caisson/kernel's assertSafePublicUrl at the Zod schema boundary and assertSafePublicUrlResolved again at the fetch call (a DNS-rebinding recheck), and every outbound POST sets redirect: \"error\" so a 3xx can't hop the request to a private host after the check.",
+        body: "Webhook, Slack, and Telegram config URLs pass @caisson-sh/kernel's assertSafePublicUrl at the Zod schema boundary and assertSafePublicUrlResolved again at the fetch call (a DNS-rebinding recheck), and every outbound POST sets redirect: \"error\" so a 3xx can't hop the request to a private host after the check.",
       },
       {
         title: "One structured audit row per outcome",
@@ -314,7 +314,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Is the alert audit trail the same as the WORM audit chain in audit-worm?",
         answer:
-          "No, and the code says so explicitly: audit.ts and its migration are plain structured logging (an RLS-forced alert_audit_log table), not hash-chained. @caisson/audit-worm is the separate tamper-evident chain product; alerting's audit sink deliberately doesn't import it, so the two stay distinct products with distinct guarantees.",
+          "No, and the code says so explicitly: audit.ts and its migration are plain structured logging (an RLS-forced alert_audit_log table), not hash-chained. @caisson-sh/audit-worm is the separate tamper-evident chain product; alerting's audit sink deliberately doesn't import it, so the two stay distinct products with distinct guarantees.",
       },
       {
         question:
@@ -326,7 +326,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Can I use the alerting module standalone, or only inside Compliance?",
         answer:
-          "Standalone, yes. It's also composed directly into the Compliance family, re-exported from its entry point (\"export * from '@caisson/alerting'\") rather than just listed on a manifest, so Compliance gets you the same package, not a promise of it.",
+          "Standalone, yes. It's also composed directly into the Compliance family, re-exported from its entry point (\"export * from '@caisson-sh/alerting'\") rather than just listed on a manifest, so Compliance gets you the same package, not a promise of it.",
       },
     ],
   },
@@ -358,7 +358,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Recurring open and close jobs",
-        body: "defineCampaignOpenTask() and defineCampaignCloseTask() expose the lifecycle as @caisson/jobs task definitions. enqueueCampaignOpen() uses a tenant-and-reviewer singleton key, while enqueueCampaignClose() keys by tenant and campaign, so overlapping schedule ticks do not enqueue the same review twice.",
+        body: "defineCampaignOpenTask() and defineCampaignCloseTask() expose the lifecycle as @caisson-sh/jobs task definitions. enqueueCampaignOpen() uses a tenant-and-reviewer singleton key, while enqueueCampaignClose() keys by tenant and campaign, so overlapping schedule ticks do not enqueue the same review twice.",
       },
     ],
     artifact: {
@@ -529,7 +529,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
   },
   {
     slug: "ai-meter",
-    metaTitle: "Token Metering, @caisson/ai-meter | Caisson",
+    metaTitle: "Token Metering, @caisson-sh/ai-meter | Caisson",
     metaDescription:
       "PG-atomic reserve/reconcile token metering for LLM calls: per-tenant spend caps, a circuit breaker, and a MinHash dedup gate. Integer credits only, no floats.",
     heroOneLiner:
@@ -539,7 +539,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/ai-meter/browser inside a client bundle for the pure half: BUNDLED_PRICE_BOOK with computeCost and creditsForMicroUsd, the estimateTokens/estimateUsage estimator, and the spend vocabulary including SpendCapError. The main entry keeps the full surface, every browser-entry export is also on it, and nothing that moves a credit or takes a database handle is reachable from it.",
+        body: "Import @caisson-sh/ai-meter/browser inside a client bundle for the pure half: BUNDLED_PRICE_BOOK with computeCost and creditsForMicroUsd, the estimateTokens/estimateUsage estimator, and the spend vocabulary including SpendCapError. The main entry keeps the full surface, every browser-entry export is also on it, and nothing that moves a credit or takes a database handle is reachable from it.",
       },
       {
         title: "Pre-call estimate",
@@ -605,7 +605,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     heroOneLiner:
       "Regression-grade evals that run in CI, not in prod. A model swap fails the build first, not a customer's session.",
     definition:
-      "@caisson/ai-evals is a regression gate for prompt and model changes: defineEval() scores a version-bound dataset through a grader taxonomy, then compareToBaseline() fails the build if the mean score, any individual scorer, or a Wilson confidence floor drops below the committed baseline, offline and deterministic, no live provider call inside CI.",
+      "@caisson-sh/ai-evals is a regression gate for prompt and model changes: defineEval() scores a version-bound dataset through a grader taxonomy, then compareToBaseline() fails the build if the mean score, any individual scorer, or a Wilson confidence floor drops below the committed baseline, offline and deterministic, no live provider call inside CI.",
     included: [
       {
         title: "Version-bound eval runs",
@@ -617,7 +617,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Committed-baseline regression gate",
-        body: "gateAgainstBaseline() compares each run to a committed JSON baseline and fails closed: a missing baseline, a score below threshold, or any scorer regression blocks the gate. BLESS=1 bun run eval is the one sanctioned path to rewrite it, mirroring the golden-fixture discipline in @caisson/testing.",
+        body: "gateAgainstBaseline() compares each run to a committed JSON baseline and fails closed: a missing baseline, a score below threshold, or any scorer regression blocks the gate. BLESS=1 bun run eval is the one sanctioned path to rewrite it, mirroring the golden-fixture discipline in @caisson-sh/testing.",
       },
       {
         title: "Offline judge via cassette replay",
@@ -633,7 +633,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/ai-evals/browser inside a client bundle for the gate's rules with no file I/O: the baseline boundary schema, compareToBaseline, the pre-bless eligibility check, the bless merge, and wilsonLowerBound. gateAgainstBaseline stays on the main entry because it reads and writes the committed baseline file, and every browser-entry export is also on the main entry.",
+        body: "Import @caisson-sh/ai-evals/browser inside a client bundle for the gate's rules with no file I/O: the baseline boundary schema, compareToBaseline, the pre-bless eligibility check, the bless merge, and wilsonLowerBound. gateAgainstBaseline stays on the main entry because it reads and writes the committed baseline file, and every browser-entry export is also on the main entry.",
       },
     ],
     artifact: {
@@ -754,7 +754,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/prompt-registry/browser inside a client bundle for name@version addressing and the injection-safe render boundary with its strict variable schemas. The registry functions and the schema stay off that entry on purpose, each takes a TenantExecutor and runs SQL, so tenant isolation stays on the server. The main entry keeps the full surface, and every browser-entry export is also on it.",
+        body: "Import @caisson-sh/prompt-registry/browser inside a client bundle for name@version addressing and the injection-safe render boundary with its strict variable schemas. The registry functions and the schema stay off that entry on purpose, each takes a TenantExecutor and runs SQL, so tenant isolation stays on the server. The main entry keeps the full surface, and every browser-entry export is also on it.",
       },
       {
         title: "Append-only versioning, not a mutable prompts table",
@@ -854,7 +854,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/local-store/browser inside a client bundle for fuseByRrf and RRF_K, the fusion arithmetic with no database attached, to merge leg rankings your server or worker already produced. Retrieval itself stays on the main entry: the vec0 KNN and FTS5 legs need bun:sqlite and the sqlite-vec native extension. Every browser-entry export is also on the main entry.",
+        body: "Import @caisson-sh/local-store/browser inside a client bundle for fuseByRrf and RRF_K, the fusion arithmetic with no database attached, to merge leg rankings your server or worker already produced. Retrieval itself stays on the main entry: the vec0 KNN and FTS5 legs need bun:sqlite and the sqlite-vec native extension. Every browser-entry export is also on the main entry.",
       },
     ],
     artifact: {
@@ -904,11 +904,11 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/agent-kernel/browser inside a client bundle for the artifact schema and its authoring helpers, the lifecycle act FSM, the governance decision algebra, and the redacting logger. The main entry keeps the complete node-capable surface (the execFile command handler and the audited hash-chain lifecycle), and every browser-entry export is also on it.",
+        body: "Import @caisson-sh/agent-kernel/browser inside a client bundle for the artifact schema and its authoring helpers, the lifecycle act FSM, the governance decision algebra, and the redacting logger. The main entry keeps the complete node-capable surface (the execFile command handler and the audited hash-chain lifecycle), and every browser-entry export is also on it.",
       },
       {
         title: "Typed agent/skill/rule schema",
-        body: "AgentArtifact, SkillArtifact, and RuleArtifact are a Zod discriminatedUnion on kind, built on @caisson/kernel's strictObject: an unknown field is rejected outright, not silently dropped. A bad artifact fails through parseArtifact as a redaction-safe ValidationError, never the rejected values.",
+        body: "AgentArtifact, SkillArtifact, and RuleArtifact are a Zod discriminatedUnion on kind, built on @caisson-sh/kernel's strictObject: an unknown field is rejected outright, not silently dropped. A bad artifact fails through parseArtifact as a redaction-safe ValidationError, never the rejected values.",
       },
       {
         title: "Seven-act lifecycle FSM",
@@ -978,7 +978,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/agent-runner/browser inside a client bundle for the ProviderConfig model, CLAUDE_CLI_PROFILE, PASSTHROUGH_KEYS, and buildEngineEnv, the same module the runner itself imports, so you can run and show the env scrub anywhere. The main entry keeps the full node-capable surface (detached spawn, run registry, transcript parsing), and every browser-entry export is also on it.",
+        body: "Import @caisson-sh/agent-runner/browser inside a client bundle for the ProviderConfig model, CLAUDE_CLI_PROFILE, PASSTHROUGH_KEYS, and buildEngineEnv, the same module the runner itself imports, so you can run and show the env scrub anywhere. The main entry keeps the full node-capable surface (detached spawn, run registry, transcript parsing), and every browser-entry export is also on it.",
       },
       {
         title: "Env built from scratch, not inherited",
@@ -1053,7 +1053,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/agent-trajectory/browser inside a client bundle for the strict event schema, the in-memory append-only store, the run-state port, both deterministic projections, and the Claude-transcript adapter, so a dashboard can replay and validate a trajectory client-side. The main entry keeps the full node-capable surface including the two Postgres-backed stores, and every browser-entry export is also on it.",
+        body: "Import @caisson-sh/agent-trajectory/browser inside a client bundle for the strict event schema, the in-memory append-only store, the run-state port, both deterministic projections, and the Claude-transcript adapter, so a dashboard can replay and validate a trajectory client-side. The main entry keeps the full node-capable surface including the two Postgres-backed stores, and every browser-entry export is also on it.",
       },
       {
         title: "Eleven-kind closed event vocabulary",
@@ -1077,7 +1077,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Paused-run state, encrypted at rest",
-        body: "createPgRunStateStore()'s park() seals the caller's opaque parkedState through @caisson/field-crypto's encryptField before it reaches the row, keyed to the run's own primary key as the row-binding identity; claimResume() is the only path that opens it back. deny() and finish() null the snapshot out on every terminal transition, a run that will never resume keeps no plaintext around.",
+        body: "createPgRunStateStore()'s park() seals the caller's opaque parkedState through @caisson-sh/field-crypto's encryptField before it reaches the row, keyed to the run's own primary key as the row-binding identity; claimResume() is the only path that opens it back. deny() and finish() null the snapshot out on every terminal transition, a run that will never resume keeps no plaintext around.",
       },
     ],
     artifact: {
@@ -1130,7 +1130,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/tool-exec/browser inside a client bundle for createToolProposer, the default-deny lookup and Zod argv validation with no spawn seam attached. It is the same gate createToolExec runs, so a UI can decide whether a call is permitted without the process boundary. The main entry keeps the full node-capable surface, and every browser-entry export is also on it.",
+        body: "Import @caisson-sh/tool-exec/browser inside a client bundle for createToolProposer, the default-deny lookup and Zod argv validation with no spawn seam attached. It is the same gate createToolExec runs, so a UI can decide whether a call is permitted without the process boundary. The main entry keeps the full node-capable surface, and every browser-entry export is also on it.",
       },
       {
         title: "Default-deny allowlist, fail-closed",
@@ -1203,7 +1203,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/org-controls/browser inside a client bundle for assertCanManageMembers, so your UI can show and hide owner-only controls using the exact gate the server enforces rather than a second copy of the rule. The main entry keeps the full surface, and every browser-entry export is also on it.",
+        body: "Import @caisson-sh/org-controls/browser inside a client bundle for assertCanManageMembers, so your UI can show and hide owner-only controls using the exact gate the server enforces rather than a second copy of the rule. The main entry keeps the full surface, and every browser-entry export is also on it.",
       },
       {
         title: "Cross-tenant write policy, DB-separated on purpose",
@@ -1227,7 +1227,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Fail-closed entitlement gate",
-        body: "holdsOrgControls is the predicate a members-management surface gates through: an empty active-entitlement set denies by default, and it accepts either the bare org-controls purchase id or the full @caisson/org-controls module id, correct whichever form a standalone purchase or bundle grant carries.",
+        body: "holdsOrgControls is the predicate a members-management surface gates through: an empty active-entitlement set denies by default, and it accepts either the bare org-controls purchase id or the full @caisson-sh/org-controls module id, correct whichever form a standalone purchase or bundle grant carries.",
       },
     ],
     artifact: {
@@ -1285,7 +1285,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/compliance-core/browser inside a client bundle for the collector contract with its result constructors, the four pure collectors (FORCE-RLS, WORM retention, risk register, impersonation dual trail), the pack format, the crosswalk rollup, and assembleEvidenceManifest, the same flag-never-guess refusal and derived-readiness assembly generateEvidencePack composes. The archive and digest phase, the chain-verify collector, and the field-crypto collector stay on the main entry: each needs Node. Every browser-entry export is also on the main entry.",
+        body: "Import @caisson-sh/compliance-core/browser inside a client bundle for the collector contract with its result constructors, the four pure collectors (FORCE-RLS, WORM retention, risk register, impersonation dual trail), the pack format, the crosswalk rollup, and assembleEvidenceManifest, the same flag-never-guess refusal and derived-readiness assembly generateEvidencePack composes. The archive and digest phase, the chain-verify collector, and the field-crypto collector stay on the main entry: each needs Node. Every browser-entry export is also on the main entry.",
       },
       {
         title: "Deterministic, byte-stable archive",
@@ -1305,7 +1305,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Source-compatible OSCAL boundary",
-        body: "compliance-core depends on and re-exports @caisson/oscal-spine. Existing assessment-plan, assessment-results, POA&M, catalog, XML, and ISO 27001 SoA imports keep resolving through this package, while one dedicated package owns their implementation and conformance fixtures.",
+        body: "compliance-core depends on and re-exports @caisson-sh/oscal-spine. Existing assessment-plan, assessment-results, POA&M, catalog, XML, and ISO 27001 SoA imports keep resolving through this package, while one dedicated package owns their implementation and conformance fixtures.",
       },
     ],
     artifact: {
@@ -1359,7 +1359,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "One port, four provider drivers",
-        body: "createStripeBilling and createPaddleBilling ship in this package's index.ts alongside createLemonSqueezyBilling and createPolarBilling, all four hand-rolled over each provider's plain REST API (no vendor SDK) behind the one BillingProvider port from @caisson/billing. Paddle is the live platform merchant of record; the LemonSqueezy and Polar drivers are dormant until you construct them with your own credentials.",
+        body: "createStripeBilling and createPaddleBilling ship in this package's index.ts alongside createLemonSqueezyBilling and createPolarBilling, all four hand-rolled over each provider's plain REST API (no vendor SDK) behind the one BillingProvider port from @caisson-sh/billing. Paddle is the live platform merchant of record; the LemonSqueezy and Polar drivers are dormant until you construct them with your own credentials.",
       },
       {
         title: "Envelope shape checked before the mapper ever runs",
@@ -1375,7 +1375,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/billing-orchestration/browser inside a client bundle for the pure claim-key half, assertValidSourceEventId and sideEffectEventKey, the same guards processEvent and withIdempotentSideEffect delegate to. The claim itself stays on the main entry, because it runs as an INSERT inside your tenant transaction; the main entry keeps the complete surface, and every browser-entry export is also on it.",
+        body: "Import @caisson-sh/billing-orchestration/browser inside a client bundle for the pure claim-key half, assertValidSourceEventId and sideEffectEventKey, the same guards processEvent and withIdempotentSideEffect delegate to. The claim itself stays on the main entry, because it runs as an INSERT inside your tenant transaction; the main entry keeps the complete surface, and every browser-entry export is also on it.",
       },
       {
         title: "The claim table is tenant-scoped, not just event-scoped",
@@ -1428,11 +1428,11 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     slug: "ui-pro",
     metaTitle: "UI Pro, Zero-Radix Interactive Components | Caisson",
     metaDescription:
-      "Fourteen commercial React components on the open @caisson/ui floor: Tooltip/Popover/Menu hand-rolled with zero Radix and zero @floating-ui, plus a filterable/groupable/virtualized data grid, a hash-chain audit timeline, and redaction-aware payload and diff viewers.",
+      "Fourteen commercial React components on the open @caisson-sh/ui floor: Tooltip/Popover/Menu hand-rolled with zero Radix and zero @floating-ui, plus a filterable/groupable/virtualized data grid, a hash-chain audit timeline, and redaction-aware payload and diff viewers.",
     heroOneLiner:
-      "The interactive layer @caisson/ui doesn't ship, Tooltip, Popover, and Menu hand-rolled against zero Radix and zero @floating-ui, plus the data grid, hash-chain audit timeline, and diff viewer a real dashboard needs.",
+      "The interactive layer @caisson-sh/ui doesn't ship, Tooltip, Popover, and Menu hand-rolled against zero Radix and zero @floating-ui, plus the data grid, hash-chain audit timeline, and diff viewer a real dashboard needs.",
     definition:
-      "ui-pro is the commercial component tier built on the open @caisson/ui floor: a hand-rolled, zero-Radix, zero-@floating-ui interactive layer (Tooltip, Popover, Menu) plus eleven sellable data surfaces, an advanced data grid, virtualized tree, ops/coverage matrix, hash-chain audit timeline, redaction-aware payload and diff viewers, type-to-confirm, date-range picker, charts, kanban board, and command palette.",
+      "ui-pro is the commercial component tier built on the open @caisson-sh/ui floor: a hand-rolled, zero-Radix, zero-@floating-ui interactive layer (Tooltip, Popover, Menu) plus eleven sellable data surfaces, an advanced data grid, virtualized tree, ops/coverage matrix, hash-chain audit timeline, redaction-aware payload and diff viewers, type-to-confirm, date-range picker, charts, kanban board, and command palette.",
     included: [
       {
         title: "Tooltip, Popover, Menu, zero Radix, zero @floating-ui",
@@ -1444,12 +1444,12 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "AuditTimeline, renders a hash-chain verification result",
-        body: "AuditTimeline takes AuditEntry rows extending lib/audit-chain.ts's ChainEntry, and an optional anchor-derived statuses prop of six-state badges (wired to @caisson/kernel's per-row verifier, ADR-0331/0344). shortHash formats the display; chainIntact and verifyChain are exported for a caller to run the actual chain check, the component displays a verdict, it doesn't compute one.",
+        body: "AuditTimeline takes AuditEntry rows extending lib/audit-chain.ts's ChainEntry, and an optional anchor-derived statuses prop of six-state badges (wired to @caisson-sh/kernel's per-row verifier, ADR-0331/0344). shortHash formats the display; chainIntact and verifyChain are exported for a caller to run the actual chain check, the component displays a verdict, it doesn't compute one.",
       },
       {
         title:
           "PayloadViewer redacts by default; DiffViewer redacts on request",
-        body: "PayloadViewer falls back to lib/redact.ts's DEFAULT_REDACT_KEYS and uses isRedactedKey/redactValue (the predicate now re-exported from @caisson/kernel, ADR-0331) whenever the caller doesn't supply its own key list (masking is on out of the box. DiffViewer's JSON mode only redacts when the caller passes its own redactKeys set, which it threads into lib/diff.ts's diffJson (that module calls redactValue internally); DiffViewer imports no default key list itself, and its plain text-line diff mode has no redaction path at all) so a support or audit screen stays unmasked unless the integrator wires redactKeys explicitly.",
+        body: "PayloadViewer falls back to lib/redact.ts's DEFAULT_REDACT_KEYS and uses isRedactedKey/redactValue (the predicate now re-exported from @caisson-sh/kernel, ADR-0331) whenever the caller doesn't supply its own key list (masking is on out of the box. DiffViewer's JSON mode only redacts when the caller passes its own redactKeys set, which it threads into lib/diff.ts's diffJson (that module calls redactValue internally); DiffViewer imports no default key list itself, and its plain text-line diff mode has no redaction path at all) so a support or audit screen stays unmasked unless the integrator wires redactKeys explicitly.",
       },
       {
         title:
@@ -1480,13 +1480,13 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
         question:
           "Does the audit timeline verify anything itself, or just display it?",
         answer:
-          "It displays a verification result computed elsewhere, AuditTimeline takes an optional anchor-derived statuses prop (six-state badges wired to @caisson/kernel's per-row verifier) and its own lib/audit-chain.ts exports chainIntact and verifyChain for a caller to run the check. The component itself holds no hashing or WORM-anchor logic; it renders whatever chain state you hand it.",
+          "It displays a verification result computed elsewhere, AuditTimeline takes an optional anchor-derived statuses prop (six-state badges wired to @caisson-sh/kernel's per-row verifier) and its own lib/audit-chain.ts exports chainIntact and verifyChain for a caller to run the check. The component itself holds no hashing or WORM-anchor logic; it renders whatever chain state you hand it.",
       },
       {
         question:
-          "Does DataTablePro replace @caisson/ui's basic table, or is it a separate thing?",
+          "Does DataTablePro replace @caisson-sh/ui's basic table, or is it a separate thing?",
         answer:
-          "Separate tier by design: the open @caisson/ui floor keeps a basic table with single sort/filter/pagination; DataTablePro adds the filter builder, grouping/aggregation, column pin/hide, CSV export, and row virtualization on top, and it composes the open kit's own Button and Select rather than duplicating them.",
+          "Separate tier by design: the open @caisson-sh/ui floor keeps a basic table with single sort/filter/pagination; DataTablePro adds the filter builder, grouping/aggregation, column pin/hide, CSV export, and row virtualization on top, and it composes the open kit's own Button and Select rather than duplicating them.",
       },
       {
         question: "Which edition or bundle does ui-pro come with?",
@@ -1562,7 +1562,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       {
         question: "Does this module bill me, or just wire the meter?",
         answer:
-          "It wires the shape only. #emitMeter builds an integer-quantity, idempotency-keyed UsageMetering record and hands it to whatever MeterSink you provide, the package never imports @caisson/credits or touches a ledger; your billing integration supplies the sink that calls credits.debit.",
+          "It wires the shape only. #emitMeter builds an integer-quantity, idempotency-keyed UsageMetering record and hands it to whatever MeterSink you provide, the package never imports @caisson-sh/credits or touches a ledger; your billing integration supplies the sink that calls credits.debit.",
       },
     ],
   },
@@ -1595,7 +1595,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "guardedFetch, install as another runtime's outbound hook",
-        body: "The guard exposes itself as a bare (input, init) => Promise<Response>, the shape transformers.js's env.fetch accepts, so an on-device model loader can be handed the guard directly and cannot egress out of band. @caisson/local-inference's rented-backend transport calls guard.fetchAs(\"rented-backend\", ...) the same way, composed directly, not just a manifest listing.",
+        body: "The guard exposes itself as a bare (input, init) => Promise<Response>, the shape transformers.js's env.fetch accepts, so an on-device model loader can be handed the guard directly and cannot egress out of band. @caisson-sh/local-inference's rented-backend transport calls guard.fetchAs(\"rented-backend\", ...) the same way, composed directly, not just a manifest listing.",
       },
       {
         title: "Defensive re-parse at construction",
@@ -1724,7 +1724,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Browser-safe entry points",
-        body: "Import @caisson/frameworks-pack/browser inside a client bundle for the control model, the three packs, the regime crosswalks, the SoA computation, and the browser half of the OSCAL surface together, or ./registry for the model alone. The main entry keeps the complete node-capable surface, and every browser-entry export is also on it.",
+        body: "Import @caisson-sh/frameworks-pack/browser inside a client bundle for the control model, the three packs, the regime crosswalks, the SoA computation, and the browser half of the OSCAL surface together, or ./registry for the model alone. The main entry keeps the complete node-capable surface, and every browser-entry export is also on it.",
       },
       {
         title: "Fail-closed control registry",
@@ -1782,9 +1782,9 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         question:
-          "Do I need @caisson/compliance-core to use this, or does it work on its own?",
+          "Do I need @caisson-sh/compliance-core to use this, or does it work on its own?",
         answer:
-          "No. frameworks-pack works on its own with @caisson/kernel, zod, and its @caisson/oscal-spine dependency. You get the framework catalogs, five regime crosswalks, and the re-exported pinned NIST reference data. compliance-core is the separate evidence-pack engine; all three packages ship in the Compliance bundle.",
+          "No. frameworks-pack works on its own with @caisson-sh/kernel, zod, and its @caisson-sh/oscal-spine dependency. You get the framework catalogs, five regime crosswalks, and the re-exported pinned NIST reference data. compliance-core is the separate evidence-pack engine; all three packages ship in the Compliance bundle.",
       },
     ],
   },
@@ -1800,7 +1800,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/oscal-spine/browser inside a client bundle for the contracts, crosswalk model, catalog pin, and the pure catalog and assessment-plan exporters; its id seam defaults to the WebCrypto global crypto.randomUUID (Node 20.12 or later). The main entry keeps the full node-capable surface, and every browser-entry export is also on it.",
+        body: "Import @caisson-sh/oscal-spine/browser inside a client bundle for the contracts, crosswalk model, catalog pin, and the pure catalog and assessment-plan exporters; its id seam defaults to the WebCrypto global crypto.randomUUID (Node 20.12 or later). The main entry keeps the full node-capable surface, and every browser-entry export is also on it.",
       },
       {
         title: "Assessment artifacts from evidence you already generated",
@@ -1820,7 +1820,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Parent imports remain source-compatible",
-        body: "@caisson/compliance-core and @caisson/frameworks-pack both depend on and re-export oscal-spine. Existing buyers keep their import paths; buyers who need neither parent can purchase the OSCAL surface directly.",
+        body: "@caisson-sh/compliance-core and @caisson-sh/frameworks-pack both depend on and re-export oscal-spine. Existing buyers keep their import paths; buyers who need neither parent can purchase the OSCAL surface directly.",
       },
     ],
     artifact: {
@@ -1867,7 +1867,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/signing-primitive/browser inside a client bundle for the verify half: the signable-payload construction, verifyEvidenceSignature over the same @noble/ed25519 primitive the server signs with, and the RFC-3161 test double (Node 20.12 or later). A relying party can check your evidence pack entirely in their own browser. The signing identity stays off that entry on purpose, a tenant seed does not belong in a bundle users download, and every browser-entry export is also on the main entry.",
+        body: "Import @caisson-sh/signing-primitive/browser inside a client bundle for the verify half: the signable-payload construction, verifyEvidenceSignature over the same @noble/ed25519 primitive the server signs with, and the RFC-3161 test double (Node 20.12 or later). A relying party can check your evidence pack entirely in their own browser. The signing identity stays off that entry on purpose, a tenant seed does not belong in a bundle users download, and every browser-entry export is also on the main entry.",
       },
       {
         title: "Per-tenant Ed25519Signer, never the license key",
@@ -1887,7 +1887,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
       },
       {
         title: "Constant-time signature compare",
-        body: "signaturesEqual wraps @caisson/kernel's safeEqualFixed so comparing two hex signatures never leaks how many leading bytes matched, the same timing-safe discipline the kernel's secret comparisons use elsewhere.",
+        body: "signaturesEqual wraps @caisson-sh/kernel's safeEqualFixed so comparing two hex signatures never leaks how many leading bytes matched, the same timing-safe discipline the kernel's secret comparisons use elsewhere.",
       },
       {
         title: "Deployment-level Ed25519ph key for Rekor anchoring",
@@ -1943,7 +1943,7 @@ export const MODULE_PAGES: readonly ModulePageRecord[] = [
     included: [
       {
         title: "Browser-safe entry point",
-        body: "Import @caisson/credits/browser inside a client bundle for the grant/debit event vocabulary and planFifoDebit, the FIFO waterfall debit() itself walks: hand it grant remainders and an amount and it returns the per-grant draws plus the covered and shortfall split. It reads and writes no wallet; grant(), debit(), clawback(), the balance reads, the sweeps, and the schema SQL stay on the main entry, which is unchanged, and every browser-entry export is also on it.",
+        body: "Import @caisson-sh/credits/browser inside a client bundle for the grant/debit event vocabulary and planFifoDebit, the FIFO waterfall debit() itself walks: hand it grant remainders and an amount and it returns the per-grant draws plus the covered and shortfall split. It reads and writes no wallet; grant(), debit(), clawback(), the balance reads, the sweeps, and the schema SQL stay on the main entry, which is unchanged, and every browser-entry export is also on it.",
       },
       {
         title: "FOR UPDATE row lock, then FIFO",

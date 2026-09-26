@@ -4,7 +4,7 @@
 // selected package's on-disk `migrations/NNNN_*.sql`, feeds the bytes to the kernel algo, and emits
 // the merged renumbered sequence + the single ledger as a generated-app file set. The runner that
 // APPLIES the sequence lives alongside it (`./runner.ts`). This package is the ONE home for the
-// assembler + runner; `@caisson/cli` and `@caisson/compliance` import them, never copy them (ADR-0090).
+// assembler + runner; `@caisson-sh/cli` and `@caisson-sh/compliance` import them, never copy them (ADR-0090).
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -12,7 +12,7 @@ import {
   type MigrationFile,
   type PackageMigrations,
   assembleMigrations,
-} from "@caisson/kernel/node";
+} from "@caisson-sh/kernel/node";
 import type { EmittedFile, EmittedFileSet } from "./emit.ts";
 
 /** A forward-only package migration on disk: `NNNN_<name>.sql`. */

@@ -1,5 +1,5 @@
-import "@caisson/ui/styles/tokens.css";
-import "@caisson/ui/styles/base.css";
+import "@caisson-sh/ui/styles/tokens.css";
+import "@caisson-sh/ui/styles/base.css";
 import "./global.css";
 // Registers the private brand glyphs into the kit icon surface for the SERVER bundle graph (the
 // client graph is covered by the `@/components` barrel). Side-effect import — keep it.

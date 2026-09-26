@@ -1,12 +1,12 @@
 "use client";
 
 // The /ui gallery's demo grid (CAISSON-35) — reads the shared cross-app component registry
-// (@caisson/demo-registry) so every consumer renders the exact same UI Pro catalog off the exact
+// (@caisson-sh/demo-registry) so every consumer renders the exact same UI Pro catalog off the exact
 // same data, instead of hand-rolled demo implementations that could silently drift apart. A CLIENT
 // component: `entry.render` closures are exported from a "use client" registry module
 // (tooling/demo-registry/src/entries/ui-pro.tsx), so calling them stays client-side, and the server
 // page.tsx (which needs `metadata`, server-only) drops this island in.
-import { entriesByTier, type CatalogEntry } from "@caisson/demo-registry";
+import { entriesByTier, type CatalogEntry } from "@caisson-sh/demo-registry";
 
 const DEMOS = entriesByTier("ui-pro");
 

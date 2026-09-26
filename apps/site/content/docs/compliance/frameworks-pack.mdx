@@ -3,7 +3,7 @@ title: frameworks-pack
 description: Own-authored, clean-room control catalogs for SOC 2, HIPAA Security, and the EU AI Act, crosswalked to each framework's requirement ids.
 ---
 
-`@caisson/frameworks-pack` ships a typed, Zod-strict canonical-control model plus three
+`@caisson-sh/frameworks-pack` ships a typed, Zod-strict canonical-control model plus three
 own-authored control packs, SOC 2 Trust Services Criteria, HIPAA Security, and the EU AI
 Act, with every control crosswalked to the external framework's requirement ids.
 
@@ -14,7 +14,7 @@ Caisson prose; the citation is a fact, not a transform of the AICPA/NIST/regulat
 ## Install
 
 ```bash
-bun add @caisson/frameworks-pack
+bun add @caisson-sh/frameworks-pack
 ```
 
 ## What it does
@@ -34,7 +34,7 @@ bun add @caisson/frameworks-pack
 ## Quickstart
 
 ```ts
-import { soc2Tsc, hipaaSecurity, euAiAct } from "@caisson/frameworks-pack";
+import { soc2Tsc, hipaaSecurity, euAiAct } from "@caisson-sh/frameworks-pack";
 
 // Each pack is a validated Framework: { id, title, version, description, controls[] }.
 for (const control of soc2Tsc.controls) {
@@ -48,7 +48,7 @@ for (const control of soc2Tsc.controls) {
 Author your own control on top of the same model:
 
 ```ts
-import { defineControl } from "@caisson/frameworks-pack";
+import { defineControl } from "@caisson-sh/frameworks-pack";
 
 const control = defineControl({
   id: "ACCESS-CONTROL.MFA",
@@ -62,7 +62,7 @@ const control = defineControl({
 ## Regime crosswalks
 
 ```ts
-import { soc2Crosswalk, exportRegimeCrosswalk } from "@caisson/frameworks-pack";
+import { soc2Crosswalk, exportRegimeCrosswalk } from "@caisson-sh/frameworks-pack";
 
 // exportRegimeCrosswalk embeds the disclaimer block IN the returned artifact — a cold
 // reader opening the export never sees a mapping row without the scope language beside it.
@@ -79,9 +79,9 @@ const artifact = exportRegimeCrosswalk(soc2Crosswalk);
 
 ## Composition
 
-Depends on `@caisson/kernel` plus `@caisson/oscal-spine`, the commercial OSCAL boundary it
+Depends on `@caisson-sh/kernel` plus `@caisson-sh/oscal-spine`, the commercial OSCAL boundary it
 re-exports for source compatibility. The framework catalogs are consumed by
-`@caisson/compliance-core`, which assembles the evidence pack; `oscal-spine` generates the
+`@caisson-sh/compliance-core`, which assembles the evidence pack; `oscal-spine` generates the
 machine-readable OSCAL artifacts against those control ids. All three are members of the
 Compliance bundle.
 

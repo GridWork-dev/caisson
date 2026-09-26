@@ -8,11 +8,11 @@
 // method/url/headers/body it sends.
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { AuthzError, InternalError, ValidationError } from "@caisson/kernel";
-import type { UsageMetering } from "@caisson/kernel";
-import { EgressGuard } from "@caisson/local-privacy";
-import { localOnlyPolicy } from "@caisson/local-privacy";
-import type { PrivacyPolicy } from "@caisson/local-privacy";
+import { AuthzError, InternalError, ValidationError } from "@caisson-sh/kernel";
+import type { UsageMetering } from "@caisson-sh/kernel";
+import { EgressGuard } from "@caisson-sh/local-privacy";
+import { localOnlyPolicy } from "@caisson-sh/local-privacy";
+import type { PrivacyPolicy } from "@caisson-sh/local-privacy";
 import { createBedrockRentedTransport } from "./bedrock-transport.ts";
 import { RentedInferenceBackend } from "./rented-backend.ts";
 import { signSigV4 } from "./sigv4.ts";

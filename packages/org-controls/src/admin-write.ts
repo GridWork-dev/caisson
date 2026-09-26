@@ -1,4 +1,4 @@
-// The cross-tenant admin-WRITE RLS layer (ADR-0220), carved out of the open @caisson/tenancy-rls into
+// The cross-tenant admin-WRITE RLS layer (ADR-0220), carved out of the open @caisson-sh/tenancy-rls into
 // this commercial package (ADR-0257 §1.3, resolving the ADR-0249 G6 ambiguity: all six exports move).
 //
 // An operator control plane must CHANGE state across tenants (comp a grant, correct a wallet) — the
@@ -14,18 +14,18 @@
 //
 // ROLE-GUARD DUPLICATION (ADR-0257 §1.3 seam decision): `withAdminWrite` needs the same fail-closed
 // "the role I SET LOCAL into is genuinely unprivileged (not SUPERUSER/BYPASSRLS)" pre-flight that
-// `withTenant`/`withUser` use. That guard is FILE-PRIVATE inside @caisson/tenancy-rls. Rather than
+// `withTenant`/`withUser` use. That guard is FILE-PRIVATE inside @caisson-sh/tenancy-rls. Rather than
 // widen the open tenancy-rls PUBLIC API with a new export just for this commercial consumer, the guard
 // is DUPLICATED here (~35 LOC, self-contained). Chosen over exporting a public helper because the
 // instruction is to keep the open tenancy-rls surface as small as the choice allows — and the smallest
 // possible surface is the UNCHANGED one. The two copies are independent WeakMaps keyed per
 // (Transactor, role); a security fix to the privileged-role check must be applied in BOTH homes (the
 // one cost of the duplication, accepted here for the API-minimality benefit).
-import { TenancyError } from "@caisson/kernel";
-import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
+import { TenancyError } from "@caisson-sh/kernel";
+import type { TenantExecutor, Transactor } from "@caisson-sh/tenancy-rls";
 
 /**
- * Fail-closed role pre-flight (ADR-0005 hardening) — DUPLICATED from @caisson/tenancy-rls (see the
+ * Fail-closed role pre-flight (ADR-0005 hardening) — DUPLICATED from @caisson-sh/tenancy-rls (see the
  * seam note above). A SUPERUSER or BYPASSRLS role silently no-ops `FORCE ROW LEVEL SECURITY`,
  * reopening the cross-tenant leak with zero runtime signal — this throws before that role is ever
  * assumed. A missing role is refused too (fail-closed, not fail-open on a typo).

@@ -1,21 +1,21 @@
 // The oscal-spine poke's checkable claims, now that it drives the REAL toOscalAssessmentPlan
-// through `@caisson/oscal-spine/browser` (ADR-0396) and the hand-ported mirror
+// through `@caisson-sh/oscal-spine/browser` (ADR-0396) and the hand-ported mirror
 // (oscal-spine-logic.ts) is deleted. No parity suite survives because there is nothing left to
 // compare — the invalid-clock test now exercises the package's real fail-closed guard, where the
 // mirror's test only ever proved its own copy of it.
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { ValidationError } from "@caisson/kernel";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   euAiAct,
   hipaaSecurity,
   soc2Tsc,
-} from "@caisson/frameworks-pack/browser";
+} from "@caisson-sh/frameworks-pack/browser";
 import {
   OSCAL_VERSION,
   toOscalAssessmentPlan,
-} from "@caisson/oscal-spine/browser";
+} from "@caisson-sh/oscal-spine/browser";
 
 import {
   SAMPLE_FRAMEWORKS,

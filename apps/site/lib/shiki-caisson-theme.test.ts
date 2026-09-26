@@ -6,7 +6,7 @@ import {
   codeTokensLight,
   darkTheme,
   lightTheme,
-} from "@caisson/ui/tokens";
+} from "@caisson-sh/ui/tokens";
 
 import { caissonDark, caissonLight } from "./shiki-caisson-theme";
 

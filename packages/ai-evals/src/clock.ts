@@ -1,4 +1,4 @@
-// @caisson/ai-evals — the point-in-time reader seam (ADR-0214, glossread `backfill-one.ts` pattern,
+// @caisson-sh/ai-evals — the point-in-time reader seam (ADR-0214, glossread `backfill-one.ts` pattern,
 // rebuild-clean). Every entry point in this package that stamps a decision timestamp (`defineEval`'s
 // `ranAt`, `recordEvalSpend`'s `ranAt`, `captureDisagreement`'s `capturedAt`) takes a `Clock` instead
 // of reading `Date.now()`/`new Date()` directly. A backtest then replays through the EXACT SAME

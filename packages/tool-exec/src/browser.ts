@@ -1,4 +1,4 @@
-// The browser-safe entry (`@caisson/tool-exec/browser`, ADR-0396): the default-deny allowlist
+// The browser-safe entry (`@caisson-sh/tool-exec/browser`, ADR-0396): the default-deny allowlist
 // lookup + the Zod argv validation, i.e. the whole phase-1 gate. ADDITIVE — the `.` barrel is
 // untouched and stays the full node-capable surface; every name here is also on `.` (the subset
 // test in browser-safety.test.ts pins that direction).

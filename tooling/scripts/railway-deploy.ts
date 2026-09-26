@@ -228,10 +228,10 @@ export function archiveRefToDir(
   exec("tar", ["-x", "-C", stageDir], { input: archive });
 }
 
-/** The repo-root carrier `@caisson/kernel`'s `servingRevision()` reads at runtime to answer the
+/** The repo-root carrier `@caisson-sh/kernel`'s `servingRevision()` reads at runtime to answer the
  *  `x-caisson-revision` response header. Re-declared here rather than imported because it CANNOT be
  *  imported by specifier: `tooling/scripts/` has no package.json, so it is not a workspace and bun
- *  never links `@caisson/*` into scope here (`bun test` resolves the bare specifier to nothing).
+ *  never links `@caisson-sh/*` into scope here (`bun test` resolves the bare specifier to nothing).
  *  The pair is pinned instead by a round-trip test that stamps with this constant and reads back
  *  through the kernel's own reader -- without that guard a rename on either side would fail
  *  nothing, and every service in the fleet would report `unknown` forever, which is exactly the

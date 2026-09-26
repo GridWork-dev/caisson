@@ -1,4 +1,4 @@
-# @caisson/access-review
+# @caisson-sh/access-review
 
 Audit-prep access-review campaigns — a reviewer attests, per user, that access is still
 appropriate, and every decision is WORM-logged so an auditor can prove the review actually
@@ -9,19 +9,19 @@ Apache-2.0. Install it on its own, or alongside the rest of the compliance modul
 ## What it gives you
 
 - **A WORM-logged decision record, not a plain log.** Every `approve`/`revoke` decision appends to
-  the tenant's existing `@caisson/audit-worm` chain — no new anchoring primitive. A dropped or
+  the tenant's existing `@caisson-sh/audit-worm` chain — no new anchoring primitive. A dropped or
   patched decision is tamper-evident: `chain.verify` catches it, the same guarantee every other
   WORM-logged module in this repo carries.
 - **A typed `MembershipSnapshotSource` port.** One shape (`{ reviewerId, reviewees }`) three trivial
   adapters implement: `createCsvMembershipSnapshotSource`, `createJsonMembershipSnapshotSource`,
   `createInMemoryMembershipSnapshotSource`. Same shape discipline
-  `@caisson/compliance-core`'s `EvidenceCollector` uses — `read()` is pure, the loader's own I/O
+  `@caisson-sh/compliance-core`'s `EvidenceCollector` uses — `read()` is pure, the loader's own I/O
   stays outside the typed boundary.
 - **Flag-never-guess close.** A campaign closes only when it is COMPLETE (every reviewee decided)
   or DUE (past its deadline) — never both, never neither. At close, every undecided reviewee lands
   in `unresolved`; it is never counted as approved.
 - **A jobs-riding schedule.** `defineCampaignOpenTask` / `defineCampaignCloseTask` are
-  `@caisson/jobs` `TaskDefinition`s — register them on a `JobQueue` (the shipped in-memory driver
+  `@caisson-sh/jobs` `TaskDefinition`s — register them on a `JobQueue` (the shipped in-memory driver
   in dev/test; Trigger.dev in prod) and enqueue through `enqueueCampaignOpen` /
   `enqueueCampaignClose`, which set an overlap-safe `singletonKey`. Which reviewers are due for a
   fresh cycle, and which open campaigns are past their deadline, is the caller's own recurring
@@ -35,8 +35,8 @@ import {
   openCampaign,
   recordDecision,
   closeCampaign,
-} from "@caisson/access-review";
-import { AuditChainStore, LocalArtifactStore } from "@caisson/audit-worm";
+} from "@caisson-sh/access-review";
+import { AuditChainStore, LocalArtifactStore } from "@caisson-sh/audit-worm";
 
 const chain = new AuditChainStore({
   db,
@@ -73,13 +73,13 @@ closed.unresolved; // reviewees with no recorded decision — never treated as a
 ## Scheduling
 
 ```ts
-import { createInMemoryQueue } from "@caisson/jobs";
+import { createInMemoryQueue } from "@caisson-sh/jobs";
 import {
   defineCampaignOpenTask,
   defineCampaignCloseTask,
   enqueueCampaignOpen,
   enqueueCampaignClose,
-} from "@caisson/access-review";
+} from "@caisson-sh/access-review";
 
 const queue = createInMemoryQueue([
   defineCampaignOpenTask(deps),

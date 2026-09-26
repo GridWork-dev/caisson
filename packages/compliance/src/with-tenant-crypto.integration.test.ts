@@ -14,13 +14,13 @@ import {
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
-import { newTestPg, type TestPg } from "@caisson/testing";
-import { TenancyError } from "@caisson/kernel";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
+import { TenancyError } from "@caisson-sh/kernel";
 import {
   buildTenantPolicySql,
   type TenantExecutor,
   withTenant,
-} from "@caisson/tenancy-rls";
+} from "@caisson-sh/tenancy-rls";
 import {
   currentFieldCryptoContext,
   decryptField,
@@ -29,7 +29,7 @@ import {
   encryptField,
   parseEnvelope,
   withFieldCryptoContext,
-} from "@caisson/field-crypto";
+} from "@caisson-sh/field-crypto";
 import { withTenantCrypto } from "./with-tenant-crypto.ts";
 
 const MASTER = Buffer.alloc(32, 0x11);

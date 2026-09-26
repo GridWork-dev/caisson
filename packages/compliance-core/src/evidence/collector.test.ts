@@ -5,14 +5,14 @@ import {
   canonicalize,
   ValidationError,
   type AuditChainEntry,
-} from "@caisson/kernel/node";
+} from "@caisson-sh/kernel/node";
 import {
   flaggedResult,
   passResult,
   unresolvedResult,
   type EvidenceItem,
 } from "./collector.ts";
-import { ALG_AES_256_GCM, serializeEnvelope } from "@caisson/field-crypto";
+import { ALG_AES_256_GCM, serializeEnvelope } from "@caisson-sh/field-crypto";
 import { chainVerifyCollector } from "./collectors/chain-verify.ts";
 import {
   rlsForceCollector,
@@ -21,7 +21,7 @@ import {
 import { wormRetentionCollector } from "./collectors/worm-retention.ts";
 import { fieldCryptoPolicyCollector } from "./collectors/field-crypto-policy.ts";
 import { aiRiskRegisterCollector } from "./collectors/ai-risk-register.ts";
-import { defineRiskEntry, type RiskEntry } from "@caisson/risk-register";
+import { defineRiskEntry, type RiskEntry } from "@caisson-sh/risk-register";
 
 /** A valid AES-256-GCM field-crypto envelope (base64) — the shape a PHI field carries at rest. */
 function encryptedSample(): string {

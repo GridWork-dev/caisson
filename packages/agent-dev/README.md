@@ -1,4 +1,4 @@
-# @caisson/agent-dev
+# @caisson-sh/agent-dev
 
 The Agentic-Dev edition — a governed agent/skill/rule schema, a lifecycle state machine, local
 hybrid memory, a sandboxed tool-exec gate, and a multi-harness emitter, composed into one
@@ -8,7 +8,7 @@ lifecycle, local memory, and per-harness config emit (`.claude/`, Codex `AGENTS.
 ## Install
 
 ```bash
-bun add @caisson/agent-dev
+bun add @caisson-sh/agent-dev
 ```
 
 Apache-2.0. No license key, no private registry.
@@ -16,7 +16,7 @@ Apache-2.0. No license key, no private registry.
 ## Use
 
 ```ts
-import { createAgentDevEdition } from "@caisson/agent-dev";
+import { createAgentDevEdition } from "@caisson-sh/agent-dev";
 
 const edition = createAgentDevEdition({
   store: myAuditLifecycleStore, // host-supplied AuditLifecycleStore

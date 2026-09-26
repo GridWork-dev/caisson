@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/testing",
+  "name": "@caisson-sh/testing",
   "version": "0.0.4",
   "private": true,
   "description": "Shared test harness: golden-file regression (BLESS) + the PGlite fail-closed-RLS harness, plus a module golden-fixture contract (golden-module.ts).",
@@ -23,7 +23,7 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "devDependencies": {
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "@electric-sql/pglite": "0.5.4",
     "@types/jsdom": "^28.0.3",
     "@types/react": "catalog:",

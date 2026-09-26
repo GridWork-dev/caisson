@@ -1,5 +1,5 @@
 // Exit-gate proof for `caisson run approve|deny|status` (ADR-0360 U-2/U-3). Runs the REAL
-// `agent_run_state`/`trajectory_event` migrations (the SAME files @caisson/agent-trajectory ships —
+// `agent_run_state`/`trajectory_event` migrations (the SAME files @caisson-sh/agent-trajectory ships —
 // this package's SQL is a deliberate hand-kept mirror of theirs, see run.ts's file header) against
 // PGlite, proving the service functions' CAS + idempotent-append + fail-closed contract WITHOUT
 // importing the commercial package (the open↔commercial boundary this file exists to respect).
@@ -13,12 +13,12 @@ import {
 } from "bun:test";
 setDefaultTimeout(30_000);
 import { randomUUID } from "node:crypto";
-import { newTestPg, type TestPg } from "@caisson/testing";
-import { ConfigError, ValidationError, parseStrict } from "@caisson/kernel";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
+import { ConfigError, ValidationError, parseStrict } from "@caisson-sh/kernel";
 // Test-only (devDependency, never runtime — see run.ts's file header on the open↔commercial
 // boundary): the REAL Zod schema, used to prove this package's hand-kept event-shape mirror
 // hasn't drifted from the canonical one.
-import { TrajectoryEvent } from "@caisson/agent-trajectory";
+import { TrajectoryEvent } from "@caisson-sh/agent-trajectory";
 import {
   appendedEvent,
   approveRun,
@@ -63,7 +63,7 @@ async function park(
   // parked_state is `text` as of migration 0003 (ADR-0361 — a field-crypto envelope in production).
   // This package never reads/decrypts the column (open↔commercial boundary, see run.ts's file
   // header) and no test here asserts on its content, so a plain placeholder string exercises the
-  // same CAS/idempotency/retention paths without needing @caisson/field-crypto as a devDependency.
+  // same CAS/idempotency/retention paths without needing @caisson-sh/field-crypto as a devDependency.
   await tp.exec(
     `INSERT INTO agent_run_state (run_id, account_id, status, pending_tool_call_id, decision, claimed, resume_seq, parked_state, updated_at)
      VALUES ('${runId}', '${accountId}', 'parked', '${toolCallId}', NULL, false, ${String(resumeSeq)}, 'placeholder-not-a-real-envelope', now())`,
@@ -258,13 +258,13 @@ describe("readRunStatus", () => {
   });
 });
 
-// LOW (security audit item 3): this package cannot import @caisson/agent-trajectory's Zod schema
+// LOW (security audit item 3): this package cannot import @caisson-sh/agent-trajectory's Zod schema
 // at RUNTIME (open↔commercial boundary), so run.ts's raw INSERTs never run parseStrict against
 // it. This test closes the drift risk a different way: prove the EXACT objects appendedEvent()
 // builds for every event kind this file writes parse successfully against the real schema
 // (a devDependency here, never shipped). A future edit to either side that breaks the shape fails
 // this test, not a buyer's production insert.
-describe("appendedEvent — shape parity with @caisson/agent-trajectory's TrajectoryEvent schema", () => {
+describe("appendedEvent — shape parity with @caisson-sh/agent-trajectory's TrajectoryEvent schema", () => {
   const runId = randomUUID();
 
   test("tool.approved (approveRun's event)", () => {

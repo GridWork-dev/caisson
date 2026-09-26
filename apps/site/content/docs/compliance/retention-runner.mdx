@@ -3,7 +3,7 @@ title: retention-runner
 description: The CCPA/GDPR right-to-erasure runner, fans one subject's erasure across every registered store, isolates per-target failure, and writes one reason-tagged audit row.
 ---
 
-`@caisson/retention-runner` is Caisson's right-to-erasure module: `runErasure` fans one
+`@caisson-sh/retention-runner` is Caisson's right-to-erasure module: `runErasure` fans one
 subject's erasure out across every registered store, object storage, cascade DB, orphan
 sweep, isolates each target's failure so one broken store never blocks the others, and
 writes exactly one reason-tagged audit row per run.
@@ -19,15 +19,15 @@ writes exactly one reason-tagged audit row per run.
 - **One reason-tagged audit row per run**: `RetentionRunResult` carries the trigger
   (`auto_90d` | `ccpa_request` | `operator_manual`), every target's outcome, and the run
   timestamp, written once through the injected `RetentionAuditSink`. Plain Postgres
-  audit-logging, not WORM, pair with `@caisson/audit-worm` where a write-once anchor matters.
-- **The recurring `auto_90d` sweep rides `@caisson/jobs`**: `defineRetentionTask` returns a
+  audit-logging, not WORM, pair with `@caisson-sh/audit-worm` where a write-once anchor matters.
+- **The recurring `auto_90d` sweep rides `@caisson-sh/jobs`**: `defineRetentionTask` returns a
   `TaskDefinition`; `enqueueAutoSweep` enqueues it under a singleton key of
   `${tenantId}:${subjectId}`, so a subject already queued for a sweep is never double-enqueued.
 
 ## Install
 
 ```bash
-bun add @caisson/retention-runner @caisson/jobs
+bun add @caisson-sh/retention-runner @caisson-sh/jobs
 ```
 
 ## Quickstart
@@ -39,7 +39,7 @@ import {
   createOrphanSweepTarget,
   createCaptureAuditSink,
   runErasure,
-} from "@caisson/retention-runner";
+} from "@caisson-sh/retention-runner";
 
 const targets = [
   createObjectStorageTarget({ client: s3Client }), // your real client — an injected seam
@@ -59,8 +59,8 @@ await runErasure(
 ## Recurring auto_90d sweep
 
 ```ts
-import { defineRetentionTask, enqueueAutoSweep } from "@caisson/retention-runner";
-import { createInMemoryQueue } from "@caisson/jobs";
+import { defineRetentionTask, enqueueAutoSweep } from "@caisson-sh/retention-runner";
+import { createInMemoryQueue } from "@caisson-sh/jobs";
 
 const queue = createInMemoryQueue([defineRetentionTask({ targets, sink })]);
 
@@ -92,7 +92,7 @@ target runs. The audit row lands in `retention_audit`, with row-level security s
 
 ## Composes with
 
-`@caisson/compliance` composes `retention-runner` at runtime as a real workspace
-dependency. The recurring sweep composes with `@caisson/jobs` for scheduling; pair with
-`@caisson/audit-worm` where the audit trail needs a write-once anchor rather than plain
+`@caisson-sh/compliance` composes `retention-runner` at runtime as a real workspace
+dependency. The recurring sweep composes with `@caisson-sh/jobs` for scheduling; pair with
+`@caisson-sh/audit-worm` where the audit trail needs a write-once anchor rather than plain
 Postgres logging.

@@ -1,7 +1,7 @@
 // src/evidence/binding-table.test.ts — the control<->collector binding table (PLAN Group E task E1).
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
-import { euAiAct, hipaaSecurity, soc2Tsc } from "@caisson/frameworks-pack";
+import { matchGolden } from "@caisson-sh/testing";
+import { euAiAct, hipaaSecurity, soc2Tsc } from "@caisson-sh/frameworks-pack";
 import {
   buildBindingTable,
   type BindingSourceCollector,

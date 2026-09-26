@@ -1,4 +1,4 @@
-// @caisson/field-crypto — per-tenant authenticated field encryption (ADR-0043/0046/0045/0006).
+// @caisson-sh/field-crypto — per-tenant authenticated field encryption (ADR-0043/0046/0045/0006).
 // Per-tenant HKDF key derivation + AES-256-GCM behind an AeadCipher seam + a self-describing
 // versioned envelope + a key-version rotation registry + a Drizzle encrypted column + a pluggable
 // FieldKeyProvider port (derived default, documented KMS adapter). The encryption boundary EQUALS
@@ -6,7 +6,7 @@
 
 // The `…Async` / `…Bytes` names are the browser-runtime half of this surface (ADR-0396) — the same
 // vocabulary and the same wire format over WebCrypto and `Uint8Array` instead of `node:crypto` and
-// `Buffer`. They are ALSO reachable on their own entry, `@caisson/field-crypto/browser`, which is the
+// `Buffer`. They are ALSO reachable on their own entry, `@caisson-sh/field-crypto/browser`, which is the
 // subset a client bundle can import without dragging the KMS/Drizzle/node half in behind it.
 export {
   deriveTenantKey,

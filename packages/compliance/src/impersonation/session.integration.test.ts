@@ -20,10 +20,10 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { newTestPg, type TestPg } from "@caisson/testing";
-import { AuthzError, ConflictError } from "@caisson/kernel";
-import { buildTenantPolicySql } from "@caisson/tenancy-rls";
-import { AuditChainStore, LocalArtifactStore } from "@caisson/audit-worm";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
+import { AuthzError, ConflictError } from "@caisson-sh/kernel";
+import { buildTenantPolicySql } from "@caisson-sh/tenancy-rls";
+import { AuditChainStore, LocalArtifactStore } from "@caisson-sh/audit-worm";
 import { assembleComplianceMigrations } from "../migrate/assemble.ts";
 import {
   IMPERSONATION_OPERATOR_RECORD,

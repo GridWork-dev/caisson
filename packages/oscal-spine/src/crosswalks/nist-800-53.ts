@@ -31,7 +31,7 @@
  * `crosswalk-rollup.ts`). `canonicalControlId` is REQUIRED on every row (enforced below, not just
  * by convention) -- every row's purpose IS the join.
  */
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   defineRegimeCrosswalk,
   type RegimeCrosswalk,
@@ -98,7 +98,7 @@ export const nist80053Crosswalk: RegimeCrosswalk = defineNist80053Crosswalk({
         "The system enforces approved authorizations for controlling access to information and " +
         "system resources, in accordance with applicable access-control policy.",
       mechanism:
-        "@caisson/tenancy-rls — Postgres FORCE ROW LEVEL SECURITY with a fail-closed tenant " +
+        "@caisson-sh/tenancy-rls — Postgres FORCE ROW LEVEL SECURITY with a fail-closed tenant " +
         "boundary (a missing tenant scope denies as a 404, never widens access).",
       evidence:
         "Tenant-isolation tests and the RLS provisioning generator in packages/tenancy-rls.",
@@ -117,7 +117,7 @@ export const nist80053Crosswalk: RegimeCrosswalk = defineNist80053Crosswalk({
         "The system is configured to allow only the access necessary to accomplish assigned " +
         "organizational tasks, denying access beyond what a role requires.",
       mechanism:
-        "@caisson/tenancy-rls — the fail-closed tenant boundary confines every query to its own " +
+        "@caisson-sh/tenancy-rls — the fail-closed tenant boundary confines every query to its own " +
         "tenant scope by construction, so a role cannot read or write outside its assigned " +
         "tenant regardless of application-layer bugs.",
       evidence:
@@ -138,7 +138,7 @@ export const nist80053Crosswalk: RegimeCrosswalk = defineNist80053Crosswalk({
         "The system identifies the types of events it is capable of logging and generates " +
         "records for the events the organization determines require logging.",
       mechanism:
-        "@caisson/audit-worm — an append-only, hash-chained log that durably records the " +
+        "@caisson-sh/audit-worm — an append-only, hash-chained log that durably records the " +
         "security-relevant events routed to it.",
       evidence:
         "The audit chain's append path and integration tests in packages/audit-worm.",
@@ -157,7 +157,7 @@ export const nist80053Crosswalk: RegimeCrosswalk = defineNist80053Crosswalk({
         "Audit information and audit logging tools are protected from unauthorized access, " +
         "modification, and deletion.",
       mechanism:
-        "@caisson/audit-worm — the append-only, hash-chained log is verifiable against a " +
+        "@caisson-sh/audit-worm — the append-only, hash-chained log is verifiable against a " +
         "trusted anchor, so a modification, truncation, or rewrite after the fact is detectable " +
         "rather than silently accepted.",
       evidence: "The tamper-evidence integration tests in packages/audit-worm.",
@@ -176,7 +176,7 @@ export const nist80053Crosswalk: RegimeCrosswalk = defineNist80053Crosswalk({
         "Audit records are retained for a time period consistent with the organization's " +
         "records-retention policy, to support after-the-fact investigation.",
       mechanism:
-        "@caisson/audit-worm — a fail-closed retention floor rejects a retention term " +
+        "@caisson-sh/audit-worm — a fail-closed retention floor rejects a retention term " +
         "configured below the minimum, so a retention window cannot be silently shortened.",
       evidence: "Retention-floor tests in packages/audit-worm.",
       buyerResponsibility:
@@ -196,7 +196,7 @@ export const nist80053Crosswalk: RegimeCrosswalk = defineNist80053Crosswalk({
         "The system implements defined cryptographic uses and the types of cryptography " +
         "required for each specified use, per applicable law and policy.",
       mechanism:
-        "@caisson/field-crypto — per-field AEAD encryption with a self-describing, rotatable " +
+        "@caisson-sh/field-crypto — per-field AEAD encryption with a self-describing, rotatable " +
         "key envelope.",
       evidence: "Encryption and key-envelope tests in packages/field-crypto.",
       buyerResponsibility:
@@ -213,7 +213,7 @@ export const nist80053Crosswalk: RegimeCrosswalk = defineNist80053Crosswalk({
       summary:
         "The confidentiality and integrity of information at rest is protected.",
       mechanism:
-        "@caisson/field-crypto — per-field AEAD encryption at rest with row-bound additional " +
+        "@caisson-sh/field-crypto — per-field AEAD encryption at rest with row-bound additional " +
         "authenticated data, so a relocated ciphertext fails authentication rather than " +
         "decrypting under another record.",
       evidence:
@@ -234,7 +234,7 @@ export const nist80053Crosswalk: RegimeCrosswalk = defineNist80053Crosswalk({
         "The system is monitored to detect attacks, indicators of potential attacks, and " +
         "unauthorized connections, and the organization identifies unauthorized use.",
       mechanism:
-        "@caisson/alerting — a rule-driven alerting pipeline that raises signals on defined " +
+        "@caisson-sh/alerting — a rule-driven alerting pipeline that raises signals on defined " +
         "conditions drawn from the audit-worm chain and substrate collector facts.",
       evidence: "Alerting pipeline and channel tests in packages/alerting.",
       buyerResponsibility:
@@ -252,7 +252,7 @@ export const nist80053Crosswalk: RegimeCrosswalk = defineNist80053Crosswalk({
         "The organization employs integrity-verification tools to detect unauthorized changes " +
         "to information.",
       mechanism:
-        "@caisson/field-crypto — row-bound additional authenticated data means a tampered or " +
+        "@caisson-sh/field-crypto — row-bound additional authenticated data means a tampered or " +
         "relocated ciphertext fails authentication and is rejected rather than silently " +
         "decrypted.",
       evidence:
@@ -273,7 +273,7 @@ export const nist80053Crosswalk: RegimeCrosswalk = defineNist80053Crosswalk({
         "The system uniquely identifies and authenticates organizational users (or processes " +
         "acting on their behalf) before granting access.",
       mechanism:
-        "@caisson/auth — session and JWT verification gating requests at the application " +
+        "@caisson-sh/auth — session and JWT verification gating requests at the application " +
         "boundary before any protected resource is reached.",
       evidence: "JWT/session verification tests in packages/auth.",
       buyerResponsibility:
@@ -292,7 +292,7 @@ export const nist80053Crosswalk: RegimeCrosswalk = defineNist80053Crosswalk({
         "Information system media is sanitized prior to disposal, release out of " +
         "organizational control, or release for reuse, using defined sanitization techniques.",
       mechanism:
-        "@caisson/field-crypto — crypto-shred destroys a subject's governing key so their " +
+        "@caisson-sh/field-crypto — crypto-shred destroys a subject's governing key so their " +
         "ciphertext becomes irreversibly unrecoverable, a recognized cryptographic-erasure " +
         "alternative to physical media sanitization, applied selectively and irreversibly.",
       evidence:

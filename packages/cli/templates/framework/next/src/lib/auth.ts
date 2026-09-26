@@ -1,12 +1,12 @@
-// Session resolution for the account JWT `@caisson/auth` issues (EdDSA/Ed25519, `signAccountJwt`
+// Session resolution for the account JWT `@caisson-sh/auth` issues (EdDSA/Ed25519, `signAccountJwt`
 // / `verifyAccountJwt`). This app only ever VERIFIES — the private key stays with whatever issues
 // the token (better-auth's JWT plugin, or your own issuer service); `AUTH_JWT_PUBLIC_KEY` is the
 // base64 SPKI DER public half from `generateAccountKeyPair()`.
 import { createPublicKey, type KeyObject } from "node:crypto";
 import type { NextRequest } from "next/server";
-import { ConfigError } from "@caisson/kernel";
-import { verifyAccountJwt } from "@caisson/auth";
-import type { SessionContext } from "@caisson/auth";
+import { ConfigError } from "@caisson-sh/kernel";
+import { verifyAccountJwt } from "@caisson-sh/auth";
+import type { SessionContext } from "@caisson-sh/auth";
 
 /** The cookie carrying the account JWT. Rename to match your issuer's cookie if different. */
 export const SESSION_COOKIE = "caisson_session";
@@ -31,7 +31,7 @@ function getPublicKey(): KeyObject {
 /**
  * Verify a raw JWT string. Never throws: a missing/invalid/expired token resolves to `null` — the
  * same "no session" shape `SessionProvider.resolveSession` returns. Callers enforce it with
- * `requireSession` from `@caisson/auth` (throws `AuthnError`, map it with `toErrorResponse`).
+ * `requireSession` from `@caisson-sh/auth` (throws `AuthnError`, map it with `toErrorResponse`).
  */
 export function verifySessionToken(
   token: string | undefined,

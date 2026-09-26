@@ -3,7 +3,7 @@ title: signing-primitive
 description: Per-tenant evidence signing, a detached Ed25519 signature over a canonical, chain-anchored manifest body, with an optional RFC-3161 trusted-timestamp countersignature and a fail-closed verify path.
 ---
 
-`@caisson/signing-primitive` signs an evidence pack with a key that belongs to the tenant,
+`@caisson-sh/signing-primitive` signs an evidence pack with a key that belongs to the tenant,
 not to Caisson. It produces a detached Ed25519 signature over the canonicalized manifest
 body concatenated with the audit chain's tip hash. The signature is detached, so the signed
 body stays byte-stable and independently verifiable, and the per-tenant identity is
@@ -13,7 +13,7 @@ their own evidence with their own identity.
 ## Install
 
 ```bash
-bun add @caisson/signing-primitive
+bun add @caisson-sh/signing-primitive
 ```
 
 ## What it does
@@ -44,7 +44,7 @@ import {
   Ed25519Signer,
   signEvidencePack,
   verifyEvidenceSignature,
-} from "@caisson/signing-primitive";
+} from "@caisson-sh/signing-primitive";
 
 // A per-tenant signer — the 32-byte seed is the tenant's signing key, never Caisson's.
 const signer = new Ed25519Signer(keyId, tenantSigningKey);
@@ -60,7 +60,7 @@ if (!ok) {
 ```
 
 `manifest` only needs to structurally satisfy `SignableManifest`: a `chainAnchor.tipHash`
-field. The evidence-pack manifest produced by `@caisson/compliance-core` matches it; this
+field. The evidence-pack manifest produced by `@caisson-sh/compliance-core` matches it; this
 package never imports that generator, so the signing surface stands alone.
 
 ## The timestamp authority port
@@ -75,7 +75,7 @@ the response, the port is stable, so it slots in without touching call sites.
 import {
   signEvidencePack,
   type TimestampAuthority,
-} from "@caisson/signing-primitive";
+} from "@caisson-sh/signing-primitive";
 
 const tsa: TimestampAuthority = myRfc3161Authority;
 
@@ -89,7 +89,7 @@ For tests, `StubTimestampAuthority` is a network-free double that reproduces the
 message imprint a live TSA would attest, against an injected clock:
 
 ```ts
-import { StubTimestampAuthority } from "@caisson/signing-primitive";
+import { StubTimestampAuthority } from "@caisson-sh/signing-primitive";
 
 const tsa = new StubTimestampAuthority({ now: new Date("2026-01-01") });
 ```
@@ -134,10 +134,10 @@ read environment variable:
 
 ## Composition
 
-`@caisson/signing-primitive` depends only on `@caisson/kernel` (`canonicalize`,
+`@caisson-sh/signing-primitive` depends only on `@caisson-sh/kernel` (`canonicalize`,
 `safeEqualFixed`), dependencies are down-only, so it never imports the evidence generator
 or an edition. The **Compliance** and **Provenance** bundles compose it alongside
-`@caisson/compliance-core` and `@caisson/audit-worm` to sign the evidence packs those
+`@caisson-sh/compliance-core` and `@caisson-sh/audit-worm` to sign the evidence packs those
 packages produce.
 
 Use it standalone or as part of a bundle; see the current bundle composition and the live demo

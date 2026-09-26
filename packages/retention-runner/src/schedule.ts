@@ -1,9 +1,9 @@
-// @caisson/retention-runner — the recurring `auto_90d` sweep as a `@caisson/jobs` task (ADR-0152).
+// @caisson-sh/retention-runner — the recurring `auto_90d` sweep as a `@caisson-sh/jobs` task (ADR-0152).
 // `ccpa_request`/`operator_manual` are operator/subject-triggered one-shot calls straight
 // into `runErasure` (no queue — see README); only the recurring sweep is enqueued.
-import { defineTask } from "@caisson/jobs";
-import type { JobQueue, TaskDefinition } from "@caisson/jobs";
-import { strictObject } from "@caisson/kernel";
+import { defineTask } from "@caisson-sh/jobs";
+import type { JobQueue, TaskDefinition } from "@caisson-sh/jobs";
+import { strictObject } from "@caisson-sh/kernel";
 import { z } from "zod";
 import type { ErasureTarget } from "./targets.ts";
 import type { RetentionAuditSink } from "./audit-sink.ts";
@@ -28,7 +28,7 @@ export interface RetentionTaskDeps {
 }
 
 /**
- * Define the `auto_90d` sweep as a `@caisson/jobs` `TaskDefinition`. Register it on a `JobQueue`
+ * Define the `auto_90d` sweep as a `@caisson-sh/jobs` `TaskDefinition`. Register it on a `JobQueue`
  * (the shipped `createInMemoryQueue` in dev/test; Trigger.dev in prod, per ADR-0152) and enqueue
  * `AUTO_90D_SWEEP_TASK` with an `AutoSweepPayload` for each subject due for erasure.
  */

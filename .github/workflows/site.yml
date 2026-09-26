@@ -35,7 +35,7 @@ jobs:
         with:
           node-version: 22
       - run: bun install --frozen-lockfile
-      - run: bunx turbo run build --filter=@caisson/site --no-daemon
+      - run: bunx turbo run build --filter=@caisson-sh/site --no-daemon
       - name: deploy
         working-directory: apps/site
         env:

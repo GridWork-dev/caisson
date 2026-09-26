@@ -4,7 +4,7 @@ description: Append-only prompt versioning with name@version and name@alias addr
 ---
 
 Prompts hardcoded three layers deep in a route handler, versioned like everything else that
-ships. `@caisson/prompt-registry` stores prompt templates as append-only versions and resolves
+ships. `@caisson-sh/prompt-registry` stores prompt templates as append-only versions and resolves
 them by `name@version` or `name@alias`: an edit mints a new row instead of mutating one, and a
 mutable alias pointer (`prod`, `canary`) promotes a prompt to production with no redeploy.
 
@@ -31,20 +31,20 @@ mutable alias pointer (`prod`, `canary`) promotes a prompt to production with no
 ## Install
 
 ```bash
-bun add @caisson/prompt-registry
+bun add @caisson-sh/prompt-registry
 ```
 
 ## Quickstart
 
 ```ts
-import { withTenant } from "@caisson/tenancy-rls";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 import {
   PROMPT_REGISTRY_SCHEMA_SQL,
   registerPrompt,
   resolvePrompt,
   setAlias,
   renderVersion,
-} from "@caisson/prompt-registry";
+} from "@caisson-sh/prompt-registry";
 
 // migrate: exec PROMPT_REGISTRY_SCHEMA_SQL once (a numbered migration in prod).
 
@@ -97,7 +97,7 @@ deliberately.
 
 ## Composition
 
-Built on `@caisson/kernel` (versioning + errors) and `@caisson/tenancy-rls` (FORCE-RLS); it
+Built on `@caisson-sh/kernel` (versioning + errors) and `@caisson-sh/tenancy-rls` (FORCE-RLS); it
 never depends "up" on an edition. It's a base primitive of the **AI-Production** bundle, where
 the inference gateway resolves every `promptRef` through it before rendering and metering a
 call, alongside `ai-meter` and `guardrails`.

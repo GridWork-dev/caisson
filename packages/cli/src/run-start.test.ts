@@ -4,8 +4,8 @@
 // error.
 import { describe, expect, test } from "bun:test";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { loadRegistryIndex } from "@caisson/registry-schema";
-import { createStdioMcpServer } from "@caisson/mcp-server";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
+import { createStdioMcpServer } from "@caisson-sh/mcp-server";
 import { runStartClient } from "./run.ts";
 
 const INDEX = loadRegistryIndex({ schemaVersion: 1, modules: [] });

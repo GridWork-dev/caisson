@@ -1,6 +1,6 @@
 // The browser-safety contract for the `.` barrel — the entire point of the `./node` split. Nothing
 // reachable from `src/index.ts` may import a node builtin, because a bundler resolves the whole module
-// graph behind the "@caisson/kernel" specifier even when the importer only wanted one pure symbol.
+// graph behind the "@caisson-sh/kernel" specifier even when the importer only wanted one pure symbol.
 //
 // WHY THIS IS A STATIC SOURCE WALK AND NOT A BUILD: a bundler does not fail on a node builtin, it
 // SUBSTITUTES one. Reintroducing `import { createHash } from "node:crypto"` into `errors.ts` and
@@ -8,7 +8,7 @@
 // the client chunk silently grows by ~428KB of polyfill. "The site build would catch it" is false. The
 // taint has to be caught in the source graph, before a bundler papers over it.
 //
-// The walk itself is the shared `@caisson/testing/module-graph` implementation (this file's local
+// The walk itself is the shared `@caisson-sh/testing/module-graph` implementation (this file's local
 // copy was its predecessor); it additionally reports `unresolved` edges, so a skipped edge can
 // never read as a clean one.
 //
@@ -19,7 +19,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
 
 const srcDir = import.meta.dir;
 const WORKSPACE_ROOT = join(srcDir, "../../..");
@@ -29,7 +29,7 @@ const nodeEntry = join(srcDir, "node.ts");
 const KERNEL_SRC = "packages/kernel/src";
 
 function formatOffender(o: { file: string; spec: string }): string {
-  return `${o.file} imports "${o.spec}" — move it behind @caisson/kernel/node`;
+  return `${o.file} imports "${o.spec}" — move it behind @caisson-sh/kernel/node`;
 }
 
 describe("the `.` barrel is browser-safe", () => {
@@ -75,7 +75,7 @@ describe("the `.` barrel is browser-safe", () => {
   });
 });
 
-describe("`@caisson/kernel/node` is a superset of `.`", () => {
+describe("`@caisson-sh/kernel/node` is a superset of `.`", () => {
   test("every runtime name exported by `.` is also exported by `/node`", async () => {
     const [barrel, node] = await Promise.all([
       import("./index.ts"),

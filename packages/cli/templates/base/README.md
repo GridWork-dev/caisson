@@ -10,7 +10,7 @@ Every module installs from the public npm registry — no token or registry conf
 
 ## Scripts
 
-- `bun install` — install the `@caisson/*` modules you composed in.
+- `bun install` — install the `@caisson-sh/*` modules you composed in.
 - `bun run build` — typecheck and emit to `dist/`.
 - `bun run lint` — oxlint.
 - `bun test` — unit tests + golden-file regression for the installed modules.

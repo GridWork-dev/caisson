@@ -11,7 +11,7 @@
 import { Database } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { isAbsolute, resolve, sep } from "node:path";
-import { TenancyError } from "@caisson/kernel";
+import { TenancyError } from "@caisson-sh/kernel";
 
 /** Fail-closed denial: a category reason only — NEVER the raw id (which could leak a tenant id). */
 function deny(reason: string): never {

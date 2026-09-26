@@ -18,7 +18,7 @@
 //        // debit. The credits package is NOT a dependency of this edition — only the SHAPE ships
 //        // here; the live debit is wired by the buyer's billing integration:
 //        //
-//        //   import { debit } from "@caisson/credits";
+//        //   import { debit } from "@caisson-sh/credits";
 //        //   meter: async (record) => {
 //        //     await debit({
 //        //       accountId,
@@ -44,8 +44,8 @@ import {
   parseStrict,
   strictObject,
   usageMeteringSchema,
-} from "@caisson/kernel";
-import type { FetchTimeoutOptions, UsageMetering } from "@caisson/kernel";
+} from "@caisson-sh/kernel";
+import type { FetchTimeoutOptions, UsageMetering } from "@caisson-sh/kernel";
 import { z } from "zod";
 import { EMBEDDING_DIM } from "./backend.ts";
 import type {
@@ -53,7 +53,7 @@ import type {
   CompletionResult,
   InferenceBackend,
 } from "./backend.ts";
-import type { EgressGuard } from "@caisson/local-privacy";
+import type { EgressGuard } from "@caisson-sh/local-privacy";
 
 // ── Transport wire shapes (boundary-validated; the live transport's body is untrusted remote JSON) ─
 

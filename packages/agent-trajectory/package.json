@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/agent-trajectory",
+  "name": "@caisson-sh/agent-trajectory",
   "version": "0.6.1",
   "description": "Engine-neutral trajectory contract: an append-only, replayable event log (runs, steps, model calls, tool proposals/approvals, usage, checkpoints) with digest-ref payload discipline — the observation substrate the governed agent runtime records into.",
   "license": "Apache-2.0",
@@ -31,15 +31,15 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/ai-meter": "workspace:*",
-    "@caisson/field-crypto": "workspace:*",
-    "@caisson/kernel": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*",
+    "@caisson-sh/ai-meter": "workspace:*",
+    "@caisson-sh/field-crypto": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
+    "@caisson-sh/tenancy-rls": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

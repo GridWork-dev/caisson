@@ -1,6 +1,6 @@
 // The SPEC's mandatory entitlement-boundary test #1 (CR-09): the local stdio discovery server's
 // resolvable component set is a STRICT SUBSET of the Apache-base manifest and can NEVER resolve a
-// @caisson/ui-pro component. Driven through a REAL MCP Client over InMemoryTransport, with NO
+// @caisson-sh/ui-pro component. Driven through a REAL MCP Client over InMemoryTransport, with NO
 // bearer — proving the open tier needs no credentials — including the guard that a pro component
 // injected into a separate manifest fixture is still unknown to the base-pinned server.
 import { afterEach, describe, expect, test } from "bun:test";
@@ -12,12 +12,12 @@ import {
   functionalLight,
   fonts,
   lightTheme,
-} from "@caisson/ui/tokens";
+} from "@caisson-sh/ui/tokens";
 import {
   loadBaseManifest,
   type Component,
   type ComponentManifest,
-} from "@caisson/ds-manifest";
+} from "@caisson-sh/ds-manifest";
 import { createDiscoveryServer, type DesignTokens } from "./index.ts";
 
 const BASE = loadBaseManifest();

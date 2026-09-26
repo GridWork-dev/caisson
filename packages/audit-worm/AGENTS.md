@@ -1,4 +1,4 @@
-# AGENTS — @caisson/audit-worm
+# AGENTS — @caisson-sh/audit-worm
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or a downstream
 edition must know to wire WORM storage + the audit chain + the locked-version DB correctly. This is
@@ -46,5 +46,5 @@ chain — the reproducibility the chain's tamper-evidence depends on. Update onl
 
 ## Dependencies
 
-Down-only (ADR-0003): `@caisson/kernel` (integrity algebra, errors, canonicalize) + `@caisson/tenancy-rls`
+Down-only (ADR-0003): `@caisson-sh/kernel` (integrity algebra, errors, canonicalize) + `@caisson-sh/tenancy-rls`
 (the `withTenant` scope). Never depends "up" on an edition; the Compliance edition consumes THIS.

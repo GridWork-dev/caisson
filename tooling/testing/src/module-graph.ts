@@ -7,7 +7,7 @@
 // no warning. "The site build would catch it" is false — the taint has to be caught in the
 // source graph, before a bundler papers over it. (packages/kernel's browser-safety.test.ts —
 // whose package-local copy this walk absorbed — asserts the same contract through this module;
-// beyond that copy it resolves workspace `@caisson/*` specifiers through each package's exports
+// beyond that copy it resolves workspace `@caisson-sh/*` specifiers through each package's exports
 // map, so a walk can start at an apps/site client component and follow the graph INTO the
 // packages it drives.)
 //
@@ -148,7 +148,7 @@ function workspacePackages(workspaceRoot: string): ReadonlyMap<string, string> {
 }
 
 /** An exports entry is either a bare string or a conditions object — both shapes are live in
- *  this workspace (`@caisson/ui`'s "./components" is a bare string). */
+ *  this workspace (`@caisson-sh/ui`'s "./components" is a bare string). */
 function exportsTarget(entry: unknown): string | null {
   if (typeof entry === "string") return entry;
   if (typeof entry === "object" && entry !== null) {
@@ -171,7 +171,7 @@ function splitBare(spec: string): { name: string; subKey: string } {
 /**
  * Walk the EMITTED (value) import graph from `entry`, collecting every `node:` specifier reached.
  * Type-only edges are not followed: they are erased, so they cannot taint a bundle. Workspace
- * `@caisson/*` specifiers are followed through the target package's exports map (`bun` condition,
+ * `@caisson-sh/*` specifiers are followed through the target package's exports map (`bun` condition,
  * i.e. the src entry — tscn's per-file emit keeps the dist graph 1:1 with the src graph).
  */
 export function nodeBuiltinTaint(

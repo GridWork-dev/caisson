@@ -1,6 +1,6 @@
 "use client";
 
-// Flagship poke for @caisson/credits (ADR-0378 lock 2, retired against the real package by
+// Flagship poke for @caisson-sh/credits (ADR-0378 lock 2, retired against the real package by
 // ADR-0396). A grant-and-debit ledger lab: four sample grant lines typed by the package's own
 // GRANT_EVENT_TYPES, and a debit that walks them FIFO (oldest grant first), draining each line's
 // remaining credits. Overdraw the wallet and the debit reports the real typed
@@ -8,14 +8,14 @@
 // balance }) and records nothing, debit-before-spend. Integer credit units only (ADR-0007).
 //
 // The FIFO waterfall and the covered/shortfall split are the REAL package's `planFifoDebit`
-// (@caisson/credits/browser) — the same function the server's DB-bound `debit()` walks, so this
+// (@caisson-sh/credits/browser) — the same function the server's DB-bound `debit()` walks, so this
 // demo cannot show a draw or a 402 the real ledger would not compute. What stays local here is
 // sample data and presentation: the fixed sample wallet, the in-memory grant/ledger view model,
 // and the verdict copy. The database half (grant/debit/clawback, the sweeps, the schema) is
 // server-only and deliberately absent. Nothing leaves the page.
 import { useState } from "react";
-import { planFifoDebit, type FifoDraw } from "@caisson/credits/browser";
-import { InsufficientCreditsError } from "@caisson/kernel";
+import { planFifoDebit, type FifoDraw } from "@caisson-sh/credits/browser";
+import { InsufficientCreditsError } from "@caisson-sh/kernel";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./credits-poke.module.css";
@@ -228,7 +228,7 @@ export default function CreditsPoke() {
   const line = outcome ? verdictLine(outcome) : null;
 
   return (
-    <PokeShell label="@caisson/credits" title={TITLE}>
+    <PokeShell label="@caisson-sh/credits" title={TITLE}>
       <ol className={styles.grants}>
         {wallet.grants.map((g) => {
           const rem = remaining(g);

@@ -2,7 +2,7 @@
 // boundary: valid input parses, the scope default fills the tenancy seam, and unknown keys / empty
 // text / non-UUID id / non-integer timestamps are rejected as a redaction-safe `ValidationError`.
 import { describe, expect, test } from "bun:test";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import { DEFAULT_SCOPE, parseMemoryItem } from "./schema.ts";
 
 const validId = "00000000-0000-4000-8000-000000000000";

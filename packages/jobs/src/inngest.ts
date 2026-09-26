@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { Inngest } from "inngest";
 import { z } from "zod";
-import { parseStrict, strictObject, ValidationError } from "@caisson/kernel";
+import { parseStrict, strictObject, ValidationError } from "@caisson-sh/kernel";
 import {
   type EnqueueOptions,
   type JobConsumer,

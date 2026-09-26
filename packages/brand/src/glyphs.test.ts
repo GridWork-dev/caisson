@@ -71,7 +71,7 @@ function renderModuleDepthGlyphs(theme: "dark" | "light"): string {
   );
 }
 
-describe("@caisson/brand glyph set", () => {
+describe("@caisson-sh/brand glyph set", () => {
   test("exports exactly the 37 bespoke domain glyphs", () => {
     expect(Object.keys(brandGlyphs).sort()).toEqual([...EXPECTED_NAMES].sort());
   });

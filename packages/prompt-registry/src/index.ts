@@ -1,4 +1,4 @@
-// @caisson/prompt-registry — append-only versioned prompts + `name@version` / `name@alias`
+// @caisson-sh/prompt-registry — append-only versioned prompts + `name@version` / `name@alias`
 // addressing + a mutable alias pointer + injection-safe templating (ADR-0061). A base primitive the
 // AI Production Kit gateway resolves prompts through; never imports an edition (ADR-0003).
 

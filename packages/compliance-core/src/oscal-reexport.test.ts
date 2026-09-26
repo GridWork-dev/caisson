@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import * as oscalSpine from "@caisson/oscal-spine";
+import * as oscalSpine from "@caisson-sh/oscal-spine";
 import type {
   NistCatalogDocument as ParentNistCatalogDocument,
   OscalAssessmentPlan as ParentOscalAssessmentPlan,
@@ -21,7 +21,7 @@ import type {
   OscalExportBundle as SpineOscalExportBundle,
   OscalIso27001SoaDocument as SpineOscalIso27001SoaDocument,
   RegimeCrosswalk as SpineRegimeCrosswalk,
-} from "@caisson/oscal-spine";
+} from "@caisson-sh/oscal-spine";
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
@@ -53,7 +53,7 @@ const EVIDENCE_PACK_REMAINS_ASSIGNABLE: Assert<
   EvidencePackManifest extends SpineOscalEvidencePackManifest ? true : false
 > = true;
 
-describe("@caisson/compliance-core OSCAL compatibility surface", () => {
+describe("@caisson-sh/compliance-core OSCAL compatibility surface", () => {
   test("re-exports the whole OSCAL package surface unchanged", () => {
     for (const [name, value] of Object.entries(oscalSpine)) {
       expect(

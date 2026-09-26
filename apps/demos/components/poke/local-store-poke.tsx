@@ -3,7 +3,7 @@
 // The local-store module's poke (ADR-0378 lock 2): an RRF explorer over a fixed 8-doc sample
 // corpus.
 //
-// This component drives the REAL @caisson/local-store: the hand-ported mirror
+// This component drives the REAL @caisson-sh/local-store: the hand-ported mirror
 // (local-store-logic.ts) is deleted. The fusion arithmetic now lives in the package's own
 // database-free `rrf.ts` — the ONE implementation `LocalStore.hybridSearch` fuses its two legs
 // through — and is imported here via the package's public `./browser` entry point. What CANNOT
@@ -18,9 +18,9 @@
 // Math.random(): the corpus, the query, and both leg rankings are fixed constants, so the same
 // slider position always fuses to the same numbers. Nothing here fetches, persists, or measures.
 import { useMemo, useState } from "react";
-import { ValidationError } from "@caisson/kernel";
-import { RRF_K, fuseByRrf } from "@caisson/local-store/browser";
-import type { RrfLeg } from "@caisson/local-store/browser";
+import { ValidationError } from "@caisson-sh/kernel";
+import { RRF_K, fuseByRrf } from "@caisson-sh/local-store/browser";
+import type { RrfLeg } from "@caisson-sh/local-store/browser";
 
 import { PokeShell, Verdict, type VerdictState } from "./poke-rig";
 import styles from "./local-store-poke.module.css";
@@ -137,7 +137,7 @@ export function fuseSample(
   docs: readonly SampleDoc[],
   opts: { rrfK: number; ftsWeight: number; includeVector: boolean },
 ): FusedHit[] {
-  // Guarded here under its OWN name, the same shape @caisson/local-store's `hybridSearch`
+  // Guarded here under its OWN name, the same shape @caisson-sh/local-store's `hybridSearch`
   // validates ftsWeight before it ever reaches `fuseByRrf` (store.ts) — so a bad value in this
   // demo throws the exact same message a real caller would see, not `fuseByRrf`'s internal
   // "RRF leg weight" wording.
@@ -255,7 +255,7 @@ export default function LocalStorePoke() {
 
   return (
     <PokeShell
-      label={`@caisson/local-store · sample corpus, query "${SAMPLE_QUERY_TEXT}"`}
+      label={`@caisson-sh/local-store · sample corpus, query "${SAMPLE_QUERY_TEXT}"`}
       title="Rank by vector. Rank by keyword. Fuse them into one score."
     >
       <div className={styles.grid}>

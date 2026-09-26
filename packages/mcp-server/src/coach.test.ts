@@ -2,8 +2,8 @@
 // approval-gated. The cardinal invariant under test — a secret VALUE can neither enter a tool nor
 // appear in any tool output — is asserted directly, not assumed.
 import { describe, expect, test } from "bun:test";
-import { NotFoundError, ValidationError } from "@caisson/kernel";
-import { loadRegistryIndex } from "@caisson/registry-schema";
+import { NotFoundError, ValidationError } from "@caisson-sh/kernel";
+import { loadRegistryIndex } from "@caisson-sh/registry-schema";
 import {
   createMcpServer,
   presenceEnvPort,

@@ -1,11 +1,11 @@
-# @caisson/cli — create-caisson
+# @caisson-sh/cli — create-caisson
 
 The generator that composes a tailored repo from the versioned module catalog.
 
 ## Usage
 
 ```
-bunx @caisson-sh/cli@latest my-app --module @caisson/kernel@0.4.2 --out ./my-app
+bunx @caisson-sh/cli@latest my-app --module @caisson-sh/kernel@0.4.2 --out ./my-app
 ```
 
 Pass one `--module <id@version>` per module you want. Run it with no flags in a terminal and it
@@ -31,7 +31,7 @@ Run `bunx @caisson-sh/cli@latest --help` for the full flag list (`--deploy`, `--
 
 ## Agent-facing commands (the `caisson` bin)
 
-A second bin, `caisson`, ships alongside `create-caisson` for a coding agent adopting `@caisson/ui`:
+A second bin, `caisson`, ships alongside `create-caisson` for a coding agent adopting `@caisson-sh/ui`:
 
 ```
 caisson describe --json           # the full component manifest — no account required
@@ -40,10 +40,10 @@ caisson doctor [dir] [--json]     # verify usage through your local MCP server
 ```
 
 `describe` reads the committed base manifest directly (same data as the discovery MCP — see
-`@caisson/mcp-server`'s README for the no-auth stdio config). `doctor` is a **thin client**: it
+`@caisson-sh/mcp-server`'s README for the no-auth stdio config). `doctor` is a **thin client**: it
 collects your source and calls the MCP server's `check_usage` tool over stdio
 (`CAISSON_MCP_COMMAND` / `CAISSON_MCP_ARGS`) — the doctor logic itself runs on your
-already-credentialed `@caisson/mcp-server`, not locally.
+already-credentialed `@caisson-sh/mcp-server`, not locally.
 
 ## Engine seam
 

@@ -9,7 +9,7 @@
 // shape the C extension produces — a per-replica, monotonically-sequenced change log). A changeset is
 // bound to exactly ONE tenant's file (ADR-0073): the `tenantId` IS the partition key, so a tenant-A
 // changeset can never apply to a tenant-B file.
-import type { JsonValue } from "@caisson/kernel";
+import type { JsonValue } from "@caisson-sh/kernel";
 
 /** A row change is either an upsert (full column values) or a delete (later materialized as a tombstone). */
 export type ChangeOp = "upsert" | "delete";

@@ -1,7 +1,7 @@
-// @caisson/retention-runner — request/result types (ADR-0135, ADR-0152). The erasure boundary is
+// @caisson-sh/retention-runner — request/result types (ADR-0135, ADR-0152). The erasure boundary is
 // the ONE Zod `.strict()` entry point (`erasureRequestSchema`); `TargetResult`/`RetentionRunResult`
 // are plain data shapes produced by `runErasure` and consumed by the audit sink.
-import { strictObject } from "@caisson/kernel";
+import { strictObject } from "@caisson-sh/kernel";
 import { z } from "zod";
 
 /**

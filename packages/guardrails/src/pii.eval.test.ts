@@ -1,4 +1,4 @@
-// Offline eval baseline for the PII detection/redaction path — extends the @caisson/ai-evals
+// Offline eval baseline for the PII detection/redaction path — extends the @caisson-sh/ai-evals
 // cassette-replay harness (see that package's README/AGENTS) to a fully deterministic, non-model
 // surface. There is no LLM call anywhere in `detectPii`/`redactPii` (regex + Luhn only), so there is
 // nothing to replay from a cassette — the eval's `task` runs the REAL detector fresh on every
@@ -30,7 +30,7 @@ import {
   parseDataset,
   regexGrader,
   type EvalCase,
-} from "@caisson/ai-evals";
+} from "@caisson-sh/ai-evals";
 import { redactPii } from "./pii.ts";
 
 const FIXTURES = join(import.meta.dir, "..", "__evals__");

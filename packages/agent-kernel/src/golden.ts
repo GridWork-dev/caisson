@@ -1,11 +1,11 @@
 // Module golden suite (ADR-0021 §golden / ADR-0013 golden-first). Declares the DETERMINISTIC
-// outputs @caisson/agent-kernel pins: the canonical lifecycle transition trace and the round-tripped
+// outputs @caisson-sh/agent-kernel pins: the canonical lifecycle transition trace and the round-tripped
 // agent/skill/rule sample. The fixtures live in `src/__golden__` (the manifest `golden` dir) and are
 // re-blessed via `BLESS=1` when the output legitimately changes. This descriptor REFERENCES the
 // to-be-built FSM/schema API (`runLifecycle` / `parseArtifact`) — golden-first: the fixtures + the red
 // test land before the logic that turns them green.
-import { toErrorResponse } from "@caisson/kernel";
-import { defineModuleGolden } from "@caisson/testing/golden-module";
+import { toErrorResponse } from "@caisson-sh/kernel";
+import { defineModuleGolden } from "@caisson-sh/testing/golden-module";
 import { CANONICAL_LIFECYCLE, runLifecycle, type Act } from "./lifecycle.ts";
 import { parseArtifact } from "./schema.ts";
 import { validateArtifactSet } from "./validate.ts";
@@ -222,7 +222,7 @@ const VALIDATE_FIXTURE: ValidateFixture = {
 };
 
 export const agentKernelGolden = defineModuleGolden({
-  module: "@caisson/agent-kernel",
+  module: "@caisson-sh/agent-kernel",
   goldenDir: "src/__golden__",
   cases: [
     {

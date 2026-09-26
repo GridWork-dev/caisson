@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { ValidationError, asCredits } from "@caisson/kernel";
-import type { TenantExecutor } from "@caisson/tenancy-rls";
+import { ValidationError, asCredits } from "@caisson-sh/kernel";
+import type { TenantExecutor } from "@caisson-sh/tenancy-rls";
 import { debit } from "./credits.ts";
 import { planFifoDebit } from "./fifo.ts";
 

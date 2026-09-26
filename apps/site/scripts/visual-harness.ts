@@ -8,7 +8,7 @@
  *   - every page route (marketing, marketplace, module depth, writing, docs, legal) — derived
  *     from the canonical `lib/routes.ts` registry
  *   - the marketplace card-viewer pop-outs (`?view=bundle:<slug>` / `?view=module:<slug>` deep links)
- *   - every branded email template (`@caisson/email` rendered with EMAIL_SAMPLE_DATA)
+ *   - every branded email template (`@caisson-sh/email` rendered with EMAIL_SAMPLE_DATA)
  *   - interaction states (mobile nav drawer, docs search, marketplace search, module media
  *     carousel) — a failed interaction is recorded in the manifest as a behavior signal, not
  *     silently skipped
@@ -33,7 +33,7 @@ import {
   EMAIL_SAMPLE_DATA,
   EMAIL_TEMPLATE_IDS,
   renderEmailTemplate,
-} from "@caisson/email";
+} from "@caisson-sh/email";
 import { BUNDLE_PAGES } from "../lib/bundle-pages.ts";
 import { LEGAL_ROUTES, MARKETING_ROUTES } from "../lib/routes.ts";
 import { MODULE_PAGES } from "../lib/module-pages.ts";

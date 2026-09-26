@@ -62,8 +62,8 @@ ships only by conforming to it - this is the ADR-0002 "one standard" invariant, 
 two cooperating gates:
 
 - **`bun run gate`** (`packages/kernel/src/gate.ts`) - asserts every active package extends
-  `@caisson/tsconfig` + `@caisson/lint-policy` + `@caisson/testing`, declares
-  `build`/`lint`/`test` scripts, and is `@caisson/`-scoped. Scaffold packages (no `.ts`,
+  `@caisson-sh/tsconfig` + `@caisson-sh/lint-policy` + `@caisson-sh/testing`, declares
+  `build`/`lint`/`test` scripts, and is `@caisson-sh/`-scoped. Scaffold packages (no `.ts`,
   no tsconfig) are skipped until they grow code; a package with `.ts` files but no tsconfig
   is a hard violation, not a skip.
 - **`tooling/standards-gate/`** (`src/cli.ts` -> `src/checks.ts`) - the SPDX/license
@@ -98,7 +98,7 @@ authoritative module graph.
 | 3 - real module graph        | dependency-cruiser                             | dynamic `import()`/`require()`, transitive provider-SDK reachability, base<->edition direction                                         | `.dependency-cruiser.cjs` (authoritative)                                          |
 
 Provider SDKs (`openai`, `@anthropic-ai/sdk`, `@google/genai`, `@aws-sdk/client-bedrock-runtime`,
-the Vercel `ai` family, ...) may be imported only by `@caisson/ai-config` + `@caisson/ai-kit`;
+the Vercel `ai` family, ...) may be imported only by `@caisson-sh/ai-config` + `@caisson-sh/ai-kit`;
 everything else routes inference through `ai-config`. Layer 3 is authoritative because a
 provider-SDK denylist (Layer 2) is unwinnable by construction - new SDKs ship constantly.
 

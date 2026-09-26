@@ -2,9 +2,9 @@
 // provider API key; this store holds it ENCRYPTED AT REST (field-crypto envelope) behind FORCE RLS, so
 // a DB dump leaks no usable key and a cross-tenant read is refused twice over (RLS + the crypto AAD,
 // which binds `tenantId`). It composes two shipped primitives and adds no new crypto:
-//   • @caisson/field-crypto — `sealField`/`openField` (per-tenant HKDF + AES-256-GCM + versioned
+//   • @caisson-sh/field-crypto — `sealField`/`openField` (per-tenant HKDF + AES-256-GCM + versioned
 //     envelope) under a caller-supplied `FieldCryptoContext` (tenant-scoped, ADR-0043/0046);
-//   • @caisson/tenancy-rls — every read/write runs inside `withTenant` on a pre-scoped `TenantExecutor`;
+//   • @caisson-sh/tenancy-rls — every read/write runs inside `withTenant` on a pre-scoped `TenantExecutor`;
 //     the `buildTenantPolicySql` WITH CHECK rejects a forged cross-tenant write (ADR-0005).
 //
 // REPLACE semantics, deliberately (NOT the append-only DEK rule of `field-crypto/store.pg.ts`): a
@@ -13,14 +13,14 @@
 // (account_id, provider); `putTenantProviderKey` upserts. `columnContext` binds the ciphertext to this
 // column so an envelope cannot be moved elsewhere and opened.
 import { randomUUID } from "node:crypto";
-import { ValidationError } from "@caisson/kernel";
-import type { TenantExecutor } from "@caisson/tenancy-rls";
-import { buildTenantPolicySql } from "@caisson/tenancy-rls";
+import { ValidationError } from "@caisson-sh/kernel";
+import type { TenantExecutor } from "@caisson-sh/tenancy-rls";
+import { buildTenantPolicySql } from "@caisson-sh/tenancy-rls";
 import {
   openField,
   sealField,
   type FieldCryptoContext,
-} from "@caisson/field-crypto";
+} from "@caisson-sh/field-crypto";
 
 /** The stable column identity bound into the crypto AAD (an envelope cannot be moved + opened). */
 const BYOK_COLUMN_CONTEXT = "ai.tenant_provider_key";

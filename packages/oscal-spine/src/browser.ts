@@ -1,4 +1,4 @@
-// The browser-safe entry (`@caisson/oscal-spine/browser`, ADR-0396): the OSCAL vocabulary,
+// The browser-safe entry (`@caisson-sh/oscal-spine/browser`, ADR-0396): the OSCAL vocabulary,
 // crosswalk model, catalog pin, and the two pure exporters (catalog + assessment-plan), whose id
 // seam defaults to the WebCrypto global `crypto.randomUUID()` (engines >= 20.12). ADDITIVE — the
 // `.` barrel is untouched and stays the full node-capable surface; every name here is also on `.`
@@ -10,7 +10,7 @@
 //     node-only; their TYPES are re-exported below (erased at emit, no bundle-graph edge).
 //   - vendor/nist-catalog-controls.ts — node:fs reads the vendored NIST catalog.
 //   - evidence/oscal-iso27001-soa.ts — randomUUID-only and COULD join, but it value-imports
-//     @caisson/artifact-render; admission to this entry requires that package's graph to ride the
+//     @caisson-sh/artifact-render; admission to this entry requires that package's graph to ride the
 //     same source-graph walk first (ADR-0396's admission rule).
 // ponytail: iso27001-soa stays off until a consumer needs it browser-side — the shared walker can
 // prove artifact-render clean the day one does.

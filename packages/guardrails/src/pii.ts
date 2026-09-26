@@ -9,8 +9,8 @@
 //                  redact-before-egress / restore-on-return round-trip (ADR-0055). The sole
 //                  reversible path is field-crypto — never a bespoke crypto path here.
 import { createHash } from "node:crypto";
-import type { FieldCryptoContext } from "@caisson/field-crypto";
-import { sealField, openField } from "@caisson/field-crypto";
+import type { FieldCryptoContext } from "@caisson-sh/field-crypto";
+import { sealField, openField } from "@caisson-sh/field-crypto";
 import {
   PII_COLUMN_CONTEXT,
   assertBoundedGuardText,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
+import { matchGolden } from "@caisson-sh/testing";
 import { exportRegimeCrosswalk } from "./regime-crosswalk.ts";
 import { nist80053Crosswalk } from "./nist-800-53.ts";
 import { loadVendoredNistControlIds } from "../vendor/nist-catalog-controls.ts";

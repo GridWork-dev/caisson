@@ -10,7 +10,7 @@ import {
   InMemoryAuditLifecycleStore,
   parseArtifact,
   type Artifact,
-} from "@caisson/agent-kernel";
+} from "@caisson-sh/agent-kernel";
 import { createAgentDevEdition } from "./index.ts";
 import { EMIT_INPUT } from "./golden.ts";
 import {

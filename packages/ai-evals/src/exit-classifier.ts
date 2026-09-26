@@ -1,4 +1,4 @@
-// @caisson/ai-evals — the exit classifier (ADR-0214). WHY a run exited, not whether it scored well:
+// @caisson-sh/ai-evals — the exit classifier (ADR-0214). WHY a run exited, not whether it scored well:
 // a grader annotation orthogonal to pass/fail. Pure + deterministic, no I/O, no model call — a
 // priority chain over a caller-supplied signal (the caller already knows if it errored/timed out/hit
 // its budget; this module never infers those from prose).

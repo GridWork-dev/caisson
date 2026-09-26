@@ -150,7 +150,7 @@ export function PokeEmbed({ module }: { module: PokeKey }) {
     return (
       <div className={styles.fallback} role="status">
         <p className={styles.fallbackText}>
-          The interactive demo for <code>@caisson/{module}</code> is
+          The interactive demo for <code>@caisson-sh/{module}</code> is
           unavailable. Everything it demonstrates is documented on this page.
         </p>
       </div>
@@ -173,7 +173,7 @@ export function PokeEmbed({ module }: { module: PokeKey }) {
         className={styles.frame}
         data-state={state}
         src={`/demos/embed/${module}`}
-        title={`@caisson/${module} interactive demo`}
+        title={`@caisson-sh/${module} interactive demo`}
         loading="lazy"
         onLoad={onLoad}
         {...(height === null ? {} : { style: { height: `${height}px` } })}

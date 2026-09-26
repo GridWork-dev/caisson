@@ -3,7 +3,7 @@ title: Email
 description: A Resend email port with a test driver.
 ---
 
-`@caisson/email` is the transactional-email port. [Resend](https://resend.com) is the default
+`@caisson-sh/email` is the transactional-email port. [Resend](https://resend.com) is the default
 driver (Postmark, SMTP, and SES ship alongside it) and every driver sits behind the port like
 every other vendor in the base: call sites depend on the port, not the SDK.
 
@@ -13,7 +13,7 @@ A **capture driver** records sends in memory, so a suite asserts on what would h
 emailed (recipient, template, payload) without a network call or a live key.
 
 ```ts
-import { createResendEmailer } from "@caisson/email";
+import { createResendEmailer } from "@caisson-sh/email";
 
 const email = createResendEmailer({
   apiKey: env.RESEND_API_KEY,
@@ -31,7 +31,7 @@ Under the standards gate, tests wire the capture driver instead and assert on wh
 never a network call, never a live key:
 
 ```ts
-import { createCaptureEmailer } from "@caisson/email";
+import { createCaptureEmailer } from "@caisson-sh/email";
 
 const email = createCaptureEmailer();
 await email.send({ to: user.email, template: "verify-email", data: { url } });
@@ -58,7 +58,7 @@ interface Emailer {
 
 One method, provider-agnostic, every driver below implements it. `template` is free-form on
 the port itself: a caller can pass one of the branded template ids (rendered below) or an
-arbitrary name, [`@caisson/alerting`](/docs/compliance/alerting) sends operator alerts through
+arbitrary name, [`@caisson-sh/alerting`](/docs/compliance/alerting) sends operator alerts through
 this same port with its own `alert.*` namespace, and every driver falls back to a generic
 subject/text mapping when `template` isn't a known id.
 

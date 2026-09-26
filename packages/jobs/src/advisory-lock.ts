@@ -5,7 +5,7 @@
 // transaction-scoped advisory lock serializes that critical section: SKIP LOCKED protects the consumer
 // claim; this protects the producer's conditional enqueue.
 import { createHash } from "node:crypto";
-import type { TenantExecutor } from "@caisson/tenancy-rls";
+import type { TenantExecutor } from "@caisson-sh/tenancy-rls";
 
 /**
  * Derive a STABLE signed-64-bit advisory-lock id from `key`: sha256(key) → first 8 bytes as an unsigned

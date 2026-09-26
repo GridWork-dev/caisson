@@ -5,7 +5,7 @@
 // the ONLY inference backend exercised in CI — the real on-device and rented backends share the
 // same port and are never called in tests, leaving the live model fetch / remote call the single
 // un-exercised path. Determinism keeps any embedding-derived fixture golden-stable across runs/hosts.
-import { ValidationError } from "@caisson/kernel/browser";
+import { ValidationError } from "@caisson-sh/kernel/browser";
 import { EMBEDDING_DIM } from "./backend.ts";
 import type {
   CompletionRequest,

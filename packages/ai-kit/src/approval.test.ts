@@ -14,7 +14,7 @@ import {
 } from "bun:test";
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
-import { newTestPg, type TestPg } from "@caisson/testing";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
@@ -22,33 +22,33 @@ import {
   GRANT_CONSUMPTION_MIGRATION_SQL,
   balance,
   grant,
-} from "@caisson/credits";
+} from "@caisson-sh/credits";
 import {
   asCredits,
   asMicroUsdPerCredit,
   ConflictError,
   InMemoryEventSink,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   AI_METER_SCHEMA_SQL,
   SPEND_POLICY_TABLE,
   USAGE_EVENT_TABLE,
   type MeterConfig,
-} from "@caisson/ai-meter";
-import { PROMPT_REGISTRY_SCHEMA_SQL } from "@caisson/prompt-registry";
+} from "@caisson-sh/ai-meter";
+import { PROMPT_REGISTRY_SCHEMA_SQL } from "@caisson-sh/prompt-registry";
 import {
   localModerator,
   type GuardPolicy,
   type GuardRuntime,
-} from "@caisson/guardrails";
-import type { AiSettings } from "@caisson/ai-config";
-import { withTenant } from "@caisson/tenancy-rls";
-import type { JobQueue } from "@caisson/jobs";
+} from "@caisson-sh/guardrails";
+import type { AiSettings } from "@caisson-sh/ai-config";
+import { withTenant } from "@caisson-sh/tenancy-rls";
+import type { JobQueue } from "@caisson-sh/jobs";
 import {
   DerivedKeyProvider,
   derivedContext,
   type FieldCryptoContext,
-} from "@caisson/field-crypto";
+} from "@caisson-sh/field-crypto";
 import { MockLanguageModelV4 } from "ai/test";
 import type {
   LanguageModelV4FinishReason,
@@ -63,7 +63,7 @@ import {
   project,
   type RunStateStore,
   type TrajectoryStore,
-} from "@caisson/agent-trajectory";
+} from "@caisson-sh/agent-trajectory";
 import {
   approveToolCall,
   denyToolCall,

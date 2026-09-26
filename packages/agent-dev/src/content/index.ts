@@ -7,7 +7,7 @@
 // Stable, deterministic order — rules, then skills, then agents — so the emitted bundle is byte-stable.
 // This barrel is content only; it imports NOTHING from the emitter or the package root, keeping the
 // curated set decoupled from how any harness renders it.
-import type { Artifact } from "@caisson/agent-kernel";
+import type { Artifact } from "@caisson-sh/agent-kernel";
 import { CAISSON_AGENTS } from "./agents.ts";
 import { CAISSON_RULES } from "./rules.ts";
 import { CAISSON_SKILLS } from "./skills.ts";

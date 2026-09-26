@@ -22,13 +22,13 @@ own logic.
 | Email         | `src/lib/email.ts`                                           |
 | AI config     | `src/lib/ai.ts`                                              |
 
-Set `AUTH_JWT_PUBLIC_KEY` (the base64 SPKI DER public half from `@caisson/auth`'s
+Set `AUTH_JWT_PUBLIC_KEY` (the base64 SPKI DER public half from `@caisson-sh/auth`'s
 `generateAccountKeyPair()`) and `DATABASE_URL` before the auth/tenancy examples do anything real;
 `RESEND_API_KEY`/`RESEND_FROM` switch email off the in-memory capture driver.
 
 ## Scripts
 
-- `bun install` — install the `@caisson/*` modules you composed in, plus Next/React.
+- `bun install` — install the `@caisson-sh/*` modules you composed in, plus Next/React.
 - `bun run dev` — start the dev server.
 - `bun run build` — production build (typechecks as part of the build).
 - `bun run start` — serve the production build.

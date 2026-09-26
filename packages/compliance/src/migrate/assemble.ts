@@ -2,12 +2,12 @@
 // is ONE database with ONE migration history, but its dependency closure each owns numbered,
 // forward-only `migrations/NNNN_*.sql`. This module DECLARES the edition's migration-contributing
 // package set + its compose-time LAYERING order, then delegates BOTH the disk read and the merge to
-// the base `@caisson/migrate` (`readPackageMigrations` + `assembleSelected`, ADR-0090) which wraps the
+// the base `@caisson-sh/migrate` (`readPackageMigrations` + `assembleSelected`, ADR-0090) which wraps the
 // kernel's pure `assembleMigrations` — topo-order by the layering DAG, global renumber into one
 // `NNNN_*.sql` sequence, ONE `schema_version` checksum ledger over the merged set.
 //
 // COMPOSE, NOT COPY: the disk read + the topo-merge + the apply/checksum runner are owned ONCE in
-// @caisson/migrate (ADR-0090); this file adds only the edition's package-set declaration. It no longer
+// @caisson-sh/migrate (ADR-0090); this file adds only the edition's package-set declaration. It no longer
 // carries its own `MIGRATION_FILE`/`readMigrations` copy — that duplication is what ADR-0090 retired.
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,8 +16,11 @@ import {
   type MigrationAssembly,
   type PackageMigrations,
   type PinnedMigrationIdentity,
-} from "@caisson/kernel/node";
-import { type SelectedPackage, readPackageMigrations } from "@caisson/migrate";
+} from "@caisson-sh/kernel/node";
+import {
+  type SelectedPackage,
+  readPackageMigrations,
+} from "@caisson-sh/migrate";
 
 /** The monorepo `packages/` root, resolved from this module (…/compliance/src/migrate → …/packages). */
 const PACKAGES_ROOT = join(
@@ -46,7 +49,7 @@ const PACKAGES_ROOT = join(
  * dir, whose `migrations/NNNN_*.sql` the shared `readPackageMigrations` reads (ADR-0070: the loader
  * appends `/migrations` — the dir is the package src root, never the migrations dir itself).
  *
- * @caisson/{kernel,tenancy-rls} contribute NO migration files of their own — their RLS helpers are
+ * @caisson-sh/{kernel,tenancy-rls} contribute NO migration files of their own — their RLS helpers are
  * emitted INTO each migration (`buildTenantPolicySql`). The compliance edition records EVIDENCE in
  * the WORM artifact store + the audit chain, not a dedicated table — but since ADR-0187 it owns its
  * first migration: `impersonation_session`, the fail-closed session row the support-impersonation
@@ -55,19 +58,19 @@ const PACKAGES_ROOT = join(
  */
 const CONTRIBUTING: readonly SelectedPackage[] = [
   {
-    slug: "@caisson/field-crypto",
+    slug: "@caisson-sh/field-crypto",
     dir: join(PACKAGES_ROOT, "field-crypto", "src"),
     dependsOn: [],
   },
   {
-    slug: "@caisson/audit-worm",
+    slug: "@caisson-sh/audit-worm",
     dir: join(PACKAGES_ROOT, "audit-worm", "src"),
-    dependsOn: ["@caisson/field-crypto"],
+    dependsOn: ["@caisson-sh/field-crypto"],
   },
   {
-    slug: "@caisson/compliance",
+    slug: "@caisson-sh/compliance",
     dir: join(PACKAGES_ROOT, "compliance", "src"),
-    dependsOn: ["@caisson/audit-worm"],
+    dependsOn: ["@caisson-sh/audit-worm"],
   },
 ];
 
@@ -80,35 +83,35 @@ const CONTRIBUTING: readonly SelectedPackage[] = [
  *  `every on-disk migration is pinned` case. Not part of the runtime contract. */
 export const RELEASED_GLOBAL_PREFIX: readonly PinnedMigrationIdentity[] = [
   {
-    sourcePackage: "@caisson/field-crypto",
+    sourcePackage: "@caisson-sh/field-crypto",
     sourceName: "0001_field_keys.sql",
   },
   {
-    sourcePackage: "@caisson/field-crypto",
+    sourcePackage: "@caisson-sh/field-crypto",
     sourceName: "0002_field_keys_rls_nullif.sql",
   },
   {
-    sourcePackage: "@caisson/audit-worm",
+    sourcePackage: "@caisson-sh/audit-worm",
     sourceName: "0001_audit_chain.sql",
   },
   {
-    sourcePackage: "@caisson/audit-worm",
+    sourcePackage: "@caisson-sh/audit-worm",
     sourceName: "0002_versions.sql",
   },
   {
-    sourcePackage: "@caisson/audit-worm",
+    sourcePackage: "@caisson-sh/audit-worm",
     sourceName: "0003_rls_nullif.sql",
   },
   {
-    sourcePackage: "@caisson/compliance",
+    sourcePackage: "@caisson-sh/compliance",
     sourceName: "0001_impersonation_session.sql",
   },
   {
-    sourcePackage: "@caisson/compliance",
+    sourcePackage: "@caisson-sh/compliance",
     sourceName: "0002_impersonation_session_rls_nullif.sql",
   },
   {
-    sourcePackage: "@caisson/audit-worm",
+    sourcePackage: "@caisson-sh/audit-worm",
     sourceName: "0004_artifact_versions.sql",
   },
 ];

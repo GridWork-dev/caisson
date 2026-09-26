@@ -1,4 +1,4 @@
-import { ConfigError } from "@caisson/kernel";
+import { ConfigError } from "@caisson-sh/kernel";
 import { Pool, type PoolConfig } from "pg";
 
 export type PgPoolPurpose = "runtime" | "migration";

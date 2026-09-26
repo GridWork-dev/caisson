@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { GuardrailError, InMemoryEventSink } from "@caisson/kernel";
-import { ConfigError } from "@caisson/kernel";
+import { GuardrailError, InMemoryEventSink } from "@caisson-sh/kernel";
+import { ConfigError } from "@caisson-sh/kernel";
 import { guardInputAsync, guardOutput } from "./browser.ts";
 import type { BrowserGuardPolicy } from "./guard-browser.ts";
 import type { BrowserPiiCryptoContext } from "./pii-browser.ts";

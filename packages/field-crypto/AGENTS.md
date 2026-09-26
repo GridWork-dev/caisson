@@ -1,4 +1,4 @@
-# AGENTS — @caisson/field-crypto
+# AGENTS — @caisson-sh/field-crypto
 
 Agent-facing authoring/usage contract (ADR-0020 `agents`). What a generation agent or a downstream
 edition must know to wire field encryption correctly.

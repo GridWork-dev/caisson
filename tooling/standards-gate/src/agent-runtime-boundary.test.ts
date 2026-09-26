@@ -12,9 +12,9 @@ const ROOT = findRoot(import.meta.dir);
 const pkgs = readWorkspace(ROOT);
 const byName = new Map(pkgs.map((p) => [p.name, p]));
 
-const TRAJECTORY = "@caisson/agent-trajectory";
-const RUNNER = "@caisson/agent-runner";
-const AI_KIT = "@caisson/ai-kit";
+const TRAJECTORY = "@caisson-sh/agent-trajectory";
+const RUNNER = "@caisson-sh/agent-runner";
+const AI_KIT = "@caisson-sh/ai-kit";
 
 // The kernel-level primitives agent-trajectory (a `primitive`) may sit on. It is the engine-neutral
 // contract; it depends only "down" onto kernel — never onto a runner, an edition, or ai-kit
@@ -31,10 +31,10 @@ const AI_KIT = "@caisson/ai-kit";
 // itself a primitive on Base primitives only (credits/kernel/tenancy-rls), so this too is lateral;
 // the engine-neutral core stays clean because usage adapters live behind the subpath, off the barrel.
 const KERNEL_LEVEL = new Set([
-  "@caisson/kernel",
-  "@caisson/tenancy-rls",
-  "@caisson/field-crypto",
-  "@caisson/ai-meter",
+  "@caisson-sh/kernel",
+  "@caisson-sh/tenancy-rls",
+  "@caisson-sh/field-crypto",
+  "@caisson-sh/ai-meter",
 ]);
 
 describe("agent-runtime slice-1 dependency boundary (ADR-0349/0351)", () => {

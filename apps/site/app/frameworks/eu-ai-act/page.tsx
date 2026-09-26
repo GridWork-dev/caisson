@@ -33,7 +33,7 @@ export const metadata = buildMetadata({
 // Honest scope: "produces the technical evidence" — never "makes you compliant".
 //
 // Import paths in the `evidence` snippets below track the version registry.caisson.sh SERVES.
-// Flipped to "@caisson/kernel/node" in the same commit the kernel 0.7.0 minor is tagged from:
+// Flipped to "@caisson-sh/kernel/node" in the same commit the kernel 0.7.0 minor is tagged from:
 // verifyChain moved off the "." barrel in that release, so against 0.7.0 the old path raises
 // "does not provide an export named 'verifyChain'". Flip per SYMBOL, not per block — canonicalize,
 // scrubDeep, scrubForEgress, looksLikeSecret, and assertNotReadOnly all stay on ".".
@@ -45,7 +45,7 @@ const ANNEX_CONTROLS = [
     title: "Every inference hashes into an append-only chain.",
     body: "Article 12 requires high-risk AI systems to log events at a level sufficient to trace decisions back through time. Caisson's audit chain writes each event with SHA-256 over the previous hash, so tamper, truncation, and reorder each break the chain and surface on verify. What you hand an auditor is that same chain, run live.",
     evidence: `// kernel verifyChain — append-only SHA-256 audit chain
-import { verifyChain } from "@caisson/kernel/node";
+import { verifyChain } from "@caisson-sh/kernel/node";
 
 const result = await verifyChain(db, { table: "ai_inference_log" });
 // { intact: true, rows: 7043, breaks: 0, root: "9c3a…f1" }
@@ -114,7 +114,7 @@ report_dir = "reports/"`,
       "Circuit breaker and spend cap surface override control to operators.",
     body: "Article 14 requires high-risk AI systems to allow natural persons to intervene and override automated outputs. Caisson's circuit breaker opens when a tenant's token spend exceeds a hard cap, returning HTTP 402 and surfacing the event: a structural pause that routes control back to the operator before the next call. Override and reset are explicit, logged operator actions inside the same audit chain the rest of the system writes to.",
     evidence: `// billing primitives (base substrate) — hard spend cap per tenant
-import { checkCredits, recordUsage } from "@caisson/billing";
+import { checkCredits, recordUsage } from "@caisson-sh/billing";
 
 const ok = await checkCredits(db, { tenantId, tokens: estimatedTokens });
 if (!ok) {

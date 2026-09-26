@@ -1,4 +1,4 @@
-# @caisson/local-privacy
+# @caisson-sh/local-privacy
 
 The Local-first edition's privacy gate: a strict zero-egress `PrivacyPolicy` (Zod `.strict()`,
 closed enums — `"local-only"` is the only mode, a sink is `model-fetch` or `rented-backend` and
@@ -21,13 +21,13 @@ live network call in this package itself.
 ## Install
 
 ```bash
-bun add @caisson/local-privacy
+bun add @caisson-sh/local-privacy
 ```
 
 ## Use
 
 ```ts
-import { createEgressGuard, localOnlyPolicy } from "@caisson/local-privacy";
+import { createEgressGuard, localOnlyPolicy } from "@caisson-sh/local-privacy";
 
 const guard = createEgressGuard(
   localOnlyPolicy([{ host: "huggingface.co", kind: "model-fetch" }]),

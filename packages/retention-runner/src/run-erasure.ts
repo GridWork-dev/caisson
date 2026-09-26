@@ -1,8 +1,8 @@
-// @caisson/retention-runner — `runErasure` (ADR-0135, ADR-0152). Runs every registered
+// @caisson-sh/retention-runner — `runErasure` (ADR-0135, ADR-0152). Runs every registered
 // `ErasureTarget` with PER-TARGET ERROR ISOLATION: one failing store never aborts the run or the
 // others (the `Promise.allSettled` shape ADR-0152 locks — each target's own throw is caught and
 // recorded, not propagated), then writes exactly one reason-tagged audit row via the injected sink.
-import { parseStrict } from "@caisson/kernel";
+import { parseStrict } from "@caisson-sh/kernel";
 import type { ErasureTarget } from "./targets.ts";
 import type { RetentionAuditSink } from "./audit-sink.ts";
 import { erasureRequestSchema } from "./types.ts";

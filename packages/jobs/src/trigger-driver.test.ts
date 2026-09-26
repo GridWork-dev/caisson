@@ -5,7 +5,7 @@ import {
   NotFoundError,
   strictObject,
   ValidationError,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import { defineTask } from "./index.ts";
 import { createTriggerJobQueue, type TriggerClient } from "./trigger-driver.ts";
 

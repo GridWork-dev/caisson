@@ -1,13 +1,13 @@
-// The validation gate — the pure half of @caisson/tool-exec (ADR-0153, ADR-0360 S3 phase 1),
+// The validation gate — the pure half of @caisson-sh/tool-exec (ADR-0153, ADR-0360 S3 phase 1),
 // carved out of tool-exec.ts so it can be imported without dragging `node:child_process` behind
 // it. Nothing here reaches a node builtin: it is a Map lookup, a Zod parse, and plain data.
-// `@caisson/tool-exec/browser` is exactly this module (ADR-0396); the `.` barrel re-exports it.
+// `@caisson-sh/tool-exec/browser` is exactly this module (ADR-0396); the `.` barrel re-exports it.
 //
 // This is the ONLY implementation of the gate — `createToolExec`'s `run` and `propose` both call
 // `propose()` below, so default-deny and schema-validation can never diverge between the
 // single-phase and two-phase paths.
 import type { ZodType } from "zod";
-import { NotFoundError, parseStrict } from "@caisson/kernel";
+import { NotFoundError, parseStrict } from "@caisson-sh/kernel";
 
 /**
  * A registered allowlist entry: a logical name, the real executable, and its argv-array schema.

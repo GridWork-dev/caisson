@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { z } from "zod";
-import { ValidationError, canonicalize } from "@caisson/kernel";
-import type { JsonValue } from "@caisson/kernel";
-import { matchGolden } from "@caisson/testing";
+import { ValidationError, canonicalize } from "@caisson-sh/kernel";
+import type { JsonValue } from "@caisson-sh/kernel";
+import { matchGolden } from "@caisson-sh/testing";
 import {
   EVIDENCE_PACK_FORMAT_VERSION,
   type evidencePackBlockedSchema,

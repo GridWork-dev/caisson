@@ -1,7 +1,7 @@
 // Pure reimplementation of `detectSecret` + its 6 SECRET_SHAPES from
 // `packages/agent-dev/src/emitter.ts` (CAISSON-110 T3). Kept as an independent copy — this module
 // scans MANIFEST entries at test time (not the emitter's runtime write-path), so it does not
-// import from `@caisson/agent-dev` product code. No execution, no dynamic import, no I/O: a pure
+// import from `@caisson-sh/agent-dev` product code. No execution, no dynamic import, no I/O: a pure
 // string -> label function used only by `scanner.test.ts`.
 
 // Credential SHAPES a demo excerpt must never contain (mirrors emitter.ts SECRET_SHAPES verbatim).

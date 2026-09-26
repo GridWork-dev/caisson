@@ -1,15 +1,18 @@
 "use client";
 
-// @caisson/demo-registry — the five per-package `./ui` surfaces. Each is a headless-data-in,
+// @caisson-sh/demo-registry — the five per-package `./ui` surfaces. Each is a headless-data-in,
 // SSR-safe component that renders whatever domain data it is HANDED (no DB, no fetch) — exactly
 // the shape a demo needs: static sample data in, a live render out. Only StoreSearch is genuinely
 // controlled (query state); it gets a small wrapper.
 import { useState } from "react";
-import { ChainViewer } from "@caisson/audit-worm/ui";
-import { StoreSearch, type StoreSearchResult } from "@caisson/local-store/ui";
-import { PromptBrowser } from "@caisson/prompt-registry/ui";
-import { UsageChart, type UsageEventDatum } from "@caisson/ai-meter/ui";
-import { MatrixViewer } from "@caisson/audit-harness/ui";
+import { ChainViewer } from "@caisson-sh/audit-worm/ui";
+import {
+  StoreSearch,
+  type StoreSearchResult,
+} from "@caisson-sh/local-store/ui";
+import { PromptBrowser } from "@caisson-sh/prompt-registry/ui";
+import { UsageChart, type UsageEventDatum } from "@caisson-sh/ai-meter/ui";
+import { MatrixViewer } from "@caisson-sh/audit-harness/ui";
 import type { CatalogEntry } from "../schema.ts";
 
 const CHAIN_ENTRIES = [
@@ -126,7 +129,7 @@ export const PACKAGE_SURFACE_ENTRIES: CatalogEntry[] = [
   {
     id: "audit-worm.chain-viewer",
     name: "ChainViewer",
-    package: "@caisson/audit-worm",
+    package: "@caisson-sh/audit-worm",
     tier: "per-package-ui",
     description:
       "The hash-chain integrity verdict + entry ledger for a tenant's audit-worm chain.",
@@ -141,7 +144,7 @@ export const PACKAGE_SURFACE_ENTRIES: CatalogEntry[] = [
   {
     id: "local-store.store-search",
     name: "StoreSearch",
-    package: "@caisson/local-store",
+    package: "@caisson-sh/local-store",
     tier: "per-package-ui",
     description:
       "A controlled query box over the tenant hybrid store + a ranked results table.",
@@ -151,7 +154,7 @@ export const PACKAGE_SURFACE_ENTRIES: CatalogEntry[] = [
   {
     id: "prompt-registry.prompt-browser",
     name: "PromptBrowser",
-    package: "@caisson/prompt-registry",
+    package: "@caisson-sh/prompt-registry",
     tier: "per-package-ui",
     description:
       "The append-only prompt catalog — one row per name@version, role shape, var count.",
@@ -161,7 +164,7 @@ export const PACKAGE_SURFACE_ENTRIES: CatalogEntry[] = [
   {
     id: "ai-meter.usage-chart",
     name: "UsageChart",
-    package: "@caisson/ai-meter",
+    package: "@caisson-sh/ai-meter",
     tier: "per-package-ui",
     description:
       "Metered-usage credits/cost/calls headline, a per-model bar chart, and a numeric table.",
@@ -171,7 +174,7 @@ export const PACKAGE_SURFACE_ENTRIES: CatalogEntry[] = [
   {
     id: "audit-harness.matrix-viewer",
     name: "MatrixViewer",
-    package: "@caisson/audit-harness",
+    package: "@caisson-sh/audit-harness",
     tier: "per-package-ui",
     description:
       "The domain × dimension coverage grid atop the reconciled findings ledger.",

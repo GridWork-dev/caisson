@@ -3,7 +3,7 @@
 // logic lands — proving the fixture precedes the logic. Landing that logic makes it green with
 // `BLESS` unset (the committed `src/__golden__/rrf-ranking.json` must match exactly).
 import { describe, test } from "bun:test";
-import { matchGolden } from "@caisson/testing";
+import { matchGolden } from "@caisson-sh/testing";
 import { localStoreGolden } from "./golden.ts";
 
 describe("local-store goldens (ADR-0013 golden-first)", () => {

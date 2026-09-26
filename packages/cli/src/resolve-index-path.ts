@@ -1,5 +1,5 @@
 // Module-catalog PATH RESOLUTION (ADR-0004/0092). Pure — only node:fs/node:url — so this module
-// carries ZERO workspace imports and runs standalone from a real `node_modules/@caisson/cli`
+// carries ZERO workspace imports and runs standalone from a real `node_modules/@caisson-sh/cli`
 // install with no other package resolvable, exactly like the simulated-installed-layout test in
 // `resolve-index-path.test.ts` proves.
 //

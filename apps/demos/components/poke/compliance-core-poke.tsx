@@ -3,20 +3,20 @@
 // The compliance-core module's flagship "poke" (ADR-0378 lock 2), now driven by the REAL package
 // (ADR-0396) — the hand-ported mirror `compliance-core-logic.ts` is deleted.
 //
-// WHAT IS REAL HERE. Four of the six cards run the actual `@caisson/compliance-core` collectors
+// WHAT IS REAL HERE. Four of the six cards run the actual `@caisson-sh/compliance-core` collectors
 // (`rlsForceCollector`, `wormRetentionCollector`, `aiRiskRegisterCollector`,
 // `impersonationCollector`) over a sample fact, through the package's browser entry. "Generate the
 // evidence pack" runs the REAL `assembleEvidenceManifest` — the same flag-never-guess refusal and
 // derived-readiness assembly `generateEvidencePack` itself composes — so a blocked run throws the
 // real `EvidencePackBlockedError` with a Zod-validated report, and a clean run returns a manifest
 // the real `pack-format` schema accepted. Control metadata, the crosswalk rollup, and the risk
-// entries come from the real `@caisson/frameworks-pack` and `@caisson/risk-register` models; the
-// chain hashes are the real `hashChainLinkAsync` (WebCrypto SHA-256) from `@caisson/kernel`.
+// entries come from the real `@caisson-sh/frameworks-pack` and `@caisson-sh/risk-register` models; the
+// chain hashes are the real `hashChainLinkAsync` (WebCrypto SHA-256) from `@caisson-sh/kernel`.
 //
 // WHAT IS POKE-LOCAL, AND WHY. Two collectors cannot enter a browser bundle and are excluded from
 // the package's `./browser` entry (see `packages/compliance-core/src/browser.ts` for the full
 // reasoning): `chain-verify` composes the kernel's SYNC `node:crypto` `verifyChain` while the
-// browser twin of that hash is async, and `field-crypto-policy` composes `@caisson/field-crypto`,
+// browser twin of that hash is async, and `field-crypto-policy` composes `@caisson-sh/field-crypto`,
 // whose envelope module is written against the node `Buffer` global. Their two cards are therefore
 // composed HERE from real primitives — the real WebCrypto link hash, the real
 // `passResult`/`flaggedResult`/`unresolvedResult` constructors (so flag-never-guess is still
@@ -27,13 +27,13 @@
 // Sample facts are fixed, labeled samples: no `Date.now()`, no `Math.random()`, no argless
 // `new Date()`, so the same board state always evaluates to the same six statuses.
 import { useEffect, useMemo, useState } from "react";
-import { hashChainLinkAsync } from "@caisson/kernel/audit-verify";
+import { hashChainLinkAsync } from "@caisson-sh/kernel/audit-verify";
 import {
   regimeCrosswalks,
   soc2Tsc,
   type CanonicalControl,
-} from "@caisson/frameworks-pack/browser";
-import { defineRiskEntry, type RiskEntry } from "@caisson/risk-register";
+} from "@caisson-sh/frameworks-pack/browser";
+import { defineRiskEntry, type RiskEntry } from "@caisson-sh/risk-register";
 import {
   EVIDENCE_PACK_FORMAT_VERSION,
   EvidencePackBlockedError,
@@ -56,7 +56,7 @@ import {
   type ImpersonationDualTrailFact,
   type RlsForceFact,
   type WormRetentionFact,
-} from "@caisson/compliance-core/browser";
+} from "@caisson-sh/compliance-core/browser";
 
 import { PokeShell, Verdict, type VerdictState } from "./poke-rig";
 import styles from "./compliance-core-poke.module.css";
@@ -388,7 +388,7 @@ export async function collectChainVerify(
 
 // --- Card 4: PHI encryption at rest (poke-local composition) ------------------------------------
 // `fieldCryptoPolicyCollector` is excluded from the package's browser entry (its `parseEnvelope`
-// import reaches `@caisson/field-crypto`, whose envelope module uses the node `Buffer` global). No
+// import reaches `@caisson-sh/field-crypto`, whose envelope module uses the node `Buffer` global). No
 // decryption ever runs in this card either way — only the envelope's header bytes are inspected, so
 // the check below is a pure byte-layout read, pinned against the REAL `parseEnvelope` in the test.
 
@@ -779,7 +779,7 @@ export default function ComplianceCorePoke() {
 
   return (
     <PokeShell
-      label={`@caisson/compliance-core · evidence pack v${EVIDENCE_PACK_FORMAT_VERSION}`}
+      label={`@caisson-sh/compliance-core · evidence pack v${EVIDENCE_PACK_FORMAT_VERSION}`}
       title="Clear every collector, then generate the evidence pack."
     >
       <div className={styles.grid}>

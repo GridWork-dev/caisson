@@ -5,8 +5,8 @@
 // tenants can each bring their own provider account. The port hides the encrypted store + `withTenant`
 // + field-crypto behind one function the HOST wires per deployment — this file never touches a DB or a
 // crypto context, keeping the gateway package DB-free.
-import { ValidationError } from "@caisson/kernel";
-import { resolveProvider, type AiSettings } from "@caisson/ai-config";
+import { ValidationError } from "@caisson-sh/kernel";
+import { resolveProvider, type AiSettings } from "@caisson-sh/ai-config";
 import type { LanguageModelV4, ProviderV4 } from "@ai-sdk/provider";
 import { buildRegistryResolver, type ModelResolver } from "./gateway.ts";
 import { defaultProviders, providerFor } from "./providers.ts";
@@ -43,7 +43,7 @@ const DEFAULT_CACHE_TTL_MS = 5 * 60_000;
 
 /**
  * The pricebook `keySource` discriminator (ADR-0182) for a lane — `"env"` (the operator's platform
- * key) or `"tenant"` (a per-tenant BYOK key). Feed the result into `@caisson/pricebook`'s
+ * key) or `"tenant"` (a per-tenant BYOK key). Feed the result into `@caisson-sh/pricebook`'s
  * `resolveActionCost(action, book, keySource)` so a metered action on a BYOK lane debits 0 credits
  * while metering stays untouched — mirrors exactly the branch `buildByokResolver` itself takes below.
  */

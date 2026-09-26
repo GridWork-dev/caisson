@@ -14,11 +14,11 @@
 //   - `spend_breaker` — the stored circuit-breaker STATE per (scope). `reserve()` reads it before
 //     every reservation; an `open` breaker returns 402 without ever calling the provider (ADR-0060).
 //
-// All four are FORCE-RLS via `buildTenantPolicySql` (@caisson/tenancy-rls): a query that forgets its
+// All four are FORCE-RLS via `buildTenantPolicySql` (@caisson-sh/tenancy-rls): a query that forgets its
 // tenant filter — or its `withTenant` scope entirely — sees nothing (ADR-0005, fail-closed). In prod
 // this DDL is a numbered forward-only migration (ADR-0014/0070); it is owned here and applied
 // verbatim in tests.
-import { buildTenantPolicySql } from "@caisson/tenancy-rls";
+import { buildTenantPolicySql } from "@caisson-sh/tenancy-rls";
 
 export const USAGE_EVENT_TABLE = "usage_event";
 export const TENANT_SPEND_WINDOW_TABLE = "tenant_spend_window";

@@ -3,7 +3,7 @@ title: local-store
 description: Hybrid vector + full-text retrieval that runs on disk, one SQLite file per tenant, sqlite-vec KNN fused with FTS5 by Reciprocal Rank Fusion, no vector cloud involved.
 ---
 
-`@caisson/local-store` is Caisson's on-disk hybrid retrieval engine: `sqlite-vec` (`vec0`) for
+`@caisson-sh/local-store` is Caisson's on-disk hybrid retrieval engine: `sqlite-vec` (`vec0`) for
 vector KNN and SQLite FTS5 for keyword search, fused by Reciprocal Rank Fusion (`RRF_K=60`). It
 runs FTS5-only with no embedder configured, the vector leg degrades cleanly on any backend
 fault, so retrieval never hard-fails for lack of a model.
@@ -11,13 +11,13 @@ fault, so retrieval never hard-fails for lack of a model.
 ## Install
 
 ```bash
-bun add @caisson/local-store
+bun add @caisson-sh/local-store
 ```
 
 ## Quickstart
 
 ```ts
-import { LocalStore, openTenantDb, tenantDbPath } from "@caisson/local-store";
+import { LocalStore, openTenantDb, tenantDbPath } from "@caisson-sh/local-store";
 
 // Per-tenant file is the isolation boundary (tenantId comes from authenticated context).
 const db = openTenantDb("/var/lib/caisson/tenants", tenantId);
@@ -84,8 +84,8 @@ stripping PEM key blocks, URL userinfo passwords, secret-named assignments, and 
 shapes. `guardEmbedder` and `createCloudEmbedder` apply it structurally:
 
 ```ts
-import type { Embedder } from "@caisson/local-store";
-import { createCloudEmbedder } from "@caisson/local-store";
+import type { Embedder } from "@caisson-sh/local-store";
+import { createCloudEmbedder } from "@caisson-sh/local-store";
 
 const embedder: Embedder = createCloudEmbedder({
   // scrubForEgress runs on every text before this fetch — PEM blocks, URL passwords,
@@ -119,7 +119,7 @@ run or pay for, and no vendor SDK import. It contributes the store/fuse/isolatio
 the consuming bundle wires the embedder and the curated content on top.
 
 <Callout type="info" title="Standalone">
-  `@caisson/local-store` is the retrieval engine inside the Local-first bundle, alongside
+  `@caisson-sh/local-store` is the retrieval engine inside the Local-first bundle, alongside
   on-device inference and the privacy gate. It also works standalone, to add hybrid
   search to any stack without the rest of the bundle.
 </Callout>

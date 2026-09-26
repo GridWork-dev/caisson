@@ -3,8 +3,8 @@
 // Everything here operates on values the caller already holds — no db, no chain I/O, no clock.
 //
 // BROWSER-SAFE BY CONSTRUCTION, and load-bearing for it: this module's ONLY non-relative edge is
-// `@caisson/kernel` (whose `.` barrel is proven builtin-free by kernel's own browser-safety
-// test). No node builtin, no @caisson/tenancy-rls, no @caisson/jobs — those stay in campaign.ts
+// `@caisson-sh/kernel` (whose `.` barrel is proven builtin-free by kernel's own browser-safety
+// test). No node builtin, no @caisson-sh/tenancy-rls, no @caisson-sh/jobs — those stay in campaign.ts
 // and schedule.ts, which import FROM here and never the reverse. apps/site's risk/poke suite
 // walks its client graph through this file and pins that property; adding a tainted import here
 // fails that walk loudly. Note the kernel import is a MIXED value import (the type names ride an
@@ -13,7 +13,7 @@ import {
   ConflictError,
   type AuditChainEntry,
   type JsonValue,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 
 /** The two decisions a reviewer may record. "Unresolved" is never a decision value — it is the
  *  ABSENCE of one, computed by `scanCampaignDecisions`, never chosen by a reviewer or a caller

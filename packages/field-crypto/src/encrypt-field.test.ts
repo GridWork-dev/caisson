@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createCipheriv, createHash } from "node:crypto";
-import { matchGolden } from "@caisson/testing";
+import { matchGolden } from "@caisson-sh/testing";
 import { type AeadCipher, type AeadParts, aesGcm } from "./cipher.ts";
 import { ALG_AES_256_GCM, NONCE_BYTES } from "./envelope.ts";
 import { TENANT_KEY_BYTES } from "./derive.ts";

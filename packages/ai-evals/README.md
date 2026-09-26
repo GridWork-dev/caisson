@@ -1,4 +1,4 @@
-# @caisson/ai-evals
+# @caisson-sh/ai-evals
 
 An eval harness for AI features: define a dataset of cases, score them with a grader, and gate a
 build on a committed baseline instead of a gut feeling. Runs fully offline and deterministic — no
@@ -36,7 +36,7 @@ import {
   defineEval,
   exactGrader,
   gateAgainstBaseline,
-} from "@caisson/ai-evals";
+} from "@caisson-sh/ai-evals";
 
 const run = await defineEval({
   name: "greeting-quality",

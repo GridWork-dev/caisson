@@ -1,4 +1,4 @@
-// The browser-safe entry (`@caisson/signing-primitive/browser`, ADR-0396): the detached-signature
+// The browser-safe entry (`@caisson-sh/signing-primitive/browser`, ADR-0396): the detached-signature
 // contracts, the real `@noble/ed25519` verify path, the signable-payload construction, and the
 // RFC-3161 test-double authority — all safe inside a client bundle. ADDITIVE: the `.` barrel is
 // untouched and stays the full node-capable surface, and every name here is also on `.` (the subset
@@ -9,7 +9,7 @@
 //     seed out of a client bundle is the point, not an oversight. (They are browser-CAPABLE; the
 //     exclusion is a trust decision, and admitting them later needs its own ADR.)
 //   - `signaturesEqual` and the sync `timestampCountersignsSignature` — both route through
-//     `@caisson/kernel/node`'s `safeEqualFixed` (node:crypto `timingSafeEqual`). The async twin
+//     `@caisson-sh/kernel/node`'s `safeEqualFixed` (node:crypto `timingSafeEqual`). The async twin
 //     `timestampCountersignsSignatureAsync` is the browser path.
 //   - `ph-signer.ts` (the Rekor Ed25519ph deployment signer) — reads a seed out of the process env.
 export {

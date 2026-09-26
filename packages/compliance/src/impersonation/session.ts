@@ -31,12 +31,12 @@ import {
   strictObject,
   type AuditChainEntry,
   type JsonValue,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   withTenant,
   type TenantExecutor,
   type Transactor,
-} from "@caisson/tenancy-rls";
+} from "@caisson-sh/tenancy-rls";
 
 /** The chain-payload discriminator for the operator-identity side of a dual pair. */
 export const IMPERSONATION_OPERATOR_RECORD = "impersonation.operator";

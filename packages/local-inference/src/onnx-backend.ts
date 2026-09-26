@@ -1,7 +1,7 @@
 // src/inference/onnx-backend.ts — the REAL local embedding backend behind the `InferenceBackend`
 // port (ADR-0064). It runs a MiniLM-class ONNX model on-device via transformers.js
 // (`@huggingface/transformers` / onnxruntime) and emits the locked `EMBEDDING_DIM` vector the
-// shared base `@caisson/local-store` is opened with.
+// shared base `@caisson-sh/local-store` is opened with.
 //
 // THIS PATH IS NEVER EXERCISED IN CI (ADR-0064). The deterministic `StubInferenceBackend` is the
 // only backend CI runs; the live model load + first-run download is the single un-exercised seam.
@@ -31,9 +31,9 @@ import {
   ValidationError,
   fetchWithTimeout,
   safeEqualFixed,
-} from "@caisson/kernel/node";
-import { type EgressGuard, createEgressGuard } from "@caisson/local-privacy";
-import { localOnlyPolicy } from "@caisson/local-privacy";
+} from "@caisson-sh/kernel/node";
+import { type EgressGuard, createEgressGuard } from "@caisson-sh/local-privacy";
+import { localOnlyPolicy } from "@caisson-sh/local-privacy";
 import type {
   CompletionRequest,
   CompletionResult,

@@ -1,6 +1,6 @@
 // Stripe driver + mapper (ADR-0017): Stripe→domain event mapping, the StripeEventSchema envelope
 // boundary, and createCheckout metadata stamping. The raw-body signature-VERIFY assertions live with the
-// open verifier in @caisson/billing (packages/billing/src/webhook.test.ts); this file covers the
+// open verifier in @caisson-sh/billing (packages/billing/src/webhook.test.ts); this file covers the
 // commercial parse/driver half (ADR-0249 G3).
 import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, test } from "bun:test";

@@ -16,7 +16,7 @@
 // Cloudflare Access interstitial appeared, the page's H1 renders, and the browser logged no
 // console/page errors (warnings are fine).
 //
-// How to run: `bunx turbo run test:live --filter=@caisson/site` (or `cd apps/site && bun run
+// How to run: `bunx turbo run test:live --filter=@caisson-sh/site` (or `cd apps/site && bun run
 // test:live`) with both env vars set. `~/.gridwork/caisson.env` carries them for a dev-box run.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { chromium, type Browser, type BrowserContext } from "playwright";

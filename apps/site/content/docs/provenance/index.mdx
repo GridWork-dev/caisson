@@ -41,7 +41,7 @@ without mutating a single committed chain byte: `verifyChain` still passes after
 the chain never committed the plaintext it's erasing.
 
 ```ts
-import { cryptoShred } from "@caisson/field-crypto";
+import { cryptoShred } from "@caisson-sh/field-crypto";
 
 const { auditPayload } = await cryptoShred(kmsProvider, {
   keyScopeId: subjectId,
@@ -56,7 +56,7 @@ const { auditPayload } = await cryptoShred(kmsProvider, {
 
 ## Composing with the base
 
-The encryption boundary equals the RLS tenant boundary (`@caisson/tenancy-rls`): bind
+The encryption boundary equals the RLS tenant boundary (`@caisson-sh/tenancy-rls`): bind
 `withFieldCryptoContext` alongside `withTenant` so a query can never touch an encrypted column
 outside its own tenant scope.
 

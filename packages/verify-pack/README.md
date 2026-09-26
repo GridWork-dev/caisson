@@ -1,4 +1,4 @@
-# @caisson/verify-pack
+# @caisson-sh/verify-pack
 
 Out-of-band verification for Caisson audit evidence packs. It validates the exact signed file
 manifest before checking receipt-chain links, per-length WORM anchors, and Ed25519 signatures. A pack
@@ -12,7 +12,7 @@ not resolve publicly today:
 
 ```sh
 export CAISSON_VERIFY_PACK_KEY_SHA256="<independently obtained 64-hex fingerprint>"
-npx @caisson/verify-pack ./pack
+npx @caisson-sh/verify-pack ./pack
 ```
 
 Until that publish occurs, use an independently trusted checkout of this repository:
@@ -28,7 +28,7 @@ pack itself; verification refuses PASS when it is absent or does not match.
 ## Programmatic use
 
 ```ts
-import { verifyEvidencePack } from "@caisson/verify-pack";
+import { verifyEvidencePack } from "@caisson-sh/verify-pack";
 
 const result = await verifyEvidencePack(JSON.parse(packJson), {
   expectedPublicKeySha256: trustedIssuerFingerprint,

@@ -1,13 +1,13 @@
 // The provider-agnostic domain event (ADR-0017) — the OPEN billing contract. No provider type escapes
 // the seam: the rest of the base consumes only DomainBillingEvent, and generated buyer hosts typecheck
 // against this open schema alone. The provider->DomainBillingEvent mappers themselves are the
-// commercial half (@caisson/billing-orchestration, ADR-0249 G3); the CONTRACT stays here, open.
+// commercial half (@caisson-sh/billing-orchestration, ADR-0249 G3); the CONTRACT stays here, open.
 // `sourceEventId` is the provider event id — it flows straight into the credit wallet's idempotency key
 // (ADR-0007/0023) so a replayed webhook grants exactly once. `accountId` is resolved from the
 // subscription's metadata on a cycle invoice (or the Checkout Session's metadata on a one-time purchase)
 // — both stamped at checkout (ADR-0089).
 import { z } from "zod";
-import { strictObject } from "@caisson/kernel";
+import { strictObject } from "@caisson-sh/kernel";
 
 export const DomainBillingEventSchema = z.discriminatedUnion("type", [
   strictObject({

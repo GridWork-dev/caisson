@@ -1,6 +1,6 @@
 // The T-30d credit-expiry notice (ADR-0245/0252 Decision 6b) — the product's first
 // transactional/billing template. One bounded, no-PII prop set: the expiring credit count, the
-// expiry date, and the credits-dashboard URL. Sent once per grant by the `@caisson/credits`
+// expiry date, and the credits-dashboard URL. Sent once per grant by the `@caisson-sh/credits`
 // expiry-notice sweep (the append-only `credit_expiry_notice` marker gates the send).
 import { EmailBody, EmailButton, EmailLayout } from "./layout.tsx";
 

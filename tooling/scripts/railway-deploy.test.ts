@@ -11,8 +11,8 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-// Reached by relative path, not the `@caisson/kernel/node` specifier: `tooling/scripts/` has no
-// package.json, so it is not a workspace and bun's workspace resolution never links `@caisson/*`
+// Reached by relative path, not the `@caisson-sh/kernel/node` specifier: `tooling/scripts/` has no
+// package.json, so it is not a workspace and bun's workspace resolution never links `@caisson-sh/*`
 // here. That is also why railway-deploy.ts re-declares the carrier filename instead of importing
 // it — and why the round-trip below is the only thing holding the two declarations together.
 import {

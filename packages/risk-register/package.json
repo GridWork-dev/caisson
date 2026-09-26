@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/risk-register",
+  "name": "@caisson-sh/risk-register",
   "version": "0.3.5",
   "description": "A framework-agnostic risk register: likelihood x impact scoring with a computed, never freeform, residual; operator overrides recorded as a chained exception rather than an edit; and crosswalk pointers into any shipped compliance framework pack.",
   "license": "Apache-2.0",
@@ -21,14 +21,14 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/audit-worm": "workspace:*",
-    "@caisson/frameworks-pack": "workspace:*",
-    "@caisson/kernel": "workspace:*",
+    "@caisson-sh/audit-worm": "workspace:*",
+    "@caisson-sh/frameworks-pack": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

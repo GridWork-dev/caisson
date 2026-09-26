@@ -12,8 +12,8 @@
 //      pack, and the OSCAL export is deterministic under the fixed clock/id seams.
 import { join } from "node:path";
 import { describe, expect, test } from "bun:test";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
-import { soc2Tsc } from "@caisson/frameworks-pack/browser";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
+import { soc2Tsc } from "@caisson-sh/frameworks-pack/browser";
 
 import {
   CUSTOM_CLAUSE_KEY,
@@ -25,7 +25,7 @@ import {
   listClauses,
   makeCounterIds,
 } from "./frameworks-pack-poke";
-import { toOscalCatalog } from "@caisson/oscal-spine/browser";
+import { toOscalCatalog } from "@caisson-sh/oscal-spine/browser";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../../..");
 const POKE_ENTRY = join(import.meta.dir, "frameworks-pack-poke.tsx");

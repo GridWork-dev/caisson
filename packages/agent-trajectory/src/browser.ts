@@ -1,4 +1,4 @@
-// The browser-safe entry (`@caisson/agent-trajectory/browser`, ADR-0396): the whole trajectory
+// The browser-safe entry (`@caisson-sh/agent-trajectory/browser`, ADR-0396): the whole trajectory
 // contract MINUS the two Postgres-backed store implementations — the strict event schema, the
 // in-memory append-only store, the durable run-state port with its in-memory implementation, both
 // deterministic projections, and the Claude-transcript adapter. ADDITIVE: `.` is untouched for
@@ -11,7 +11,7 @@
 //
 // DELIBERATELY EXCLUDED, so the next reader does not "complete" this entry:
 //   - store.pg.ts + run-state.pg.ts — the PG implementations. They value-import
-//     `@caisson/tenancy-rls` and `@caisson/field-crypto` (node:crypto, node:async_hooks) plus the
+//     `@caisson-sh/tenancy-rls` and `@caisson-sh/field-crypto` (node:crypto, node:async_hooks) plus the
 //     `pg` driver, so their graphs fail the admission walk irreducibly.
 //   - `RunStateCryptoContextRunner` — the type half of run-state.pg.ts. Erased at emit, so it COULD
 //     ride along, but it describes a Postgres transaction runner and has no browser meaning; it

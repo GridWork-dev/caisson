@@ -1,9 +1,9 @@
 // LemonSqueezy webhook signature verification (ADR-0175) — the open verify-only half of the billing seam
 // (carve ADR-0249 G3). LemonSqueezy->domain event mapping + the driver + createCheckout are covered in
-// the commercial @caisson/billing-orchestration (src/lemonsqueezy.test.ts). Synthetic secrets only.
+// the commercial @caisson-sh/billing-orchestration (src/lemonsqueezy.test.ts). Synthetic secrets only.
 import { createHmac } from "node:crypto";
 import { describe, expect, test } from "bun:test";
-import { AuthnError } from "@caisson/kernel";
+import { AuthnError } from "@caisson-sh/kernel";
 import { verifyLemonSqueezyWebhook } from "./index.ts";
 
 const SECRET = "ls_test_secret";

@@ -1,4 +1,4 @@
-# @caisson/compliance
+# @caisson-sh/compliance
 
 The compliance evidence kit — the hero (ADR-0040). You seed a tenant, write encrypted SEC/HIPAA
 fields under a tenant-scoped crypto boundary, lock an append-only artifact into WORM storage with a
@@ -11,7 +11,7 @@ never guess). A COMPOSITION of base packages, never a fork (ADR-0003).
 ## Install
 
 ```bash
-bun add @caisson/compliance
+bun add @caisson-sh/compliance
 ```
 
 ## Usage
@@ -22,7 +22,7 @@ import {
   generateEvidencePack,
   signEvidencePack,
   withTenantCrypto,
-} from "@caisson/compliance";
+} from "@caisson-sh/compliance";
 
 // controls + chainAnchor come from running the declarative evidence collectors against your tenant.
 const pack = generateEvidencePack({
@@ -55,8 +55,8 @@ await withTenantCrypto(db, accountId, keyProvider, async (tx) => {
 
 ## Dependencies
 
-Down-only (ADR-0003): `@caisson/audit-worm` + `@caisson/field-crypto` + `@caisson/tenancy-rls` +
-`@caisson/kernel`. Evidence generation meters nothing — no `@caisson/credits`. All three framework catalogs — SOC2-TSC, HIPAA-Security, and the EU AI Act
+Down-only (ADR-0003): `@caisson-sh/audit-worm` + `@caisson-sh/field-crypto` + `@caisson-sh/tenancy-rls` +
+`@caisson-sh/kernel`. Evidence generation meters nothing — no `@caisson-sh/credits`. All three framework catalogs — SOC2-TSC, HIPAA-Security, and the EU AI Act
 high-risk set — are authored + golden-pinned.
 
 ## Golden

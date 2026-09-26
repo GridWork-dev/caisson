@@ -10,28 +10,28 @@
 // `bun run test:live`) and ADDITIONALLY self-skips without `OPENROUTER_API_KEY` — the ADR-0201
 // live-test convention, following the oscal-cli availability-probe precedent (ADR-0180).
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
-import { newTestPg, type TestPg } from "@caisson/testing";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
   GRANT_CONSUMPTION_MIGRATION_SQL,
   grant,
-} from "@caisson/credits";
+} from "@caisson-sh/credits";
 import {
   InMemoryEventSink,
   asCredits,
   asMicroUsdPerCredit,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   AI_METER_SCHEMA_SQL,
   SPEND_POLICY_TABLE,
   USAGE_EVENT_TABLE,
   type MeterConfig,
-} from "@caisson/ai-meter";
-import { localModerator } from "@caisson/guardrails";
-import { withTenant } from "@caisson/tenancy-rls";
-import type { AiSettings } from "@caisson/ai-config";
+} from "@caisson-sh/ai-meter";
+import { localModerator } from "@caisson-sh/guardrails";
+import { withTenant } from "@caisson-sh/tenancy-rls";
+import type { AiSettings } from "@caisson-sh/ai-config";
 import {
   buildRegistryResolver,
   infer,

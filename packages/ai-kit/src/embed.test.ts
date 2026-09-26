@@ -4,7 +4,7 @@
 // mock `EmbeddingModelV4` (zero network). Mirrors `gateway.test.ts`'s fixtures/shape for the
 // embeddings surface (no prompt-registry, no guardrails — out of scope for embeddings).
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
-import { newTestPg, type TestPg } from "@caisson/testing";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
@@ -12,20 +12,20 @@ import {
   GRANT_CONSUMPTION_MIGRATION_SQL,
   balance,
   grant,
-} from "@caisson/credits";
+} from "@caisson-sh/credits";
 import {
   InsufficientCreditsError,
   asCredits,
   asMicroUsdPerCredit,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   AI_METER_SCHEMA_SQL,
   SPEND_POLICY_TABLE,
   USAGE_EVENT_TABLE,
   type MeterConfig,
-} from "@caisson/ai-meter";
-import type { AiSettings } from "@caisson/ai-config";
-import { withTenant } from "@caisson/tenancy-rls";
+} from "@caisson-sh/ai-meter";
+import type { AiSettings } from "@caisson-sh/ai-config";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 import { MockEmbeddingModelV4 } from "ai/test";
 import { embed, embedMany, type EmbedOptions } from "./embed.ts";
 

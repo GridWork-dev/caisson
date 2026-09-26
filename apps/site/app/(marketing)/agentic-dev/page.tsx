@@ -120,7 +120,7 @@ function MemberModuleCard({
 }
 
 /* ---------- MCP feature-card sequence (SYNTHESIS §6 Tier-1 row 9) ---------- */
-// @caisson/mcp-server ships in the open Base substrate (every plan, not an Agentic-Dev-only SKU) —
+// @caisson-sh/mcp-server ships in the open Base substrate (every plan, not an Agentic-Dev-only SKU) —
 // this is the page where an agent-tooling buyer is already looking for "where does my agent
 // connect", so the sequence lives here rather than inventing a standalone module page for a
 // package that has no separate SKU. Four real request-lifecycle stages, in order, each grounded in
@@ -255,7 +255,7 @@ export default function AgenticDevPage() {
       {/* ===== What it composes ===== */}
       <Section
         title="A governed kernel, not a wrapper."
-        lede="@caisson/agent-kernel is one of the pieces the Agentic-Dev bundle composes together as peers, alongside local memory and the tool-exec gate, all built on the same open @caisson/kernel base every bundle shares. It carries a typed agent/skill/rule schema with a reference-integrity validator (a ghost cross-ref throws before anything runs), the 7-act lifecycle FSM (SPEC → PLAN → EXECUTE → VERIFY → SWEEP → EVAL → SHIP, with a failed VERIFY reopening PLAN and SHIP as the only terminal state), governance guards, and the hooks dispatcher that fires lifecycle events without handing a hook a credential the kernel didn't give it."
+        lede="@caisson-sh/agent-kernel is one of the pieces the Agentic-Dev bundle composes together as peers, alongside local memory and the tool-exec gate, all built on the same open @caisson-sh/kernel base every bundle shares. It carries a typed agent/skill/rule schema with a reference-integrity validator (a ghost cross-ref throws before anything runs), the 7-act lifecycle FSM (SPEC → PLAN → EXECUTE → VERIFY → SWEEP → EVAL → SHIP, with a failed VERIFY reopening PLAN and SHIP as the only terminal state), governance guards, and the hooks dispatcher that fires lifecycle events without handing a hook a credential the kernel didn't give it."
         band="tint"
       />
 
@@ -346,7 +346,7 @@ export default function AgenticDevPage() {
       <Reveal>
         <Section
           title="Spawns agents, not just scaffolds them."
-          lede="@caisson/agent-runner spawns a headless coding-agent CLI as a detached subprocess in an isolated worktree, streams an auditable .jsonl transcript that survives the launcher exiting, and parses it into a structured run report (tool calls, files touched, final result). The child environment is built from scratch (never spread from process.env) with a fixed non-secret passthrough allowlist and only the target provider's key, so a secret sitting in your shell has no path into the sandbox. Provider-agnostic: name the binary, the env-var names for the endpoint and key, the model, and an argv template; a worked Claude Code CLI profile ships as the reference. It ships as its own package alongside the bundle, not wired into the kernel's lifecycle."
+          lede="@caisson-sh/agent-runner spawns a headless coding-agent CLI as a detached subprocess in an isolated worktree, streams an auditable .jsonl transcript that survives the launcher exiting, and parses it into a structured run report (tool calls, files touched, final result). The child environment is built from scratch (never spread from process.env) with a fixed non-secret passthrough allowlist and only the target provider's key, so a secret sitting in your shell has no path into the sandbox. Provider-agnostic: name the binary, the env-var names for the endpoint and key, the model, and an argv template; a worked Claude Code CLI profile ships as the reference. It ships as its own package alongside the bundle, not wired into the kernel's lifecycle."
         >
           {RunnerSpawn}
         </Section>
@@ -356,7 +356,7 @@ export default function AgenticDevPage() {
       <Reveal>
         <Section
           title="Local memory, and a sandboxed exec gate."
-          lede="@caisson/local-store gives the bundle hybrid vector + full-text recall (vec0 + FTS5 with reciprocal-rank fusion, an FTS-only offline floor when no embedder is wired) scoped per tenant at the file level. @caisson/tool-exec is the governed tool-execution gate composed alongside it: default-deny allowlist, Zod-strict argv schemas, execFile arg-arrays (never a shell) so an agent that wants to run a command only gets the ones you explicitly allowed. Neither piece makes an LLM call or imports a vendor SDK; the composed bundle holds no credential of its own."
+          lede="@caisson-sh/local-store gives the bundle hybrid vector + full-text recall (vec0 + FTS5 with reciprocal-rank fusion, an FTS-only offline floor when no embedder is wired) scoped per tenant at the file level. @caisson-sh/tool-exec is the governed tool-execution gate composed alongside it: default-deny allowlist, Zod-strict argv schemas, execFile arg-arrays (never a shell) so an agent that wants to run a command only gets the ones you explicitly allowed. Neither piece makes an LLM call or imports a vendor SDK; the composed bundle holds no credential of its own."
           band="surface"
         />
       </Reveal>
@@ -365,7 +365,7 @@ export default function AgenticDevPage() {
       <Reveal>
         <Section
           title="Where your agent connects."
-          lede="Most kits ship an MCP server now; the difference is what it lets an agent do. @caisson/mcp-server ships in the open Base substrate (every plan gets it, not just Agentic-Dev) and it treats the agent as a principal: four stages on every call, in order, the same server the buyer dashboard and any MCP-speaking agent client connect through."
+          lede="Most kits ship an MCP server now; the difference is what it lets an agent do. @caisson-sh/mcp-server ships in the open Base substrate (every plan gets it, not just Agentic-Dev) and it treats the agent as a principal: four stages on every call, in order, the same server the buyer dashboard and any MCP-speaking agent client connect through."
         >
           <FeatureGrid cols={2}>
             {MCP_SEQUENCE.map((s) => (

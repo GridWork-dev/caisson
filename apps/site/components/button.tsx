@@ -1,5 +1,5 @@
-import { Button as KitButton } from "@caisson/ui/components";
-import type { ButtonProps as KitButtonProps } from "@caisson/ui/components";
+import { Button as KitButton } from "@caisson-sh/ui/components";
+import type { ButtonProps as KitButtonProps } from "@caisson-sh/ui/components";
 import Link from "next/link";
 import type { ReactNode } from "react";
 

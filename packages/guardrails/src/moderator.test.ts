@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import { compileBlocklist, localModerator } from "./moderator.ts";
 
 describe("configurable moderator regex safety", () => {

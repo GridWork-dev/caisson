@@ -1,11 +1,11 @@
 // Runtime-neutral guard core shared by the synchronous Node entry and the async WebCrypto entry.
 // Blocking events are metadata-only; the guarded text never reaches the event sink.
-import type { EventSink, OpsEvent } from "@caisson/kernel";
+import type { EventSink, OpsEvent } from "@caisson-sh/kernel";
 import {
   GuardrailError,
   guardrailBlockSchema,
   looksLikeSecret,
-} from "@caisson/kernel/browser";
+} from "@caisson-sh/kernel/browser";
 import type {
   GuardCategory,
   ModerationResult,

@@ -3,7 +3,7 @@ title: audit-worm
 description: S3/GCS/R2 Object-Lock WORM storage plus an append-only SHA-256 audit chain and a derived-current locked-version table, evidence that cannot be altered before retention expires, and tampering that is provable.
 ---
 
-`@caisson/audit-worm` is three composable layers over `@caisson/kernel`'s pure integrity
+`@caisson-sh/audit-worm` is three composable layers over `@caisson-sh/kernel`'s pure integrity
 algebra, each enforced by a different mechanism: a write-once `ArtifactStore` backed by
 Object-Lock, an append-only `AuditChainStore` anchored into that store, and a
 `LockedVersionStore` whose "current" version is derived, never stored. Every method is
@@ -27,7 +27,7 @@ tenant-scoped through `withTenant`: a forgotten filter still sees only the calle
 ## Install
 
 ```bash
-bun add @caisson/audit-worm
+bun add @caisson-sh/audit-worm
 ```
 
 ## The guarantee
@@ -48,7 +48,7 @@ surviving rows still hash together as a clean prefix.
 ## Quickstart
 
 ```ts
-import { AuditChainStore, LocalArtifactStore, retainUntilFrom } from "@caisson/audit-worm";
+import { AuditChainStore, LocalArtifactStore, retainUntilFrom } from "@caisson-sh/audit-worm";
 
 const store = new LocalArtifactStore("./worm-data"); // swap for S3ArtifactStore in prod
 const chain = new AuditChainStore({ db, store });
@@ -69,7 +69,7 @@ if (!result.valid) {
 ```ts
 // Write evidence under a retention lock. retainUntilFrom enforces the 6-year HIPAA/SEC
 // floor — a term below it throws rather than silently rounding up.
-import { buildArtifactKey } from "@caisson/audit-worm";
+import { buildArtifactKey } from "@caisson-sh/audit-worm";
 
 const key = buildArtifactKey(accountId, "evidence", "soc2-access-review.pdf");
 await store.put(key, pdfBytes, { retainUntil: retainUntilFrom(new Date(), 7) });
@@ -82,7 +82,7 @@ import {
   escalateRetention,
   irreversibleComplianceOptIn,
   COMPLIANCE_ACKNOWLEDGEMENT,
-} from "@caisson/audit-worm";
+} from "@caisson-sh/audit-worm";
 
 const optIn = irreversibleComplianceOptIn({
   bucket: "caisson-worm-prod",
@@ -138,7 +138,7 @@ factories that verify the bucket's lock capability before the store is usable:
 each refuses to construct against a bucket with no enabled lock rule covering its key prefix:
 
 ```ts
-import { R2ArtifactStore, createR2LockReader } from "@caisson/audit-worm";
+import { R2ArtifactStore, createR2LockReader } from "@caisson-sh/audit-worm";
 
 const r2Store = await R2ArtifactStore.create({
   client: r2Client, // an S3-compatible client pointed at R2's endpoint
@@ -158,7 +158,7 @@ no-successor SQL predicate cross-checked against the kernel's pure `currentVersi
 throws if the two ever disagree instead of guessing:
 
 ```ts
-import { LockedVersionStore } from "@caisson/audit-worm";
+import { LockedVersionStore } from "@caisson-sh/audit-worm";
 
 const versions = new LockedVersionStore({ db });
 
@@ -185,10 +185,10 @@ one id without loading the chain.
 
 ## Composing with the base
 
-`AuditChainStore` and `LockedVersionStore` both take a `Transactor` from `@caisson/tenancy-rls`
+`AuditChainStore` and `LockedVersionStore` both take a `Transactor` from `@caisson-sh/tenancy-rls`
 and run every operation through `withTenant`, so they sit directly on the base's RLS
 boundary, the same tenant scoping every other Caisson package uses. `audit-worm` depends
-down on `@caisson/kernel` (the pure chain/version algebra) and `@caisson/tenancy-rls` only;
+down on `@caisson-sh/kernel` (the pure chain/version algebra) and `@caisson-sh/tenancy-rls` only;
 it never depends up on an edition or bundle.
 
 <Callout type="info" title="Not a compliance certification">
@@ -199,5 +199,5 @@ it never depends up on an edition or bundle.
 </Callout>
 
 audit-worm is a paid primitive: sold standalone, or composed at runtime as a real
-`workspace:*` dependency inside the Compliance bundle alongside `@caisson/field-crypto`,
-`@caisson/retention-runner`, and the alert pipeline.
+`workspace:*` dependency inside the Compliance bundle alongside `@caisson-sh/field-crypto`,
+`@caisson-sh/retention-runner`, and the alert pipeline.

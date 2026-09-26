@@ -14,7 +14,7 @@ import {
   type Tombstone,
 } from "./tombstone.ts";
 import type { Changeset, ChangesetEntry } from "./port.ts";
-import { TenancyError } from "@caisson/kernel";
+import { TenancyError } from "@caisson-sh/kernel";
 
 const TENANT = "tenant-a";
 // Fixed replica ids so the (updatedAt, replicaId) tiebreak is reproducible: "bbbb…" > "aaaa…".

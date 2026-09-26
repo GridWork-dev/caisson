@@ -1,6 +1,6 @@
-// Commercial component tier barrel. Consumers import from `@caisson/ui-pro/components`; set
-// `transpilePackages: ["@caisson/ui-pro"]` in next.config so the raw .tsx + co-located .css transpile
-// (same delivery as the open @caisson/ui floor it builds on).
+// Commercial component tier barrel. Consumers import from `@caisson-sh/ui-pro/components`; set
+// `transpilePackages: ["@caisson-sh/ui-pro"]` in next.config so the raw .tsx + co-located .css transpile
+// (same delivery as the open @caisson-sh/ui floor it builds on).
 
 export { DataTablePro } from "./data-table-pro";
 export type {
@@ -30,7 +30,7 @@ export { KanbanBoard } from "./kanban-board";
 export type { KanbanBoardProps } from "./kanban-board";
 // Interactive primitives (ADR-0291) — the focus-managed/positioning-hard primitives that stay
 // commercial (Tabs/Checkbox/Radio/Switch/Badge/Accordion are the open-base counterparts). The
-// dialog-class primitive (trap+scrim+Escape) is the open `@caisson/ui` Dialog, not a ui-pro
+// dialog-class primitive (trap+scrim+Escape) is the open `@caisson-sh/ui` Dialog, not a ui-pro
 // component (ADR-0296 — supersedes ADR-0295's hand-rolled Drawer).
 export { Tooltip } from "./tooltip";
 export type { TooltipProps } from "./tooltip";

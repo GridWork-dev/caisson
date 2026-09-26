@@ -1,10 +1,10 @@
-# @caisson/ui-pro
+# @caisson-sh/ui-pro
 
 The advanced component tier for Caisson applications. It layers data-ops and
-compliance surfaces on the `@caisson/ui` design-system floor — heavier data
+compliance surfaces on the `@caisson-sh/ui` design-system floor — heavier data
 components plus domain-composed operations views.
 
-Licensed Apache-2.0, like the `@caisson/ui` base it builds on, and adds nothing
+Licensed Apache-2.0, like the `@caisson-sh/ui` base it builds on, and adds nothing
 you cannot theme through the same token contract.
 
 ## Components
@@ -35,8 +35,8 @@ requirement, not a polish item.
 
 Components are shipped as raw `.tsx` with co-located CSS. In a Next application,
 add the package to `transpilePackages` and import the token stylesheet from
-`@caisson/ui` once at the root.
+`@caisson-sh/ui` once at the root.
 
 ```tsx
-import { DataTablePro } from "@caisson/ui-pro/components";
+import { DataTablePro } from "@caisson-sh/ui-pro/components";
 ```

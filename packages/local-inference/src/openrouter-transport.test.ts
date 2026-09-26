@@ -5,11 +5,11 @@
 // touching `globalThis.fetch` or opening a socket. The live wire stays exercised only by
 // `live/rented.live.test.ts` (creds-gated, per the ADR-0201 live-test convention).
 import { describe, expect, test } from "bun:test";
-import { AuthzError, InternalError, ValidationError } from "@caisson/kernel";
-import type { UsageMetering } from "@caisson/kernel";
-import { EgressGuard } from "@caisson/local-privacy";
-import { localOnlyPolicy } from "@caisson/local-privacy";
-import type { PrivacyPolicy } from "@caisson/local-privacy";
+import { AuthzError, InternalError, ValidationError } from "@caisson-sh/kernel";
+import type { UsageMetering } from "@caisson-sh/kernel";
+import { EgressGuard } from "@caisson-sh/local-privacy";
+import { localOnlyPolicy } from "@caisson-sh/local-privacy";
+import type { PrivacyPolicy } from "@caisson-sh/local-privacy";
 import { EMBEDDING_DIM } from "./backend.ts";
 import { createOpenRouterRentedTransport } from "./openrouter-transport.ts";
 import { RentedInferenceBackend } from "./rented-backend.ts";

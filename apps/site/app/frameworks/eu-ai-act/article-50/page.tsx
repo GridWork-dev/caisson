@@ -8,7 +8,7 @@
 // The obligations table hand-builds a `cs-matrix` — own the stylesheet dependency explicitly
 // (the kit's co-located css ships inside the SkuMatrix module, which this page never imports;
 // same lesson as the compare template's "unstyled, zero-gap" audit finding).
-import "@caisson/ui/components/sku-matrix.css";
+import "@caisson-sh/ui/components/sku-matrix.css";
 
 import {
   Button,

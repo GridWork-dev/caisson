@@ -16,8 +16,8 @@
 //   - the block is raised BEFORE `fetchWithTimeout` is ever reached, so no socket is opened and no
 //     bytes leave the device. Error `details` carry only the host + scheme — never the full URL,
 //     whose path/query could hold a token or PII.
-import { fetchWithTimeout } from "@caisson/kernel/fetch";
-import type { FetchTimeoutOptions } from "@caisson/kernel/fetch";
+import { fetchWithTimeout } from "@caisson-sh/kernel/fetch";
+import type { FetchTimeoutOptions } from "@caisson-sh/kernel/fetch";
 import { PrivacyDecisionGuard } from "./decision-guard.ts";
 import type { PrivacyPolicy, SanctionedSinkKind } from "./policy.ts";
 

@@ -1,10 +1,10 @@
-// Proves the runnable discovery entry wires the REAL committed manifest + the REAL @caisson/ui
+// Proves the runnable discovery entry wires the REAL committed manifest + the REAL @caisson-sh/ui
 // tokens and answers list_components / get_tokens over an in-memory transport — the same start path
 // an agent spawns, minus the OS stdio pipe.
 import { afterEach, describe, expect, test } from "bun:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { loadBaseManifest } from "@caisson/ds-manifest";
+import { loadBaseManifest } from "@caisson-sh/ds-manifest";
 import { startDiscovery } from "./discovery-bin.ts";
 
 let client: Client | undefined;
@@ -34,7 +34,7 @@ describe("discovery-bin", () => {
       pkg: string;
       components: { name: string }[];
     };
-    expect(list.pkg).toBe("@caisson/ui");
+    expect(list.pkg).toBe("@caisson-sh/ui");
     expect(list.components.length).toBe(loadBaseManifest().components.length);
   });
 });

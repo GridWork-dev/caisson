@@ -1,15 +1,15 @@
-// The owner-gated membership CARVE (ADR-0257 §1.3), moved here from @caisson/auth's
+// The owner-gated membership CARVE (ADR-0257 §1.3), moved here from @caisson-sh/auth's
 // membership.integration.test.ts. Proves the manage half (list/add + owner authz) over PGlite RLS.
 // Session resolution (resolveUserAccounts/ensurePersonalAccount/selectActiveAccount) stays proven in
-// @caisson/auth — this suite composes onto it (ACCOUNT_MEMBER_SCHEMA_SQL + ensurePersonalAccount) to
+// @caisson-sh/auth — this suite composes onto it (ACCOUNT_MEMBER_SCHEMA_SQL + ensurePersonalAccount) to
 // seed accounts, then exercises ONLY the carved surface.
 import { afterAll, beforeEach, describe, expect, test } from "bun:test";
-import { newTestPg, type TestPg } from "@caisson/testing";
-import { AuthzError, ValidationError } from "@caisson/kernel";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
+import { AuthzError, ValidationError } from "@caisson-sh/kernel";
 import {
   ACCOUNT_MEMBER_SCHEMA_SQL,
   ensurePersonalAccount,
-} from "@caisson/auth";
+} from "@caisson-sh/auth";
 
 import {
   addAccountMember,

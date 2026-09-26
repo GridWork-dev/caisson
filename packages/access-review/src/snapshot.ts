@@ -1,6 +1,6 @@
 // src/snapshot.ts — the MembershipSnapshot import port (ADR-0371).
 //
-// Same shape discipline as @caisson/compliance-core's EvidenceCollector
+// Same shape discipline as @caisson-sh/compliance-core's EvidenceCollector
 // (src/evidence/collector.ts): `read()` is a PURE, already-parsed return — no I/O, no clock.
 // Whatever I/O a real source needs (reading a file, calling an API) happens at the EDGE, before
 // the adapter is constructed; the adapter itself only validates the already-gathered content
@@ -10,7 +10,7 @@
 //
 // v2 milestone (named, not built — see README "Roadmap"): a GitHub org/team connector
 // implementing this SAME port. Out of scope here; no live IdP/SaaS connector ships in this package.
-import { parseStrict, ValidationError } from "@caisson/kernel";
+import { parseStrict, ValidationError } from "@caisson-sh/kernel";
 import { membershipSnapshotSchema, type MembershipSnapshot } from "./schema.ts";
 
 /** A typed source of ONE reviewer's membership roster. `id` names the adapter (surfaced in

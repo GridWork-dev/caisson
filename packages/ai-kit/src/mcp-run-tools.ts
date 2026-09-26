@@ -1,12 +1,12 @@
 // The MCP `run_start`/`run_status` host callbacks (ADR-0360, S5 exposure/publish, ADR-0361/0362).
-// `@caisson/mcp-server` is the base package that owns the `registerTool` seam (`run-tools.ts`
+// `@caisson-sh/mcp-server` is the base package that owns the `registerTool` seam (`run-tools.ts`
 // there) and never imports this composition package at runtime — so, exactly like the
 // `generate` tool's `onGenerate` host hook, the ACTUAL loop/store wiring lives HERE and is injected
 // into the server as a plain callback pair at construction time. This mirrors the seam's existing
 // shape, not a new one.
 //
 // `buildRunTools` assembles a `{runStart, runStatus}` pair structurally compatible with
-// `@caisson/mcp-server`'s `RunToolsOptions` port (duck-typed — no reverse dependency on mcp-server
+// `@caisson-sh/mcp-server`'s `RunToolsOptions` port (duck-typed — no reverse dependency on mcp-server
 // needed; every field mcp-server reads is a plain function this module already exports the exact
 // shape of).
 //
@@ -17,18 +17,18 @@
 // view only a commercial-tier caller can build (agent-trajectory's `project()` is unavailable to the
 // open CLI, see `packages/cli/src/run.ts`'s hand-rolled summary for that constrained lane).
 import { z } from "zod";
-import { parseStrict, strictObject } from "@caisson/kernel";
-import type { AiSettings } from "@caisson/ai-config";
-import type { TenantExecutor, Transactor } from "@caisson/tenancy-rls";
+import { parseStrict, strictObject } from "@caisson-sh/kernel";
+import type { AiSettings } from "@caisson-sh/ai-config";
+import type { TenantExecutor, Transactor } from "@caisson-sh/tenancy-rls";
 import {
   createPgRunStateStore,
   createPgTrajectoryStore,
   project,
   type RunProjection,
   type RunStateSnapshot,
-} from "@caisson/agent-trajectory";
-import { type FieldCryptoContext } from "@caisson/field-crypto";
-import type { MeterConfig } from "@caisson/ai-meter";
+} from "@caisson-sh/agent-trajectory";
+import { type FieldCryptoContext } from "@caisson-sh/field-crypto";
+import type { MeterConfig } from "@caisson-sh/ai-meter";
 import {
   runToolLoop,
   type LoopTool,
@@ -71,7 +71,7 @@ export interface RunStatusResult {
   readonly projection: RunProjection;
 }
 
-/** The minimal ctx shape both tool callbacks need — a duck-typed match of `@caisson/mcp-server`'s
+/** The minimal ctx shape both tool callbacks need — a duck-typed match of `@caisson-sh/mcp-server`'s
  *  `RunToolsOptions.runStart`/`runStatus` ctx, so this module needs no import from that package. */
 interface RunToolCtx {
   readonly accountId: string;
@@ -94,7 +94,7 @@ function storesFor(
 }
 
 /**
- * Build the `{runStart, runStatus}` callback pair `@caisson/mcp-server`'s `run-tools.ts` seam
+ * Build the `{runStart, runStatus}` callback pair `@caisson-sh/mcp-server`'s `run-tools.ts` seam
  * invokes per call, one governed `RunToolsDeps` configuration per deployment.
  */
 export function buildRunTools(deps: RunToolsDeps): {

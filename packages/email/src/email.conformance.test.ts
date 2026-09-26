@@ -14,7 +14,7 @@ const MSG: EmailMessage = {
   data: { url: "https://caisson.sh/verify?token=abc" },
 };
 
-// The port is shared with non-buyer-facing callers (e.g. `@caisson/alerting`'s free-form
+// The port is shared with non-buyer-facing callers (e.g. `@caisson-sh/alerting`'s free-form
 // `alert.*` templates) — every driver must also handle a template outside the branded registry.
 const FREEFORM_MSG: EmailMessage = {
   to: "ops@example.com",

@@ -3,7 +3,7 @@
 // Evidences that every tenant table enforces row-level security the fail-closed way: RLS ENABLED,
 // RLS FORCED (so even the table owner is policed), AND a tenant policy present. The posture snapshot
 // is gathered at the edge (a catalog read over `pg_class.relrowsecurity`/`relforcerowsecurity` + the
-// tenant policy from `buildTenantPolicySql` in `@caisson/tenancy-rls`). Empty snapshot → `unresolved` (nothing
+// tenant policy from `buildTenantPolicySql` in `@caisson-sh/tenancy-rls`). Empty snapshot → `unresolved` (nothing
 // was inspected, so isolation cannot be attested); any deficient table → `flagged`.
 import {
   flaggedResult,

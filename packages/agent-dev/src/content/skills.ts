@@ -5,7 +5,7 @@
 // from another naming scheme. Some skills declare a by-name `dependencies` cross-ref to ANOTHER
 // artifact in the default set; reference integrity (no ghost refs) is enforced over the whole set by
 // the `validateArtifactSet` check.
-import { type SkillArtifact, defineSkill } from "@caisson/agent-kernel";
+import { type SkillArtifact, defineSkill } from "@caisson-sh/agent-kernel";
 
 /** The default skill set a buyer of the agent-dev edition gets out of the box (engine-neutral). */
 export const CAISSON_SKILLS: readonly SkillArtifact[] = [

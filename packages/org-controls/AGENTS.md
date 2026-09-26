@@ -1,4 +1,4 @@
-# @caisson/org-controls — agent notes
+# @caisson-sh/org-controls — agent notes
 
 Org/operator controls module (Apache-2.0). Import surface:
 
@@ -18,8 +18,8 @@ Org/operator controls module (Apache-2.0). Import surface:
 - `holdsOrgControls(activeEntitlementIds)` + `ORG_CONTROLS_ENTITLEMENT_ID` — the fail-closed gate
   predicate. Pass ONLY active grants; deny on any read error.
 
-**Boundary:** user session resolution stays in `@caisson/auth`; tenant isolation
-(`withTenant`/`withUser`) stays in `@caisson/tenancy-rls`. Never move those into this package.
+**Boundary:** user session resolution stays in `@caisson-sh/auth`; tenant isolation
+(`withTenant`/`withUser`) stays in `@caisson-sh/tenancy-rls`. Never move those into this package.
 
 **Entry points:** `.` is the full server-side surface; `./browser` (ADR-0396) is the browser-safe
 subset — `assertCanManageMembers` from `src/gate.ts`, and nothing else. A client bundle imports
@@ -27,5 +27,5 @@ subset — `assertCanManageMembers` from `src/gate.ts`, and nothing else. A clie
 source-graph walk in `src/browser-safety.test.ts`, and every `./browser` name must also exist on
 `.`. Note what the walk is checking for here: this package reaches **zero** `node:` builtins, so
 the blocker is the EXTERNAL frontier — `@clerk/backend` (clerk.ts) and `pg` (via
-`@caisson/tenancy-rls` in membership.ts). `Role` comes from `@caisson/auth` as a statement-level
+`@caisson-sh/tenancy-rls` in membership.ts). `Role` comes from `@caisson-sh/auth` as a statement-level
 `import type`; making it a value import would taint the entry through that package's `jwt.ts`.

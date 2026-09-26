@@ -20,7 +20,8 @@ describe("llms.txt", () => {
   test("states the base licensing with the count from the package SOT", () => {
     expect(body).toContain(`${BASE_PACKAGES.length}-package Base substrate`);
     expect(body).toContain("Apache-2.0");
-    for (const pkg of BASE_PACKAGES) expect(body).toContain(`@caisson/${pkg}`);
+    for (const pkg of BASE_PACKAGES)
+      expect(body).toContain(`@caisson-sh/${pkg}`);
   });
 
   // The parent-organization claim is deliberately ABSENT. Caisson Software LLC and GridWork

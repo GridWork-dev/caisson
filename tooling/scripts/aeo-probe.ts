@@ -31,7 +31,7 @@ const OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions";
 
 // ponytail: tooling/scripts has no package.json (it's a standalone-script directory, not a
 // workspace package — vault-parity-check.ts / sot-check.ts follow the same rule), so it can't
-// import @caisson/kernel's fetchWithTimeout. Inline the same AbortController pattern (ADR-0002:
+// import @caisson-sh/kernel's fetchWithTimeout. Inline the same AbortController pattern (ADR-0002:
 // AbortSignal.timeout() is forbidden on Bun) rather than promote this directory to a package
 // for one helper.
 async function fetchWithTimeout(

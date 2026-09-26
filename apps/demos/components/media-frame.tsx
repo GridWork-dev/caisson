@@ -3,7 +3,7 @@
 // exists twice rather than in a package invented for two small presentational files — the same
 // call media-frame.module.css already documents for mirroring `.cs-terminal` instead of reusing
 // the packages/ui BEM classes. If a third consumer ever appears, that is the moment to promote
-// this into @caisson/ui, not before.
+// this into @caisson-sh/ui, not before.
 import type { ReactNode } from "react";
 
 import styles from "./media-frame.module.css";

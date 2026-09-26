@@ -3,7 +3,7 @@
 // an envelope grade tag while the canonical (signed) body stays byte-identical to a no-anchor pack.
 import { describe, expect, test } from "bun:test";
 import { inflateRawSync } from "node:zlib";
-import type { JsonValue } from "@caisson/kernel";
+import type { JsonValue } from "@caisson-sh/kernel";
 import { passResult } from "./collector.ts";
 import {
   generateEvidencePack,

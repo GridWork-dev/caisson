@@ -9,13 +9,13 @@
 // authorship trust. A deployment key removes the hardest surface (reaching a BYOK/KMS/crypto-shredded
 // tenant key from a background job) with no loss of the property being sold.
 //
-// This is DISTINCT from `@caisson/audit-worm`'s unrelated `Ed25519AnchorSigner` (which signs each WORM
+// This is DISTINCT from `@caisson-sh/audit-worm`'s unrelated `Ed25519AnchorSigner` (which signs each WORM
 // anchor's core at mint with node:crypto) — different key, different purpose, deliberately different
 // name to avoid the collision. This signer uses `@noble/curves` `ed25519ph` (the only vetted JS
 // prehash primitive; `@noble/ed25519` is PureEdDSA-only), proven interop against the live public v2
 // instance from Bun in the R1 de-risk.
 import { ed25519, ed25519ph } from "@noble/curves/ed25519.js";
-import { ConfigError, ValidationError } from "@caisson/kernel";
+import { ConfigError, ValidationError } from "@caisson-sh/kernel";
 import { z } from "zod";
 import type { SignatureAlgorithm, Signer } from "./sign.ts";
 

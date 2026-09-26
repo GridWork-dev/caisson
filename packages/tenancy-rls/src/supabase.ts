@@ -11,7 +11,7 @@
 // ONLY a session-mode pooler or a direct connection (both default to port 5432) and fails closed
 // at CONSTRUCTION — never at the first silently-unscoped query — when the connection string is
 // shaped like the transaction-mode pooler.
-import { ConfigError } from "@caisson/kernel";
+import { ConfigError } from "@caisson-sh/kernel";
 import { createPgTransactor } from "./node-pg.ts";
 import { createPgPool } from "./pool.ts";
 import type { Transactor } from "./rls.ts";
@@ -25,7 +25,7 @@ export interface SupabaseTransactorConfig {
   /**
    * Override the underlying `Transactor`. Tests inject a PGlite-backed `Transactor` here instead
    * of a real Supabase connection, so `createSupabaseTransactor` never opens a socket in `bun
-   * test` — the same override shape as `@caisson/jobs`'s `TriggerJobQueueConfig.client`.
+   * test` — the same override shape as `@caisson-sh/jobs`'s `TriggerJobQueueConfig.client`.
    */
   driver?: Transactor;
 }

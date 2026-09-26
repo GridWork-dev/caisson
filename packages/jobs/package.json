@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/jobs",
+  "name": "@caisson-sh/jobs",
   "version": "0.7.4",
   "description": "Provider-agnostic background-job queue port with in-memory, Trigger.dev, Inngest, pg-boss, and BullMQ drivers. Billing/credit side-effects are enqueued, never inline.",
   "license": "Apache-2.0",
@@ -22,8 +22,8 @@
     "test:live": "bun test ./live"
   },
   "dependencies": {
-    "@caisson/kernel": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
+    "@caisson-sh/tenancy-rls": "workspace:*",
     "@trigger.dev/sdk": "^4.5.6",
     "bullmq": "^6.0.0",
     "inngest": "^4.13.0",
@@ -32,8 +32,8 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

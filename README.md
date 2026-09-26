@@ -1,6 +1,6 @@
 # Caisson
 
-**Compliance-grade infrastructure for regulated SaaS.** `@caisson/*` · [caisson.sh](https://caisson.sh)
+**Compliance-grade infrastructure for regulated SaaS.** `@caisson-sh/*` · [caisson.sh](https://caisson.sh)
 
 A productized **monorepo library**: a composable base + six commercial bundles (Compliance ·
 AI-Production · Local-first · Agentic-Dev · Provenance · Everything) + a generator the buyer's

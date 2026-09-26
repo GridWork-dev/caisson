@@ -37,7 +37,7 @@ export interface SmtpConfig {
 /**
  * Production `Emailer` backed by SMTP, rendering through the same React-Email template registry
  * as the Resend/Postmark drivers — falling back to a generic subject/text mapping for free-form
- * (non-branded) templates, e.g. `@caisson/alerting`'s operator alerts.
+ * (non-branded) templates, e.g. `@caisson-sh/alerting`'s operator alerts.
  */
 export function createSmtpEmailer(config: SmtpConfig): Emailer {
   const transport: SmtpTransport =

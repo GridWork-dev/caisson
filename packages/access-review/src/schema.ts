@@ -2,10 +2,10 @@
 //
 // Every boundary in this package is a Zod `.strict()` parse: a membership snapshot from an
 // external loader, a campaign-open request, a per-reviewee decision, a close request. Fail closed
-// before any I/O — the same discipline @caisson/compliance's impersonation kernel applies to its
+// before any I/O — the same discipline @caisson-sh/compliance's impersonation kernel applies to its
 // begin boundary (src/impersonation/session.ts).
 import { z } from "zod";
-import { strictObject } from "@caisson/kernel";
+import { strictObject } from "@caisson-sh/kernel";
 import { REVIEW_DECISIONS } from "./decisions.ts";
 
 /** A reviewer/reviewee id — an opaque external identifier (email, username, account id). Bounded
@@ -28,7 +28,7 @@ const revieweesShape = z
 
 /** A typed roster: one reviewer and the reviewees they attest access for. Every loader adapter
  *  (CSV/JSON/in-memory, snapshot.ts) parses into this SAME shape — the same shape discipline
- *  `@caisson/compliance-core`'s `EvidenceCollector` uses: the loader's own I/O stays outside the
+ *  `@caisson-sh/compliance-core`'s `EvidenceCollector` uses: the loader's own I/O stays outside the
  *  typed boundary, `read()` itself returns an already-parsed, pure value. */
 export const membershipSnapshotSchema = strictObject({
   reviewerId: memberId,

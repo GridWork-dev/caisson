@@ -2,17 +2,17 @@
 //
 // PROVEN BY A STATIC SOURCE-GRAPH WALK, NEVER BY A BUILD: a bundler does not fail on a node
 // builtin, it SUBSTITUTES a polyfill and exits 0. The claim this entry makes is that nothing in its
-// value-import graph — including the cross-package edges into @caisson/kernel and
-// @caisson/frameworks-pack/browser — reaches one.
+// value-import graph — including the cross-package edges into @caisson-sh/kernel and
+// @caisson-sh/frameworks-pack/browser — reaches one.
 //
 // This package is the sharpest case for the positive control: its `.` barrel reaches node builtins
-// from FOUR directions (generate.ts directly, chain-verify through @caisson/kernel/node,
-// field-crypto-policy through @caisson/field-crypto, drift/* directly). A walker that had gone
+// from FOUR directions (generate.ts directly, chain-verify through @caisson-sh/kernel/node,
+// field-crypto-policy through @caisson-sh/field-crypto, drift/* directly). A walker that had gone
 // blind to any of those would report the same empty offender list on browser.ts that a genuinely
 // clean entry does.
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../..");
 const BROWSER_ENTRY = join(import.meta.dir, "browser.ts");

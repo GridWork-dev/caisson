@@ -1,7 +1,7 @@
-// @caisson/risk-register — a framework-agnostic risk register: likelihood x impact scoring with a
-// computed, never freeform, residual (@caisson/risk-register's own model.ts), an operator-override
-// exception chained through @caisson/audit-worm rather than a plain edit, crosswalk pointers into
-// any shipped compliance framework pack (reusing @caisson/frameworks-pack's CrosswalkReference),
+// @caisson-sh/risk-register — a framework-agnostic risk register: likelihood x impact scoring with a
+// computed, never freeform, residual (@caisson-sh/risk-register's own model.ts), an operator-override
+// exception chained through @caisson-sh/audit-worm rather than a plain edit, crosswalk pointers into
+// any shipped compliance framework pack (reusing @caisson-sh/frameworks-pack's CrosswalkReference),
 // and a risk-treatment-plan evidence artifact.
 
 // --- The scored register row + its computed residual. --------------------------------------------

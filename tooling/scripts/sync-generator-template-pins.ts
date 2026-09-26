@@ -31,11 +31,11 @@ export function syncGeneratorTemplatePins(root: string): string[] {
     let pins = 0;
     let changed = false;
     for (const name of Object.keys(template.dependencies)) {
-      if (!name.startsWith("@caisson/")) continue;
-      if (!/^@caisson\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name)) {
+      if (!name.startsWith("@caisson-sh/")) continue;
+      if (!/^@caisson-sh\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name)) {
         throw new Error(`Invalid workspace dependency: ${name}`);
       }
-      const slug = name.slice("@caisson/".length);
+      const slug = name.slice("@caisson-sh/".length);
       const workspace = Workspace.parse(
         JSON.parse(
           readFileSync(join(root, "packages", slug, "package.json"), "utf8"),

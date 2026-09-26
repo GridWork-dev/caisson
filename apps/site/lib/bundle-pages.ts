@@ -85,7 +85,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       lede: "Compliance delivers fourteen packages in one bundle: tenant isolation that fails closed, evidence that can't be overwritten, and machine-readable OSCAL exports backed by a pinned NIST catalog. Own the source, wire it in before your first customer, and hand an auditor an artifact instead of a slide deck.",
     },
     definition:
-      "Compliance delivers fourteen @caisson/* packages in one bundle: fail-closed tenant isolation, an append-only audit chain over S3 Object-Lock WORM, per-tenant field encryption, alerting, a retention runner, an access-review campaign engine, an AI risk register, a buyer-facing trust page, and a dedicated OSCAL spine that maps evidence into machine-readable assessment, catalog, and ISO 27001 SoA artifacts. Own the source, and wire it in before your first customer shares a row.",
+      "Compliance delivers fourteen @caisson-sh/* packages in one bundle: fail-closed tenant isolation, an append-only audit chain over S3 Object-Lock WORM, per-tenant field encryption, alerting, a retention runner, an access-review campaign engine, an AI risk register, a buyer-facing trust page, and a dedicated OSCAL spine that maps evidence into machine-readable assessment, catalog, and ISO 27001 SoA artifacts. Own the source, and wire it in before your first customer shares a row.",
     members: [
       {
         id: "kernel",
@@ -277,37 +277,37 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
     members: [
       {
         id: "local-store",
-        name: "@caisson/local-store",
+        name: "@caisson-sh/local-store",
         oneLiner:
           "Hybrid retrieval: sqlite-vec ANN plus FTS5, merged by Reciprocal-Rank-Fusion, with an FTS-only fallback if the vector leg fails.",
       },
       {
         id: "field-crypto",
-        name: "@caisson/field-crypto",
+        name: "@caisson-sh/field-crypto",
         oneLiner:
           "Per-tenant field encryption: HKDF key derivation plus AES-256-GCM, sealed at rest under a key a different tenant's file cannot open.",
       },
       {
         id: "local-inference",
-        name: "@caisson/local-inference",
+        name: "@caisson-sh/local-inference",
         oneLiner:
           "The InferenceBackend seam over a MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use, on-device by default.",
       },
       {
         id: "local-privacy",
-        name: "@caisson/local-privacy",
+        name: "@caisson-sh/local-privacy",
         oneLiner:
           "A default-deny egress boundary every payload crosses before it can leave the process, an empty allowlist means zero egress.",
       },
       {
         id: "local-sync",
-        name: "@caisson/local-sync",
+        name: "@caisson-sh/local-sync",
         oneLiner:
           "Two-way offline sync: changesets, tombstones, a logical clock, and a reconcile pass with a convergence test.",
       },
       {
         id: "kernel",
-        name: "@caisson/kernel",
+        name: "@caisson-sh/kernel",
         oneLiner:
           "The governance kernel underneath every bundle: typed config, the shared error model, and security primitives.",
       },
@@ -327,7 +327,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
         question:
           "Can I use just the vector store instead of the whole bundle?",
         answer:
-          "Yes. @caisson/local-store also works standalone, as do on-device inference, the sync engine, and the privacy gate. The full Local-first AI bundle composes all seven packages.",
+          "Yes. @caisson-sh/local-store also works standalone, as do on-device inference, the sync engine, and the privacy gate. The full Local-first AI bundle composes all seven packages.",
       },
     ],
   },
@@ -380,7 +380,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       {
         question: "What's actually running when an agent executes?",
         answer:
-          "@caisson/agent-runner spawns the agent CLI as a detached subprocess in an isolated worktree with a child environment built from scratch, never a spread of your process env, plus a fixed non-secret passthrough allowlist and only the target provider's key. Every run streams a durable .jsonl transcript and resolves to a structured report of tool calls, files touched, and the final result.",
+          "@caisson-sh/agent-runner spawns the agent CLI as a detached subprocess in an isolated worktree with a child environment built from scratch, never a spread of your process env, plus a fixed non-secret passthrough allowlist and only the target provider's key. Every run streams a durable .jsonl transcript and resolves to a structured report of tool calls, files touched, and the final result.",
       },
       {
         question: "Can I use just the kernel or just the runner?",
@@ -437,7 +437,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       {
         question: "Which packages does the bundle compose?",
         answer:
-          "Three real workspace dependencies: @caisson/signing-primitive (detached Ed25519 + RFC-3161), @caisson/audit-worm (the SHA-256 audit chain plus the S3 Object-Lock adapter), and @caisson/field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM). Nothing on this page is a manifest claim without composed code behind it.",
+          "Three real workspace dependencies: @caisson-sh/signing-primitive (detached Ed25519 + RFC-3161), @caisson-sh/audit-worm (the SHA-256 audit chain plus the S3 Object-Lock adapter), and @caisson-sh/field-crypto (per-tenant HKDF-SHA256 + AES-256-GCM). Nothing on this page is a manifest claim without composed code behind it.",
       },
       {
         question: "Can a third party verify a signature without my keys?",

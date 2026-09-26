@@ -24,7 +24,7 @@ Every module installs from the public npm registry, so the generated project nee
 registry configuration:
 
 ```bash
-bunx @caisson-sh/cli@latest --name my-app --module @caisson/kernel@<version>
+bunx @caisson-sh/cli@latest --name my-app --module @caisson-sh/kernel@<version>
 cd my-app
 bun install
 ```
@@ -42,7 +42,7 @@ from the packages released alongside it, one version per module, so the id/versi
 `--module` can resolve against are frozen to the package versions of that CLI release.
 
 ```bash
-bunx @caisson-sh/cli@0.4.0 --name my-app --module @caisson/kernel@1.4.0
+bunx @caisson-sh/cli@0.4.0 --name my-app --module @caisson-sh/kernel@1.4.0
 ```
 
 `@latest` always resolves against the newest snapshot; pin an explicit npm version (`@0.4.0`) to
@@ -53,11 +53,11 @@ different index file entirely, a CI/local-dev override, not part of a normal ins
 
 ```bash
 bunx @caisson-sh/cli@latest --name my-app \
-  --module @caisson/kernel@1.4.0 \
-  --module @caisson/auth@2.1.0
+  --module @caisson-sh/kernel@1.4.0 \
+  --module @caisson-sh/auth@2.1.0
 ```
 
-- Each value splits on the **last** `@`, so a scoped id (`@caisson/kernel`) keeps its leading `@`;
+- Each value splits on the **last** `@`, so a scoped id (`@caisson-sh/kernel`) keeps its leading `@`;
   a value with no `@` after position 0 fails immediately (`--module expects <id@version>`).
 - `version` is not a semver range, it must equal that module's catalog version exactly.
   `^1.4.0`, `~1.4`, `1.x`, and `latest` are all rejected.
@@ -68,13 +68,13 @@ Both checks run **before** any path is built or any file touches disk, so a bad 
 reaches the filesystem:
 
 ```
-unknown module id (not in the module catalog): "@caisson/typo"
-unknown version for @caisson/kernel: "9.9.9"
+unknown module id (not in the module catalog): "@caisson-sh/typo"
+unknown version for @caisson-sh/kernel: "9.9.9"
 ```
 
 ### The validation call chain
 
-`@caisson/cli`'s package export (`.` in `package.json`, resolving to `src/index.ts` in a Bun
+`@caisson-sh/cli`'s package export (`.` in `package.json`, resolving to `src/index.ts` in a Bun
 workspace or `dist/index.js` published) surfaces the same pipeline the `create-caisson` binary
 runs, for a caller that wants to validate or generate without shelling out, like the MCP server's
 `generate` tool.
@@ -89,7 +89,7 @@ import {
   validateSelection,
   generate,
   runCli,
-} from "@caisson/cli";
+} from "@caisson-sh/cli";
 ```
 
 | Export              | Signature                                                                                                             | Behavior                                                                                                                                                    |
@@ -99,7 +99,7 @@ import {
 | `generate`          | `(index: RegistryIndex, raw: unknown, engine?: GeneratorEngine) => { selection: Selection; files: GeneratedFileSet }` | Runs `validateSelection`, then hands the result to `engine` (`templatesEngine` by default). Returns the file set in memory, no disk write.                 |
 | `runCli`            | `(argv: readonly string[], deps: { index: RegistryIndex }) => { selection: Selection; files: GeneratedFileSet }`      | `parseArgs` + `generate` in one call, the shape a programmatic caller uses.                                                                                |
 
-`RegistryIndex` is loaded from `@caisson/registry-schema`'s `loadRegistryIndexFromFile`, reading
+`RegistryIndex` is loaded from `@caisson-sh/registry-schema`'s `loadRegistryIndexFromFile`, reading
 whichever path the pinning rules above resolve to. `Selection` (also exported as
 `SelectionSchema`) is the validated shape `validateSelection`, `generate`, and `runCli` all return:
 
@@ -137,11 +137,11 @@ Repeat `--module` per module. `--help` prints the flag reference, not the live c
 
 ### Wire the MCP server (tool-native)
 
-`@caisson/mcp-server` is a published Apache-2.0 package, it is not a scaffold default, so add it
+`@caisson-sh/mcp-server` is a published Apache-2.0 package, it is not a scaffold default, so add it
 to your generated project first:
 
 ```bash
-bun add @caisson/mcp-server
+bun add @caisson-sh/mcp-server
 ```
 
 It is an auth-gated MCP server exposing `list_modules`, `describe_module`, and
@@ -150,10 +150,10 @@ stdio with `runStdioServer`: one process per buyer session, the same pattern Cla
 Claude Code use for any local stdio MCP server:
 
 ```ts
-import { runStdioServer } from "@caisson/mcp-server";
+import { runStdioServer } from "@caisson-sh/mcp-server";
 
 // Illustrative: mcpOptions (registry index + issued tokens + the onGenerate host hook) is your
-// own wiring — see the McpServerOptions type exported by @caisson/mcp-server for the exact shape.
+// own wiring — see the McpServerOptions type exported by @caisson-sh/mcp-server for the exact shape.
 await runStdioServer({
   mcp: mcpOptions,
   bearer: process.env.CAISSON_MCP_TOKEN!,
@@ -183,7 +183,7 @@ Every data path goes through `withTenant`: the sole entry point that sets the RL
 There is no way to query tenant data without it; that is the point.
 
 ```ts
-import { withTenant } from "@caisson/tenancy-rls";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 
 await withTenant(tenantId, async (db) => {
   // Inside this scope, RLS is enforced. Outside it, queries fail closed.
@@ -203,6 +203,6 @@ bun run check
 
 - Read the **base substrate** docs for `auth`, `tenancy-rls`, `billing`, and `credits`.
 - Read the **Compliance** docs to turn on WORM evidence and the audit chain.
-- Bring your own framework, the `@caisson/*` packages never import one.
+- Bring your own framework, the `@caisson-sh/*` packages never import one.
 
 <DocsCta />

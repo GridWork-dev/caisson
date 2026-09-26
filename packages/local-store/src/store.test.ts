@@ -2,7 +2,7 @@
 // is always available; the vec leg degrades when absent/failed; a dimension mismatch throws. The
 // golden RRF ranking itself is asserted in golden.test.ts.
 import { describe, expect, test } from "bun:test";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import { LocalStore } from "./store.ts";
 
 /** Same corpus as the golden, minus the FTS-absent `canine` vec-only doc where noted. */

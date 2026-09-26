@@ -3,7 +3,7 @@
 // "Replay a run" (ADR-0378 lock 2, flagship F-agent-trajectory). The hand-ported mirror
 // (agent-trajectory-logic.ts) is deleted: the sample trajectory below is poke-local FIXTURE data,
 // and everything that judges it is the real package, imported through
-// `@caisson/agent-trajectory/browser` (ADR-0396).
+// `@caisson-sh/agent-trajectory/browser` (ADR-0396).
 //
 //   - the fold is the shipped `project()` — replayed in recorded order and in reversed arrival,
 //     and the two projections are compared byte-for-byte here rather than asserted;
@@ -20,7 +20,7 @@ import {
   TrajectoryEvent,
   type DigestRef,
   type RunProjection,
-} from "@caisson/agent-trajectory/browser";
+} from "@caisson-sh/agent-trajectory/browser";
 
 import { PokeShell, Verdict } from "./poke-rig";
 import styles from "./agent-trajectory-poke.module.css";
@@ -409,7 +409,7 @@ export default function AgentTrajectoryPoke() {
 
   return (
     <PokeShell
-      label="@caisson/agent-trajectory"
+      label="@caisson-sh/agent-trajectory"
       title="Replay a run twice. Then tamper one event and watch the verdict flip."
     >
       <p className={styles.sample}>

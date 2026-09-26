@@ -1,12 +1,12 @@
 // The browser-safety contract for `./browser` (ADR-0396). Same walk as oscal-spine's, with the
 // load-bearing extra: this package's `.` barrel reaches node builtins ONLY through the bare
-// specifier `@caisson/oscal-spine` — so the positive control here is simultaneously the proof
+// specifier `@caisson-sh/oscal-spine` — so the positive control here is simultaneously the proof
 // that the walker crosses workspace package boundaries. Without it, the zero-offender result on
 // src/browser.ts would be exactly the failure mode it exists to prevent: a walker blind to
-// everything behind an @caisson/* specifier, passing green on nothing.
+// everything behind an @caisson-sh/* specifier, passing green on nothing.
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../..");
 const BROWSER_ENTRY = join(import.meta.dir, "browser.ts");
@@ -24,7 +24,7 @@ describe("`./browser` is browser-safe", () => {
 
   test("guard the guard: the walk crossed into oscal-spine, not just this package", () => {
     // The relative-only subgraph alone is >5 files, so files.length cannot guard the
-    // cross-package claim — this assertion is the one that fails if @caisson/* resolution
+    // cross-package claim — this assertion is the one that fails if @caisson-sh/* resolution
     // silently goes blind.
     expect(
       walk.files.some((f) => f.includes("packages/oscal-spine/src/")),
@@ -34,7 +34,7 @@ describe("`./browser` is browser-safe", () => {
     );
   });
 
-  test("positive control: the `.` barrel reports node builtins reached ONLY via @caisson/oscal-spine", () => {
+  test("positive control: the `.` barrel reports node builtins reached ONLY via @caisson-sh/oscal-spine", () => {
     const barrel = nodeBuiltinTaint(BARREL_ENTRY, {
       workspaceRoot: WORKSPACE_ROOT,
     });

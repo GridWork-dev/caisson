@@ -2,10 +2,10 @@
 // that is not semver violates the schema, so `defineModule` throws a ZodError at import — which the
 // gate must surface as an ERROR, not a warn. Not a *.test.ts, so the runner never executes it as a
 // suite; it is loaded only via the test's dynamic import.
-import { defineModule } from "@caisson/registry-schema";
+import { defineModule } from "@caisson-sh/registry-schema";
 
 export default defineModule({
-  id: "@caisson/fixture-invalid",
+  id: "@caisson-sh/fixture-invalid",
   version: "not-semver",
   license: "Apache-2.0",
   dependencies: [],

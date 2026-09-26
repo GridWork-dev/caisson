@@ -13,9 +13,9 @@ import {
   isUniqueViolation,
   parseStrict,
   versionChain,
-} from "@caisson/kernel";
-import type { VersionRecord } from "@caisson/kernel";
-import type { TenantExecutor } from "@caisson/tenancy-rls";
+} from "@caisson-sh/kernel";
+import type { VersionRecord } from "@caisson-sh/kernel";
+import type { TenantExecutor } from "@caisson-sh/tenancy-rls";
 import { z } from "zod";
 import { PROMPT_ALIAS_TABLE, PROMPT_VERSION_TABLE } from "./schema.ts";
 import { promptMessagesSchema, renderPrompt, varSpecSchema } from "./render.ts";

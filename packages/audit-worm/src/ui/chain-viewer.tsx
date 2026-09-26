@@ -1,26 +1,32 @@
 "use client";
 
-// @caisson/audit-worm/ui — the audit-chain viewer (ADR-0250 G2c/G2d, extended for per-row verification
+// @caisson-sh/audit-worm/ui — the audit-chain viewer (ADR-0250 G2c/G2d, extended for per-row verification
 // T-U2). Still an embeddable, headless-data-in surface — no DB connection: it renders the chain
 // entries + the verdict it is HANDED, plus (when given) a PER-ROW six-state chip computed by the caller
 // from real anchors, and an expandable proof panel that fetches the row's proof on open (fork f). When
 // the per-row props are absent it degrades to the original chain-level-only view (backward compatible).
-// Composes the `@caisson/ui` floor (Section · MetricStat · DataTable · StatusChip · EmptyState).
+// Composes the `@caisson-sh/ui` floor (Section · MetricStat · DataTable · StatusChip · EmptyState).
 import { useState, type CSSProperties } from "react";
 import type {
   AuditChainEntry,
   ChainVerification,
   JsonValue,
-} from "@caisson/kernel";
-import type { PinnedAnchorKey, RowState } from "@caisson/kernel/audit-verify";
+} from "@caisson-sh/kernel";
+import type {
+  PinnedAnchorKey,
+  RowState,
+} from "@caisson-sh/kernel/audit-verify";
 import {
   DataTable,
   EmptyState,
   MetricStat,
   Section,
   StatusChip,
-} from "@caisson/ui/components";
-import type { DataTableColumn, DataTableProps } from "@caisson/ui/components";
+} from "@caisson-sh/ui/components";
+import type {
+  DataTableColumn,
+  DataTableProps,
+} from "@caisson-sh/ui/components";
 import { RowStateChip } from "./row-state-chip.tsx";
 import { ProofPanel, type ProofBundleResponse } from "./proof-panel.tsx";
 

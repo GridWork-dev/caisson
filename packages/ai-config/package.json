@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/ai-config",
+  "name": "@caisson-sh/ai-config",
   "version": "0.3.10",
   "description": "Provider-agnostic AI config resolver (OpenAI, Anthropic, Google, OpenRouter, local, Bedrock, Azure OpenAI, Ollama, Groq, Mistral, Together) + the app settings file.",
   "license": "Apache-2.0",
@@ -21,12 +21,12 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/kernel": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

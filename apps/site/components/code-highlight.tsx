@@ -3,7 +3,7 @@
 // syntax highlighting on the same Shiki the docs use (fumadocs-core), theme-FOLLOWING.
 //
 // `defaultColor: false` makes each token span carry both `--shiki-light` and `--shiki-dark` custom
-// props with no baked `color`; the `.cs-shiki span` rules in @caisson/ui base.css pick the right one
+// props with no baked `color`; the `.cs-shiki span` rules in @caisson-sh/ui base.css pick the right one
 // per theme. The `pre`/`code` components are remapped so the output is just the token spans under a
 // single `<code class="cs-shiki">` — no nested Shiki `<pre>` with its own background, since our
 // <CodeBlock>/<Terminal> owns the surface and the scroll affordance. `engine: 'js'` keeps the build

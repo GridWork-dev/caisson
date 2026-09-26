@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "generatedFor": {
-    "pkg": "@caisson/ui",
+    "pkg": "@caisson-sh/ui",
     "version": "0.6.7"
   },
   "components": [
@@ -68,7 +68,7 @@
           "name": "brand",
           "type": "ReactNode",
           "optional": true,
-          "doc": "Brand slot rendered top-left. Optional and brand-neutral — the kit ships no default mark; the consumer passes its own (e.g. `<Wordmark />` from `@caisson/brand`)."
+          "doc": "Brand slot rendered top-left. Optional and brand-neutral — the kit ships no default mark; the consumer passes its own (e.g. `<Wordmark />` from `@caisson-sh/brand`)."
         },
         {
           "name": "children",
@@ -295,7 +295,7 @@
           "name": "asChild",
           "type": "boolean",
           "optional": true,
-          "doc": "Render as the single child element instead of a `<button>` (Radix Slot). This is the framework-agnostic navigation seam: a Next consumer writes `<Button asChild><Link href=\"/x\">…</Link></Button>` so `@caisson/ui` never imports `next/link`. The child must accept `className` + `data-*` (Slot merges the kit's props onto it)."
+          "doc": "Render as the single child element instead of a `<button>` (Radix Slot). This is the framework-agnostic navigation seam: a Next consumer writes `<Button asChild><Link href=\"/x\">…</Link></Button>` so `@caisson-sh/ui` never imports `next/link`. The child must accept `className` + `data-*` (Slot merges the kit's props onto it)."
         },
         {
           "name": "children",

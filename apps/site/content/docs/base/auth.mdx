@@ -3,7 +3,7 @@ title: Auth
 description: Provider-agnostic session contract, an EdDSA-signed account JWT, and multi-user account membership over row-level security.
 ---
 
-`@caisson/auth` is provider-agnostic: it defines the session contract the rest of the base
+`@caisson-sh/auth` is provider-agnostic: it defines the session contract the rest of the base
 depends on, a short-lived **EdDSA-signed** account JWT for verifying a caller across services, and
 multi-user account membership over row-level security. [better-auth](https://better-auth.com),
 self-hosted, is the reference session provider, wired at the app layer, not re-exported from this
@@ -21,7 +21,7 @@ import {
   requireSession,
   verifyAccountJwt,
   type SessionContext,
-} from "@caisson/auth";
+} from "@caisson-sh/auth";
 
 // A cross-plane caller presents a short-lived EdDSA account JWT; the receiving service verifies
 // it against the issuer's Ed25519 public key.

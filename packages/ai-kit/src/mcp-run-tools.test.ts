@@ -1,13 +1,13 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import type { AiSettings } from "@caisson/ai-config";
-import { AI_METER_SCHEMA_SQL, type MeterConfig } from "@caisson/ai-meter";
+import type { AiSettings } from "@caisson-sh/ai-config";
+import { AI_METER_SCHEMA_SQL, type MeterConfig } from "@caisson-sh/ai-meter";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_ROUNDING_MIGRATION_SQL,
   CREDIT_SCHEMA_SQL,
   GRANT_CONSUMPTION_MIGRATION_SQL,
   grant,
-} from "@caisson/credits";
+} from "@caisson-sh/credits";
 import {
   FIELD_CRYPTO_KEY_SCHEMA_SQL,
   InMemoryWrappedKeyStore,
@@ -15,19 +15,19 @@ import {
   PgWrappedKeyStore,
   type KmsClient,
   withKmsFieldCryptoContext,
-} from "@caisson/field-crypto";
-import { localModerator } from "@caisson/guardrails";
+} from "@caisson-sh/field-crypto";
+import { localModerator } from "@caisson-sh/guardrails";
 import {
   InMemoryEventSink,
   asCredits,
   asMicroUsdPerCredit,
-} from "@caisson/kernel";
-import { newTestPg, type TestPg } from "@caisson/testing";
+} from "@caisson-sh/kernel";
+import { newTestPg, type TestPg } from "@caisson-sh/testing";
 import {
   withTenant,
   type TenantExecutor,
   type Transactor,
-} from "@caisson/tenancy-rls";
+} from "@caisson-sh/tenancy-rls";
 import type {
   LanguageModelV4FinishReason,
   LanguageModelV4Usage,

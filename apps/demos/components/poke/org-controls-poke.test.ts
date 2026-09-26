@@ -16,11 +16,11 @@ import { describe, expect, test } from "bun:test";
 import {
   nodeBuiltinTaint,
   nodeGlobalTaint,
-} from "@caisson/testing/module-graph";
-import { AuthzError } from "@caisson/kernel";
-import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson/auth";
-import { assertCanManageMembers } from "@caisson/org-controls";
-import { hashChainLink } from "@caisson/kernel/node";
+} from "@caisson-sh/testing/module-graph";
+import { AuthzError } from "@caisson-sh/kernel";
+import { ACCOUNT_MEMBER_SCHEMA_SQL } from "@caisson-sh/auth";
+import { assertCanManageMembers } from "@caisson-sh/org-controls";
+import { hashChainLink } from "@caisson-sh/kernel/node";
 
 import {
   SAMPLE_ACCOUNT_ID,
@@ -66,7 +66,7 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
     expect(walk.files.some((f) => f.startsWith("packages/tenancy-rls/"))).toBe(
       false,
     );
-    // @caisson/auth supplies only the `Role` TYPE here — a value edge would drag jwt.ts's
+    // @caisson-sh/auth supplies only the `Role` TYPE here — a value edge would drag jwt.ts's
     // node:crypto in, so the erasure has to hold.
     expect(walk.files.some((f) => f.startsWith("packages/auth/"))).toBe(false);
   });
@@ -86,8 +86,8 @@ describe("the poke's client graph is browser-safe (static source walk, NOT a bui
 
   test("the component imports the browser entry, never the barrel", () => {
     const src = readFileSync(POKE_ENTRY, "utf8");
-    expect(src).toContain('from "@caisson/org-controls/browser"');
-    expect(src).not.toMatch(/from "@caisson\/org-controls"/);
+    expect(src).toContain('from "@caisson-sh/org-controls/browser"');
+    expect(src).not.toMatch(/from "@caisson-sh\/org-controls"/);
   });
 });
 

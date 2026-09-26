@@ -1,4 +1,4 @@
-// @caisson/access-review — audit-prep access-review campaigns (ADR-0371).
+// @caisson-sh/access-review — audit-prep access-review campaigns (ADR-0371).
 //
 // A WORM-logged attested decision record over an imported membership snapshot: a reviewer opens a
 // campaign against a frozen roster of reviewees, decides approve/revoke per reviewee, and the

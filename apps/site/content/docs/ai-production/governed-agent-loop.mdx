@@ -3,9 +3,9 @@ title: Governed agent loop
 description: Run a bounded tool loop with runToolLoop, where every model and tool step reserves credits before it executes, a gated tool parks the run for an operator decision, and an approval resumes it from durable state.
 ---
 
-`@caisson/ai-kit` is the metered inference layer of the AI-Production bundle: it composes
-`@caisson/ai-meter`, `@caisson/guardrails`, `@caisson/prompt-registry`, and
-`@caisson/ai-config` behind one chokepoint so a provider SDK is never called directly from
+`@caisson-sh/ai-kit` is the metered inference layer of the AI-Production bundle: it composes
+`@caisson-sh/ai-meter`, `@caisson-sh/guardrails`, `@caisson-sh/prompt-registry`, and
+`@caisson-sh/ai-config` behind one chokepoint so a provider SDK is never called directly from
 your app. `runToolLoop` is that chokepoint for agents. A raw provider tool loop spends
 whatever the model asks for and executes whatever the model proposes; `runToolLoop` prices
 and debits each step before it runs, records the whole run as an append-only trajectory, and
@@ -36,32 +36,32 @@ stops on any tool you mark as needing a human decision.
 ## Install
 
 ```bash
-bun add @caisson/ai-kit
+bun add @caisson-sh/ai-kit
 ```
 
 ## Prerequisites
 
 Four things must be wired before the first run.
 
-1. **The money tables.** Apply `CREDIT_SCHEMA_SQL` from `@caisson/credits` and
-   `AI_METER_SCHEMA_SQL` from `@caisson/ai-meter`, and fund the account with `grant()`. The
+1. **The money tables.** Apply `CREDIT_SCHEMA_SQL` from `@caisson-sh/credits` and
+   `AI_METER_SCHEMA_SQL` from `@caisson-sh/ai-meter`, and fund the account with `grant()`. The
    loop debits the same integer credit ledger the rest of AI-Production meters against, see
    [ai-meter](/docs/ai-production/ai-meter).
-2. **The trajectory tables.** Apply `@caisson/agent-trajectory`'s three SQL files under
+2. **The trajectory tables.** Apply `@caisson-sh/agent-trajectory`'s three SQL files under
    `src/migrations/`: `0001_trajectory_event.sql`, `0002_agent_run_state.sql`, and
    `0003_agent_run_state_parked_state_encrypted.sql`. The first is the append-only run log;
    the other two hold the parked-run state, encrypted at rest.
 3. **Lane settings.** An `AiSettings` object, validated with `parseAiSettings` from
-   `@caisson/ai-config`, mapping each lane to a `provider`/`model` and the env-var name
+   `@caisson-sh/ai-config`, mapping each lane to a `provider`/`model` and the env-var name
    holding its key.
 4. **A guard config.** A `GuardPolicy` plus a `GuardRuntime`, exactly as
    [guardrails](/docs/ai-production/guardrails) describes. The opening prompt is
    input-guarded before any spend and the final text is output-guarded before it is returned.
 
 ```ts
-import { parseAiSettings } from "@caisson/ai-config";
-import { createPgTrajectoryStore, createPgRunStateStore } from "@caisson/agent-trajectory";
-import { DerivedKeyProvider, derivedContext } from "@caisson/field-crypto";
+import { parseAiSettings } from "@caisson-sh/ai-config";
+import { createPgTrajectoryStore, createPgRunStateStore } from "@caisson-sh/agent-trajectory";
+import { DerivedKeyProvider, derivedContext } from "@caisson-sh/field-crypto";
 
 const settings = parseAiSettings({
   defaultLane: "default",
@@ -80,15 +80,15 @@ const keys = new DerivedKeyProvider(masterKey, salt); // 32 bytes each
 const runState = createPgRunStateStore(tx, accountId, derivedContext(keys, accountId));
 ```
 
-`tx` is a `Transactor` from `@caisson/tenancy-rls`; every meter and store call the loop makes
+`tx` is a `Transactor` from `@caisson-sh/tenancy-rls`; every meter and store call the loop makes
 runs inside `withTenant`, so a run is scoped to one tenant end to end.
 
 ## Quickstart
 
 ```ts
 import { z } from "zod";
-import { buildRegistryResolver, defaultProviders, runToolLoop } from "@caisson/ai-kit";
-import { localModerator } from "@caisson/guardrails";
+import { buildRegistryResolver, defaultProviders, runToolLoop } from "@caisson-sh/ai-kit";
+import { localModerator } from "@caisson-sh/guardrails";
 
 const TicketQuery = z.object({ account: z.string() });
 
@@ -132,7 +132,7 @@ Add `approvalRequired: true` to any tool whose side effects need a human, and pa
 `runState` store. Everything else about the tool is unchanged.
 
 ```ts
-import type { LoopTool } from "@caisson/ai-kit";
+import type { LoopTool } from "@caisson-sh/ai-kit";
 
 const RefundInput = z.object({ invoiceId: z.string(), amountCents: z.number().int() });
 
@@ -205,7 +205,7 @@ resume path's own compare-and-swap is the final guard.
 Deny transitions the run to `finished`, appends `tool.denied` followed by
 `run.finished` with `status: "failed"` and reason `tool-denied`, clears the stored snapshot,
 and enqueues nothing. A denied run never resumes: calling `resumeToolLoop` on it throws
-`ConflictError` from `@caisson/kernel` before any tool or model logic runs.
+`ConflictError` from `@caisson-sh/kernel` before any tool or model logic runs.
 
 The same two decisions are available in-process as `approveToolCall(deps, runId, toolCallId,
 actor)` and `denyToolCall(deps, runId, toolCallId, actor, reason?)`, where `deps` is
@@ -220,8 +220,8 @@ run started with, minus `prompt` and with `runId` and `runState` both required:
 
 ```ts
 import { z } from "zod";
-import { RESUME_TASK_NAME, resumeToolLoop } from "@caisson/ai-kit";
-import { createPgBossJobQueue, defineTask } from "@caisson/jobs";
+import { RESUME_TASK_NAME, resumeToolLoop } from "@caisson-sh/ai-kit";
+import { createPgBossJobQueue, defineTask } from "@caisson-sh/jobs";
 
 const jobs = createPgBossJobQueue(
   [
@@ -286,5 +286,5 @@ and a blocked opening prompt raises `GuardrailError`. None of them writes an eve
 credit. Once `run.started` is appended, every outcome is a returned `ToolLoopResult`.
 
 <Callout type="info" title="Apache-2.0">
-  `@caisson/ai-kit` is Apache-2.0, like every Caisson package, and installs from public npm.
+  `@caisson-sh/ai-kit` is Apache-2.0, like every Caisson package, and installs from public npm.
 </Callout>

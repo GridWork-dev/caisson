@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/oscal-spine",
+  "name": "@caisson-sh/oscal-spine",
   "version": "0.2.2",
   "description": "The complete Caisson OSCAL surface: deterministic assessment-plan, assessment-results, POA&M, catalog, XML, and ISO 27001 SoA exports plus the pinned NIST 800-53 catalog and OLIR relationship mapping.",
   "license": "Apache-2.0",
@@ -26,13 +26,13 @@
     "test": "bun test --timeout 60000 ./src ./scripts"
   },
   "dependencies": {
-    "@caisson/artifact-render": "workspace:*",
-    "@caisson/kernel": "workspace:*",
+    "@caisson-sh/artifact-render": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   },
   "engines": {

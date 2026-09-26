@@ -1,11 +1,11 @@
 "use client";
 
 // The alerting module's "poke" (ADR-0378 lock 2). A deterministic in-browser replay of the REAL
-// `@caisson/alerting` pipeline: dedup -> rate-cap with digest fallback -> timezone-aware quiet
+// `@caisson-sh/alerting` pipeline: dedup -> rate-cap with digest fallback -> timezone-aware quiet
 // hours (critical override) -> multi-channel delivery, every outcome landing exactly one audit row.
 // The hand-ported mirror this used to drive is deleted (ADR-0396): `processAlert`, the event-type
 // registry, the capture channel driver, and the in-memory audit sink all come from
-// `@caisson/alerting/browser`, the package's browser-safe entry (`.` minus the five network
+// `@caisson-sh/alerting/browser`, the package's browser-safe entry (`.` minus the five network
 // drivers, which need a webhook signing secret and a DNS-resolving SSRF check — neither belongs in
 // a browser). Poke-local: the sample event type, the fixed recipient timezone, the two fixed sample
 // clocks, and the session bookkeeping the four controls need.
@@ -19,7 +19,7 @@ import {
   createCaptureChannel,
   createInMemoryAuditSink,
   processAlert,
-} from "@caisson/alerting/browser";
+} from "@caisson-sh/alerting/browser";
 import type {
   AlertAuditRow,
   AlertEvent,
@@ -28,7 +28,7 @@ import type {
   ProcessAlertResult,
   QuietHoursPolicy,
   RateCapPolicy,
-} from "@caisson/alerting/browser";
+} from "@caisson-sh/alerting/browser";
 
 import { PokeShell, Verdict, type VerdictState } from "./poke-rig";
 import styles from "./alerting-poke.module.css";
@@ -343,7 +343,7 @@ export default function AlertingPoke() {
 
   return (
     <PokeShell
-      label={`@caisson/alerting · ${SAMPLE_TZ}`}
+      label={`@caisson-sh/alerting · ${SAMPLE_TZ}`}
       title="Push one alert through dedup, rate-cap, quiet hours, and delivery."
     >
       <div className={styles.meta}>

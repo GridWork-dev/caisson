@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { Wordmark } from "@caisson/brand";
+import { Wordmark } from "@caisson-sh/brand";
 
 import { footerRoutes, type FooterCol } from "@/lib/routes";
 

@@ -1,5 +1,5 @@
 // Proves the harness itself enforces fail-closed RLS. The canonical base-package proof lives in
-// @caisson/tenancy-rls; this is the smoke test that the PGlite `app`-role + SET LOCAL machinery
+// @caisson-sh/tenancy-rls; this is the smoke test that the PGlite `app`-role + SET LOCAL machinery
 // behaves as ADR-0005 requires, so every package that builds on it can trust it.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { newTestPg, type TestPg } from "./index.ts";

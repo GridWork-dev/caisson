@@ -1,4 +1,4 @@
-# AGENTS — @caisson/cli (create-caisson)
+# AGENTS — @caisson-sh/cli (create-caisson)
 
 Agent-facing contract for driving generation.
 
@@ -15,7 +15,7 @@ Agent-facing contract for driving generation.
 
 ```
 { projectName: <lowercase-slug>,
-  modules: [{ id: "@caisson/<slug>", version: "<semver>" }, …],
+  modules: [{ id: "@caisson-sh/<slug>", version: "<semver>" }, …],
   deployTarget?: "railway"|"fly"|"vercel",
   framework?: "next" }
 ```

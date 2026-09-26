@@ -35,12 +35,12 @@ import {
   versionChain as kernelVersionChain,
   type JsonValue,
   type VersionRecord,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   withTenant,
   type TenantExecutor,
   type Transactor,
-} from "@caisson/tenancy-rls";
+} from "@caisson-sh/tenancy-rls";
 
 /** Advisory-lock namespace so version locks never collide with another subsystem's keyspace. */
 const LOCK_NAMESPACE = "caisson.locked-version";

@@ -3,7 +3,7 @@
  * Caisson WORM bucket provisioner (ADR-0201, executes the editions-go-live lock).
  *
  * Idempotent: safe to re-run; every step converges. Creates the S3 Object-Lock bucket the
- * `@caisson/audit-worm` S3ArtifactStore live proof (and later production evidence) writes to:
+ * `@caisson-sh/audit-worm` S3ArtifactStore live proof (and later production evidence) writes to:
  *   • CreateBucket with ObjectLockEnabledForBucket (versioning implied) — us-east-1 per ADR-0201
  *   • Public-access block (all four gates on)
  *   • A lifecycle reaper on the live-proof tenant prefix (expired GOVERNANCE test versions get

@@ -22,7 +22,7 @@
 // exactly the overclaim ADR-0279 bans).
 //
 // tooling/scripts/ has no package.json: this script imports only zod (from the root install) + node
-// built-ins — no @caisson/* — so it runs standalone under `bun` in CI.
+// built-ins — no @caisson-sh/* — so it runs standalone under `bun` in CI.
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {

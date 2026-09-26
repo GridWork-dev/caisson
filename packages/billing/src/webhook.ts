@@ -3,7 +3,7 @@
 // v1 signatures, with timestamp-tolerance replay protection. The raw body is mandatory: a parsed
 // + re-serialized body would not match. No Stripe SDK needed for verification.
 import { createHmac } from "node:crypto";
-import { AuthnError, safeEqualFixed } from "@caisson/kernel/node";
+import { AuthnError, safeEqualFixed } from "@caisson-sh/kernel/node";
 
 export interface VerifyOptions {
   /** Max age of the signature, seconds. Default 300 (Stripe's recommendation). */

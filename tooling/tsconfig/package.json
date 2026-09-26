@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/tsconfig",
+  "name": "@caisson-sh/tsconfig",
   "version": "0.0.0",
   "private": true,
   "description": "Shared strict tsconfig base — the single TS standard (ADR-0002) — plus the tscn native-compiler bin (ADR-0368). Every package extends base.json and compiles through tscn.",

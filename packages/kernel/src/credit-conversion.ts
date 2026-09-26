@@ -1,7 +1,7 @@
-// The single credit denomination + commerce conversion (ADR-0007/0089; SD-3 home → @caisson/kernel,
+// The single credit denomination + commerce conversion (ADR-0007/0089; SD-3 home → @caisson-sh/kernel,
 // ADR-0098). THE one unit of account: 1 credit = `microUsdPerCredit` micro-USD. Owned here in the
-// base-of-base so BOTH the per-ai-call COST book (@caisson/ai-meter, ADR-0060 — rounds UP, never
-// under-bill) AND the COMMERCE price-book (@caisson/pricebook, ADR-0089 — rounds DOWN, never
+// base-of-base so BOTH the per-ai-call COST book (@caisson-sh/ai-meter, ADR-0060 — rounds UP, never
+// under-bill) AND the COMMERCE price-book (@caisson-sh/pricebook, ADR-0089 — rounds DOWN, never
 // over-grant) import the SAME constant: exactly one definition exists across the codebase (a second
 // would silently drift the two books apart). Integer-only, BigInt internally, never a float
 // (ADR-0002/0007). pricebook and ai-meter are both commercial packages ABOVE kernel in the tower, so

@@ -28,8 +28,8 @@ const PROVIDER_SDKS = [
   "ollama",
   // Vercel AI SDK family (Apache-2.0 — license-clean, so it passes Gate 1/1b; confined here
   // PURELY by composition, ADR-0011/0022 Gate 2): the `ai` core + the first-party provider
-  // adapters are the gateway's inference path and live behind @caisson/ai-kit's `infer()`. Only
-  // @caisson/ai-config + @caisson/ai-kit may import them; every other package routes through the
+  // adapters are the gateway's inference path and live behind @caisson-sh/ai-kit's `infer()`. Only
+  // @caisson-sh/ai-config + @caisson-sh/ai-kit may import them; every other package routes through the
   // gateway so the backing SDK stays swappable.
   "ai",
   "@ai-sdk/openai",

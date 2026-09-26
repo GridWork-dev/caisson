@@ -3,12 +3,12 @@
 // own `residual` field stays exactly what `computeResidual` derived (nothing outside model.ts can
 // mint a `Residual` value any other way), and an override lives here as its own chained record —
 // who asserted it, why, when, and the computed value it supersedes — appended to the tenant's WORM
-// audit chain (`@caisson/audit-worm`) the same way a retention escalation is: the chain append IS
+// audit chain (`@caisson-sh/audit-worm`) the same way a retention escalation is: the chain append IS
 // the exception record, not a description of one filed somewhere else. The computed value rides
 // alongside the override in the SAME record, so it stays recoverable straight off the chain even
 // once an override is in force.
-import { InternalError, ValidationError } from "@caisson/kernel";
-import type { AppendResult, AuditChainStore } from "@caisson/audit-worm";
+import { InternalError, ValidationError } from "@caisson-sh/kernel";
+import type { AppendResult, AuditChainStore } from "@caisson-sh/audit-worm";
 import {
   computeResidual,
   isResidual,
@@ -21,7 +21,7 @@ const RESIDUAL_OVERRIDE_KIND = "risk.residual-overridden" as const;
 
 export interface RecordResidualOverrideInput {
   /** The tenant's audit chain — the override is evidence, not a log line. Typed as a narrow
-   *  `Pick` (mirrors `@caisson/audit-worm`'s own escalation helper) so a caller can inject a real
+   *  `Pick` (mirrors `@caisson-sh/audit-worm`'s own escalation helper) so a caller can inject a real
    *  `AuditChainStore` or a lightweight fake without pulling in a DB. */
   readonly chain: Pick<AuditChainStore, "append">;
   readonly accountId: string;
@@ -66,7 +66,7 @@ export interface RecordResidualOverrideResult {
 /**
  * Record an operator override of a risk's computed residual on the tenant's WORM audit chain.
  *
- * EVIDENCE-GAP semantics (fail-loud, mirrors `@caisson/audit-worm`'s retention-escalation helper):
+ * EVIDENCE-GAP semantics (fail-loud, mirrors `@caisson-sh/audit-worm`'s retention-escalation helper):
  * if the chain append throws, the WHOLE call throws — an override the chain cannot prove is no
  * override at all, so it must never be swallowed into a silent success.
  */

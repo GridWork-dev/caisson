@@ -19,7 +19,7 @@ import {
   ListObjectVersionsCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import { ArtifactExistsError, buildArtifactKey } from "../src/store.ts";
 import { S3ArtifactStore } from "../src/store.s3.ts";
 

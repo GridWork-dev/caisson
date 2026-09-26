@@ -6,7 +6,7 @@
 // proves the worst case directly: a row whose tenant column genuinely IS '' stays invisible even
 // when the GUC is left at that same reset value.
 import { expect, test } from "bun:test";
-import { newTestPg } from "@caisson/testing";
+import { newTestPg } from "@caisson-sh/testing";
 import { TENANT_GUC, buildTenantPolicySql, type Transactor } from "./rls.ts";
 
 test("an empty-string GUC (the pooler reset-to-'' case) denies rather than matches — even a same-valued row", async () => {

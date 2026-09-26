@@ -13,7 +13,7 @@ import {
   canonicalize,
   ValidationError,
   type JsonValue,
-} from "@caisson/kernel/node";
+} from "@caisson-sh/kernel/node";
 import {
   Ed25519Signer,
   StubTimestampAuthority,

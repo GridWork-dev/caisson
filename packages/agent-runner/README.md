@@ -1,4 +1,4 @@
-# @caisson/agent-runner
+# @caisson-sh/agent-runner
 
 Sandboxed, governed agent runner (ADR-0186) — the Agentic-Dev primitive that turns "scaffolding
 for agents" into "run agents safely": spawn a headless AI coding agent CLI as a detached
@@ -19,7 +19,10 @@ only the target provider's key, and an isolated `HOME`/config dir.
 ## Usage
 
 ```ts
-import { CLAUDE_CLI_PROFILE, createAgentRunner } from "@caisson/agent-runner";
+import {
+  CLAUDE_CLI_PROFILE,
+  createAgentRunner,
+} from "@caisson-sh/agent-runner";
 
 const runner = createAgentRunner({ runsRoot: "/var/lib/caisson/agent-runs" });
 

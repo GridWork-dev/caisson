@@ -14,7 +14,7 @@
     {
       "antipattern": "flat-type-hierarchy",
       "file": "apps/site/app/global.css",
-      "reason": "Pre-existing scale in page-local styles; the type hierarchy authority is the @caisson/ui token scale (tokens.css), which this heuristic does not see."
+      "reason": "Pre-existing scale in page-local styles; the type hierarchy authority is the @caisson-sh/ui token scale (tokens.css), which this heuristic does not see."
     },
     {
       "antipattern": "em-dash-overuse",

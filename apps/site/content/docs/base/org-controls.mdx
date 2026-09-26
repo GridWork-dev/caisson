@@ -3,11 +3,11 @@ title: Org controls
 description: WorkOS SSO sign-in, a Clerk session-verification driver, owner-gated multi-user membership, and the cross-tenant admin-write RLS layer the operator control plane mutates through.
 ---
 
-`@caisson/org-controls` is the commercial org and operator-controls module, carved out of the
+`@caisson-sh/org-controls` is the commercial org and operator-controls module, carved out of the
 open Base so the Apache-2.0 substrate stays small: WorkOS SSO, a Clerk session-verification
 driver, the MANAGE half of the multi-user account model, and the admin-write RLS layer an
 operator control plane mutates through. Buyer session **resolution** stays in the open
-`@caisson/auth`; buyer tenant **isolation** stays in the open `@caisson/tenancy-rls`.
+`@caisson-sh/auth`; buyer tenant **isolation** stays in the open `@caisson-sh/tenancy-rls`.
 
 ## What it does
 
@@ -28,13 +28,13 @@ operator control plane mutates through. Buyer session **resolution** stays in th
 ## Install
 
 ```bash
-bun add @caisson/org-controls
+bun add @caisson-sh/org-controls
 ```
 
 ## Quickstart, WorkOS SSO
 
 ```ts
-import { createWorkosSsoProvider } from "@caisson/org-controls";
+import { createWorkosSsoProvider } from "@caisson-sh/org-controls";
 
 const sso = createWorkosSsoProvider({
   clientId: process.env.WORKOS_CLIENT_ID!,
@@ -49,7 +49,7 @@ const { userId, email } = await sso.exchangeCode(code); // on the callback
 ## Clerk session verification
 
 ```ts
-import { createClerkSessionVerifier } from "@caisson/org-controls";
+import { createClerkSessionVerifier } from "@caisson-sh/org-controls";
 
 const verifier = createClerkSessionVerifier({
   jwtKey: process.env.CLERK_JWT_KEY!, // networkless — no per-call JWKS fetch
@@ -61,14 +61,14 @@ const session = await verifier.verifySession(clerkToken); // -> SessionContext
 
 An active Clerk Organization maps to `accountId`/`role`; with no Organization active, the
 session falls back to the personal-account convention (`accountId === userId`, role
-`"owner"`). This mapping is stateless, route the verified `userId` through `@caisson/auth`'s
+`"owner"`). This mapping is stateless, route the verified `userId` through `@caisson-sh/auth`'s
 `resolveUserAccounts`/`selectActiveAccount` when you need the DB-authoritative multi-account
 resolution instead.
 
 ## Membership management
 
 ```ts
-import { addAccountMember, listAccountMembers } from "@caisson/org-controls";
+import { addAccountMember, listAccountMembers } from "@caisson-sh/org-controls";
 
 // actorRole comes from the caller's resolved session; only "owner" may manage members.
 await addAccountMember(db, actorRole, accountId, newUserId); // default role "seat"
@@ -81,7 +81,7 @@ const members = await listAccountMembers(db, accountId);
 import {
   withAdminWrite,
   buildAdminWritePolicySql,
-} from "@caisson/org-controls";
+} from "@caisson-sh/org-controls";
 
 // At DEPLOY, alongside the table's existing tenant-isolation policy:
 const sql = buildAdminWritePolicySql("account");
@@ -98,7 +98,7 @@ misconfigured role fails closed rather than silently widening access.
 ## Entitlement gate
 
 ```ts
-import { holdsOrgControls } from "@caisson/org-controls";
+import { holdsOrgControls } from "@caisson-sh/org-controls";
 
 if (!holdsOrgControls(activeEntitlementIds)) {
   throw new AuthzError("org-controls entitlement required");
@@ -110,8 +110,8 @@ the database itself, and an empty set denies.
 
 ## Composing with the base
 
-org-controls composes DOWN onto `@caisson/auth`, `@caisson/tenancy-rls`, and
-`@caisson/kernel`: buyer session resolution and buyer tenant isolation are never
+org-controls composes DOWN onto `@caisson-sh/auth`, `@caisson-sh/tenancy-rls`, and
+`@caisson-sh/kernel`: buyer session resolution and buyer tenant isolation are never
 reimplemented here, only extended: the owner-only MANAGE surface and the cross-tenant
 admin-write role sit beside those open primitives, never in place of them.
 

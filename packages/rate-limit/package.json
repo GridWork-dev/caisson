@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/rate-limit",
+  "name": "@caisson-sh/rate-limit",
   "version": "0.2.1",
   "description": "Shared abuse-throttle primitives: an in-memory per-IP token-bucket limiter for unauthenticated surfaces, and a Postgres-backed per-account token-bucket store for authenticated ones.",
   "license": "Apache-2.0",
@@ -21,14 +21,14 @@
     "test": "bun test --timeout 60000 ./src"
   },
   "dependencies": {
-    "@caisson/kernel": "workspace:*",
-    "@caisson/mcp-server": "workspace:*",
-    "@caisson/tenancy-rls": "workspace:*"
+    "@caisson-sh/kernel": "workspace:*",
+    "@caisson-sh/mcp-server": "workspace:*",
+    "@caisson-sh/tenancy-rls": "workspace:*"
   },
   "devDependencies": {
-    "@caisson/registry-schema": "workspace:*",
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/registry-schema": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   }
 }

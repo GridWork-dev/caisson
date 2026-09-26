@@ -1,5 +1,5 @@
 {
-  "name": "@caisson/field-crypto",
+  "name": "@caisson-sh/field-crypto",
   "version": "1.1.2",
   "description": "Per-tenant authenticated field encryption: HKDF key derivation, AES-256-GCM, a versioned envelope, a Drizzle column type, and a pluggable FieldKeyProvider with a KMS seam.",
   "license": "Apache-2.0",
@@ -29,15 +29,15 @@
   "dependencies": {
     "@aws-sdk/client-kms": "^3.1075.0",
     "@azure/keyvault-keys": "^4",
-    "@caisson/kernel": "workspace:*",
+    "@caisson-sh/kernel": "workspace:*",
     "@google-cloud/kms": "^5.5.1",
     "drizzle-orm": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@caisson/tenancy-rls": "workspace:*",
-    "@caisson/testing": "workspace:*",
-    "@caisson/tsconfig": "workspace:*",
+    "@caisson-sh/tenancy-rls": "workspace:*",
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
     "typescript": "catalog:"
   },
   "engines": {

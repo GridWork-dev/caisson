@@ -2,12 +2,12 @@
 //
 // WHY A STATIC SOURCE WALK AND NOT A BUILD: a bundler does not fail on a node builtin, it
 // SUBSTITUTES one, so an `exit 0` build proves nothing. This package's own risk is narrower than a
-// builtin and even quieter: the `.` barrel reaches `@caisson/tenancy-rls` through schema.ts, which
+// builtin and even quieter: the `.` barrel reaches `@caisson-sh/tenancy-rls` through schema.ts, which
 // puts the `pg` driver on the graph. `pg` is not a `node:` specifier, so the offender list alone
 // would never catch it — the external-frontier assertion below is what does.
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
-import { nodeBuiltinTaint } from "@caisson/testing/module-graph";
+import { nodeBuiltinTaint } from "@caisson-sh/testing/module-graph";
 
 const WORKSPACE_ROOT = join(import.meta.dir, "../../..");
 const BROWSER_ENTRY = join(import.meta.dir, "browser.ts");
@@ -43,8 +43,8 @@ describe("`./browser` is browser-safe", () => {
   });
 
   test("guard the guard: the walk crossed into kernel, not just this package", () => {
-    // refs.ts and render.ts both import `@caisson/kernel` — a resolver that went blind on
-    // `@caisson/*` specifiers would still report zero offenders, so this is the assertion that
+    // refs.ts and render.ts both import `@caisson-sh/kernel` — a resolver that went blind on
+    // `@caisson-sh/*` specifiers would still report zero offenders, so this is the assertion that
     // keeps the clean result from being vacuous.
     expect(walk.files).toContain("packages/kernel/src/schema.ts");
     expect(walk.files).toContain("packages/prompt-registry/src/refs.ts");
@@ -52,7 +52,7 @@ describe("`./browser` is browser-safe", () => {
   });
 
   test("positive control: the same walker still reports builtins on a tainted entry", () => {
-    // `@caisson/kernel/node` is the node half of a package this one depends on: a walker that had
+    // `@caisson-sh/kernel/node` is the node half of a package this one depends on: a walker that had
     // stopped seeing imports at all would report zero here too.
     const tainted = nodeBuiltinTaint(
       join(WORKSPACE_ROOT, "packages/kernel/src/node.ts"),

@@ -22,12 +22,12 @@
 // parse is then MAPPED into the strict `RentedEmbedResponse`/`RentedCompleteResponse` shapes, which
 // `RentedInferenceBackend` re-validates `.strict()` on every call (fail-closed both ways). Usage maps
 // to integer token units (`Math.floor`, ADR-0007) so the metered sink only ever sees integers.
-import { InternalError, ValidationError } from "@caisson/kernel";
-import type { FetchTimeoutOptions } from "@caisson/kernel";
+import { InternalError, ValidationError } from "@caisson-sh/kernel";
+import type { FetchTimeoutOptions } from "@caisson-sh/kernel";
 import { z } from "zod";
 import { EMBEDDING_DIM } from "./backend.ts";
 import type { RentedTransport } from "./rented-backend.ts";
-import type { EgressGuard } from "@caisson/local-privacy";
+import type { EgressGuard } from "@caisson-sh/local-privacy";
 
 /** The hosted OpenRouter API root (overridable for a self-hosted OpenAI-compatible gateway). */
 const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";

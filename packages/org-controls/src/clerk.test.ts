@@ -3,7 +3,7 @@
 // `await import(...)` inside the test body (never a static top-level import here), matching the
 // convention `packages/cli/src/interactive.test.ts` already established for a third-party SDK mock.
 import { describe, expect, mock, test } from "bun:test";
-import { AuthnError, ConfigError } from "@caisson/kernel";
+import { AuthnError, ConfigError } from "@caisson-sh/kernel";
 
 type VerifyTokenFn = (token: string, options: unknown) => Promise<unknown>;
 

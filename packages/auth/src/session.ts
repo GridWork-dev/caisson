@@ -2,7 +2,7 @@
 // its Drizzle tables); it implements `SessionProvider`. The rest of the base depends only on this
 // contract + the verified account token (jwt.ts) — never on a framework. `accountId` here is the
 // ONLY value the data layer trusts for RLS (`withTenant`).
-import { AuthnError } from "@caisson/kernel";
+import { AuthnError } from "@caisson-sh/kernel";
 
 export type Role = "owner" | "seat";
 

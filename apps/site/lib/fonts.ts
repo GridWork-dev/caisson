@@ -1,6 +1,6 @@
 // Self-hosted brand fonts (ADR-0079 §4): next/font/google downloads + self-hosts the woff2 at
 // build time, so there is NO render-blocking Google Fonts <link> at runtime and the CSP font-src
-// stays 'self'. Each font sets a CSS variable consumed by the @caisson/ui token stacks
+// stays 'self'. Each font sets a CSS variable consumed by the @caisson-sh/ui token stacks
 // (`var(--font-sans, …)` etc. in packages/ui theme.ts). Both are variable fonts → no weight
 // array (the full axis is available via font-weight).
 import type { CSSProperties } from "react";

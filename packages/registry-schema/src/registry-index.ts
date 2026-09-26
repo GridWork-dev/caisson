@@ -1,13 +1,13 @@
 /**
  * Module catalog schema — the index the CLI and the MCP server validate a selection against
- * (ADR-0021/0004). `@caisson/cli` derives it at build time from the workspace packages (name and
+ * (ADR-0021/0004). `@caisson-sh/cli` derives it at build time from the workspace packages (name and
  * version from each package.json, the rest from its manifest); it is never hand-edited.
  */
 import { readFileSync } from "node:fs";
 import { z } from "zod";
 import { ModuleManifest } from "./module-manifest";
 
-const MODULE_ID_RE = /^@caisson\/[a-z0-9-]+$/;
+const MODULE_ID_RE = /^@caisson-sh\/[a-z0-9-]+$/;
 const semver = z
   .string()
   .regex(
@@ -80,7 +80,7 @@ export function assertKnownModule(
 ): asserts id is ModuleId {
   if (!MODULE_ID_RE.test(id)) {
     throw new Error(
-      `malformed module id (failed @caisson/<slug>): ${JSON.stringify(id)}`,
+      `malformed module id (failed @caisson-sh/<slug>): ${JSON.stringify(id)}`,
     );
   }
   if (!moduleAllowlist(index).has(id)) {

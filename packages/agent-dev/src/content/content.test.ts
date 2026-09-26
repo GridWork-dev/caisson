@@ -4,7 +4,7 @@
 // at module load; these tests assert the SET-level contract the emitter and edition composition rely
 // on, plus that every artifact name is Caisson-native (no inherited external naming prefix).
 import { describe, expect, test } from "bun:test";
-import { parseArtifact, validateArtifactSet } from "@caisson/agent-kernel";
+import { parseArtifact, validateArtifactSet } from "@caisson-sh/agent-kernel";
 import {
   CAISSON_AGENTS,
   CAISSON_DEFAULT_ARTIFACTS,

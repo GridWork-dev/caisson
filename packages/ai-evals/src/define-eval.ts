@@ -1,7 +1,7 @@
-// @caisson/ai-evals — the eval harness (ADR-0062). `defineEval({ name, cases, scorers, threshold })`
+// @caisson-sh/ai-evals — the eval harness (ADR-0062). `defineEval({ name, cases, scorers, threshold })`
 // runs each case through its scorers and returns a deterministic `EvalRun` summary; the regression
 // gate (see `baseline.ts`) then compares that summary to a committed JSON baseline, BLESS-style —
-// the same golden discipline `@caisson/testing` `matchGolden` enforces for fixtures (ADR-0013).
+// the same golden discipline `@caisson-sh/testing` `matchGolden` enforces for fixtures (ADR-0013).
 //
 // Datasets are VERSION-BOUND: every dataset carries a `promptVersionId` FK to a `prompt_version` row
 // (ADR-0061), so a score is always attributable to an exact, immutable prompt. The harness never

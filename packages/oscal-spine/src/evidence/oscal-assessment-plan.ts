@@ -13,7 +13,7 @@
 //
 // DETERMINISM (mirrors the SAR/POA&M mapper): `now` + `newId` are injected, so the body is byte-stable
 // and its canonical SHA-256 is stable — the invariant the bundle's `hashes[]` and the goldens depend on.
-import { ValidationError } from "@caisson/kernel";
+import { ValidationError } from "@caisson-sh/kernel";
 import {
   CAISSON_OSCAL_NS,
   OSCAL_VERSION,

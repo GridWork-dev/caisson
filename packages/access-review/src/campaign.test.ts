@@ -1,7 +1,7 @@
 // src/campaign.test.ts — unit proof for the access-review boundary + the pure decision scan
 // (ADR-0371). Schema cases run through `parseStrict` directly; the deps-untouched cases run the
 // real kernel functions against throwing stubs, proving validation precedes every DB/chain touch
-// — the same split @caisson/compliance's impersonation kernel uses (session.test.ts). The
+// — the same split @caisson-sh/compliance's impersonation kernel uses (session.test.ts). The
 // DB-backed lifecycle (open/decide/close, deadline behavior, RLS) is proven in
 // campaign.integration.test.ts.
 import { describe, expect, test } from "bun:test";
@@ -10,7 +10,7 @@ import {
   ValidationError,
   parseStrict,
   type AuditChainEntry,
-} from "@caisson/kernel";
+} from "@caisson-sh/kernel";
 import {
   closeCampaignSchema,
   openCampaignSchema,

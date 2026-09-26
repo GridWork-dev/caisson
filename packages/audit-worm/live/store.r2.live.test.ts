@@ -16,7 +16,7 @@
 import { describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
 import { S3Client } from "@aws-sdk/client-s3";
-import { ConfigError } from "@caisson/kernel";
+import { ConfigError } from "@caisson-sh/kernel";
 import { ArtifactExistsError, buildArtifactKey } from "../src/store.ts";
 import { R2ArtifactStore, createR2LockReader } from "../src/store.r2.ts";
 

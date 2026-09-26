@@ -20,13 +20,13 @@
 //      asserted independently; the summary counts must agree with the controls; and posture copy
 //      may never claim "compliant"/"certified" (readiness language only).
 import { z } from "zod";
-import { strictObject, parseStrict } from "@caisson/kernel";
-import type { JsonValue } from "@caisson/kernel";
+import { strictObject, parseStrict } from "@caisson-sh/kernel";
+import type { JsonValue } from "@caisson-sh/kernel";
 // The BROWSER entry, not the `.` barrel (ADR-0396): `CrosswalkReference` is a VALUE import (a Zod
 // schema), so the specifier decides whether this format module drags frameworks-pack's node-only
 // half into every graph that reaches it. Same object either way — `./browser` re-exports the very
 // module `.` does; the narrower specifier is what lets `assemble.ts` ride the browser entry.
-import { CrosswalkReference } from "@caisson/frameworks-pack/browser";
+import { CrosswalkReference } from "@caisson-sh/frameworks-pack/browser";
 import { crosswalkRollupSchema } from "./crosswalk-rollup.ts";
 
 /**

@@ -1,4 +1,4 @@
-# @caisson/compliance-core
+# @caisson-sh/compliance-core
 
 The compliance evidence engine. Runs typed collectors over live system state, assembles a
 deterministic, byte-stable canonical evidence pack, and exports the result through the OSCAL seam
@@ -12,14 +12,14 @@ and is independently golden-checkable.
 import {
   generateEvidencePack,
   parseEvidencePackManifest,
-} from "@caisson/compliance-core";
+} from "@caisson-sh/compliance-core";
 ```
 
 ## Entry points
 
 - `.` — the full surface, node-capable (the deterministic ZIP archive + SHA-256 digest, the
   chain-verify and field-crypto collectors, the drift monitor, and the complete
-  `@caisson/oscal-spine` re-export).
+  `@caisson-sh/oscal-spine` re-export).
 - `./browser` — the browser-safe subset, importable from a client bundle: the collector contract
   and its `passResult`/`flaggedResult`/`unresolvedResult` constructors, the four pure collectors
   (FORCE-RLS, WORM retention, risk register, impersonation dual trail), the pack format, the
@@ -27,6 +27,6 @@ import {
   schema-validated canonical body that `generateEvidencePack` itself composes. Every name on
   `./browser` is also on `.`.
 
-Apache-2.0. Consumes `@caisson/kernel`, the framework catalogs in `@caisson/frameworks-pack`,
-`@caisson/field-crypto`, and `@caisson/risk-register` (the generalized model the EU-AI-Act
-risk-register collector runs on) — down-only, composed by `@caisson/compliance`, never the reverse.
+Apache-2.0. Consumes `@caisson-sh/kernel`, the framework catalogs in `@caisson-sh/frameworks-pack`,
+`@caisson-sh/field-crypto`, and `@caisson-sh/risk-register` (the generalized model the EU-AI-Act
+risk-register collector runs on) — down-only, composed by `@caisson-sh/compliance`, never the reverse.

@@ -19,9 +19,9 @@ import {
 } from "bun:test";
 // PGlite under CI runner load regularly crosses the 5s default; repo-wide standard treatment.
 setDefaultTimeout(30_000);
-import { type TestPg, newTestPg } from "@caisson/testing";
-import { asCredits } from "@caisson/kernel";
-import { withTenant } from "@caisson/tenancy-rls";
+import { type TestPg, newTestPg } from "@caisson-sh/testing";
+import { asCredits } from "@caisson-sh/kernel";
+import { withTenant } from "@caisson-sh/tenancy-rls";
 import {
   CREDIT_EXPIRY_MIGRATION_SQL,
   CREDIT_LINE_ITEM_MIGRATION_SQL,

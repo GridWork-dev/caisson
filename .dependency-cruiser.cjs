@@ -2,7 +2,7 @@
  * dependency-cruiser — the GRAPH layer of the boundary gate (ADR-0022). Complements, not
  * duplicates, the other two layers:
  *   - ESLint `no-restricted-imports` (tooling/eslint-config/boundaries.js) = fast static signal.
- *   - @caisson/standards-gate (Bun) = the SPDX/license authority (AGPL boundary, manifest agreement)
+ *   - @caisson-sh/standards-gate (Bun) = the SPDX/license authority (AGPL boundary, manifest agreement)
  *     — graph tools read SPDX poorly.
  *   - THIS = the real module graph: catches dynamic `import()` + `require()` + TRANSITIVE reach
  *     that static ESLint misses, and the base→edition direction.
@@ -44,7 +44,7 @@ module.exports = {
     {
       name: "no-provider-sdk-outside-ai",
       comment:
-        "Only @caisson/ai-config + @caisson/ai-kit may reach a provider SDK (ADR-0011) — incl. dynamic/transitive.",
+        "Only @caisson-sh/ai-config + @caisson-sh/ai-kit may reach a provider SDK (ADR-0011) — incl. dynamic/transitive.",
       severity: "error",
       from: { pathNot: "packages/(ai-config|ai-kit)" },
       to: { path: PROVIDER_SDK_RE },

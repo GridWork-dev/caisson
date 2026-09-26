@@ -34,7 +34,7 @@ import {
   safeEqualFixed,
   strictObject,
   ValidationError,
-} from "@caisson/kernel/node";
+} from "@caisson-sh/kernel/node";
 import { buildArtifactKey } from "./store.ts";
 
 // --- trust grades (ADR-0332 CR-03) -------------------------------------------------------------
@@ -292,7 +292,7 @@ export interface TransparencyLog {
 
 /**
  * The minimal signer port `RekorAnchorLog` needs — the deployment ed25519ph anchoring signer
- * (`@caisson/signing-primitive`'s `Ed25519PhSigner`) is INJECTED as this structural shape, so audit-worm
+ * (`@caisson-sh/signing-primitive`'s `Ed25519PhSigner`) is INJECTED as this structural shape, so audit-worm
  * keeps its down-only dependency set (no `signing-primitive` import; ADR-0346 P1 discipline). `sign`
  * returns a detached 64-byte ed25519ph signature over the exact anchor bytes; `publicKey` returns the
  * raw 32-byte Ed25519 key (this module DER-wraps it into the Rekor verifier material).
