@@ -151,7 +151,7 @@ type EmailTemplateId =
 function isEmailTemplateId(template: string): template is EmailTemplateId;
 ```
 
-`EMAIL_TEMPLATE_IDS` is the stable display order the admin catalog preview walks.
+`EMAIL_TEMPLATE_IDS` lists every template id in a stable display order.
 `isEmailTemplateId` is the runtime membership check, a request-supplied string is never trusted
 without it.
 
@@ -169,7 +169,7 @@ interface RenderedEmail {
 ```
 
 Renders one branded template against its typed prop shape (`TemplateDataMap` keys each id to
-its own data type, a purchase receipt's line items are not a magic-link's `url`). Throws if
+its own data type, a credits-expiring notice's data is not a magic-link's `url`). Throws if
 the template id isn't in the registry; callers with an unchecked `template` string use
 `tryRenderEmailTemplate` instead.
 
@@ -190,9 +190,9 @@ raw message without rendering.
 const EMAIL_SAMPLE_DATA: { [K in EmailTemplateId]: TemplateDataMap[K] };
 ```
 
-One realistic payload per template id, shared by the admin catalog preview, the admin
-send-test route, and the visual harness, so a preview, a test send, and a
-screenshot always render off the same data.
+One realistic payload per template id. The site's visual harness renders from it, and a preview
+or test-send surface of your own can too, so a preview, a test send, and a screenshot always
+render off the same data.
 
 ## Related
 

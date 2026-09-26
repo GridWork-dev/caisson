@@ -15,7 +15,7 @@ import "./charts.css";
 // no client hooks — so it renders in a server component or a client island alike. Colours come from
 // the floor token contract (default `--cs-accent`), so light/dark theming is automatic. Each chart
 // is `role="img"` with an SVG `<title>`/`<desc>`, giving assistive tech the name + summary a bare
-// `<svg>` lacks. Scale + path math lives in `../lib/charts` (the sellable, unit-tested part).
+// `<svg>` lacks. Scale + path math lives in `../lib/charts` (the unit-tested part).
 
 const PAD = { top: 8, right: 10, bottom: 22, left: 40 } as const;
 

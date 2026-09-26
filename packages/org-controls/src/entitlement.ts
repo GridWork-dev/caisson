@@ -5,7 +5,7 @@
 // A grant may name the module by its bare slug `org-controls` or by the full `@caisson-sh/org-controls`
 // module id; the predicate accepts either form so it is correct whichever the host's grant carries.
 
-/** The bare-slug entitlement id a standalone org-controls purchase grants. */
+/** The bare-slug grant id for this module. */
 export const ORG_CONTROLS_ENTITLEMENT_ID = "org-controls";
 /** The full module-id form the same entitlement may also appear as. */
 export const ORG_CONTROLS_MODULE_ID = "@caisson-sh/org-controls";

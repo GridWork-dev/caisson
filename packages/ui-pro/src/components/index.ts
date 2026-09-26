@@ -40,7 +40,7 @@ export { Menu } from "./menu";
 export type { MenuItemSpec, MenuProps } from "./menu";
 
 // Pure transforms + shared types — exported for direct testing and server-side reuse (the AGENTS
-// contract): the sellable logic behind the interactive components lives in these, not the UI.
+// contract): the logic behind the interactive components lives in these, not the UI.
 export {
   aggregate,
   applyFilters,

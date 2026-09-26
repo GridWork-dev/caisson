@@ -2,7 +2,7 @@
  * Pure date-range preset math for DateRangePicker. Ranges are ISO date strings (`YYYY-MM-DD`),
  * computed from a reference date's UTC parts so they are deterministic and timezone-stable (a
  * date-only range has no time-of-day to shift). The domain presets — fiscal quarter and billing
- * cycle — are the sellable part; a plain "last 7 days" is commodity.
+ * cycle — are the domain-specific part; a plain "last 7 days" is commodity.
  */
 
 export interface DateRange {

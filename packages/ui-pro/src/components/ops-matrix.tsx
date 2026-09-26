@@ -66,9 +66,9 @@ function cellState(cell: OpsCell): "yes" | "partial" | "no" | "note" {
 }
 
 /**
- * OpsMatrix — a coverage/comparison matrix generalized from the pricing SKU table: rows × columns of
+ * OpsMatrix — a coverage/comparison matrix generalized from `SkuMatrix`: rows × columns of
  * covered / partial / not-covered / note cells. Drives permission matrices, control-coverage grids,
- * and edition/SKU comparisons from one contract. Presentational and recipe-compliant (co-located CSS
+ * and plan or feature comparisons from one contract. Presentational and recipe-compliant (co-located CSS
  * on `var(--cs-*)`, tri-state via `data-state`, `forwardRef` on the scroll frame); every cell carries
  * an `aria-label` so the glyphs are not the only signal.
  */
