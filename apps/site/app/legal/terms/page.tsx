@@ -1,3 +1,4 @@
+// OPERATOR REVIEW: rewritten for the open-source model on 2026-09-26; review before launch.
 import { buildMetadata } from "@/lib/metadata";
 import { Card, Section } from "@/components";
 import { prose } from "../prose";
@@ -146,10 +147,9 @@ export default function TermsPage() {
       {/* Third-party services */}
       <Section id="third-party-services" title="Third-party services">
         <p style={prose.paragraph}>
-          The site uses third-party infrastructure services: Cloudflare (hosting
-          and edge delivery) and Plausible Analytics (cookieless, PII-free
-          analytics). Your use of this site involves processing governed by
-          those providers&apos; terms to the extent described in our{" "}
+          The site uses one third-party infrastructure service: Cloudflare
+          (hosting and edge delivery). Your use of this site involves processing
+          governed by Cloudflare&apos;s terms to the extent described in our{" "}
           <a href="/legal/privacy" className="cs-link">
             Privacy Policy
           </a>

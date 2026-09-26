@@ -10,7 +10,6 @@ import type { ReactNode } from "react";
 import { RootProvider } from "fumadocs-ui/provider/next";
 
 import SearchDialog from "@/components/search";
-import { PlausibleInit } from "@/components/plausible-init";
 import { fontSansZeroPatch, fontVariables } from "@/lib/fonts";
 import { rootGraph, serializeJsonLd } from "@/lib/jsonld";
 
@@ -71,8 +70,8 @@ try {
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(rootGraph) }}
         />
         {/* Speculation Rules (ADR-0334 moment 3): hover-eager prerender of nav targets —
-            Chromium-only, ignored elsewhere. Never the search index or the demos zone; analytics
-            are prerender-safe (plausible-init defers to activation). Static JSON, no user input. */}
+            Chromium-only, ignored elsewhere. Never the search index or the demos zone.
+            Static JSON, no user input. */}
         <script
           type="speculationrules"
           dangerouslySetInnerHTML={{
@@ -103,7 +102,6 @@ try {
         </RootProvider>
         {/* Plausible — cookieless, no consent banner, env-gated on NEXT_PUBLIC_PLAUSIBLE_DOMAIN
             (ADR-0118, supersedes the ADR-0047 raw <Script> wiring). */}
-        <PlausibleInit />
       </body>
     </html>
   );

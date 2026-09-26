@@ -3,11 +3,11 @@ title: Local-first
 description: On-device inference and vector search behind a default-deny privacy gate, two-way offline sync, and per-tenant field encryption. Your data stays on-device by default.
 ---
 
-The **Local-first** bundle keeps inference and retrieval on the machine that holds the data. A
+The **Local-first** family keeps inference and retrieval on the machine that holds the data. A
 default-deny egress gate is the contract: nothing crosses the network boundary unless a typed
 allowlist names it, so "on-device" is enforced in code, not promised in a README.
 
-## What's in the bundle
+## What's in the family
 
 - **[local-inference](/docs/local-first/local-inference)**: the `InferenceBackend` seam over a
   MiniLM-class ONNX model via transformers.js, SHA-256 hash-verified before use. On-device by
@@ -23,7 +23,7 @@ allowlist names it, so "on-device" is enforced in code, not promised in a README
   tombstone-aware convergence.
 - **[field-crypto](/docs/provenance/field-crypto)**: per-tenant field encryption for anything
   stored in the local database, shared with the Compliance, AI-Production, and Provenance
-  bundles.
+  families.
 
 ## Install
 

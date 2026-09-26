@@ -45,8 +45,8 @@ const ARTIFACTS: readonly {
   {
     icon: "shield",
     label: "The standards gate",
-    body: "One gate is the sole registry ingress and license authority. It enforces the open-Apache-vs-commercial split (a package may never depend 'up' on an edition), that every code-shipping module declares its SPDX license and a manifest, that manifest prices match the locked price authority and the site catalog, and — a ship-blocker — that no production-signed license token was ever committed. A finding exits non-zero.",
-    proof: "license split · manifest/price parity · no committed tokens",
+    body: "One gate is the sole registry ingress and license authority. It enforces that every code-shipping module declares Apache-2.0 in its SPDX license field and carries a manifest, and that the catalog the CLI reads matches the workspace's package.json versions exactly. A finding exits non-zero.",
+    proof: "SPDX license present · catalog == workspace versions",
   },
   {
     icon: "audit-chain",
@@ -69,16 +69,16 @@ const ARTIFACTS: readonly {
   {
     icon: "evidence-pack",
     label: "Adversarial threat registers",
-    body: "Each workstream ships a SECURITY.md threat register produced by an adversarial review lane: every threat is enumerated and marked held or refuted, with the resolution. The shared-substrate register alone covers per-tenant key derivation, nonce reuse, the KMS envelope, and the RLS boundary. These are the working security records behind the code, available to a reviewer under license.",
+    body: "Each workstream ships a SECURITY.md threat register produced by an adversarial review lane: every threat is enumerated and marked held or refuted, with the resolution. The shared-substrate register alone covers per-tenant key derivation, nonce reuse, the KMS envelope, and the RLS boundary. These are the working security records behind the code, in the public repository.",
     proof: "per-workstream SECURITY.md · each threat held or refuted",
   },
 ];
 
 const FAQ = [
   {
-    question: "Can I download an evidence pack before I buy?",
+    question: "Can I see the evidence pack before I adopt Caisson?",
     answer:
-      "The artifacts described here are real and run in CI today. The source — including the evidence-pack generator, the OSCAL export, and the test suites — ships to you under license, and we will walk your security reviewer through the CI runs and threat registers directly. Email security@caisson.sh to start that conversation.",
+      "The artifacts described here are real and run in CI today. The source — including the evidence-pack generator, the OSCAL export, and the test suites — is in the public repository under Apache-2.0, and we will walk your security reviewer through the CI runs and threat registers directly. Email security@caisson.sh to start that conversation.",
   },
   {
     question: "Is Caisson SOC 2 or HIPAA certified?",
@@ -203,7 +203,7 @@ export default function EvidencePage() {
         <Section
           eyebrow="For your security reviewer"
           title="You own the source, so the evidence comes with it."
-          lede="These artifacts aren't a hosted dashboard you rent access to. They live in the codebase you buy and own — the generator that writes the OSCAL pack, the gate that enforces the license split, the suites that prove the controls. Read them, run them, and put your own reviewer's name on the result."
+          lede="These artifacts aren't a hosted dashboard you rent access to. They live in the codebase you can read and run — the generator that writes the OSCAL pack, the gate that enforces the license floor, the suites that prove the controls. Read them, run them, and put your own reviewer's name on the result."
         >
           <FeatureGridSafe />
         </Section>
@@ -240,7 +240,7 @@ function FeatureGridSafe() {
     {
       href: "/docs",
       label: "The docs",
-      note: "How every package works and the contract it upholds — the manual your engineers read before they buy.",
+      note: "How every package works and the contract it upholds — the manual your engineers read before they wire it in.",
     },
   ];
   return (

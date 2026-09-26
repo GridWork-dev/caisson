@@ -83,4 +83,10 @@ describe("public/_headers", () => {
       expect(HEADERS.get(path)).toEqual([["Content-Type", type]]);
     }
   });
+
+  test("content-hashed build output is cached immutably", () => {
+    expect(HEADERS.get("/_next/static/*")).toEqual([
+      ["Cache-Control", "public, max-age=31536000, immutable"],
+    ]);
+  });
 });

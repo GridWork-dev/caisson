@@ -10,7 +10,6 @@ import { Card, Hero, Section, StatusChip } from "@/components";
 import { EntryLinks } from "@/components/entry-links";
 import { MediaCarousel } from "@/components/media-carousel";
 import { PageSections } from "@/components/page-sections";
-import { TrackView } from "@/components/track-view";
 import { mediaSlides } from "@/lib/media-manifest";
 import { bundleLabel, bundlePagePath } from "@/components/marketplace";
 import { entryDocsHrefs } from "@/lib/entry-docs";
@@ -183,7 +182,6 @@ export default async function ModuleDepthPage(props: Params) {
 
   return (
     <>
-      <TrackView item={`module:${mod.id}`} />
       <JsonLdScript data={breadcrumbLd} />
       <JsonLdScript data={appLd} />
       <JsonLdScript data={faqLd} />

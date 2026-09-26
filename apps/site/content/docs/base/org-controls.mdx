@@ -3,11 +3,11 @@ title: Org controls
 description: WorkOS SSO sign-in, a Clerk session-verification driver, owner-gated multi-user membership, and the cross-tenant admin-write RLS layer the operator control plane mutates through.
 ---
 
-`@caisson-sh/org-controls` is the commercial org and operator-controls module, carved out of the
-open Base so the Apache-2.0 substrate stays small: WorkOS SSO, a Clerk session-verification
+`@caisson-sh/org-controls` is the org and operator-controls module, carved out of the
+base substrate so the core stays small: WorkOS SSO, a Clerk session-verification
 driver, the MANAGE half of the multi-user account model, and the admin-write RLS layer an
-operator control plane mutates through. Buyer session **resolution** stays in the open
-`@caisson-sh/auth`; buyer tenant **isolation** stays in the open `@caisson-sh/tenancy-rls`.
+operator control plane mutates through. Session **resolution** stays in the open
+`@caisson-sh/auth`; tenant **isolation** stays in the open `@caisson-sh/tenancy-rls`.
 
 ## What it does
 
@@ -21,9 +21,9 @@ operator control plane mutates through. Buyer session **resolution** stays in th
   `removeAccountMember` / `assertCanManageMembers`), invite and remove seats on a shared
   account, owner-only.
 - **Admin-write RLS** (`withAdminWrite` + the policy builders), the cross-tenant write role
-  an operator control plane mutates through, DB-separated from the buyer `app` role.
-- **Entitlement gate** (`holdsOrgControls`), the fail-closed predicate gating the module's
-  own surfaces.
+  an operator control plane mutates through, DB-separated from the tenant-scoped `app` role.
+- **A feature-gate predicate** (`holdsOrgControls`), a fail-closed check your app can use to
+  gate access to this module's surfaces by whatever grant/entitlement model you run.
 
 ## Install
 
@@ -42,7 +42,7 @@ const sso = createWorkosSsoProvider({
   redirectUri: "https://app.example.com/auth/callback",
 });
 
-const url = sso.authorizationUrl(state); // redirect the buyer here
+const url = sso.authorizationUrl(state); // redirect the user here
 const { userId, email } = await sso.exchangeCode(code); // on the callback
 ```
 
@@ -95,13 +95,13 @@ await withAdminWrite(db, async (tx) => {
 `withAdminWrite` refuses a SUPERUSER/BYPASSRLS role before it ever assumes it, a
 misconfigured role fails closed rather than silently widening access.
 
-## Entitlement gate
+## Feature-gate predicate
 
 ```ts
 import { holdsOrgControls } from "@caisson-sh/org-controls";
 
 if (!holdsOrgControls(activeEntitlementIds)) {
-  throw new AuthzError("org-controls entitlement required");
+  throw new AuthzError("org-controls access required");
 }
 ```
 
@@ -111,9 +111,9 @@ the database itself, and an empty set denies.
 ## Composing with the base
 
 org-controls composes DOWN onto `@caisson-sh/auth`, `@caisson-sh/tenancy-rls`, and
-`@caisson-sh/kernel`: buyer session resolution and buyer tenant isolation are never
+`@caisson-sh/kernel`: session resolution and tenant isolation are never
 reimplemented here, only extended: the owner-only MANAGE surface and the cross-tenant
 admin-write role sit beside those open primitives, never in place of them.
 
-org-controls is a standalone module (also included in the Everything bundle), gate access to
+org-controls is a standalone module (also included in the Everything family). Gate access to
 its surfaces with `holdsOrgControls`.

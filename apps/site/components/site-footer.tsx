@@ -22,13 +22,20 @@ const EXTRAS: Record<FooterCol, { href: string; label: string }[]> = {
   ],
   resources: [
     { href: "/llms.txt", label: "llms.txt" },
-    { href: "https://github.com/caisson-sh/caisson", label: "GitHub" },
+    {
+      href: "https://github.com/GridWork-dev/caisson",
+      label: "Source on GitHub",
+    },
+    {
+      href: "https://github.com/GridWork-dev/caisson/discussions",
+      label: "Discussions",
+    },
   ],
   legal: [{ href: "/.well-known/security.txt", label: "Security disclosure" }],
 };
 
 const HEADINGS: Record<FooterCol, string> = {
-  editions: "Bundles",
+  editions: "Module families",
   product: "Marketplace",
   resources: "Resources",
   legal: "Legal",

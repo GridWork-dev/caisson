@@ -4,6 +4,9 @@
   gap: var(--cs-space-8);
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
+  /* module copy quotes long identifiers (DEFAULT_TRUST_PAGE_ALLOWLIST); at 360px one of them
+   * outruns the column and the page scrolls sideways. Breaks only a word that doesn't fit. */
+  overflow-wrap: break-word;
 }
 
 @media (min-width: 900px) {

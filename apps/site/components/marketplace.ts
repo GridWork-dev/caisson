@@ -24,7 +24,7 @@ export function bundleLabel(id: BundleId): string {
 
 /** The persona/Provenance page path for a bundle id — the marketing slug differs from the bundle id
  *  only for AI-Production (the page lives at `/ai-kit`). The whole-catalog `everything` bundle has no
- *  persona page, so its buy path is the marketplace hub. */
+ *  persona page, so its path is the marketplace hub. */
 export function bundlePagePath(id: BundleId): string {
   const slug = id === "ai-production" ? "ai-kit" : id;
   return id === "everything" ? "/marketplace" : `/${slug}`;

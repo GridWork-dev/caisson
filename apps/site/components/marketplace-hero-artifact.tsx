@@ -65,11 +65,12 @@ function ComposeBody({ items }: { items: readonly ComposeItem[] }) {
   );
 }
 
-/** The whole-catalog composition — the marketplace hero's right-half artifact: every SELLABLE
- *  bundle composing onto the base. Also reused as the Everything bundle's media slide (ADR-0290).
- *  Everything itself is excluded from its own chip list (it is the whole-catalog purchase, not one
- *  more thing composing onto the base alongside the five it contains) — the count and the rendered
- *  chips both come from the same filtered array, so they can't drift apart (ADR-0082 F6). */
+/** The whole-catalog composition — the marketplace hero's right-half artifact: every module
+ *  family composing onto the base. Also reused as the Everything module family's media slide
+ *  (ADR-0290). Everything itself is excluded from its own chip list (it is the whole-catalog
+ *  entry, not one more thing composing onto the base alongside the five it contains) — the count
+ *  and the rendered chips both come from the same filtered array, so they can't drift apart
+ *  (ADR-0082 F6). */
 export function MarketplaceHeroArtifact() {
   const bundles = BUNDLES.filter((b) => b.id !== "everything");
   const items: readonly ComposeItem[] = bundles.map((b) => ({
@@ -79,13 +80,13 @@ export function MarketplaceHeroArtifact() {
   }));
   return (
     <MediaFrame
-      // "+ Everything": the page's own lede and type facet count six bundles (Everything
-      // included as a SKU); a bare "5 composable bundles" read as a contradiction two
-      // lines below "six bundles" (post-deploy re-audit, high). The chip list stays 5 —
-      // Everything is the whole-catalog purchase, not a sixth thing composing alongside
-      // the five it contains — so the label names it instead of counting it.
-      label={`caisson · one base, ${bundles.length} composable bundles + Everything`}
-      ariaLabel={`${bundles.length} composable Caisson bundles onto one Apache-2.0 audited base, plus the Everything bundle covering all of them`}
+      // "+ Everything": the page's own lede and type facet count six module families (Everything
+      // included as an entry); a bare "5 composable module families" read as a contradiction two
+      // lines below "six module families" (post-deploy re-audit, high). The chip list stays 5 —
+      // Everything is the whole-catalog entry, not a sixth thing composing alongside the five it
+      // contains — so the label names it instead of counting it.
+      label={`caisson · one base, ${bundles.length} composable module families + Everything`}
+      ariaLabel={`${bundles.length} composable Caisson module families onto one Apache-2.0 audited base, plus the Everything module family covering all of them`}
       status={
         <span className={styles.barChip}>
           <span className={styles.dot} />
@@ -99,12 +100,13 @@ export function MarketplaceHeroArtifact() {
   );
 }
 
-/** A single bundle's composition slide (ADR-0290) — the same pattern, parametrized: that bundle's
- *  real member modules composing onto the base. Members come from `bundle-pages.ts` (the same
- *  record the bundle's own marketing page renders its "N composed packages" heading from), NOT
- *  `catalog.ts`'s `modulesByBundle` — that only returns modules with a standalone SKU, undercounting
- *  a bundle that also includes unpriced base packages (e.g. Compliance ships 14 composed packages,
- *  11 of them separately priced), which drifted this diagram's count from the page's own copy.
+/** A single module family's composition slide (ADR-0290) — the same pattern, parametrized: that
+ *  module family's real member modules composing onto the base. Members come from
+ *  `bundle-pages.ts` (the same record the module family's own marketing page renders its
+ *  "N composed packages" heading from), NOT `catalog.ts`'s `modulesByBundle` — that only returns
+ *  modules with a standalone module page, undercounting a module family that also includes base
+ *  packages with no standalone page (e.g. Compliance ships 14 composed packages, 11 of them with
+ *  their own module page), which drifted this diagram's count from the page's own copy.
  *  `everything` has no per-module `members[]` (it is the whole catalog by construction) so it
  *  reuses <MarketplaceHeroArtifact> itself rather than rendering an empty or all-27-modules list. */
 export function BundleCompositionSlide({ bundleId }: { bundleId: BundleId }) {
@@ -122,7 +124,7 @@ export function BundleCompositionSlide({ bundleId }: { bundleId: BundleId }) {
   return (
     <MediaFrame
       label={`${label} · ${members.length} package${members.length === 1 ? "" : "s"}`}
-      ariaLabel={`${label} bundle: ${members.map((m) => m.name).join(", ")}. Composing onto one Apache-2.0 audited base.`}
+      ariaLabel={`${label} module family: ${members.map((m) => m.name).join(", ")}. Composing onto one Apache-2.0 audited base.`}
       status={
         <span className={styles.barChip}>
           <span className={styles.dot} />

@@ -93,6 +93,9 @@ function renderSection(section: PageSection, key: number): ReactNode {
                 paddingLeft: "var(--cs-space-6)",
                 display: "grid",
                 gap: "var(--cs-space-2)",
+                // notes quote long identifiers (ED25519_SIGNATURE_BYTES/ED25519_PUBLIC_BYTES); without
+                // a break opportunity the grid track sizes to them and the page scrolls sideways at 360px
+                overflowWrap: "anywhere",
               }}
             >
               {notes.map((note, i) => (

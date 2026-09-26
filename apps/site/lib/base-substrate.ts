@@ -66,13 +66,13 @@ export const BASE_CAPABILITIES: readonly BaseCapability[] = [
   {
     icon: "database",
     title: "Multi-tenant Postgres, fail-closed",
-    body: "Row-level security with FORCE on the audited kernel: a query that never set the tenant context returns nothing, never everything. The same isolation every commercial bundle composes onto.",
+    body: "Row-level security with FORCE on the audited kernel: a query that never set the tenant context returns nothing, never everything. The same isolation every module family composes onto.",
     packages: ["tenancy-rls", "kernel"],
   },
   {
     icon: "lock",
     title: "Auth and the open component base",
-    body: "Session and credential handling, plus the @caisson-sh/ui component base the marketing site and buyer dashboard both render with — not a bolt-on you wire up later.",
+    body: "Session and credential handling, plus the @caisson-sh/ui component base the marketing site renders with — not a bolt-on you wire up later.",
     packages: ["auth", "ui"],
   },
   {
@@ -90,7 +90,7 @@ export const BASE_CAPABILITIES: readonly BaseCapability[] = [
   {
     icon: "gauge",
     title: "The registry contract and observability",
-    body: "The signed-registry schema, OpenTelemetry observability, and rate limiting — the same operational spine the commercial services run on, in the open.",
+    body: "The signed-registry schema, OpenTelemetry observability, and rate limiting — the same operational spine production services run on, in the open.",
     packages: ["registry-schema", "observability", "rate-limit"],
   },
   {

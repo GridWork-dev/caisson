@@ -8,8 +8,8 @@ import styles from "./dual-door-hero.module.css";
 
 // Dual-door hero (D1 lock, 2026-07-07 research-synthesis picker) — the correct rendering of the
 // ADR-0040 two-layer frame: compliance is the sharp wedge (the LEAD door, accent identity),
-// production the umbrella (the SECONDARY door into the six bundles). Server component — the doors
-// are real links, no interactivity. Replaces the compliance-only <Hero> on `/`.
+// production the umbrella (the SECONDARY door into the six module families). Server component —
+// the doors are real links, no interactivity. Replaces the compliance-only <Hero> on `/`.
 //
 // Door sub-claims are honest + mechanism-named now (ADR-0080). They are refinable from the Cookiy
 // frame-test (survey 287453) in a later copy-only pass — a swap of these two strings, no rebuild.
@@ -27,7 +27,9 @@ export function DualDoorHero() {
       <HeroField />
       <DoorsWithWeight />
       <div className="cs-container">
-        <span className="cs-eyebrow">One audited base — two ways in</span>
+        <span className="cs-eyebrow">
+          Open source, Apache-2.0 — two ways in
+        </span>
         <h1 className="cs-display" style={{ marginTop: "var(--cs-space-5)" }}>
           Audit-ready and production-hard from commit one.
         </h1>
@@ -38,7 +40,8 @@ export function DualDoorHero() {
           Fail-closed Postgres RLS, S3 Object-Lock WORM, and an append-only
           audit chain sit on the same base as token metering, on-device
           inference, and signed provenance. Pick the door that fits — the base
-          underneath is the same.
+          underneath is the same. Every package is free and{" "}
+          <a href="https://github.com/GridWork-dev/caisson">on GitHub</a>.
         </p>
 
         {/* Two doors: Compliance leads (accent), production is the secondary umbrella door.
@@ -67,7 +70,7 @@ export function DualDoorHero() {
                   transition — next/link soft navs never fire it. The Speculation Rules
                   hover-prerender makes the hard nav instant. */}
               <Button href="/compliance" variant="primary" hard>
-                Open the Compliance bundle
+                Open the Compliance module family
               </Button>
             </div>
           </div>
@@ -78,17 +81,17 @@ export function DualDoorHero() {
               className={styles.chip}
               tone="muted"
               dot
-              label={`${BUNDLE_COUNT} bundles · ${MODULE_COUNT} modules`}
+              label={`${BUNDLE_COUNT} module families · ${MODULE_COUNT} modules`}
             />
             <p className={styles.claim}>
-              Six composable bundles on one base: token metering and spend caps,
-              on-device inference behind a privacy egress gate, a governed-agent
-              kernel, and cryptographic provenance. Compose what you need —
-              never a fork.
+              Six composable module families on one base: token metering and
+              spend caps, on-device inference behind a privacy egress gate, a
+              governed-agent kernel, and cryptographic provenance. Compose what
+              you need — never a fork.
             </p>
             <div className={styles.cta}>
               <Button href="/#bundles" variant="ghost">
-                Explore the six bundles
+                Explore the six module families
               </Button>
             </div>
           </div>
@@ -96,10 +99,10 @@ export function DualDoorHero() {
 
         {/* Supporting honest artifact (ADR-0104 static hero): the real cross-tenant denial + the
             install line — the denial carries the claim, no diagram standing in for behaviour.
-            The CLI package is not yet on the public registry (CAISSON-147), so the chip states
-            "private beta", never a success-tone "ready". Both terminals are framed, so the two
-            cards carry matching elevation (ADR-0285 §4); the install column fills to the psql
-            terminal's height with a proof-chip row. */}
+            The CLI package is published on the public npm registry, so the chip states "ready"
+            at success tone. Both terminals are framed, so the two cards carry matching elevation
+            (ADR-0285 §4); the install column fills to the psql terminal's height with a
+            proof-chip row. */}
         <div className={styles.artifact}>
           <Terminal
             label="psql — cross-tenant read"
@@ -116,11 +119,12 @@ export function DualDoorHero() {
             <CodeBlock
               frame
               label="install"
-              status={<StatusChip tone="muted" dot label="private beta" />}
+              status={<StatusChip tone="success" dot label="ready" />}
               code={
                 <>
-                  <span className="cs-tok-muted">$</span> bunx{" "}
-                  <span className="cs-tok-accent">@caisson-sh/cli</span>@latest
+                  <span className="cs-tok-muted">$</span> bunx --package{" "}
+                  <span className="cs-tok-accent">@caisson-sh/cli</span>{" "}
+                  create-caisson
                 </>
               }
             />
@@ -129,11 +133,7 @@ export function DualDoorHero() {
                 terminal frame (ADR-0285 §4). */}
             <div className={styles.artifactProof}>
               <ProofChips
-                items={[
-                  "Apache-2.0 base",
-                  "Postgres + RLS",
-                  "Perpetual — no phone-home",
-                ]}
+                items={["Apache-2.0 base", "Postgres + RLS", "No phone-home"]}
               />
             </div>
           </div>

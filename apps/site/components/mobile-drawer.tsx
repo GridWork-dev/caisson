@@ -7,7 +7,6 @@ import { useSearchContext } from "fumadocs-ui/contexts/search";
 import { Dialog, ThemeToggle } from "@caisson-sh/ui/components";
 import { Icon, type IconName } from "@/components";
 
-import { trackEvent } from "@/lib/analytics";
 import { Button } from "./button";
 
 // One mobile-drawer link, derived from the desktop panel spec (site-nav.tsx) so mobile can't drift.
@@ -156,7 +155,6 @@ function SearchRow({ onClose }: { onClose: () => void }) {
       onClick={() => {
         onClose();
         setOpenSearch(true);
-        trackEvent("search_open");
       }}
     >
       <svg

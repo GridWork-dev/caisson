@@ -96,7 +96,7 @@ function Strata({
         {...HAIRLINE}
       />
       <text x={14} y={30} className={styles.bandLabelAccent}>
-        MODULE SEAM · THE BUNDLE
+        MODULE SEAM · THE FAMILY
       </text>
       {seam.map((c) => (
         <Chip key={c.label} x={c.x} y={c.y} w={c.w} label={c.label} />
@@ -185,8 +185,8 @@ function Strata({
 export function AiProductionCrossSection() {
   return (
     <Sheet
-      title="The AI-Production bundle in cross-section: six commercial members at the module seam, composing onto the kernel, tenancy-rls, and ai-config base, on a Postgres bedrock"
-      bar="bundle: ai-production · cross-section · 6 members drawn"
+      title="The AI-Production module family in cross-section: six members at the module seam, composing onto the kernel, tenancy-rls, and ai-config base, on a Postgres bedrock"
+      bar="family: ai-production · cross-section · 6 members drawn"
     >
       <Strata
         seam={[
@@ -216,8 +216,8 @@ export function AiProductionCrossSection() {
 export function LocalFirstCrossSection() {
   return (
     <Sheet
-      title="The Local-first bundle in cross-section: five members at the module seam, composing onto the kernel base, on an on-device SQLite bedrock"
-      bar="bundle: local-first · cross-section · 5 members drawn"
+      title="The Local-first module family in cross-section: five members at the module seam, composing onto the kernel base, on an on-device SQLite bedrock"
+      bar="family: local-first · cross-section · 5 members drawn"
     >
       <Strata
         seam={[
@@ -242,8 +242,8 @@ export function LocalFirstCrossSection() {
 export function AgenticDevCrossSection() {
   return (
     <Sheet
-      title="The Agentic-Dev bundle in cross-section: five commercial members at the module seam, composing onto the kernel and ai-config base, on Postgres and on-device SQLite bedrock"
-      bar="bundle: agentic-dev · cross-section · 5 members drawn"
+      title="The Agentic-Dev module family in cross-section: five members at the module seam, composing onto the kernel and ai-config base, on Postgres and on-device SQLite bedrock"
+      bar="family: agentic-dev · cross-section · 5 members drawn"
     >
       <Strata
         seam={[
@@ -277,8 +277,8 @@ export function AgenticDevCrossSection() {
 export function ProvenanceCrossSection() {
   return (
     <Sheet
-      title="The Provenance bundle in cross-section: three commercial members at the module seam, composing onto the kernel base, on Postgres and S3 Object-Lock bedrock"
-      bar="bundle: provenance · cross-section · 3 members drawn"
+      title="The Provenance module family in cross-section: three members at the module seam, composing onto the kernel base, on Postgres and S3 Object-Lock bedrock"
+      bar="family: provenance · cross-section · 3 members drawn"
     >
       <Strata
         seam={[
@@ -312,8 +312,8 @@ export function ProvenanceCrossSection() {
 export function EverythingCrossSection() {
   return (
     <Sheet
-      title="The Everything bundle in cross-section: five persona bundles plus three platform modules at the module seam, composing onto the Apache-2.0 base, on Postgres, S3 Object-Lock, and on-device SQLite bedrock"
-      bar="bundle: everything · cross-section · 5 bundles + 3 platform modules drawn"
+      title="The Everything module family in cross-section: five persona module families plus three platform modules at the module seam, composing onto the Apache-2.0 base, on Postgres, S3 Object-Lock, and on-device SQLite bedrock"
+      bar="family: everything · cross-section · 5 module families + 3 platform modules drawn"
     >
       <Strata
         seam={[

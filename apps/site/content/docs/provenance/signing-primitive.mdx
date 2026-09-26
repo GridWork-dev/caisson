@@ -7,7 +7,7 @@ description: Per-tenant evidence signing, a detached Ed25519 signature over a ca
 not to Caisson. It produces a detached Ed25519 signature over the canonicalized manifest
 body concatenated with the audit chain's tip hash. The signature is detached, so the signed
 body stays byte-stable and independently verifiable, and the per-tenant identity is
-deliberately distinct from the Caisson license-issuer key, a buyer proves the provenance of
+deliberately distinct from any single Caisson-wide key: each tenant proves the provenance of
 their own evidence with their own identity.
 
 ## Install
@@ -34,7 +34,7 @@ chainAnchor.tipHash` with an `Ed25519Signer` scoped to the tenant. The signature
 
 ## The guarantee
 
-The signing key is the tenant's, held per tenant and never the license-issuer key. The
+The signing key is the tenant's, held per tenant and never a single Caisson-wide key. The
 signature covers the manifest and the WORM audit-chain tip together, so a signature is bound
 to the exact evidence state it was produced over, re-anchoring the chain or editing the
 manifest invalidates it:
@@ -46,7 +46,7 @@ import {
   verifyEvidenceSignature,
 } from "@caisson-sh/signing-primitive";
 
-// A per-tenant signer — the 32-byte seed is the tenant's signing key, never Caisson's.
+// A per-tenant signer — the 32-byte seed is the tenant's signing key.
 const signer = new Ed25519Signer(keyId, tenantSigningKey);
 
 // Sign the pack: detached signature over canonicalize(manifest) ∥ chainAnchor.tipHash.
@@ -100,7 +100,7 @@ const tsa = new StubTimestampAuthority({ now: new Date("2026-01-01") });
   seed; construction throws on an empty `keyId` or a wrong-length key. `publicKey()` and
   `sign(payload)` are async; the seed is a private field, never enumerable or logged.
 - **`Signer`**: the signing-identity port (`keyId`, `algorithm`, `publicKey()`, `sign()`).
-  A buyer-supplied KMS asymmetric-sign implementation is a drop-in of this same interface:
+  A KMS asymmetric-sign implementation you supply is a drop-in of this same interface:
   the secret key never leaves the HSM.
 - **`signEvidencePack(signer, manifest, options?)`**: returns an `EvidenceSignature`
   (`algorithm`, `keyId`, `publicKey`, `signature`, optional `timestamp`). Throws on a
@@ -136,9 +136,9 @@ read environment variable:
 
 `@caisson-sh/signing-primitive` depends only on `@caisson-sh/kernel` (`canonicalize`,
 `safeEqualFixed`), dependencies are down-only, so it never imports the evidence generator
-or an edition. The **Compliance** and **Provenance** bundles compose it alongside
+or a higher-layer module. The **Compliance** and **Provenance** families compose it alongside
 `@caisson-sh/compliance-core` and `@caisson-sh/audit-worm` to sign the evidence packs those
 packages produce.
 
-Use it standalone or as part of a bundle; see the current bundle composition and the live demo
+Use it standalone or as part of a family; see the current composition and the live demo
 on the [marketplace](/marketplace).

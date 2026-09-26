@@ -128,13 +128,14 @@ const Button: ForwardRefExoticComponent<
 | `CodeBlock`       | `CodeBlockProps`                 | `<pre>` code surface; `frame` wraps it in `Terminal` chrome instead.                                                                                                       |
 | `StatusChip`      | `StatusChipProps`                | Glyph + label status pill, never color-alone.                                                                                                                             |
 | `CredentialStrip` | `CredentialStripProps`           | Compliance-framework name strip.                                                                                                                                           |
-| `BundleCard`      | `BundleCardProps`                | Featured bundle link card.                                                                                                                                                 |
-| `SkuMatrix`       | `SkuMatrixProps`, `SkuMatrixRow` | Feature-by-bundle comparison matrix.                                                                                                                                       |
+| `BundleCard`      | `BundleCardProps`                | Featured grouped-item link card, for a plan/package/tier comparison page.                                                                                                  |
+| `SkuMatrix`       | `SkuMatrixProps`, `SkuMatrixRow` | Feature-by-column comparison matrix.                                                                                                                                       |
 | `Reveal`          | `RevealProps`                    | Fade-up-once scroll reveal via `IntersectionObserver`.                                                                                                                     |
-| `MobileBuyBar`    | `MobileBuyBarProps`              | Sticky mobile price + purchase bar.                                                                                                                                        |
+| `MobileBuyBar`    | `MobileBuyBarProps`              | Sticky mobile price + call-to-action bar.                                                                                                                                  |
 | `ThemeToggle`     | `ThemeToggleProps`               | Dark/light pin toggle. Pairs with `THEME_STORAGE_KEY` + `themeInitScript` (inline in the root layout `<head>`) for a flash-free first paint that otherwise follows the OS. |
 
-**Dashboard shell & data**: the buyer-dashboard data-app surface:
+**Dashboard shell & data**: the shell and data components for building an admin or customer
+dashboard:
 
 | Component                  | Props                                               | Behavior                                                                                                                        |
 | -------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
