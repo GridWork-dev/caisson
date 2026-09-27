@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/audit-worm",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "description": "Write-once (WORM) artifact store with an S3 Object-Lock backend, a SHA-256 append-only audit chain with a trusted WORM anchor, and an append-only locked-version database with a derived current version.",
   "license": "Apache-2.0",
   "repository": {

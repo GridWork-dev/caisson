@@ -1,5 +1,22 @@
 # @caisson/verify-pack
 
+## 0.2.5
+
+### Patch Changes
+
+- 73bdf3c: Package descriptions, READMEs and agent notes now describe what each package does, with no prices, paid tiers or license-key requirements. The standards gate fails when a published package's description or README mentions a commercial tier or a dollar price.
+- 73bdf3c: Each package's `manifest.ts` now imports `defineModule` from the sibling `registry-schema` package instead of a monorepo-only directory, so the file resolves wherever `@caisson-sh/registry-schema` is installed next to it.
+- 784a846: Each package's metadata now links to its source directory in the public repository.
+- 73bdf3c: Every package is now Apache-2.0 and publishes to the public npm registry. Each package ships the Apache LICENSE file, and the registry manifest carries the same license. Nothing needs a license key or a private registry to install.
+- 0b02891: Every package now publishes under the `@caisson-sh` npm scope. Update imports and dependencies to the new names; module ids in registry manifests use the same scope.
+- 9e5da35: The README shows the published CLI (`bunx @caisson-sh/verify-pack`) instead of describing the package as unpublished.
+- Updated dependencies [73bdf3c]
+- Updated dependencies [784a846]
+- Updated dependencies [611f1de]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [0b02891]
+  - @caisson-sh/kernel@0.10.1
+
 ## 0.2.4
 
 ### Patch Changes

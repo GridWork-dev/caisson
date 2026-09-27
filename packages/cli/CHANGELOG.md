@@ -1,5 +1,33 @@
 # @caisson/cli
 
+## 0.9.0
+
+### Minor Changes
+
+- 73bdf3c: `create-caisson` generates from the public catalog only. The `--edition`, `--sample` and `--demo` flags, bundle expansion, generation metering and the licensed-registry `.npmrc` are removed; pick modules with `--module <id@version>` and install them from public npm with no token.
+- 73bdf3c: The module catalog `create-caisson` validates against is now built from the packages released with it: every public `@caisson-sh/*` package at its current version, one version per module, with its description, dependencies and stability. Every such package can be generated, and `--module` pins match what npm serves for that release. An unbuilt checkout with no catalog file now fails with a message naming `bun run build` instead of reading a stale index.
+
+### Patch Changes
+
+- 784a846: Each package's metadata now links to its source directory in the public repository.
+- 611f1de: Package comments, tests, READMEs and generated templates now describe the reader as an adopter integrating the package into their own app, not a buyer of a Caisson product. Compliance-artifact wording that faced an adopter's own customers now says so explicitly, and internal signing-key and licensing-domain comments no longer reference a retired commercial license issuer.
+- 73bdf3c: Every package is now Apache-2.0 and publishes to the public npm registry. Each package ships the Apache LICENSE file, and the registry manifest carries the same license. Nothing needs a license key or a private registry to install.
+- 0b02891: Every package now publishes under the `@caisson-sh` npm scope. Update imports and dependencies to the new names; module ids in registry manifests use the same scope.
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [784a846]
+- Updated dependencies [611f1de]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [0b02891]
+  - @caisson-sh/ds-manifest@0.3.5
+  - @caisson-sh/migrate@0.2.15
+  - @caisson-sh/tenancy-rls@0.6.2
+  - @caisson-sh/jobs@0.7.5
+  - @caisson-sh/kernel@0.10.1
+  - @caisson-sh/registry-schema@0.6.0
+
 ## 0.8.1
 
 ### Patch Changes

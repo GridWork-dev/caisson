@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/lint-policy",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "description": "The shared lint-policy data + the custom lint plugin. Holds boundary-policy.cjs (the ONE provider-SDK / bundle-meta data source read by oxlint, dependency-cruiser and the standards gate) and the caisson-slop plugin oxlint loads via jsPlugins. Rule severities live in the root .oxlintrc.json (ADR-0408); this package is data and plugins, not config.",
   "type": "module",

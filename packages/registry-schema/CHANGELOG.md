@@ -1,5 +1,18 @@
 # @caisson/registry-schema
 
+## 0.6.0
+
+### Minor Changes
+
+- 73bdf3c: The module manifest shrinks to its catalog fields: id, version, license, dependencies, description and stability. Tier, price, bundle membership, editions and the entitlement helpers are removed, and Apache-2.0 is the only accepted license.
+- 73bdf3c: `publishedAt` and `gateAttestation` on a catalog version are now optional, so a catalog built from local packages validates without publish provenance. An unknown module id now reports that it is not in the module catalog.
+
+### Patch Changes
+
+- 784a846: Each package's metadata now links to its source directory in the public repository.
+- 73bdf3c: Every package is now Apache-2.0 and publishes to the public npm registry. Each package ships the Apache LICENSE file, and the registry manifest carries the same license. Nothing needs a license key or a private registry to install.
+- 0b02891: Every package now publishes under the `@caisson-sh` npm scope. Update imports and dependencies to the new names; module ids in registry manifests use the same scope.
+
 ## 0.5.12
 
 ### Patch Changes

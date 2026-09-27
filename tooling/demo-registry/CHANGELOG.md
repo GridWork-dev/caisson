@@ -1,5 +1,27 @@
 # @caisson/demo-registry
 
+## 0.2.17
+
+### Patch Changes
+
+- 73bdf3c: The site, demos and internal tooling follow the move to Apache-2.0: the gate now requires every published package to be Apache-2.0 with its LICENSE file, the commerce and entitlement checks are gone, and the docs install everything from public npm.
+- Updated dependencies [eb2648e]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [784a846]
+- Updated dependencies [611f1de]
+- Updated dependencies [784a846]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [0b02891]
+  - @caisson-sh/ui-pro@0.3.9
+  - @caisson-sh/ai-meter@1.1.4
+  - @caisson-sh/audit-worm@2.2.5
+  - @caisson-sh/local-store@1.1.3
+  - @caisson-sh/prompt-registry@1.1.3
+  - @caisson-sh/ui@0.6.8
+  - @caisson-sh/audit-harness@1.0.4
+
 ## 0.2.16
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/org-controls",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Org & operator controls: WorkOS SSO sign-in, a Clerk session-verification driver, the owner-gated multi-user membership surface, and the cross-tenant admin-write RLS layer the operator control plane mutates through. @caisson-sh/auth keeps user session resolution; @caisson-sh/tenancy-rls keeps tenant isolation.",
   "license": "Apache-2.0",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/verify-pack",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Out-of-band verifier for Caisson audit evidence packs: validates the signed complete-file manifest, pack seal, receipt chain, and per-row anchor signatures without trusting executable code from the pack.",
   "license": "Apache-2.0",
   "repository": {

@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/risk-register",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "A framework-agnostic risk register: likelihood x impact scoring with a computed, never freeform, residual; operator overrides recorded as a chained exception rather than an edit; and crosswalk pointers into any shipped compliance framework pack.",
   "license": "Apache-2.0",
   "repository": {

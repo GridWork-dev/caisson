@@ -1,5 +1,23 @@
 # @caisson/prompt-registry
 
+## 1.1.3
+
+### Patch Changes
+
+- 73bdf3c: Each package's `manifest.ts` now imports `defineModule` from the sibling `registry-schema` package instead of a monorepo-only directory, so the file resolves wherever `@caisson-sh/registry-schema` is installed next to it.
+- 784a846: Each package's metadata now links to its source directory in the public repository.
+- 73bdf3c: Every package is now Apache-2.0 and publishes to the public npm registry. Each package ships the Apache LICENSE file, and the registry manifest carries the same license. Nothing needs a license key or a private registry to install.
+- 0b02891: Every package now publishes under the `@caisson-sh` npm scope. Update imports and dependencies to the new names; module ids in registry manifests use the same scope.
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [784a846]
+- Updated dependencies [611f1de]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [0b02891]
+  - @caisson-sh/tenancy-rls@0.6.2
+  - @caisson-sh/kernel@0.10.1
+  - @caisson-sh/ui@0.6.8
+
 ## 1.1.2
 
 ### Patch Changes

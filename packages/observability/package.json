@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/observability",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "description": "Vendor-neutral OpenTelemetry bootstrap: env-gated NodeSDK + OTLP/HTTP exporter, HTTP/fetch/pg auto-instrumentation, and span-attribute scrubbing. Inert until OTEL_EXPORTER_OTLP_ENDPOINT is set.",
   "license": "Apache-2.0",
   "repository": {
