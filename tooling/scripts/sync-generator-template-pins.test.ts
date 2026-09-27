@@ -55,6 +55,10 @@ test("derives the template's pins, preserving unrelated manifest fields", () => 
     },
     devDependencies: { typescript: "^6.0.0" },
   });
+  // toEqual ignores key order; the formatter does not.
+  expect(
+    Object.keys(JSON.parse(readFileSync(join(root, NEXT), "utf8"))),
+  ).toEqual(["scripts", "dependencies", "devDependencies"]);
   const before = readFileSync(join(root, NEXT), "utf8");
   expect(syncGeneratorTemplatePins(root)).toEqual([]);
   expect(readFileSync(join(root, NEXT), "utf8")).toBe(before);

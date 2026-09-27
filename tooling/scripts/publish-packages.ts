@@ -10,7 +10,8 @@
 //   bun tooling/scripts/publish-packages.ts --dry-run  # pack + verify only (CI runs this)
 //
 // NPM_TOKEN, when set, is used instead of OIDC. It exists only for the one-time bootstrap publish:
-// trusted publishing can be configured on a package only after its first version exists.
+// trusted publishing can be configured on a package only after its first version exists. Those
+// first versions still carry provenance (--provenance below).
 import { execFileSync } from "node:child_process";
 import {
   mkdtempSync,
@@ -101,10 +102,16 @@ for (const { dir, pkg } of packages) {
   if (!dryRun && isPublished(pkg.name, pkg.version)) continue;
   const tarball = pack(dir, pkg);
   if (dryRun) continue;
-  execFileSync("npm", ["publish", tarball, "--access", "public"], {
-    stdio: "inherit",
-    env,
-  });
+  // --provenance: trusted publishing adds it on its own, but a token-authenticated publish (the
+  // bootstrap) only attests when asked. The workflow's id-token permission covers both.
+  execFileSync(
+    "npm",
+    ["publish", tarball, "--access", "public", "--provenance"],
+    {
+      stdio: "inherit",
+      env,
+    },
+  );
   process.stdout.write(`published ${pkg.name}@${pkg.version}\n`);
   published++;
 }

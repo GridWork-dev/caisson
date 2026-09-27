@@ -27,7 +27,8 @@ export function syncGeneratorTemplatePins(root: string): string[] {
   const updates = TEMPLATES.map((relative) => {
     const path = join(root, relative);
     const original = readFileSync(path, "utf8");
-    const template = Template.parse(JSON.parse(original));
+    const parsed: unknown = JSON.parse(original);
+    const template = Template.parse(parsed);
     let pins = 0;
     let changed = false;
     for (const name of Object.keys(template.dependencies)) {
@@ -52,10 +53,15 @@ export function syncGeneratorTemplatePins(root: string): string[] {
       pins += 1;
     }
     if (pins === 0) throw new Error(`No workspace pins in ${relative}`);
+    // Template.parse puts declared keys first; write the fields back in the file's own order,
+    // which is the order the formatter's package.json sorting expects.
+    const ordered = Object.fromEntries(
+      Object.keys(parsed as object).map((key) => [key, template[key]]),
+    );
     return {
       path,
       relative,
-      content: changed ? `${JSON.stringify(template, null, 2)}\n` : original,
+      content: changed ? `${JSON.stringify(ordered, null, 2)}\n` : original,
       changed,
     };
   });
