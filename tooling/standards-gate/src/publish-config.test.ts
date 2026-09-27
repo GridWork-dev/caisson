@@ -1,7 +1,8 @@
 // Publish-readiness invariants (ADR-0111), over the REAL packages/ tree: every manifested module
 // that is not private publishes publicly to public npm, its manifest derives version+license from
 // package.json (single source of truth, so checkManifestAgreement stays green through changeset
-// bumps), and the published CLI ships dist (never src) with a dist-pointing bin. Workspace IO —
+// bumps), and the published CLI ships dist and its runtime assets with a dist-pointing bin. What
+// else a tarball may and may not carry is checked on the packed tarball (ADR-0429). Workspace IO —
 // reads the on-disk tree, no synthetic input.
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
@@ -105,16 +106,12 @@ describe("publish readiness (ADR-0111)", () => {
       expect(cli?.pj.bin?.["create-caisson"]).toBe("./dist/cli.js");
     });
 
-    test("files ships dist + runtime assets and NEVER leaks src", () => {
+    test("files ships dist + the runtime assets the generator reads", () => {
       const files = cli?.pj.files ?? [];
       expect(files).toContain("dist");
       // The generator reads templates/ + registry-index.json at runtime via import.meta.url.
       expect(files).toContain("templates");
       expect(files).toContain("registry-index.json");
-      // No entry ships source.
-      expect(files.some((f) => f === "src" || f.startsWith("src/"))).toBe(
-        false,
-      );
     });
   });
 });
