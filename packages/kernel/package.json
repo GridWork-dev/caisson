@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/kernel",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "Governance kernel: typed config loader, the CaissonError model, security primitives (constant-time compare, SSRF guard), and the standards gate.",
   "license": "Apache-2.0",
   "repository": {

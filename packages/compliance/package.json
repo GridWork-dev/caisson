@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/compliance",
-  "version": "1.0.4",
+  "version": "2.0.0",
   "description": "Compliance evidence kit: tenant-scoped field crypto, a WORM audit chain, own-authored SOC2-TSC and HIPAA control packs, and a deterministic, signed control-to-evidence-pack generator.",
   "license": "Apache-2.0",
   "repository": {

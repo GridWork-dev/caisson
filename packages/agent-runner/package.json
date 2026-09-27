@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/agent-runner",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Sandboxed governed agent runner for Agentic-Dev: spawn a headless agent CLI in an isolated worktree with a from-scratch scrubbed env (never spreads process.env), stream the transcript to a durable .jsonl, and parse it into a structured run report.",
   "license": "Apache-2.0",
   "repository": {

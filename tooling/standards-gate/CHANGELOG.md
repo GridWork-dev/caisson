@@ -1,5 +1,25 @@
 # @caisson/standards-gate
 
+## 0.1.6
+
+### Patch Changes
+
+- 73bdf3c: Package descriptions, READMEs and agent notes now describe what each package does, with no prices, paid tiers or license-key requirements. The standards gate fails when a published package's description or README mentions a commercial tier or a dollar price.
+- 784a846: The home page's repository tree shows the apps that exist today, and the release pipeline publishes every package through npm trusted publishing.
+- 73bdf3c: The site, demos and internal tooling follow the move to Apache-2.0: the gate now requires every published package to be Apache-2.0 with its LICENSE file, the commerce and entitlement checks are gone, and the docs install everything from public npm.
+- 7d153d5: Removes the site catalog parity check. The site no longer carries a price sheet, so there is nothing left for it to compare against the bundle manifests. The dependency-graph coverage floors drop to match the smaller site.
+- 1c765e8: The internal-vocabulary check no longer lists a build-host name.
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [784a846]
+- Updated dependencies [611f1de]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [0b02891]
+  - @caisson-sh/tenancy-rls@0.6.2
+  - @caisson-sh/registry-schema@0.6.0
+
 ## 0.1.5
 
 ### Patch Changes

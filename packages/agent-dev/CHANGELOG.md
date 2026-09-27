@@ -1,5 +1,29 @@
 # @caisson/agent-dev
 
+## 0.6.11
+
+### Patch Changes
+
+- eb2648e: Source comments no longer describe these packages or their parts as paid, commercial or sellable.
+- 73bdf3c: Package descriptions, READMEs and agent notes now describe what each package does, with no prices, paid tiers or license-key requirements. The standards gate fails when a published package's description or README mentions a commercial tier or a dollar price.
+- 73bdf3c: Each package's `manifest.ts` now imports `defineModule` from the sibling `registry-schema` package instead of a monorepo-only directory, so the file resolves wherever `@caisson-sh/registry-schema` is installed next to it.
+- 784a846: Each package's metadata now links to its source directory in the public repository.
+- 611f1de: Package comments, tests, READMEs and generated templates now describe the reader as an adopter integrating the package into their own app, not a buyer of a Caisson product. Compliance-artifact wording that faced an adopter's own customers now says so explicitly, and internal signing-key and licensing-domain comments no longer reference a retired commercial license issuer.
+- 73bdf3c: Every package is now Apache-2.0 and publishes to the public npm registry. Each package ships the Apache LICENSE file, and the registry manifest carries the same license. Nothing needs a license key or a private registry to install.
+- 0b02891: Every package now publishes under the `@caisson-sh` npm scope. Update imports and dependencies to the new names; module ids in registry manifests use the same scope.
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [784a846]
+- Updated dependencies [611f1de]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [0b02891]
+  - @caisson-sh/ai-config@0.3.11
+  - @caisson-sh/agent-kernel@0.8.1
+  - @caisson-sh/agent-runner@0.3.3
+  - @caisson-sh/kernel@0.10.1
+  - @caisson-sh/local-store@1.1.3
+  - @caisson-sh/tool-exec@0.4.1
+
 ## 0.6.10
 
 ### Patch Changes

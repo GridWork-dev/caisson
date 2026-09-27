@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/local-sync",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Local-first sync engine: changeset capture, HLC stamps, LWW reconciliation, and tombstone-aware convergence.",
   "license": "Apache-2.0",
   "repository": {

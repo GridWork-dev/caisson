@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/guardrails",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Content-safety layer: swappable Moderator port (local | provider | custom) + TS-native PII engine (mask / hash / reversible-tokenize via field-crypto) behind a fail-closed input/output guard.",
   "license": "Apache-2.0",
   "repository": {

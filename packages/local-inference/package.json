@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/local-inference",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Local-first inference seam: deterministic stub, guarded ONNX embeddings, and rented transport drivers sharing the local privacy gate.",
   "license": "Apache-2.0",
   "repository": {

@@ -1,5 +1,50 @@
 # @caisson/site
 
+## 0.5.0
+
+### Minor Changes
+
+- 7d153d5: caisson.sh stops selling and ships as a static export. The cart, checkout, sign-in, buyer dashboard, plans, compare, stack fit, glossary and design-partner pages are gone, and every price is removed. The marketplace is now a demonstration gallery: each module links to its docs and to the module page that runs its live in-browser demo. The site and demos no longer build container images. The interactive demos export statically under /demos and ship inside the same site build, and security headers and redirects now ship as static `_headers` and `_redirects` files.
+
+### Patch Changes
+
+- 9e5da35: The docs gain pages for the `agent-dev` and `agent-trajectory` Agentic-Dev packages and the `ai-kit` AI-Production package, wired into their sections' navigation.
+- 9e5da35: The docs gain pages for the remaining base packages: ds-manifest, migrate, observability, rate-limit, and registry-schema, linked from the Base substrate index.
+- 9e5da35: The docs gain pages for the compliance evidence kit, access-review, risk-register, the trust-page generator, the shared artifact-render primitive, and the out-of-band verify-pack verifier, plus links to them from the Compliance family index.
+- 784a846: The home page's repository tree shows the apps that exist today, and the release pipeline publishes every package through npm trusted publishing.
+- 73bdf3c: The site, demos and internal tooling follow the move to Apache-2.0: the gate now requires every published package to be Apache-2.0 with its LICENSE file, the commerce and entitlement checks are gone, and the docs install everything from public npm.
+- 1c765e8: The home page's "Who's behind it" line now says Caisson is open source under Apache-2.0, built and maintained by Caisson Software LLC.
+- 05307e7: Docs code blocks are legible for visitors whose system prefers dark mode and who have not picked a theme: the highlighted tokens now use the dark palette on the dark code surface instead of the light one.
+- 05307e7: Content-hashed build output under /\_next/static/ is served with a one-year immutable cache header, so repeat visits stop revalidating every script and stylesheet.
+- d790f5d: The site's structured data names its founder through the maintainer's published Person entry, and no longer references pages on a retired domain.
+- 8226c84: The live route test's header no longer points at the removed Terraform directory.
+- 611f1de: The MCP server docs name the renamed `ClientToken` type.
+- 05307e7: Module pages no longer scroll sideways on a 360px screen: long identifiers in the lede and in the code-artifact notes wrap instead of widening the column.
+- 05307e7: The site no longer loads the Plausible tracker or fires custom events, and its Content-Security-Policy allows no third-party origin.
+- 2eb8746: caisson.sh counts page views with Cloudflare Web Analytics: cookieless, aggregate only, and loaded only on the caisson.sh hostname. The Content-Security-Policy allows its two origins, and the privacy policy and subprocessor list describe it.
+- 72d82a8: The compliance package's docs page is reachable: an old redirect sent `/docs/compliance/compliance` to the section index, and a site test now fails if any `/docs` redirect hides a page.
+- eb2648e: The email docs no longer mention the removed admin preview and send-test routes or the removed purchase-receipt template.
+- 0b0fbb1: The email docs page no longer lists the removed sales templates.
+- Updated dependencies [0b0fbb1]
+- Updated dependencies [eb2648e]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [784a846]
+- Updated dependencies [611f1de]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [0b02891]
+  - @caisson-sh/email@1.0.0
+  - @caisson-sh/ui-pro@0.3.9
+  - @caisson-sh/ai-meter@1.1.4
+  - @caisson-sh/audit-worm@2.2.5
+  - @caisson-sh/kernel@0.10.1
+  - @caisson-sh/local-store@1.1.3
+  - @caisson-sh/prompt-registry@1.1.3
+  - @caisson-sh/ui@0.6.8
+  - @caisson-sh/brand@0.1.7
+  - @caisson-sh/demo-registry@0.2.17
+
 ## 0.4.1
 
 ### Patch Changes

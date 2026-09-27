@@ -1,5 +1,37 @@
 # @caisson/mcp-server
 
+## 1.0.0
+
+### Major Changes
+
+- 611f1de: `BuyerToken` is renamed `ClientToken`.
+
+### Minor Changes
+
+- 73bdf3c: The server no longer scopes tools by entitlement. Every registered tool is listed and callable by any authenticated caller, `list_modules` returns the whole catalog, `describe_module` returns the module's latest version and description, and `generate` takes a project name and modules. Bearer authentication is unchanged: tokens are still compared in constant time, and a missing or wrong token is refused. `BuyerToken` is now `{ token, accountId }`, and `requiredEntitlement` is gone from tool, resource and prompt registrations.
+
+### Patch Changes
+
+- 73bdf3c: Package descriptions, READMEs and agent notes now describe what each package does, with no prices, paid tiers or license-key requirements. The standards gate fails when a published package's description or README mentions a commercial tier or a dollar price.
+- 73bdf3c: Each package's `manifest.ts` now imports `defineModule` from the sibling `registry-schema` package instead of a monorepo-only directory, so the file resolves wherever `@caisson-sh/registry-schema` is installed next to it.
+- 73bdf3c: `createMcpServer` now refuses an empty Bearer token, or one shorter than 32 characters, when the server is built, so a guessable token can never go live. The error names the account and never the token. The stdio and HTTP transports and `createRateLimitedMcpServer` all build through it. Token comparison is unchanged.
+- 784a846: Each package's metadata now links to its source directory in the public repository.
+- 73bdf3c: Every package is now Apache-2.0 and publishes to the public npm registry. Each package ships the Apache LICENSE file, and the registry manifest carries the same license. Nothing needs a license key or a private registry to install.
+- 0b02891: Every package now publishes under the `@caisson-sh` npm scope. Update imports and dependencies to the new names; module ids in registry manifests use the same scope.
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [784a846]
+- Updated dependencies [611f1de]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [73bdf3c]
+- Updated dependencies [0b02891]
+  - @caisson-sh/ai-config@0.3.11
+  - @caisson-sh/ds-manifest@0.3.5
+  - @caisson-sh/kernel@0.10.1
+  - @caisson-sh/ui@0.6.8
+  - @caisson-sh/registry-schema@0.6.0
+
 ## 0.6.11
 
 ### Patch Changes

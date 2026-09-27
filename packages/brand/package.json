@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/brand",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "description": "The private Caisson brand layer: the wordmark + glyph lockup and the 37 bespoke domain glyphs, kept out of the Apache-2.0 @caisson-sh/ui floor so the kit stays brand-neutral. Never published; apps consume it directly and register the glyphs into the kit icon surface via registerIcons(brandGlyphs).",
   "license": "Apache-2.0",

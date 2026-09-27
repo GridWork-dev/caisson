@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/billing-orchestration",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Billing orchestration: Stripe/Paddle/LemonSqueezy/Polar checkout drivers + provider->DomainBillingEvent parsers + dual-layer webhook idempotency. Raw-body signature verification lives in @caisson-sh/billing.",
   "license": "Apache-2.0",
   "repository": {
