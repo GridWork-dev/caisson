@@ -5,7 +5,7 @@
  */
 import { readFileSync } from "node:fs";
 import { z } from "zod";
-import { ModuleManifest } from "./module-manifest";
+import { ModuleManifest } from "./module-manifest.ts";
 
 const MODULE_ID_RE = /^@caisson-sh\/[a-z0-9-]+$/;
 const semver = z

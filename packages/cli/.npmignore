@@ -1,6 +1,5 @@
 # Publish ignore (ADR-0111). Its mere PRESENCE makes npm stop consulting the repo `.gitignore`
-# when packing — without it, the gitignored `migrations-bundle/` build artifact (a runtime asset
+# when packing — without it, the gitignored `registry-index.json` build artifact (a runtime asset
 # the generator reads via `import.meta.url`) is dropped from the tarball even though `package.json`
-# `files` lists it (npm/cli#4360). The `files` allowlist is the real selector (dist + templates +
-# migrations-bundle); this file only neutralizes the `.gitignore`-as-npmignore fallback. Source
-# (`src/`, configs, tests) is excluded BY OMISSION from `files`, never shipped.
+# `files` lists it (npm/cli#4360). The `files` allowlist is the real selector (ADR-0429); this file
+# only neutralizes the `.gitignore`-as-npmignore fallback.

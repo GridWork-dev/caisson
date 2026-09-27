@@ -8,6 +8,22 @@
     "url": "git+https://github.com/GridWork-dev/caisson.git",
     "directory": "packages/tenancy-rls"
   },
+  "files": [
+    "dist",
+    "src",
+    "manifest.ts",
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "!dist/**/*.test.*",
+    "!dist/**/*.stories.*",
+    "!dist/**/__golden__",
+    "!dist/**/__fixtures__",
+    "!src/**/*.test.*",
+    "!src/**/*.stories.*",
+    "!src/**/__golden__",
+    "!src/**/__fixtures__",
+    "!src/**/__snapshots__"
+  ],
   "type": "module",
   "exports": {
     ".": {

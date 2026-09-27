@@ -8,7 +8,7 @@ import {
   verifyChain,
   type ChainEntry,
   type LinkStatus,
-} from "../lib/audit-chain";
+} from "../lib/audit-chain.ts";
 
 import "./audit-timeline.css";
 

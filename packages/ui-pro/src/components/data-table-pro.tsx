@@ -16,8 +16,8 @@ import {
   type ColumnFilter,
   type FilterOp,
   type SortState,
-} from "../lib/table-ops";
-import { windowRange } from "../lib/virtual";
+} from "../lib/table-ops.ts";
+import { windowRange } from "../lib/virtual.ts";
 
 import "./data-table-pro.css";
 

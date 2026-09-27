@@ -7,7 +7,7 @@ import {
   linePath,
   niceTicks,
   type Point,
-} from "../lib/charts";
+} from "../lib/charts.ts";
 
 import "./charts.css";
 

@@ -1,3 +1,3 @@
-export * from "./module-manifest";
-export * from "./registry-index";
-export * from "./feature-tags";
+export * from "./module-manifest.ts";
+export * from "./registry-index.ts";
+export * from "./feature-tags.ts";

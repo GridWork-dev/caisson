@@ -9,7 +9,7 @@ import {
   type BoardCard,
   type BoardColumn,
   type BoardLane,
-} from "../lib/board";
+} from "../lib/board.ts";
 
 import "./kanban-board.css";
 

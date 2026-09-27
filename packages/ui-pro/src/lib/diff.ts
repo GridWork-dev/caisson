@@ -5,7 +5,7 @@
  * or how it changed). Kept free of the DOM so both the on-screen render and any copy path diff alike.
  */
 
-import { redactValue } from "./redact";
+import { redactValue } from "./redact.ts";
 
 export type LineOp = "same" | "add" | "remove";
 

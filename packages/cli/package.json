@@ -14,8 +14,21 @@
   },
   "files": [
     "dist",
+    "src",
+    "manifest.ts",
+    "AGENTS.md",
+    "CHANGELOG.md",
     "templates",
-    "registry-index.json"
+    "registry-index.json",
+    "!dist/**/*.test.*",
+    "!dist/**/*.stories.*",
+    "!dist/**/__golden__",
+    "!dist/**/__fixtures__",
+    "!src/**/*.test.*",
+    "!src/**/*.stories.*",
+    "!src/**/__golden__",
+    "!src/**/__fixtures__",
+    "!src/**/__snapshots__"
   ],
   "type": "module",
   "exports": {

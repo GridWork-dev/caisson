@@ -82,7 +82,7 @@ jobs:
         run: bunx turbo run build lint typecheck test --no-daemon --concurrency=50% --continue=dependencies-successful && bun run gate
       # Test files outside any workspace package, which turbo never runs.
       - name: tests outside the workspaces
-        run: bun test tools/demo-excerpts scripts/gen-shadcn-registry.test.ts tooling/scripts/dts-drift-check.test.ts tooling/scripts/tsgo-agreement.test.ts tooling/scripts/build-evidence-pack.test.ts tooling/scripts/sync-generator-template-pins.test.ts
+        run: bun test tools/demo-excerpts scripts/gen-shadcn-registry.test.ts tooling/scripts/dts-drift-check.test.ts tooling/scripts/tsgo-agreement.test.ts tooling/scripts/build-evidence-pack.test.ts tooling/scripts/sync-generator-template-pins.test.ts tooling/scripts/package-contents.test.ts
       - name: deterministic evals against their committed baselines (ADR-0062)
         run: bunx turbo run eval --no-daemon
       - name: tokens.css is a byte-identical rebuild of the TS tokens (ADR-0101)
