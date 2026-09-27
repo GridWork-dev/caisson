@@ -22,9 +22,13 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import {
+  type PackedManifest,
+  checkPackageContents,
+  extensionlessImports,
+} from "./package-contents";
 
-interface Manifest {
-  name: string;
+interface Manifest extends PackedManifest {
   version: string;
   private?: boolean;
 }
@@ -64,7 +68,11 @@ function isPublished(name: string, version: string): boolean {
   }
 }
 
-/** Pack one package and refuse a tarball whose manifest still carries a workspace range. */
+/**
+ * Pack one package and refuse a tarball whose manifest still carries a workspace range, that ships
+ * test or tooling files, that lacks a file its entry points name, or whose compiled JavaScript
+ * imports a relative path without a file extension.
+ */
 function pack(dir: string, pkg: Manifest): string {
   const before = new Set(readdirSync(out));
   execFileSync("bun", ["pm", "pack", "--destination", out, "--quiet"], {
@@ -82,6 +90,20 @@ function pack(dir: string, pkg: Manifest): string {
     throw new Error(
       `${pkg.name}: packed package.json still has a workspace: range`,
     );
+  }
+  const entries = execFileSync("tar", ["-tzf", path], { encoding: "utf8" })
+    .split("\n")
+    .filter((entry) => entry !== "")
+    .map((entry) => entry.replace(/^package\//, ""));
+  checkPackageContents(pkg, entries);
+  for (const entry of entries) {
+    if (!entry.startsWith("dist/") || !entry.endsWith(".js")) continue;
+    const bad = extensionlessImports(readFileSync(join(dir, entry), "utf8"));
+    if (bad.length > 0) {
+      throw new Error(
+        `${pkg.name}: ${entry} imports ${bad[0]} without a file extension, which Node cannot load`,
+      );
+    }
   }
   return path;
 }
