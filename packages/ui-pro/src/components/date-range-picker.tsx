@@ -8,7 +8,7 @@ import {
   previousPeriod,
   standardPresets,
   type DateRange,
-} from "../lib/date-presets";
+} from "../lib/date-presets.ts";
 
 import "./date-range-picker.css";
 

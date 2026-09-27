@@ -3,7 +3,7 @@
 import { useLayoutEffect, useState } from "react";
 import type { CSSProperties, Ref, RefCallback, RefObject } from "react";
 
-import { computeFloatingPosition, type Placement } from "./position";
+import { computeFloatingPosition, type Placement } from "./position.ts";
 
 /** `position:fixed` + the computed coordinates — typed as `CSSProperties` directly (not a bespoke
  * interface) so it plugs straight into a `style` prop; `radix-ui`'s global type augmentation adds

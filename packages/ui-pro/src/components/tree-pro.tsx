@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 
-import { flattenTree, type FlatNode, type TreeNode } from "../lib/tree";
-import { windowRange } from "../lib/virtual";
+import { flattenTree, type FlatNode, type TreeNode } from "../lib/tree.ts";
+import { windowRange } from "../lib/virtual.ts";
 
 import "./tree-pro.css";
 

@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 
 import { Dialog } from "@caisson-sh/ui/components";
 
-import { fuzzyFilter } from "../lib/fuzzy";
+import { fuzzyFilter } from "../lib/fuzzy.ts";
 
 import "./command-palette.css";
 

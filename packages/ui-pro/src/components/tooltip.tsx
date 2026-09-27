@@ -18,8 +18,11 @@ import type {
 } from "react";
 import { createPortal } from "react-dom";
 
-import type { Placement } from "../lib/position";
-import { mergeRefs, useFloatingPosition } from "../lib/use-floating-position";
+import type { Placement } from "../lib/position.ts";
+import {
+  mergeRefs,
+  useFloatingPosition,
+} from "../lib/use-floating-position.ts";
 
 import "./tooltip.css";
 

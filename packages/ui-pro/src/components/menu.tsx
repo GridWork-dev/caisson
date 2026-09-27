@@ -4,8 +4,8 @@ import { useEffect, useId, useRef } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-import type { Placement } from "../lib/position";
-import { useFloatingPosition } from "../lib/use-floating-position";
+import type { Placement } from "../lib/position.ts";
+import { useFloatingPosition } from "../lib/use-floating-position.ts";
 
 import "./menu.css";
 

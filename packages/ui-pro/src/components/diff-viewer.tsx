@@ -7,7 +7,7 @@ import {
   diffLines,
   type JsonChange,
   type LineChange,
-} from "../lib/diff";
+} from "../lib/diff.ts";
 
 import "./diff-viewer.css";
 

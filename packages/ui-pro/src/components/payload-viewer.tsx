@@ -9,7 +9,7 @@ import {
   REDACTED,
   isRedactedKey,
   redactValue,
-} from "../lib/redact";
+} from "../lib/redact.ts";
 
 import "./payload-viewer.css";
 
