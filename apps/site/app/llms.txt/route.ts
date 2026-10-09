@@ -49,7 +49,7 @@ const PREAMBLE = [
   // both categories Caisson covers — compliance infrastructure and governance for AI coding agents.
   // Every capability named here is a shipped module with a page below; the wording is the honest
   // one, not the keyword-dense one (ADR-0080).
-  "> Compliance-grade infrastructure and AI agent governance for regulated SaaS and AI-generated code: fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, and a governed-agent kernel with a sandboxed runner and a default-deny tool-execution gate — shipped as a composable base plus six module families.",
+  "> Compliance-grade infrastructure and AI agent governance for regulated SaaS and AI-generated code: fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, and a governed-agent kernel with a sandboxed runner and a default-deny tool-execution gate — shipped as a composable base plus five module families.",
   "",
   "## Licensing",
   "",

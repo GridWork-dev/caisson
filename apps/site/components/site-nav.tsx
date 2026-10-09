@@ -25,7 +25,7 @@ import styles from "./site-nav.module.css";
 // demonstration gallery and the UI showcase. The /ai-kit route maps to the ai-production id.
 const MARKETPLACE_PANEL: NavPanelSpec = {
   label: "Marketplace",
-  lede: "One audited base. Six module families, every module demonstrated live.",
+  lede: "One audited base. Five module families, with live demos.",
   groups: [
     {
       heading: "Module families",

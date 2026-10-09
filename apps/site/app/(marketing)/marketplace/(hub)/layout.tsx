@@ -18,7 +18,7 @@ export default function MarketplaceLayout({
       <Hero
         eyebrow="Marketplace"
         title="Every module family and module, one surface."
-        lede={`${MODULES.length} modules compose six module families on the same audited base. Filter by family or category, open a module's docs, and run its live demo in the browser.`}
+        lede={`${MODULES.length} modules compose five module families on the same audited base. Filter by family or category, open a module's docs, and run its live demo in the browser.`}
         ctas={
           <Button href="/docs" variant="primary">
             Read the docs

@@ -19,6 +19,7 @@ import { DecisionBand } from "@/components/decision-band";
 import { RepoArtifact } from "@/components/repo-artifact";
 import Link from "next/link";
 
+import { BASE_PACKAGES } from "@/lib/base-substrate";
 import { serializeJsonLd, softwareApplication } from "@/lib/jsonld";
 import { buildMetadata, SITE_URL } from "@/lib/metadata";
 import {
@@ -32,7 +33,7 @@ import { MODULE_ENTRIES } from "@/lib/marketplace-surface";
 
 export const metadata = buildMetadata({
   description:
-    "One audited Postgres base mapped to SOC 2, HIPAA, ISO 27001, and NIST 800-53: fail-closed RLS, S3 Object-Lock WORM, and an append-only audit chain, in six composable module families you compose, never fork.",
+    "One audited Postgres base mapped to SOC 2, HIPAA, ISO 27001, and NIST 800-53: fail-closed RLS, S3 Object-Lock WORM, and an append-only audit chain, in five composable module families you compose, never fork.",
   path: "/",
 });
 
@@ -41,7 +42,7 @@ export const metadata = buildMetadata({
 const homeJsonLd = softwareApplication({
   name: "Caisson",
   description:
-    "Composable infrastructure for regulated and production SaaS on one audited Postgres base: fail-closed RLS, S3 Object-Lock WORM, an append-only audit chain, token metering, on-device inference, and signed provenance, in six module families.",
+    "Composable infrastructure for regulated and production SaaS on one audited Postgres base: fail-closed RLS, S3 Object-Lock WORM, an append-only audit chain, token metering, on-device inference, and signed provenance, in five module families.",
   url: SITE_URL,
 });
 
@@ -356,8 +357,8 @@ export default function HomePage() {
       <Section
         id="bundles"
         eyebrow="Module families"
-        title="Six module families, one audited base."
-        lede="Compliance leads; every module family (Provenance and the whole-catalog Everything included) draws from the same audited base, never a fork."
+        title="Five module families, one audited base."
+        lede="Compliance leads; every module family, and the whole catalog together, draws from the same audited base, never a fork."
         band="surface"
       >
         <Reveal
@@ -553,10 +554,10 @@ export default function HomePage() {
               Open Apache-2.0 Base
             </div>
             <p className="cs-muted" style={{ marginTop: "var(--cs-space-3)" }}>
-              16 base packages (the kernel, auth, tenant isolation, billing, and
-              the generator tooling) ship under Apache-2.0. Read them, audit
-              them, and share them: the base is peer-reviewable by the license
-              it ships under.
+              Every package ships under Apache-2.0: the{" "}
+              {`${BASE_PACKAGES.length}-package`} base (the kernel, auth, tenant
+              isolation, billing drivers, and the generator) and all five module
+              families. Read them, audit them, and share them.
             </p>
             <div style={{ marginTop: "var(--cs-space-5)" }}>
               <Button href="/docs/base" variant="ghost">
@@ -609,7 +610,7 @@ export default function HomePage() {
         <Section
           id="get-started"
           eyebrow="Get started"
-          title="Start audit-ready."
+          title="Start with the evidence in place."
           lede="Scaffold the audited base in one command, then open the marketplace for the module family or module you need."
           band="surface"
         >
