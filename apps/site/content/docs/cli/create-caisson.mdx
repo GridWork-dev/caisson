@@ -10,7 +10,7 @@ from the versioned module registry. Every module is Apache-2.0 and installs from
 registry, so a generated project needs no token and no registry configuration.
 
 ```bash
-bunx @caisson-sh/cli@latest my-app
+bunx --package @caisson-sh/cli@latest create-caisson my-app
 cd my-app
 bun install
 ```
@@ -28,7 +28,7 @@ drifting source.
 Pass `--dry-run` to see exactly what a selection resolves to before anything is written:
 
 ```bash
-$ bunx @caisson-sh/cli@latest my-app --module @caisson-sh/kernel@<version> --dry-run
+$ bunx --package @caisson-sh/cli@latest create-caisson my-app --module @caisson-sh/kernel@<version> --dry-run
 create-caisson: dry-run — 9 files for "my-app"
   .github/workflows/ci.yml
   .gitignore
@@ -47,7 +47,7 @@ source, which is why the scaffold itself is small.
 Without `--dry-run` the same command writes the tree and prints the next steps:
 
 ```bash
-$ bunx @caisson-sh/cli@latest my-app --module @caisson-sh/kernel@<version>
+$ bunx --package @caisson-sh/cli@latest create-caisson my-app --module @caisson-sh/kernel@<version>
 
 create-caisson: generated "my-app" → my-app
 
@@ -84,7 +84,7 @@ const result = await caisson.callTool("generate", {
 
 | Flag                    | Value                                                                                             | Description                                                                                                                                                                                |
 | ----------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `<name>` (positional)   | slug                                                                                              | Shorthand for `--name <name>`: the advertised `bunx create-caisson my-app` quickstart. An explicit `--name` always wins on conflict.                                                       |
+| `<name>` (positional)   | slug                                                                                              | Shorthand for `--name <name>`: the `create-caisson my-app` quickstart. An explicit `--name` always wins on conflict.                                                       |
 | `--name <slug>`         | a-z0-9, kebab, max 64 chars                                                                       | Project name; the output directory unless `--out` is set.                                                                                                                                  |
 | `--module <id@version>` | repeatable                                                                                        | An exact `@caisson-sh/<slug>@<version>` pin. Split on the _last_ `@`, so a scoped id keeps its leading `@`.                                                                                   |
 | `--deploy <target>`     | `railway` \| `fly` \| `vercel`                                                                    | Layers that deploy target's template directory on top of base.                                                                                                                              |
