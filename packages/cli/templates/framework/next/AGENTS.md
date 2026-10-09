@@ -34,7 +34,7 @@ working in this repo: the modules you installed and the invariants they ship wit
 
 ## Working in this repo
 
-- `bun install` then `bun test` — the suite is green from clone.
+- `bun install` then `bun run test` — the suite is green from clone.
 - Add your product code under `src/`; keep new boundaries Zod-validated.
 - The installed `@caisson-sh/*` modules are versioned dependencies, not vendored source — upgrade
   them through `package.json`, never by editing inside `node_modules`.

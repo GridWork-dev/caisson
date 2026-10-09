@@ -1,6 +1,6 @@
 # @caisson-sh/field-crypto
 
-Per-tenant authenticated field encryption — the floor the Compliance edition's encrypted columns
+Per-tenant authenticated field encryption — the floor that encrypted columns
 stand on. ADR-0043 (per-tenant keys) · ADR-0046 (envelope) · ADR-0045 (cipher) · ADR-0006 (data layer).
 
 ## What it gives you

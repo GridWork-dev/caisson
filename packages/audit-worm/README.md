@@ -1,9 +1,9 @@
 # @caisson-sh/audit-worm
 
-The Compliance edition's evidentiary primitive: a write-once (WORM) artifact store, a SHA-256
+An evidentiary primitive: a write-once (WORM) artifact store, a SHA-256
 append-only audit chain anchored into WORM, and an append-only locked-version DB with a derived
 current. A `primitive` (ADR-0020) that composes the `@caisson-sh/kernel` integrity algebra over
-`@caisson-sh/tenancy-rls` tenant scoping — down-only, never depending on an edition (ADR-0003).
+`@caisson-sh/tenancy-rls` tenant scoping — down-only, never depending on a higher layer (ADR-0003).
 
 - **License:** Apache-2.0
 
