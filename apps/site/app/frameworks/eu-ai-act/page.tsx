@@ -32,7 +32,7 @@ export const metadata = buildMetadata({
 // Annex IV / Article → Caisson control mapping.
 // Honest scope: "produces the technical evidence" — never "makes you compliant".
 //
-// Import paths in the `evidence` snippets below track the version registry.caisson.sh SERVES.
+// Import paths in the `evidence` snippets below track the version npm SERVES.
 // Flipped to "@caisson-sh/kernel/node" in the same commit the kernel 0.7.0 minor is tagged from:
 // verifyChain moved off the "." barrel in that release, so against 0.7.0 the old path raises
 // "does not provide an export named 'verifyChain'". Flip per SYMBOL, not per block — canonicalize,
