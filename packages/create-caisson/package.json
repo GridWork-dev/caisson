@@ -1,0 +1,41 @@
+{
+  "name": "create-caisson",
+  "version": "0.1.0",
+  "description": "Alias for the @caisson-sh/cli generator: `bunx create-caisson`, `npm create caisson`, `bun create caisson`.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GridWork-dev/caisson.git",
+    "directory": "packages/create-caisson"
+  },
+  "bin": {
+    "create-caisson": "./dist/create-caisson.js"
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "!dist/**/*.test.*"
+  ],
+  "type": "module",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tscn -p tsconfig.json",
+    "lint": "oxlint src",
+    "test": "bun test --timeout 60000 ./src"
+  },
+  "dependencies": {
+    "@caisson-sh/cli": "workspace:^"
+  },
+  "devDependencies": {
+    "@caisson-sh/testing": "workspace:*",
+    "@caisson-sh/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=20.12.0"
+  }
+}

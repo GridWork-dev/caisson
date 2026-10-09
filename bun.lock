@@ -489,6 +489,22 @@
         "typescript": "catalog:",
       },
     },
+    "packages/create-caisson": {
+      "name": "create-caisson",
+      "version": "0.1.0",
+      "bin": {
+        "create-caisson": "./dist/create-caisson.js",
+      },
+      "dependencies": {
+        "@caisson-sh/cli": "workspace:^",
+      },
+      "devDependencies": {
+        "@caisson-sh/testing": "workspace:*",
+        "@caisson-sh/tsconfig": "workspace:*",
+        "@types/node": "catalog:",
+        "typescript": "catalog:",
+      },
+    },
     "packages/credits": {
       "name": "@caisson-sh/credits",
       "version": "0.6.4",
@@ -2864,6 +2880,8 @@
     "cors": ["cors@2.8.6", "", { "dependencies": { "object-assign": "^4", "vary": "^1" } }, "sha512-tJtZBBHA6vjIAaF6EnIaq6laBBP9aq/Y3ouVJjEfoHbRBcHBAHYcMh/w8LDrk2PvIMMq8gmopa5D4V8RmbrxGw=="],
 
     "cosmiconfig": ["cosmiconfig@8.3.6", "", { "dependencies": { "import-fresh": "^3.3.0", "js-yaml": "^4.1.0", "parse-json": "^5.2.0", "path-type": "^4.0.0" }, "peerDependencies": { "typescript": ">=4.9.5" }, "optionalPeers": ["typescript"] }, "sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA=="],
+
+    "create-caisson": ["create-caisson@workspace:packages/create-caisson"],
 
     "cron-parser": ["cron-parser@5.6.1", "", { "dependencies": { "luxon": "^3.7.2" } }, "sha512-QBm4o1PwZiuY7KFbVvW7FLC8bozy7YWzv+Fz6KRS7sQghzcbDZCGxr/Bc5b6TQreAoSwuWVP491dIcK0THCX6A=="],
 

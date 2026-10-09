@@ -28,6 +28,9 @@ const PackageJson = z.object({
   private: z.boolean().optional(),
 });
 
+/** Bin-shim packages that are not catalog modules (no manifest.ts, never generated into a repo). */
+export const NOT_A_MODULE = new Set(["create-caisson"]);
+
 export async function buildCatalog(
   packagesDir: string = PACKAGES_DIR,
 ): Promise<RegistryIndex> {
@@ -36,7 +39,7 @@ export async function buildCatalog(
     const pkgPath = join(packagesDir, dir, "package.json");
     if (!existsSync(pkgPath)) continue;
     const pkg = PackageJson.parse(JSON.parse(readFileSync(pkgPath, "utf8")));
-    if (pkg.private === true) continue;
+    if (pkg.private === true || NOT_A_MODULE.has(pkg.name)) continue;
     const { default: raw }: { default: unknown } = await import(
       join(packagesDir, dir, "manifest.ts")
     );

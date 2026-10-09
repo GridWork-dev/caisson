@@ -203,71 +203,72 @@ export async function resolveSelection(
   });
 }
 
+/** Run the generator CLI with `argv` (flags only, no node/script entries). Shared by the `create-caisson` alias package. */
+export async function main(argv: readonly string[]): Promise<void> {
+  // Extract --help / --dry-run / --out before passing the remainder to parseArgs. Flag-value
+  // pairs for --name / --module / --deploy / --framework flow through untouched.
+  const selectionArgs: string[] = [];
+  let out: string | undefined;
+  let dryRun = false;
+  let help = false;
+
+  for (let i = 0; i < argv.length; i++) {
+    const flag = argv[i];
+    if (flag === "--help" || flag === "-h") {
+      help = true;
+    } else if (flag === "--dry-run") {
+      dryRun = true;
+    } else if (flag === "--out") {
+      const next = argv[i + 1];
+      // A value starting with "--" is another flag, not a directory — it would otherwise
+      // greedily swallow that flag as the value and silently skip it (code review P2-5).
+      if (next === undefined || next.startsWith("--")) {
+        process.stderr.write("create-caisson: --out requires a directory\n");
+        process.exit(1);
+      }
+      out = next;
+      i++;
+    } else if (flag !== undefined) {
+      selectionArgs.push(flag);
+    }
+  }
+
+  try {
+    if (help) {
+      process.stdout.write(HELP);
+      process.exit(0);
+    }
+
+    // Arming rule (ADR-0262): interactive prompts run ONLY when stdin is a TTY, and only for
+    // Selection fields still missing after argv is parsed — a fully-specified invocation (or
+    // non-TTY stdin, e.g. CI/piped) resolves below with `./interactive.ts` never imported.
+    const isTTY = process.stdin.isTTY === true;
+
+    const index = loadRegistryIndexFromFile(resolveIndexPath());
+    const raw = await resolveSelection(selectionArgs, index, isTTY);
+    const { selection, files } = generate(index, raw);
+    const targetDir = out ?? selection.projectName;
+
+    if (dryRun) {
+      process.stdout.write(
+        `create-caisson: dry-run — ${files.length} files for "${selection.projectName}"\n`,
+      );
+      for (const f of files) {
+        process.stdout.write(`  ${f.path}\n`);
+      }
+      process.exit(0);
+    }
+
+    const write = createFileSetWriter();
+    await write(targetDir, files);
+    await tryGitInit(targetDir);
+    printNextSteps(selection.projectName, targetDir);
+  } catch (e) {
+    process.stderr.write(`create-caisson: ${(e as Error).message}\n`);
+    process.exit(1);
+  }
+}
+
 if (import.meta.main) {
-  void (async () => {
-    const argv = process.argv.slice(2);
-
-    // Extract --help / --dry-run / --out before passing the remainder to parseArgs. Flag-value
-    // pairs for --name / --module / --deploy / --framework flow through untouched.
-    const selectionArgs: string[] = [];
-    let out: string | undefined;
-    let dryRun = false;
-    let help = false;
-
-    for (let i = 0; i < argv.length; i++) {
-      const flag = argv[i];
-      if (flag === "--help" || flag === "-h") {
-        help = true;
-      } else if (flag === "--dry-run") {
-        dryRun = true;
-      } else if (flag === "--out") {
-        const next = argv[i + 1];
-        // A value starting with "--" is another flag, not a directory — it would otherwise
-        // greedily swallow that flag as the value and silently skip it (code review P2-5).
-        if (next === undefined || next.startsWith("--")) {
-          process.stderr.write("create-caisson: --out requires a directory\n");
-          process.exit(1);
-        }
-        out = next;
-        i++;
-      } else if (flag !== undefined) {
-        selectionArgs.push(flag);
-      }
-    }
-
-    try {
-      if (help) {
-        process.stdout.write(HELP);
-        process.exit(0);
-      }
-
-      // Arming rule (ADR-0262): interactive prompts run ONLY when stdin is a TTY, and only for
-      // Selection fields still missing after argv is parsed — a fully-specified invocation (or
-      // non-TTY stdin, e.g. CI/piped) resolves below with `./interactive.ts` never imported.
-      const isTTY = process.stdin.isTTY === true;
-
-      const index = loadRegistryIndexFromFile(resolveIndexPath());
-      const raw = await resolveSelection(selectionArgs, index, isTTY);
-      const { selection, files } = generate(index, raw);
-      const targetDir = out ?? selection.projectName;
-
-      if (dryRun) {
-        process.stdout.write(
-          `create-caisson: dry-run — ${files.length} files for "${selection.projectName}"\n`,
-        );
-        for (const f of files) {
-          process.stdout.write(`  ${f.path}\n`);
-        }
-        process.exit(0);
-      }
-
-      const write = createFileSetWriter();
-      await write(targetDir, files);
-      await tryGitInit(targetDir);
-      printNextSteps(selection.projectName, targetDir);
-    } catch (e) {
-      process.stderr.write(`create-caisson: ${(e as Error).message}\n`);
-      process.exit(1);
-    }
-  })();
+  void main(process.argv.slice(2));
 }
