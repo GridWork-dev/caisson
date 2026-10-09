@@ -9,6 +9,7 @@
 // Bins may print to stdout/stderr (the no-console floor is for library code); errors fail closed
 // with a non-zero exit.
 import { loadBaseManifest } from "@caisson-sh/ds-manifest";
+import { isMainModule } from "@caisson-sh/kernel/node";
 import { describeCommand } from "./describe.ts";
 import { runDoctorCli } from "./doctor.ts";
 import { runRunCli } from "./run.ts";
@@ -29,7 +30,7 @@ server's own Bearer token. 'run approve/deny/status' talk DIRECTLY to your Postg
 (DATABASE_URL/CAISSON_ACCOUNT_ID) — see 'caisson run --help'.
 `;
 
-if (import.meta.main) {
+if (isMainModule(import.meta)) {
   void (async () => {
     const [sub, ...rest] = process.argv.slice(2);
     try {
