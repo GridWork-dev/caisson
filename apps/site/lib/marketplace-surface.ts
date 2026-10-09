@@ -1,4 +1,4 @@
-// The one-surface catalog model (ADR-0285): a single grid over BOTH kinds — the six module families
+// The one-surface catalog model (ADR-0285): a single grid over BOTH kinds — the module families
 // and the modules — so one card system, one facet set, and one deep-link scheme serve both. Pure
 // data (no React, no "use client") so the client grid and the viewer dialog both import it without
 // pulling each other's tree. Every value derives from the catalog (`lib/catalog.ts`) and the media
@@ -70,7 +70,7 @@ function bundleCategories(id: BundleId): readonly Category[] {
   return [id];
 }
 
-/** The six module families as surface entries, in display order. */
+/** The module families (and the whole-catalog Everything) as surface entries, in display order. */
 export const BUNDLE_ENTRIES: readonly SurfaceEntry[] = BUNDLES.map((b) => ({
   kind: "bundle" as const,
   id: b.id,

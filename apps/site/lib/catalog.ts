@@ -31,7 +31,7 @@ export interface Bundle {
   note: string;
 }
 
-/** The six module families, in display order. */
+/** The five module families plus the whole-catalog Everything, in display order. */
 export const BUNDLES: readonly Bundle[] = [
   {
     id: "compliance",

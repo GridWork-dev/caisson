@@ -1,4 +1,4 @@
-// The module-family content record — the shared, typed SOT for the six module families' reusable
+// The module-family content record — the shared, typed SOT for the module families' reusable
 // page content, the sibling of `lib/module-pages.ts` for modules. Each of the five hand-authored
 // module-family pages (`/compliance`, `/ai-kit`, `/local-first`, `/agentic-dev`, `/provenance`)
 // reads its hero copy, member list, and FAQ from here so the same content powers both the
@@ -82,7 +82,7 @@ export const BUNDLE_PAGES: readonly BundlePageRecord[] = [
       "Fail-closed Postgres RLS, S3 Object-Lock WORM, an append-only audit chain, per-tenant field encryption, alerting, and a retention runner, composed into one module family and shipped with a SOC 2 / HIPAA evidence-pack generator. Caisson ships the technical controls and generates the evidence; the certification is your auditor's.",
     hero: {
       eyebrow: "Compliance-grade infrastructure for regulated SaaS",
-      title: "Audit-ready from the first commit.",
+      title: "Audit evidence from the first commit.",
       lede: "Compliance delivers fourteen packages in one module family: tenant isolation that fails closed, evidence that can't be overwritten, and machine-readable OSCAL exports backed by a pinned NIST catalog. Own the source, wire it in before your first customer, and hand an auditor an artifact instead of a slide deck.",
     },
     definition:

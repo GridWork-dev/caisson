@@ -19,7 +19,7 @@ import { TruthfulSignals } from "@/components/truthful-signals";
 
 export const metadata = buildMetadata({
   title: "Marketplace",
-  description: `Every Caisson module family and module on one surface: ${MODULES.length} modules composed into six families, each with its docs and a live in-browser demo.`,
+  description: `Every Caisson module family and module on one surface: ${MODULES.length} modules composed into five families, with docs and live in-browser demos.`,
   path: "/marketplace",
 });
 
@@ -65,7 +65,7 @@ export default function MarketplacePage() {
       {/* ===== The catalog — one surface ===== */}
       <Section
         title="Browse the whole library in one place."
-        lede="Six module families and every module, side by side. Filter by type or category, preview the diagrams and demos, then open the docs or run the live demo."
+        lede="Five module families, the whole catalog, and every module, side by side. Filter by type or category, preview the diagrams and demos, then open the docs or run the live demo."
       >
         <div
           style={{

@@ -19,11 +19,11 @@ interface DecisionPath {
   bundle: BundleId;
 }
 
-// The three persona paths ADR-0378 lock 5 names — a fixed subset of the six module families, in
+// The three persona paths ADR-0378 lock 5 names — a fixed subset of the five module families, in
 // the locked order. Everything/Agentic-Dev/Provenance have no path card here; they stay reachable
 // from the marketplace itself.
 const DECISION_PATHS: readonly DecisionPath[] = [
-  { persona: "Pass an audit", bundle: "compliance" },
+  { persona: "Prepare for an audit", bundle: "compliance" },
   { persona: "Ship AI features", bundle: "ai-production" },
   { persona: "Build offline-first", bundle: "local-first" },
 ];

@@ -80,13 +80,11 @@ export function MarketplaceHeroArtifact() {
   }));
   return (
     <MediaFrame
-      // "+ Everything": the page's own lede and type facet count six module families (Everything
-      // included as an entry); a bare "5 composable module families" read as a contradiction two
-      // lines below "six module families" (post-deploy re-audit, high). The chip list stays 5 —
-      // Everything is the whole-catalog entry, not a sixth thing composing alongside the five it
-      // contains — so the label names it instead of counting it.
+      // "+ Everything": the type facet lists Everything as an entry, but it is the whole-catalog
+      // composition, not a sixth family composing alongside the five it contains, so the label
+      // names it instead of counting it.
       label={`caisson · one base, ${bundles.length} composable module families + Everything`}
-      ariaLabel={`${bundles.length} composable Caisson module families onto one Apache-2.0 audited base, plus the Everything module family covering all of them`}
+      ariaLabel={`${bundles.length} composable Caisson module families onto one Apache-2.0 audited base, plus the whole-catalog Everything set covering all of them`}
       status={
         <span className={styles.barChip}>
           <span className={styles.dot} />

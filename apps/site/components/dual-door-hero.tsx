@@ -2,13 +2,13 @@ import { Button, CodeBlock, StatusChip, Terminal } from "@/components";
 import { DoorsWithWeight } from "@/components/doors-with-weight";
 import { HeroField } from "@/components/hero-field";
 import { ProofChips } from "@/components/proof-chips";
-import { BUNDLES, MODULES, modulesByBundle } from "@/lib/catalog";
+import { MODULES, modulesByBundle, PERSONA_BUNDLE_IDS } from "@/lib/catalog";
 
 import styles from "./dual-door-hero.module.css";
 
 // Dual-door hero (D1 lock, 2026-07-07 research-synthesis picker) — the correct rendering of the
 // ADR-0040 two-layer frame: compliance is the sharp wedge (the LEAD door, accent identity),
-// production the umbrella (the SECONDARY door into the six module families). Server component —
+// production the umbrella (the SECONDARY door into the five module families). Server component —
 // the doors are real links, no interactivity. Replaces the compliance-only <Hero> on `/`.
 //
 // Door sub-claims are honest + mechanism-named now (ADR-0080). They are refinable from the Cookiy
@@ -16,7 +16,8 @@ import styles from "./dual-door-hero.module.css";
 
 // Build facts for the production door chip — computed, never hand-typed, so they can't drift from
 // the catalog (ADR-0080: no invented numbers; every figure is a real build fact).
-const BUNDLE_COUNT = BUNDLES.length;
+// The whole-catalog "everything" composition is not a family, so it is not counted.
+const BUNDLE_COUNT = PERSONA_BUNDLE_IDS.length;
 const MODULE_COUNT = MODULES.length;
 
 export function DualDoorHero() {
@@ -31,7 +32,7 @@ export function DualDoorHero() {
           Open source, Apache-2.0 — two ways in
         </span>
         <h1 className="cs-display" style={{ marginTop: "var(--cs-space-5)" }}>
-          Audit-ready and production-hard from commit one.
+          Audit evidence and production-hard code from commit one.
         </h1>
         <p
           className="cs-lede"
@@ -84,14 +85,14 @@ export function DualDoorHero() {
               label={`${BUNDLE_COUNT} module families · ${MODULE_COUNT} modules`}
             />
             <p className={styles.claim}>
-              Six composable module families on one base: token metering and
+              Five composable module families on one base: token metering and
               spend caps, on-device inference behind a privacy egress gate, a
               governed-agent kernel, and cryptographic provenance. Compose what
               you need — never a fork.
             </p>
             <div className={styles.cta}>
               <Button href="/#bundles" variant="ghost">
-                Explore the six module families
+                Explore the five module families
               </Button>
             </div>
           </div>
