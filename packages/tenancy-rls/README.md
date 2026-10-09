@@ -93,8 +93,8 @@ followup, not shipped here.
 
 ### The drizzle-kit RLS gotcha
 
-`drizzle-kit` cannot emit `FORCE ROW LEVEL SECURITY` (open drizzle-team issue
-[#5843](https://github.com/drizzle-team/drizzle-orm/issues/5843) as of this writing) — only
+`drizzle-kit` cannot emit `FORCE ROW LEVEL SECURITY` (an open drizzle-orm pull request,
+[#5843](https://github.com/drizzle-team/drizzle-orm/pull/5843), adds `.forceRLS()` as of this writing) — only
 `ENABLE ROW LEVEL SECURITY`, which a table's OWNER role silently bypasses. Caisson's raw-SQL
 migrations (`buildTenantPolicySql`) stay the canonical source for every tenant table's
 RLS DDL. Point `drizzle-kit`/Prisma Migrate at your OWN application tables if you use either as a

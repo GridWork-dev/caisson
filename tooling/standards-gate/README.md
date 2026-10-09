@@ -3,15 +3,15 @@
 The Bun layer of the standards gate (ADR-0021/0022) — the SPDX/license authority. Run:
 `bun run gate` (or `caisson-gate`). Exit non-zero on any error → fails CI, `bun run check`, blocks
 publish. Runs alongside two other layers in CI (ADR-0022): ESLint (fast static provider-SDK
-signal) + dependency-cruiser (real module graph: dynamic/transitive reach + base→edition).
+signal) + dependency-cruiser (real module graph: dynamic/transitive reach + a lower layer importing a higher one).
 
 ## What this layer enforces
 
 - **AGPL boundary** (Gate 1, ADR-0010) — non-AGPL package may not depend on an AGPL package, over
   **workspace `@caisson-sh/*` deps AND external npm deps** (reads each resolved dep's SPDX; external
   scan needs `node_modules` — warns + defers to CI post-install if absent).
-- **Down-only** (Gate 3, ADR-0003) — base/primitive ↛ edition, edition ↛ edition. Enforced now
-  (keyed on the 4 edition names; refines to manifest `kind` once modules carry manifests).
+- **Down-only** (Gate 3, ADR-0003) — a lower layer (base, primitive) may not depend on a higher one, and a higher-layer
+  package may not depend on a peer. Enforced now (keyed on the layer package names; refines to manifest `kind` once modules carry manifests).
 - **Declarations** — a module that ships code (src/ beyond .gitkeep, or an entry/main/exports)
   must declare an SPDX `license` + a `manifest.ts` (ADR-0020). Scaffolds are exempt.
 - **Manifest ↔ package.json agreement** (Gate 4, ADR-0020) — loads each `manifest.ts`, asserts

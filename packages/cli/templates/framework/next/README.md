@@ -33,7 +33,7 @@ Set `AUTH_JWT_PUBLIC_KEY` (the base64 SPKI DER public half from `@caisson-sh/aut
 - `bun run build` — production build (typechecks as part of the build).
 - `bun run start` — serve the production build.
 - `bun run lint` — oxlint.
-- `bun test` — unit tests + golden-file regression for the installed modules.
+- `bun run test` — unit tests + golden-file regression for the installed modules.
 
 ## CI
 

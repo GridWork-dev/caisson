@@ -44,7 +44,7 @@ have a live demo for most of them.
 ```
 packages/            the published packages (one directory per @caisson-sh/<name>)
 apps/site            caisson.sh: marketing pages and docs (static export)
-apps/demos           the interactive module demos served at caisson.sh/demos
+apps/demos           the interactive module demos loaded inside the module pages at caisson.sh/demos/embed/<module>
 tooling/             the standards gate, lint policy, tsconfig and test helpers
 specs/               the founding concept specs
 knowledge/decisions/ architecture decision records (append-only)
