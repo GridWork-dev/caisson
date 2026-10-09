@@ -13,7 +13,8 @@ requests with tests are the ones that land fastest.
 
 ## Development
 
-Requirements: [Bun](https://bun.sh) (the version in `package.json#packageManager`) and Node 22+.
+Requirements: [Bun](https://bun.sh) (the version in `package.json#packageManager`) and Node 22.11+,
+24 or 26+ (the range the Changesets CLI supports).
 Some package tests need Docker (Postgres).
 
 ```sh
@@ -41,7 +42,9 @@ These are enforced in review and, where possible, by the standards gate in `tool
 1. Branch from `main` and keep one logical change per PR.
 2. Add or update tests. Bug fixes should come with a test that fails without the fix.
 3. Any change under `packages/` needs a changeset: run `bunx changeset` and describe the change for
-   users.
+   users. When a change moves a package out of another package's peer-dependency range (for
+   example a `@caisson-sh/ui` minor), add a `major` changeset for each peer dependent yourself:
+   Changesets bumps peer dependents by `patch` only.
 4. Use [Conventional Commits](https://www.conventionalcommits.org/) for commit subjects, e.g.
    `fix(auth): reject expired sessions`.
 5. Make sure `bun run check` passes locally. CI runs the same checks.
