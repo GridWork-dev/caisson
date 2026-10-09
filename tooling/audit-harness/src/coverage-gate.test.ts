@@ -67,6 +67,8 @@ const IGNORE_GLOBS: readonly string[] = [
   // repo/CI meta-config — mechanical, no secrets, not a product surface
   ".githooks/**",
   ".github/CODEOWNERS",
+  // the maintainer tooling's merge-policy manifest — two settings, no secrets or hosts
+  ".gridwork/project.toml",
   // open-source community files (ADR-0428): license text, contribution/conduct/security policy,
   // issue forms and the PR template — project governance prose, no product or audit surface
   "LICENSE",
