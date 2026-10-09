@@ -12,19 +12,19 @@ description: Install the base, wire a tenant, and run the standards gate.
 ## Install
 
 ```bash
-bunx @caisson-sh/cli@latest
+bunx --package @caisson-sh/cli@latest create-caisson
 ```
 
 With no flags, `create-caisson` runs **interactively** in a terminal (TTY): it prompts for your
 project name and module selection. A scripted, non-interactive run needs an explicit `--name` plus
-at least one `--module <id@version>` (repeatable). Run `bunx @caisson-sh/cli@latest --help` for the
-full flag reference.
+at least one `--module <id@version>` (repeatable). Run
+`bunx --package @caisson-sh/cli@latest create-caisson --help` for the full flag reference.
 
 Every module installs from the public npm registry, so the generated project needs no token and no
 registry configuration:
 
 ```bash
-bunx @caisson-sh/cli@latest --name my-app --module @caisson-sh/kernel@<version>
+bunx --package @caisson-sh/cli@latest create-caisson --name my-app --module @caisson-sh/kernel@<version>
 cd my-app
 bun install
 ```
@@ -42,25 +42,25 @@ from the packages released alongside it, one version per module, so the id/versi
 `--module` can resolve against are frozen to the package versions of that CLI release.
 
 ```bash
-bunx @caisson-sh/cli@0.4.0 --name my-app --module @caisson-sh/kernel@1.4.0
+bunx --package @caisson-sh/cli@0.9.0 create-caisson --name my-app --module @caisson-sh/kernel@0.10.1
 ```
 
-`@latest` always resolves against the newest snapshot; pin an explicit npm version (`@0.4.0`) to
+`@latest` always resolves against the newest snapshot; pin an explicit npm version (`@0.9.0`) to
 freeze the catalog a script runs against. `CAISSON_REGISTRY_INDEX=<path>` points the generator at a
 different index file entirely, a CI/local-dev override, not part of a normal install.
 
 **`--module <id@version>`.** Repeat the flag once per package:
 
 ```bash
-bunx @caisson-sh/cli@latest --name my-app \
-  --module @caisson-sh/kernel@1.4.0 \
-  --module @caisson-sh/auth@2.1.0
+bunx --package @caisson-sh/cli@latest create-caisson --name my-app \
+  --module @caisson-sh/kernel@0.10.1 \
+  --module @caisson-sh/auth@0.4.6
 ```
 
 - Each value splits on the **last** `@`, so a scoped id (`@caisson-sh/kernel`) keeps its leading `@`;
   a value with no `@` after position 0 fails immediately (`--module expects <id@version>`).
 - `version` is not a semver range, it must equal that module's catalog version exactly.
-  `^1.4.0`, `~1.4`, `1.x`, and `latest` are all rejected.
+  `^0.10.1`, `~0.10`, `0.x`, and `latest` are all rejected.
 - The same module id twice in one selection is rejected before generation runs (an ambiguous
   "which version wins" case, `package.json` and the generated README would otherwise disagree).
 
@@ -128,7 +128,7 @@ drive Caisson, pick the one that matches how much wiring you want to do.
 you would by hand:
 
 ```bash
-bunx @caisson-sh/cli@latest --name my-app --module <id@version>
+bunx --package @caisson-sh/cli@latest create-caisson --name my-app --module <id@version>
 ```
 
 Repeat `--module` per module. `--help` prints the flag reference, not the live catalog, an agent
