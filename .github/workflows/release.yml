@@ -46,8 +46,9 @@ jobs:
       - name: build the packages
         run: bunx turbo run build --filter "./packages/*" --no-daemon
       # v2 defaults: github-token is github.token, and the version commit goes through the GitHub
-      # API (push-with-git-cli: false). Tags were never pushed under v1 (the publish script prints
-      # no "New tag:" lines), so tag pushing stays off explicitly.
+      # API (push-with-git-cli: false). The repo has never had release tags: the publish script
+      # does not report published packages to the action, so tag pushing and GitHub releases stay
+      # off explicitly, and the action's `published` output is always "false" (nothing reads it).
       - uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         id: changesets
         with:
