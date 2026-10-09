@@ -1,4 +1,4 @@
-# @caisson/local-sync
+# @caisson-sh/local-sync
 
 ## 0.2.3
 

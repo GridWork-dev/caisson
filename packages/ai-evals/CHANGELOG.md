@@ -1,4 +1,4 @@
-# @caisson/ai-evals
+# @caisson-sh/ai-evals
 
 ## 0.5.3
 

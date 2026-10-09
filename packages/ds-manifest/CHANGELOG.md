@@ -1,4 +1,4 @@
-# @caisson/ds-manifest
+# @caisson-sh/ds-manifest
 
 ## 0.3.5
 

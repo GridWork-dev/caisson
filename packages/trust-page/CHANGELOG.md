@@ -1,4 +1,4 @@
-# @caisson/trust-page
+# @caisson-sh/trust-page
 
 ## 0.3.6
 

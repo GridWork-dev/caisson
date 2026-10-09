@@ -1,4 +1,4 @@
-# @caisson/access-review
+# @caisson-sh/access-review
 
 ## 0.3.6
 

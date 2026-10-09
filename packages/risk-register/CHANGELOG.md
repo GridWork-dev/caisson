@@ -1,4 +1,4 @@
-# @caisson/risk-register
+# @caisson-sh/risk-register
 
 ## 0.3.6
 

@@ -1,4 +1,4 @@
-# @caisson/artifact-render
+# @caisson-sh/artifact-render
 
 ## 0.2.6
 

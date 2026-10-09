@@ -1,4 +1,4 @@
-# @caisson/local-privacy
+# @caisson-sh/local-privacy
 
 ## 0.2.2
 

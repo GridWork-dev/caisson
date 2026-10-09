@@ -1,4 +1,4 @@
-# @caisson/demo-registry
+# @caisson-sh/demo-registry
 
 ## 0.2.17
 

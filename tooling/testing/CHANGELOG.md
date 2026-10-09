@@ -1,4 +1,4 @@
-# @caisson/testing
+# @caisson-sh/testing
 
 ## 0.0.5
 

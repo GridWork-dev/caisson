@@ -1,4 +1,4 @@
-# @caisson/frameworks-pack
+# @caisson-sh/frameworks-pack
 
 ## 0.8.3
 

@@ -1,4 +1,4 @@
-# @caisson/field-crypto
+# @caisson-sh/field-crypto
 
 ## 1.1.3
 

@@ -1,4 +1,4 @@
-# @caisson/alerting
+# @caisson-sh/alerting
 
 ## 0.3.3
 

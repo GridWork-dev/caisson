@@ -1,4 +1,4 @@
-# @caisson/ai-kit
+# @caisson-sh/ai-kit
 
 ## 0.6.6
 

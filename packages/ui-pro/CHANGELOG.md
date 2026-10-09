@@ -1,4 +1,4 @@
-# @caisson/ui-pro
+# @caisson-sh/ui-pro
 
 ## 0.3.9
 

@@ -1,4 +1,4 @@
-# @caisson/retention-runner
+# @caisson-sh/retention-runner
 
 ## 0.2.3
 

@@ -1,4 +1,4 @@
-# @caisson/site
+# @caisson-sh/site
 
 ## 0.5.0
 

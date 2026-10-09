@@ -1,4 +1,4 @@
-# @caisson/local-store
+# @caisson-sh/local-store
 
 ## 1.1.3
 

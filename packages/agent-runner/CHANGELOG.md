@@ -1,4 +1,4 @@
-# @caisson/agent-runner
+# @caisson-sh/agent-runner
 
 ## 0.3.3
 

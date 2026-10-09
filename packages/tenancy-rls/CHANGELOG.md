@@ -1,4 +1,4 @@
-# @caisson/tenancy-rls
+# @caisson-sh/tenancy-rls
 
 ## 0.6.2
 
