@@ -6,6 +6,7 @@
 // (`./resolve-index-path.ts`, cwd-independent) with an env override for CI / local overrides.
 import { execFile as execFileCb } from "node:child_process";
 import { resolve } from "node:path";
+import { isMainModule } from "@caisson-sh/kernel/node";
 import {
   type RegistryIndex,
   loadRegistryIndexFromFile,
@@ -269,6 +270,6 @@ export async function main(argv: readonly string[]): Promise<void> {
   }
 }
 
-if (import.meta.main) {
+if (isMainModule(import.meta)) {
   void main(process.argv.slice(2));
 }

@@ -60,6 +60,9 @@ export {
   UNKNOWN_REVISION,
 } from "./revision.ts";
 
+// --- Entry-script detection for bins (node:fs realpathSync). -------------------------------------
+export { isMainModule } from "./is-main.ts";
+
 // --- SSRF guard (node:dns/promises lookup). ------------------------------------------------------
 export {
   assertResolvedHostPublic,

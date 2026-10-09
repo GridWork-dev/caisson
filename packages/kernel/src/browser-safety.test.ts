@@ -55,6 +55,7 @@ describe("the `.` barrel is browser-safe", () => {
     expect(tainted).toEqual([
       `${KERNEL_SRC}/audit-chain.ts`,
       `${KERNEL_SRC}/crypto.ts`,
+      `${KERNEL_SRC}/is-main.ts`,
       `${KERNEL_SRC}/migration-assembly.ts`,
       `${KERNEL_SRC}/origin-gate.ts`,
       `${KERNEL_SRC}/revision.ts`,
