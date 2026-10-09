@@ -2,7 +2,8 @@ name: release
 # Versioning and publishing through Changesets, on every push to main:
 #   - Pending changesets: open or update the "version packages" PR. tooling/scripts/
 #     version-packages.ts consumes them and regenerates the files that embed versions. A PR opened
-#     with GITHUB_TOKEN gets no pull_request run, so the last step dispatches ci.yml on it.
+#     with GITHUB_TOKEN gets no pull_request run, so the last step dispatches the two workflows
+#     that carry the required checks (ci.yml: ci, security.yml: deterministic) on it.
 #   - No pending changesets (the version PR just merged): tooling/scripts/publish-packages.ts
 #     publishes every version not yet on npm, through npm trusted publishing (OIDC, provenance).
 # Runs only in the public repository: npm provenance requires one.
@@ -62,9 +63,11 @@ jobs:
           # Only for the one-time bootstrap publish (a package's first version cannot use OIDC).
           # Unset afterwards, so publishing falls through to trusted publishing.
           NPM_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
-      - name: run ci on the version PR
+      - name: run the required checks on the version PR
         if: steps.changesets.outputs.pr-number != ''
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-        run: gh workflow run ci.yml --repo "$REPO" --ref changeset-release/main
+        run: |
+          gh workflow run ci.yml --repo "$REPO" --ref changeset-release/main
+          gh workflow run security.yml --repo "$REPO" --ref changeset-release/main
