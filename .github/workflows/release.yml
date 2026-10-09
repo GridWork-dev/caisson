@@ -1,9 +1,10 @@
 name: release
 # Versioning and publishing through Changesets, on every push to main:
 #   - Pending changesets: open or update the "version packages" PR. tooling/scripts/
-#     version-packages.ts consumes them and regenerates the files that embed versions. A PR opened
-#     with GITHUB_TOKEN gets no pull_request run, so the last step dispatches the two workflows
-#     that carry the required checks (ci.yml: ci, security.yml: deterministic) on it.
+#     version-packages.ts consumes them and regenerates the files that embed versions. The PR is
+#     opened with GITHUB_TOKEN, so GitHub parks its pull_request runs until a maintainer approves
+#     them ("Approve and run workflows"). Only those runs satisfy the required checks (ci.yml: ci,
+#     security.yml: deterministic); a run dispatched onto the branch does not.
 #   - No pending changesets (the version PR just merged): tooling/scripts/publish-packages.ts
 #     publishes every version not yet on npm, through npm trusted publishing (OIDC, provenance).
 # Runs only in the public repository: npm provenance requires one.
@@ -28,7 +29,6 @@ jobs:
       contents: write # the version commit
       pull-requests: write # the version PR
       id-token: write # npm trusted publishing
-      actions: write # dispatch ci.yml on the version PR's branch
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -51,7 +51,6 @@ jobs:
       # does not report published packages to the action, so tag pushing and GitHub releases stay
       # off explicitly, and the action's `published` output is always "false" (nothing reads it).
       - uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
-        id: changesets
         with:
           version-script: bun tooling/scripts/version-packages.ts
           publish-script: bun tooling/scripts/publish-packages.ts
@@ -63,11 +62,3 @@ jobs:
           # Only for the one-time bootstrap publish (a package's first version cannot use OIDC).
           # Unset afterwards, so publishing falls through to trusted publishing.
           NPM_TOKEN: ${{ secrets.NPM_BOOTSTRAP_TOKEN }}
-      - name: run the required checks on the version PR
-        if: steps.changesets.outputs.pr-number != ''
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-        run: |
-          gh workflow run ci.yml --repo "$REPO" --ref changeset-release/main
-          gh workflow run security.yml --repo "$REPO" --ref changeset-release/main
