@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "@caisson-sh/kernel": "workspace:*",
-    "nodemailer": "^9.1.1",
+    "nodemailer": "^10.0.13",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-email": "^6.0.0"
@@ -51,7 +51,6 @@
   "devDependencies": {
     "@caisson-sh/testing": "workspace:*",
     "@caisson-sh/tsconfig": "workspace:*",
-    "@types/nodemailer": "^8.0.1",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "typescript": "catalog:"
