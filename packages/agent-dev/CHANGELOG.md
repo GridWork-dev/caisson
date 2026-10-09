@@ -1,4 +1,4 @@
-# @caisson/agent-dev
+# @caisson-sh/agent-dev
 
 ## 0.6.11
 

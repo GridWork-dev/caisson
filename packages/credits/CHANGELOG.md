@@ -1,4 +1,4 @@
-# @caisson/credits
+# @caisson-sh/credits
 
 ## 0.6.4
 

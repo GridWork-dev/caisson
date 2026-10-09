@@ -1,4 +1,4 @@
-# @caisson/signing-primitive
+# @caisson-sh/signing-primitive
 
 ## 0.4.3
 

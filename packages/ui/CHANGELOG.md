@@ -1,4 +1,4 @@
-# @caisson/ui
+# @caisson-sh/ui
 
 ## 0.6.8
 

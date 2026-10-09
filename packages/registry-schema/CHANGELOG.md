@@ -1,4 +1,4 @@
-# @caisson/registry-schema
+# @caisson-sh/registry-schema
 
 ## 0.6.0
 

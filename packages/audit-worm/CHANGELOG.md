@@ -1,4 +1,4 @@
-# @caisson/audit-worm
+# @caisson-sh/audit-worm
 
 ## 2.2.5
 

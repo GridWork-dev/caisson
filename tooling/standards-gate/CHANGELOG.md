@@ -1,4 +1,4 @@
-# @caisson/standards-gate
+# @caisson-sh/standards-gate
 
 ## 0.1.6
 

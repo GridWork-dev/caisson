@@ -1,4 +1,4 @@
-# @caisson/ai-config
+# @caisson-sh/ai-config
 
 ## 0.3.11
 

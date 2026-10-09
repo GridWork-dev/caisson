@@ -1,4 +1,4 @@
-# @caisson/cli
+# @caisson-sh/cli
 
 ## 0.9.0
 

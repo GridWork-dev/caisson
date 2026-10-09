@@ -1,4 +1,4 @@
-# @caisson/rate-limit
+# @caisson-sh/rate-limit
 
 ## 0.2.2
 

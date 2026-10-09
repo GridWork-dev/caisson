@@ -1,4 +1,4 @@
-# @caisson/compliance-core
+# @caisson-sh/compliance-core
 
 ## 0.7.3
 

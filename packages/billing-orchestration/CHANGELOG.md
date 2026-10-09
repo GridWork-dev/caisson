@@ -1,4 +1,4 @@
-# @caisson/billing-orchestration
+# @caisson-sh/billing-orchestration
 
 ## 0.4.3
 

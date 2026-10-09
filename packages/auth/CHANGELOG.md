@@ -1,4 +1,4 @@
-# @caisson/auth
+# @caisson-sh/auth
 
 ## 0.4.6
 

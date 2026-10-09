@@ -1,4 +1,4 @@
-# @caisson/compliance
+# @caisson-sh/compliance
 
 ## 2.0.0
 

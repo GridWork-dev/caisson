@@ -1,4 +1,4 @@
-# @caisson/jobs
+# @caisson-sh/jobs
 
 ## 0.7.5
 

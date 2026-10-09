@@ -1,4 +1,4 @@
-# @caisson/tool-exec
+# @caisson-sh/tool-exec
 
 ## 0.4.1
 

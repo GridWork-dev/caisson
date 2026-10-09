@@ -1,4 +1,4 @@
-# @caisson/mcp-server
+# @caisson-sh/mcp-server
 
 ## 1.0.0
 

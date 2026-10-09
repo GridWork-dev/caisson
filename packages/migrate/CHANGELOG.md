@@ -1,4 +1,4 @@
-# @caisson/migrate
+# @caisson-sh/migrate
 
 ## 0.2.15
 
