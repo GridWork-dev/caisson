@@ -5,16 +5,16 @@ The generator that composes a tailored repo from the versioned module catalog.
 ## Usage
 
 ```
-bunx @caisson-sh/cli@latest my-app --module @caisson-sh/kernel@0.4.2 --out ./my-app
+bunx --package @caisson-sh/cli@latest create-caisson my-app --module @caisson-sh/kernel@<version>
 ```
 
 Pass one `--module <id@version>` per module you want. Run it with no flags in a terminal and it
 prompts for the project name and modules instead. Every module installs from the public npm
 registry; the generated repo needs no token and no registry configuration.
 
-(`npx create-caisson@latest ...` also works as a secondary install path.)
+Under Node, `npx --package @caisson-sh/cli@latest create-caisson ...` runs the same generator.
 
-Run `bunx @caisson-sh/cli@latest --help` for the full flag list (`--deploy`, `--framework`,
+Run `bunx --package @caisson-sh/cli@latest create-caisson --help` for the full flag list (`--deploy`, `--framework`,
 `--dry-run`, `--out`).
 
 ## What it ships
