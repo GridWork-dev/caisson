@@ -332,7 +332,7 @@ describe("generate — framework templates (ADR-0287)", () => {
     expect(parsed.dependencies).toMatchObject({
       "@caisson-sh/credits": "0.2.0",
       "@caisson-sh/field-crypto": "0.1.0",
-      next: "^16.3.3",
+      next: "^16.3.8",
       "@caisson-sh/kernel": `^${kernelVersion}`,
     });
     expect(parsed.devDependencies).toMatchObject({
