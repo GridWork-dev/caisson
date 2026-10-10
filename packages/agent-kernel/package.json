@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/agent-kernel",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Engine-neutral agent kernel: agent/skill/rule Zod schema + lifecycle act FSM + hooks dispatcher. The shared base layer cli/mcp-server and the Agentic-Dev bundle compose down-only — no vendor SDK, no LLM call.",
   "license": "Apache-2.0",
   "repository": {

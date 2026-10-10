@@ -1,5 +1,15 @@
 # @caisson-sh/frameworks-pack
 
+## 0.8.4
+
+### Patch Changes
+
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/oscal-spine@0.2.4
+
 ## 0.8.3
 
 ### Patch Changes

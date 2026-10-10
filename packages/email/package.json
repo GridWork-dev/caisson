@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/email",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Transactional email port: a provider-agnostic Emailer interface with a capture driver for tests and Resend, Postmark, SMTP, and SES drivers for production, with branded React-Email templates.",
   "license": "Apache-2.0",
   "repository": {

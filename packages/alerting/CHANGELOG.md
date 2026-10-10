@@ -1,5 +1,19 @@
 # @caisson-sh/alerting
 
+## 0.3.4
+
+### Patch Changes
+
+- e58ddc3: Trailing slashes on a configured base URL are trimmed with a plain scan instead of a regular
+  expression, which took quadratic time on a long run of slashes. This covers the Telegram channel's
+  `botApiUrl` and the OpenRouter and Azure OpenAI transports' base URLs.
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [e58ddc3]
+- Updated dependencies [5ca14b4]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/email@1.0.1
+
 ## 0.3.3
 
 ### Patch Changes

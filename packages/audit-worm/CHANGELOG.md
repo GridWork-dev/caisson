@@ -1,5 +1,19 @@
 # @caisson-sh/audit-worm
 
+## 2.2.6
+
+### Patch Changes
+
+- 304851a: Correct first-contact documentation: generated projects now tell you to run `bun run test` (bare `bun test` also picks up built output), the WORM retention copy states that GOVERNANCE mode can be bypassed by a principal with the bypass-governance permission while COMPLIANCE mode cannot, and package READMEs no longer refer to product editions or call the drizzle-orm `.forceRLS()` change an issue.
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [304851a]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/tenancy-rls@0.6.3
+  - @caisson-sh/jobs@0.7.6
+  - @caisson-sh/ui-pro@0.3.10
+
 ## 2.2.5
 
 ### Patch Changes

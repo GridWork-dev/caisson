@@ -1,5 +1,18 @@
 # @caisson-sh/agent-trajectory
 
+## 0.6.3
+
+### Patch Changes
+
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [304851a]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/field-crypto@1.1.4
+  - @caisson-sh/tenancy-rls@0.6.3
+  - @caisson-sh/ai-meter@1.1.5
+
 ## 0.6.2
 
 ### Patch Changes

@@ -1,5 +1,20 @@
 # @caisson-sh/kernel
 
+## 0.10.2
+
+### Patch Changes
+
+- 4954dc1: Fix the `create-caisson` and `caisson` commands and the local design-system discovery server doing
+  nothing on Node versions without `import.meta.main` (before 22.18, and 24.0 to 24.1): they exited 0
+  with no output. `@caisson-sh/kernel/node` now exports `isMainModule`, which these entries use to
+  tell that they were started directly.
+- fa815fc: `scrubForEgress` and `looksLikeSecret` now run in linear time. Text with a long run of ordinary
+  characters, such as a megabyte of base64, took over a minute to scrub; it now takes milliseconds.
+  The same spans are redacted as before.
+- e58ddc3: Event redaction now runs in linear time. A string attribute holding a long run of newlines, or many
+  SQL verbs with no clause keyword after them, used to take quadratic time to check for stack frames
+  and SQL statements. The same values are redacted as before.
+
 ## 0.10.1
 
 ### Patch Changes

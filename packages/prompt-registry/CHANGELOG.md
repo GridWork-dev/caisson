@@ -1,5 +1,16 @@
 # @caisson-sh/prompt-registry
 
+## 1.1.4
+
+### Patch Changes
+
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [304851a]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/tenancy-rls@0.6.3
+
 ## 1.1.3
 
 ### Patch Changes

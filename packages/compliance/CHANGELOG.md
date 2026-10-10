@@ -1,5 +1,22 @@
 # @caisson-sh/compliance
 
+## 2.0.1
+
+### Patch Changes
+
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [304851a]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/audit-worm@2.2.6
+  - @caisson-sh/field-crypto@1.1.4
+  - @caisson-sh/tenancy-rls@0.6.3
+  - @caisson-sh/compliance-core@0.7.4
+  - @caisson-sh/frameworks-pack@0.8.4
+  - @caisson-sh/migrate@0.2.16
+  - @caisson-sh/signing-primitive@0.4.4
+
 ## 2.0.0
 
 ### Major Changes
