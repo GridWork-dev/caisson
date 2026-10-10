@@ -1,8 +1,9 @@
 name: security
 # The deterministic security floor: semgrep (the repo's floor rules + p/security-audit), trivy fs,
 # osv-scanner over the lockfiles, and trufflehog (verified secrets only) through
-# tools/security/scan.sh, plus a zizmor audit of these workflows. Scanner versions and digests
-# are pinned in tools/security/versions.env; every download is verified before it runs.
+# tools/security/scan.sh, plus a zizmor audit of these workflows and the shared leak scan. Scanner
+# versions and digests are pinned in tools/security/versions.env; every download is verified
+# before it runs.
 on:
   pull_request:
   push:
@@ -99,3 +100,13 @@ jobs:
           # Online audits (impostor commits, ref confusion) read public commit graphs.
           GH_TOKEN: ${{ github.token }}
         run: $HOME/.local/bin/zizmor --persona=regular .github/workflows/
+
+  # Private-identifier scan over every tracked file: home-directory paths, carrier-grade NAT
+  # addresses, credential assignments, private-key headers and agent session links. The reusable
+  # workflow also proves on each run that the scan can fail. It has no allowlist for text, so a
+  # fixture that needs one of those shapes is assembled from parts; reviewed binary files are
+  # listed in .leak-scan-binaries.
+  leak-scan:
+    uses: GridWork-dev/.github/.github/workflows/leak-scan.yml@f1d50cff144875a4a713955a3bd354253ddf0d38
+    with:
+      scanner-ref: f1d50cff144875a4a713955a3bd354253ddf0d38
