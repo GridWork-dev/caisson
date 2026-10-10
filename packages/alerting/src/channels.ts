@@ -189,6 +189,13 @@ export function createDiscordChannel(config: DiscordConfig): AlertChannel {
   };
 }
 
+/** Drop trailing slashes with a plain scan; `/\/+$/` retries from every slash in a long run. */
+function withoutTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === "/") end -= 1;
+  return value.slice(0, end);
+}
+
 export const TelegramConfigSchema = strictObject({
   botApiUrl: safeHttpsUrl,
   chatId: z.string(),
@@ -203,7 +210,7 @@ export function createTelegramChannel(config: TelegramConfig): AlertChannel {
         // `botApiUrl` is caller-supplied config (not a constant api.telegram.org base), so it needs
         // the same SSRF guard; resolve-check the base before composing the sendMessage path.
         await assertSafePublicUrlResolved(config.botApiUrl);
-        const url = `${config.botApiUrl.replace(/\/+$/, "")}/sendMessage`;
+        const url = `${withoutTrailingSlashes(config.botApiUrl)}/sendMessage`;
         const res = await fetchWithTimeout(url, {
           method: "POST",
           headers: { "content-type": "application/json" },

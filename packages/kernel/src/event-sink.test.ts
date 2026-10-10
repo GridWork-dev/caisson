@@ -52,6 +52,41 @@ describe("event-sink redaction (ADR-0075 / ADR-0019)", () => {
     redactEvent(LEAKY);
     expect(LEAKY.attributes.apiKey).toBe("sk-live-abcdef123456");
   });
+
+  const redactNote = (note: string): unknown =>
+    redactEvent({ name: "probe", timestamp: TS, attributes: { note } })
+      .attributes.note;
+
+  test("a stack frame is caught after blank lines, CRLF and tab indents", () => {
+    expect(redactNote("boom\n\n\n  at foo (x.ts:1:1)")).toBe(
+      "[REDACTED:STACK]",
+    );
+    expect(redactNote("boom\r\n\tat foo (x.ts:1:1)")).toBe("[REDACTED:STACK]");
+    expect(redactNote("boom\n \r at foo (x.ts:1:1)")).toBe("[REDACTED:STACK]");
+    expect(redactNote("meet me\nat")).toBe("meet me\nat");
+    expect(redactNote("look at this")).toBe("look at this");
+  });
+
+  test("SQL needs a verb and a later clause keyword, each a whole word", () => {
+    expect(redactNote("please DELETE the row FROM t")).toBe("[REDACTED:SQL]");
+    expect(redactNote("update users set x = 1")).toBe("[REDACTED:SQL]");
+    expect(redactNote("values from the last select")).toBe(
+      "values from the last select",
+    );
+    expect(redactNote("selection from the table")).toBe(
+      "selection from the table",
+    );
+    expect(redactNote("select fromage")).toBe("select fromage");
+  });
+
+  test("redaction time grows linearly on newline runs and verb runs", () => {
+    // Tens of seconds each with the one-pattern forms, which rescan from every newline or verb.
+    for (const note of ["\n".repeat(640_000), "select ".repeat(80_000)]) {
+      const started = performance.now();
+      expect(redactNote(note)).toBe(note);
+      expect(performance.now() - started).toBeLessThan(2_000);
+    }
+  });
 });
 
 describe("event-sink transports", () => {

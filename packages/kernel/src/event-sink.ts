@@ -44,17 +44,34 @@ export interface EventSink {
 /** Keys whose value is a credential — the whole value is dropped regardless of type. */
 const SENSITIVE_KEY =
   /(?:secret|token|password|passwd|api[_-]?key|apikey|authorization|bearer|credential|private[_-]?key|access[_-]?key|session)/i;
-/** A SQL statement (a leaked query string) — never belongs in an ops event. */
-const SQL_STATEMENT =
-  /\b(?:select|insert|update|delete|drop|alter|create|truncate|grant|revoke)\b[\s\S]*\b(?:from|into|table|where|values|set|join)\b/i;
-/** A stack-trace frame (`\n    at fn (file:line:col)`). */
-const STACK_FRAME = /\n\s*at\s+\S/;
+/**
+ * A SQL statement (a leaked query string) never belongs in an ops event: a verb, then a clause
+ * keyword anywhere after it. Two patterns instead of one `verb[\s\S]*clause` pattern, which rescans
+ * to the end of the string from every verb when no clause keyword follows.
+ */
+const SQL_VERB =
+  /\b(?:select|insert|update|delete|drop|alter|create|truncate|grant|revoke)\b/i;
+const SQL_CLAUSE = /\b(?:from|into|table|where|values|set|join)\b/gi;
+
+function isSqlStatement(value: string): boolean {
+  const verb = SQL_VERB.exec(value);
+  if (verb === null) return false;
+  // Any later verb ends after the first one, so the first verb decides.
+  SQL_CLAUSE.lastIndex = verb.index + verb[0].length;
+  return SQL_CLAUSE.test(value);
+}
+/**
+ * A stack-trace frame (`\n    at fn (file:line:col)`). The indent excludes newlines, so the match
+ * starts at the last newline before `at`: the same strings match as with `\n\s*at`, but a long run
+ * of blank lines is scanned once instead of once per newline.
+ */
+const STACK_FRAME = /\n[^\S\n]*at\s+\S/;
 
 function redactValue(value: unknown, key?: string): unknown {
   if (key !== undefined && SENSITIVE_KEY.test(key)) return "[REDACTED]";
   if (typeof value === "string") {
     if (STACK_FRAME.test(value)) return "[REDACTED:STACK]";
-    if (SQL_STATEMENT.test(value)) return "[REDACTED:SQL]";
+    if (isSqlStatement(value)) return "[REDACTED:SQL]";
     return value;
   }
   if (Array.isArray(value)) return value.map((v) => redactValue(v));

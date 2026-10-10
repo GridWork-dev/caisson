@@ -90,7 +90,7 @@ export type HttpMcpHandler = (
 // raise it in lockstep if MAX_MODULES grows.
 const MAX_BODY_BYTES = 256 * 1024;
 
-const BEARER_PATTERN = /^Bearer +(.+)$/;
+const BEARER_PREFIX = "Bearer ";
 
 /** The security-floor response headers (`identity/security.md` Headers clause). TLS termination is
  *  upstream of this plain `node:http` listener; HSTS is what the terminating proxy forwards. */
@@ -157,8 +157,10 @@ function readJsonBody(
  *  constant-time compare, so this collapses cleanly to the same 401 path as a wrong token. */
 function extractBearer(req: IncomingMessage): string {
   const header = req.headers.authorization;
-  if (typeof header !== "string") return "";
-  return BEARER_PATTERN.exec(header)?.[1]?.trim() ?? "";
+  if (typeof header !== "string" || !header.startsWith(BEARER_PREFIX)) {
+    return "";
+  }
+  return header.slice(BEARER_PREFIX.length).trim();
 }
 
 /** Builds (but does not connect) the low-level SDK `Server` bound to one authenticated session.

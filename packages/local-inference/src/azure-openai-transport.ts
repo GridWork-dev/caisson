@@ -29,6 +29,7 @@ import {
   completeWireSchema,
   embedWireSchema,
   tokenQuantity,
+  withoutTrailingSlashes,
 } from "./openrouter-transport.ts";
 import type { RentedTransport } from "./rented-backend.ts";
 import type { EgressGuard } from "@caisson-sh/local-privacy";
@@ -88,7 +89,7 @@ export function createAzureOpenAIRentedTransport(
       { received: dimensions },
     );
   }
-  const endpoint = config.endpoint.replace(/\/+$/, "");
+  const endpoint = withoutTrailingSlashes(config.endpoint);
   // Fail at composition, not first call: the resource host must be sanctioned as a
   // `rented-backend` sink SPECIFICALLY (mirrors the RentedInferenceBackend construction gate).
   config.guard.assertAllowedFor(endpoint, "rented-backend");
