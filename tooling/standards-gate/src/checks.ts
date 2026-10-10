@@ -211,6 +211,8 @@ export function checkExternalAgpl(pkgs: Pkg[], root: string): Finding[] {
 const NEVER_PUBLISHED = new Set([
   // The private brand layer (glyphs/wordmark) — apps consume it directly, never a registry module.
   "@caisson-sh/brand",
+  // The unscoped alias for @caisson-sh/cli's generator: a bin shim, not a registry module.
+  "create-caisson",
 ]);
 
 /**
