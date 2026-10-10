@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/jobs",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "description": "Provider-agnostic background-job queue port with in-memory, Trigger.dev, Inngest, pg-boss, and BullMQ drivers. Billing/credit side-effects are enqueued, never inline.",
   "license": "Apache-2.0",
   "repository": {

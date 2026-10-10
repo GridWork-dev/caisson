@@ -1,5 +1,17 @@
 # @caisson-sh/email
 
+## 1.0.1
+
+### Patch Changes
+
+- 5ca14b4: Update nodemailer to 10.x for security advisories. nodemailer 10 requires Node.js 20 or newer
+  (Bun is supported), and the package now declares that in `engines`. The SMTP driver's options are
+  unchanged.
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+
 ## 1.0.0
 
 ### Major Changes

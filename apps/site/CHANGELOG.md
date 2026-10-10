@@ -1,5 +1,34 @@
 # @caisson-sh/site
 
+## 0.5.1
+
+### Patch Changes
+
+- 304851a: Correct first-contact documentation: generated projects now tell you to run `bun run test` (bare `bun test` also picks up built output), the WORM retention copy states that GOVERNANCE mode can be bypassed by a principal with the bypass-governance permission while COMPLIANCE mode cannot, and package READMEs no longer refer to product editions or call the drizzle-orm `.forceRLS()` change an issue.
+- bd2f5aa: Fix the documented generator command. `bunx @caisson-sh/cli` starts the package's first bin,
+  `caisson`, which rejects the generator flags, so the README and the docs now run the generator as
+  `bunx --package @caisson-sh/cli create-caisson` (or `npx --package @caisson-sh/cli create-caisson`
+  under Node). The pinned-install example now uses versions that exist on npm.
+- c3bbcbe: Homepage and marketplace copy now claim audit evidence rather than audit readiness, count five
+  module families (the whole-catalog Everything set is no longer counted as a sixth), take the base
+  package count from the base list, and no longer say every module has a live demo.
+- 1157153: The WORM storage copy on the home, compliance and provenance pages no longer says the escalation to
+  COMPLIANCE mode happens "at launch". The package provides the escalation; the adopter decides when
+  to use it.
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [304851a]
+- Updated dependencies [e58ddc3]
+- Updated dependencies [5ca14b4]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/audit-worm@2.2.6
+  - @caisson-sh/email@1.0.1
+  - @caisson-sh/ai-meter@1.1.5
+  - @caisson-sh/local-store@1.1.4
+  - @caisson-sh/prompt-registry@1.1.4
+  - @caisson-sh/ui-pro@0.3.10
+  - @caisson-sh/demo-registry@0.2.18
+
 ## 0.5.0
 
 ### Minor Changes

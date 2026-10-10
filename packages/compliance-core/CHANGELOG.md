@@ -1,5 +1,19 @@
 # @caisson-sh/compliance-core
 
+## 0.7.4
+
+### Patch Changes
+
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [304851a]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/field-crypto@1.1.4
+  - @caisson-sh/frameworks-pack@0.8.4
+  - @caisson-sh/oscal-spine@0.2.4
+  - @caisson-sh/risk-register@0.3.7
+
 ## 0.7.3
 
 ### Patch Changes

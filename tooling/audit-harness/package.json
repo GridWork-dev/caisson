@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/audit-harness",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "description": "Cross-domain audit/validate harness (ADR-0134, generalizes ADR-0101): audit surface manifest + append-only reconciling ledger + workflow-scope guard + high-risk /validate spine (Challenger port, majority-kills, default-to-refuted). Internal engineering tooling — NON-BLOCKING, not a sellable module.",
   "license": "Apache-2.0",
