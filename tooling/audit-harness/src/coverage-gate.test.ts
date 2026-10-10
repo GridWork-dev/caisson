@@ -64,6 +64,8 @@ const IGNORE_GLOBS: readonly string[] = [
   "trivy.yaml",
   ".trivyignore.yaml",
   "osv-scanner.toml",
+  // the leak scan's reviewed-binaries list: file paths with their MIME types, nothing else
+  ".leak-scan-binaries",
   // repo/CI meta-config — mechanical, no secrets, not a product surface
   ".githooks/**",
   ".github/CODEOWNERS",

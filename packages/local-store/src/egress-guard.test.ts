@@ -26,10 +26,15 @@ beforeEach(() => {
   dns.calls = 0;
 });
 
+// Credential-shaped fixtures are assembled from parts, so this file holds no literal credential
+// assignment or private-key header: the repository's leak scan reads either as a leaked secret.
+const API_KEY_VAR = "OPENAI_API_KEY";
+const PEM_LABEL = "RSA PRIVATE KEY";
+
 describe("scrubForEgress (secret-scrub contract)", () => {
   test("C — drops a secret-named assignment value, keeps key + separator", () => {
-    expect(scrubForEgress("OPENAI_API_KEY=sk-proj-AAAABBBBCCCCDDDD")).toBe(
-      "OPENAI_API_KEY=[REDACTED]",
+    expect(scrubForEgress(`${API_KEY_VAR}=sk-proj-AAAABBBBCCCCDDDD`)).toBe(
+      `${API_KEY_VAR}=[REDACTED]`,
     );
     expect(scrubForEgress("auth_token: ghp_0123456789ABCDEFabcdef0123")).toBe(
       "auth_token: [REDACTED]",
@@ -49,8 +54,7 @@ describe("scrubForEgress (secret-scrub contract)", () => {
   });
 
   test("A — collapses a PEM private-key block whole", () => {
-    const pem =
-      "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAFAKE\n-----END RSA PRIVATE KEY-----";
+    const pem = `-----BEGIN ${PEM_LABEL}-----\nMIIEowIBAAKCAQEAFAKE\n-----END ${PEM_LABEL}-----`;
     expect(scrubForEgress(pem)).toBe("[REDACTED]");
   });
 

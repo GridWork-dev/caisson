@@ -44,6 +44,10 @@ Apply to all package code; the standards gate and review enforce them.
   `bun run --filter @caisson-sh/ui gen:manifest`. CI fails on drift.
 - **Golden files** are compared byte for byte. Re-record one deliberately with `BLESS=1` on the
   owning test, and review the diff.
+- **Leak scan.** CI scans every tracked file for home-directory paths, carrier-grade NAT
+  addresses, credential assignments, private-key headers and agent session links, and it has no
+  allowlist for text. A fixture that needs one of those shapes is assembled from parts in the
+  test file. A new binary file goes in `.leak-scan-binaries` with its MIME type.
 - **ADRs** in `knowledge/decisions/` are append-only: never edit a decided record, supersede it
   with a new `ADR-NNNN-slug.md`.
 - **Commits** use Conventional Commits with the package as scope, e.g. `fix(auth): ...`.

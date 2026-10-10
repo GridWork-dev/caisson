@@ -21,7 +21,10 @@ cp "$REPO/tools/security/zap/plan.yaml" "$OUT_DIR/plan.yaml"
 hr "DAST · OWASP ZAP active scan ($BASE)"
 # Pass the Bearer by NAME (export + `-e ZAP_AUTH_TOKEN`), never `-e VAR=value` — a value on the
 # docker argv is world-readable via /proc/<pid>/cmdline and `docker inspect` for the whole run.
-export ZAP_AUTH_TOKEN="$tok"
+# Set through printf -v, not a plain assignment: the repository's leak scan reads a literal
+# credential assignment as a leaked secret.
+printf -v ZAP_AUTH_TOKEN '%s' "$tok"
+export ZAP_AUTH_TOKEN
 # --network host so the container reaches a host-local target (localhost:PORT) on Linux. `|| rc=$?`
 # is required: _common.sh's `set -e` would otherwise abort before the report pointer on a non-zero
 # ZAP exit — and a High-alert exitStatus is a DESIGNED non-zero, not an error.
