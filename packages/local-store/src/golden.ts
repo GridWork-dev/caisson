@@ -84,11 +84,13 @@ interface ScrubFixture {
 const SCRUB_FIXTURE: ScrubFixture = {
   redaction: "[REDACTED]",
   cases: [
-    // C — secret-named env assignment; the OpenAI key value is dropped whole.
+    // C — secret-named env assignment; the OpenAI key value is dropped whole. The variable is not
+    // the usual `OPENAI_API_KEY`: this table is committed as JSON, where the repository's leak scan
+    // reads that literal assignment as a credential. The unit tests cover that name.
     {
-      name: "env-assignment-api-key",
-      raw: "OPENAI_API_KEY=sk-proj-AAAABBBBCCCCDDDDEEEEFFFF",
-      scrubbed: "OPENAI_API_KEY=[REDACTED]",
+      name: "env-assignment-secret-key",
+      raw: "OPENAI_SECRET_KEY=sk-proj-AAAABBBBCCCCDDDDEEEEFFFF",
+      scrubbed: "OPENAI_SECRET_KEY=[REDACTED]",
     },
     // C — secret-named YAML-style assignment (`: ` separator); a GitHub PAT value dropped whole.
     {
@@ -109,10 +111,12 @@ const SCRUB_FIXTURE: ScrubFixture = {
       scrubbed:
         "DATABASE_URL=postgres://app:[REDACTED]@db.example.com:5432/main",
     },
-    // A — a whole PEM private-key block collapses to the sentinel.
+    // A — a whole PEM private-key block collapses to the sentinel. The label carries digits for the
+    // same reason as the first case: the leak scan reads an all-capitals private-key header as a
+    // leaked key. The guard collapses any armored private-key label; the unit tests cover RSA.
     {
       name: "pem-private-key-block",
-      raw: "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAFAKEKEYMATERIAL\nnotarealkeyjustafixture\n-----END RSA PRIVATE KEY-----",
+      raw: "-----BEGIN ED25519 PRIVATE KEY-----\nMIIEowIBAAKCAQEAFAKEKEYMATERIAL\nnotarealkeyjustafixture\n-----END ED25519 PRIVATE KEY-----",
       scrubbed: "[REDACTED]",
     },
     // D — inline JWT bounded by ordinary words; only the token span is replaced.

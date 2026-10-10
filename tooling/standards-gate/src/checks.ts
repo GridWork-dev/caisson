@@ -435,7 +435,7 @@ function tokenizeNormalized(src: string): { norm: string; count: number } {
     toks.push(scanner.getTokenText());
     k = scanner.scan();
   }
-  return { norm: toks.join(""), count: toks.length };
+  return { norm: toks.join("\u0001"), count: toks.length };
 }
 
 const COPY_SKIP =

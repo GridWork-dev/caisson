@@ -60,7 +60,7 @@ export function isPrivateAddress(hostname: string): boolean {
     a === 10 || // 10/8 private
     (a === 172 && b >= 16 && b <= 31) || // 172.16/12 private
     (a === 192 && b === 168) || // 192.168/16 private
-    (a === 100 && b >= 64 && b <= 127) || // 100.64/10 CGNAT (Tailscale tailnet; Alibaba metadata 100.100.100.200)
+    (a === 100 && b >= 64 && b <= 127) || // 100.64/10 CGNAT (Tailscale tailnet; Alibaba Cloud metadata sits inside it)
     (a === 198 && (b === 18 || b === 19)) || // 198.18/15 benchmarking (non-routable)
     (a === 169 && b === 254) // 169.254/16 link-local (incl. cloud metadata 169.254.169.254)
   );

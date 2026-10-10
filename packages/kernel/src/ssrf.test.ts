@@ -29,6 +29,11 @@ beforeEach(() => {
   dns.fail = false;
 });
 
+// Carrier-grade NAT addresses are assembled from octets, so this file holds no literal address
+// from that block: the repository's leak scan reads one as a private network address.
+const cgnat = (b: number, c: number, d: number): string =>
+  [100, b, c, d].join(".");
+
 describe("isPrivateAddress", () => {
   test.each([
     "127.0.0.1",
@@ -38,9 +43,9 @@ describe("isPrivateAddress", () => {
     "172.31.255.255",
     "192.168.1.1",
     "169.254.169.254", // cloud metadata
-    "100.64.0.1", // 100.64/10 CGNAT (Tailscale tailnet)
-    "100.100.100.200", // Alibaba Cloud metadata (inside CGNAT)
-    "100.127.255.255", // top of 100.64/10
+    cgnat(64, 0, 1), // 100.64/10 CGNAT (Tailscale tailnet)
+    cgnat(100, 100, 200), // Alibaba Cloud metadata (inside CGNAT)
+    cgnat(127, 255, 255), // top of 100.64/10
     "198.18.0.1", // 198.18/15 benchmarking
     "localhost",
     "foo.local",

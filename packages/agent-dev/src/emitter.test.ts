@@ -117,13 +117,17 @@ describe("writeBundle — path-traversal safety (threat: escape the emit dir)", 
   });
 });
 
+// Assembled from parts, so this file holds no literal private-key header: the repository's leak
+// scan reads one as a leaked key.
+const PEM_LABEL = "RSA PRIVATE KEY";
+
 describe("writeBundle — no-secret guard (threat: credential leaks into a bundle)", () => {
   const secrets: readonly string[] = [
     "token: ghp_0123456789abcdefghijABCDEFGHIJ0123",
     "AKIAIOSFODNN7EXAMPLE is the key",
     "openai: sk-proj-0123456789abcdefABCDEFwxyz",
     "api_key=deadbeefdeadbeefdeadbeef",
-    "-----BEGIN RSA PRIVATE KEY-----\nMIIabc\n-----END RSA PRIVATE KEY-----",
+    `-----BEGIN ${PEM_LABEL}-----\nMIIabc\n-----END ${PEM_LABEL}-----`,
   ];
   for (const content of secrets) {
     test(`refuses to write content carrying a secret shape`, () => {

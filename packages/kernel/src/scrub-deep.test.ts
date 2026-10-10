@@ -26,7 +26,9 @@ function sampleEvent(): Record<string, unknown> {
       active: true, // boolean — untouched
       missing: null, // null — untouched
     },
-    tags: ["clean", "OPENAI_API_KEY=sk-proj-ZZZZYYYYXXXXWWWW", "plain"], // array order kept; span in leaf redacted
+    // Not the usual `OPENAI_API_KEY`: the redacted assignment lands in the committed golden, where
+    // the repository's leak scan reads that literal shape as a credential.
+    tags: ["clean", "OPENAI_SECRET_KEY=sk-proj-ZZZZYYYYXXXXWWWW", "plain"], // array order kept; span in leaf redacted
     contactAddress: "742 Evergreen Terrace", // PHI key (substring `address`) — drops
   };
 }

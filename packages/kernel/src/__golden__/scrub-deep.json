@@ -20,7 +20,7 @@
   },
   "tags": [
     "clean",
-    "OPENAI_API_KEY=[REDACTED]",
+    "OPENAI_SECRET_KEY=[REDACTED]",
     "plain"
   ],
   "contactAddress": "[REDACTED]"

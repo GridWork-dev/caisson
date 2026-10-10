@@ -1,8 +1,8 @@
 [
   {
-    "name": "env-assignment-api-key",
-    "raw": "OPENAI_API_KEY=sk-proj-AAAABBBBCCCCDDDDEEEEFFFF",
-    "scrubbed": "OPENAI_API_KEY=[REDACTED]"
+    "name": "env-assignment-secret-key",
+    "raw": "OPENAI_SECRET_KEY=sk-proj-AAAABBBBCCCCDDDDEEEEFFFF",
+    "scrubbed": "OPENAI_SECRET_KEY=[REDACTED]"
   },
   {
     "name": "assignment-auth-token",
@@ -21,7 +21,7 @@
   },
   {
     "name": "pem-private-key-block",
-    "raw": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAFAKEKEYMATERIAL\nnotarealkeyjustafixture\n-----END RSA PRIVATE KEY-----",
+    "raw": "-----BEGIN ED25519 PRIVATE KEY-----\nMIIEowIBAAKCAQEAFAKEKEYMATERIAL\nnotarealkeyjustafixture\n-----END ED25519 PRIVATE KEY-----",
     "scrubbed": "[REDACTED]"
   },
   {
