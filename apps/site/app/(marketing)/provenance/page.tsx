@@ -106,7 +106,7 @@ const CONTROLS: readonly {
   {
     icon: "worm",
     title: "WORM evidence storage",
-    body: "Evidence buckets ship with S3 Object Lock in GOVERNANCE mode and a default retention, with a typed, recorded escalation to COMPLIANCE mode at launch. Inside the window an object cannot be overwritten or deleted through any normal path, not by a bug, not by an ordinary operator. In GOVERNANCE mode only a principal holding the bypass-governance permission can remove it; COMPLIANCE mode removes that path too.",
+    body: "Evidence buckets ship with S3 Object Lock in GOVERNANCE mode and a default retention, with a typed, recorded escalation to COMPLIANCE mode when you choose it. Inside the window an object cannot be overwritten or deleted through any normal path, not by a bug, not by an ordinary operator. In GOVERNANCE mode only a principal holding the bypass-governance permission can remove it; COMPLIANCE mode removes that path too.",
     proof: "delete-object  →  AccessDenied: WORM-protected until 2033-06-27Z",
   },
   {
