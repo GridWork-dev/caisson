@@ -1,4 +1,4 @@
-# @caisson/local-inference
+# @caisson-sh/local-inference
 
 ## 0.2.2
 

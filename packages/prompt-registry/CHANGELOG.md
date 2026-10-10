@@ -1,4 +1,4 @@
-# @caisson/prompt-registry
+# @caisson-sh/prompt-registry
 
 ## 1.1.3
 

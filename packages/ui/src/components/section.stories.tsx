@@ -8,7 +8,7 @@ const meta = {
   tags: ["autodocs"],
   args: {
     eyebrow: "Compliance",
-    title: "Ship audit-ready by default",
+    title: "Start with the evidence in place",
     lede: "Every package composes onto the same tenancy-RLS + WORM-audit floor.",
     children: "Section body content.",
   },

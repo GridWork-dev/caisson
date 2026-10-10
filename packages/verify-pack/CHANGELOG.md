@@ -1,4 +1,4 @@
-# @caisson/verify-pack
+# @caisson-sh/verify-pack
 
 ## 0.2.5
 

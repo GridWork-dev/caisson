@@ -6,7 +6,7 @@ const ITEMS = [
   {
     id: "a",
     trigger: "What is Caisson?",
-    content: "A composable base plus six commercial bundles.",
+    content: "A composable base plus five module families.",
   },
   {
     id: "b",

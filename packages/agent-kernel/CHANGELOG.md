@@ -1,4 +1,4 @@
-# @caisson/agent-kernel
+# @caisson-sh/agent-kernel
 
 ## 0.8.1
 

@@ -1,4 +1,4 @@
-# @caisson/demos
+# @caisson-sh/demos
 
 ## 0.2.0
 

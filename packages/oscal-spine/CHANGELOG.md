@@ -1,4 +1,4 @@
-# @caisson/oscal-spine
+# @caisson-sh/oscal-spine
 
 ## 0.2.3
 

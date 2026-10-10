@@ -11,6 +11,7 @@ import {
   lightTheme,
 } from "@caisson-sh/ui/tokens";
 import { loadBaseManifest } from "@caisson-sh/ds-manifest";
+import { isMainModule } from "@caisson-sh/kernel/node";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
@@ -34,6 +35,6 @@ export function startDiscovery(transport?: Transport): Promise<Server> {
   return runDiscoveryServer(discoveryDeps(), transport);
 }
 
-if (import.meta.main) {
+if (isMainModule(import.meta)) {
   void startDiscovery();
 }

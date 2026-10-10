@@ -1,4 +1,4 @@
-# @caisson/audit-harness
+# @caisson-sh/audit-harness
 
 ## 1.0.4
 

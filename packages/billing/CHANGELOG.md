@@ -1,4 +1,4 @@
-# @caisson/billing
+# @caisson-sh/billing
 
 ## 0.6.10
 

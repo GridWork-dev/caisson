@@ -10,7 +10,7 @@ const meta = {
     items: [
       {
         question: "Is Caisson open-core?",
-        answer: "The base substrate is Apache-2.0; bundles are commercial.",
+        answer: "No. Every package is Apache-2.0.",
       },
       {
         question: "Does it support Bun?",

@@ -1,4 +1,4 @@
-# @caisson/agent-trajectory
+# @caisson-sh/agent-trajectory
 
 ## 0.6.2
 

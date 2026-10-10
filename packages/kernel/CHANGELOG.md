@@ -1,4 +1,4 @@
-# @caisson/kernel
+# @caisson-sh/kernel
 
 ## 0.10.1
 

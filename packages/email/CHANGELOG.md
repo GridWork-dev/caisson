@@ -1,4 +1,4 @@
-# @caisson/email
+# @caisson-sh/email
 
 ## 1.0.0
 

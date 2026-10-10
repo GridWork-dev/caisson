@@ -12,7 +12,7 @@ const meta = {
   args: {
     eyebrow: "Caisson",
     title: "The compliance wedge under a production-rigor umbrella",
-    lede: "A composable base plus six bundles, rebuilt clean from proven GridWork repos.",
+    lede: "One audited base and five module families, with a generator.",
   },
 } satisfies Meta<typeof Hero>;
 

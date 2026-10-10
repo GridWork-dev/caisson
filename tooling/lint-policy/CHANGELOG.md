@@ -1,4 +1,4 @@
-# @caisson/eslint-config
+# @caisson-sh/lint-policy
 
 ## 0.2.2
 

@@ -1,4 +1,4 @@
-# @caisson/org-controls
+# @caisson-sh/org-controls
 
 ## 0.4.3
 

@@ -33,7 +33,7 @@ product
 
 ## Product Purpose
 
-Caisson is a compliance-grade infrastructure library (composable base + six bundles + a generator).
+Caisson is a compliance-grade infrastructure library (composable base + five module families + a generator).
 The design system exists to make every Caisson surface **read as production-grade, not as a marketing
 template** — because for this buyer, looking trustworthy IS a feature claim. The token contract gives
 two things at once: coherence across marketing/docs/dashboards/editions, and re-skinnability for

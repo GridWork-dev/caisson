@@ -1,4 +1,4 @@
-# @caisson/guardrails
+# @caisson-sh/guardrails
 
 ## 0.5.2
 

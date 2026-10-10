@@ -1,4 +1,4 @@
-# @caisson/brand
+# @caisson-sh/brand
 
 ## 0.1.7
 

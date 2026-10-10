@@ -1,4 +1,4 @@
-# @caisson/observability
+# @caisson-sh/observability
 
 ## 0.3.10
 

@@ -1,4 +1,4 @@
-# @caisson/ai-meter
+# @caisson-sh/ai-meter
 
 ## 1.1.4
 
