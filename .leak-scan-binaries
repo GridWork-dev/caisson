@@ -1,0 +1,4 @@
+# Tracked binary files the leak scan cannot read as text. One "path mime/type" pair per line; the
+# scan fails if a listed file stops having that type, and on any binary file not listed here.
+apps/demos/public/fonts/mona-zero.woff2 font/woff2
+apps/site/public/fonts/mona-zero.woff2 font/woff2

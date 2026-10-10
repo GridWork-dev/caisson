@@ -1,20 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Low-maintenance dependency updates: one monthly batch, non-major updates automerge on green CI, majors wait on the Dependency Dashboard, security fixes arrive any time.",
+  "description": "Dependency updates follow the shared preset this file extends, pinned to a commit: one Tuesday batch, majors hold the batch for review, security fixes arrive any time. The settings below are the ones specific to this repository.",
   "extends": [
-    "config:recommended",
-    ":semanticCommits",
-    "helpers:pinGitHubActionDigests",
+    "github>GridWork-dev/.github#f1d50cff144875a4a713955a3bd354253ddf0d38",
     "docker:pinDigests"
   ],
-  "timezone": "America/New_York",
-  "schedule": ["* 0-6 1 * *"],
-  "minimumReleaseAge": "7 days",
-  "dependencyDashboard": true,
   "rangeStrategy": "replace",
-  "commitMessagePrefix": "chore(deps):",
-  "labels": ["dependencies"],
-  "prConcurrentLimit": 3,
   "ignorePaths": [
     "**/node_modules/**",
     "**/bower_components/**",
@@ -23,29 +14,16 @@
   ],
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["* 0-6 1 * *"],
+    "schedule": ["on tuesday"],
     "automerge": true,
     "automergeType": "pr"
   },
-  "vulnerabilityAlerts": {
-    "enabled": true,
-    "schedule": ["at any time"],
-    "addLabels": ["security"]
-  },
   "packageRules": [
     {
-      "description": "Every non-major update shares one monthly branch and merges its PR when CI is green.",
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "groupName": "monthly non-major updates",
-      "groupSlug": "monthly-non-major",
-      "automerge": true,
-      "automergeType": "pr"
-    },
-    {
-      "description": "Majors never merge on their own; approve them from the Dependency Dashboard.",
-      "matchUpdateTypes": ["major"],
-      "dependencyDashboardApproval": true,
-      "addLabels": ["major-bump"]
+      "description": "main takes changes only through pull requests, so the weekly batch merges its pull request once CI is green instead of pushing the branch to main.",
+      "matchPackageNames": ["*"],
+      "automergeType": "pr",
+      "platformAutomerge": true
     },
     {
       "description": "Generator templates pin versions deliberately and are golden-file-tested; they move by hand with a golden re-record.",

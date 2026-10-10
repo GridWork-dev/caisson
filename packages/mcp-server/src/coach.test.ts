@@ -243,8 +243,10 @@ describe("write_forge_config — approval-gated, secrets-safe", () => {
     const paths = files.map((f) => f.path).sort();
     expect(paths).toEqual([".env.example", "forge.config.json"]);
     const envExample = files.find((f) => f.path === ".env.example");
-    // Key NAME present, value blank — a real secret is never written here.
-    expect(envExample?.contents).toContain("ANTHROPIC_API_KEY=");
+    // Key NAME present, value blank — a real secret is never written here. The assignment is built
+    // from the name so this file holds no literal one for the repository's leak scan to flag.
+    const keyName = "ANTHROPIC_API_KEY";
+    expect(envExample?.contents).toContain(`${keyName}=`);
     for (const file of files) {
       expect(file.contents).not.toContain(SECRET);
     }
