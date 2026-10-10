@@ -154,7 +154,9 @@ const PATH_ID_PLACEHOLDER = ":id";
 
 const UUID_SEGMENT =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const EMAIL_SEGMENT = /^[^\s@/]+@[^\s@/]+\.[^\s@/]+$/;
+// The domain part is split at its first dot after the first character, so there is one way to match
+// it. `@[^\s@/]+\.[^\s@/]+` accepts the same segments but retries at every dot on a near-miss.
+const EMAIL_SEGMENT = /^[^\s@/]+@[^\s@/][^\s@/.]*\.[^\s@/]+$/;
 const NUMERIC_SEGMENT = /^\d+$/;
 /** Long opaque hex/base64-ish token — a bare id/secret, never a route template segment. */
 const TOKEN_SEGMENT = /^[A-Za-z0-9+/_-]{16,}=*$/;

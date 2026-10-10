@@ -45,13 +45,23 @@ export function serializeCoverage(rows: readonly CoverageRow[]): string {
       (r) =>
         `[[cell]]\n` +
         `round = ${String(r.round)}\n` +
-        `domain = "${r.domain.replace(/"/g, '\\"')}"\n` +
-        `dimension = "${r.dimension.replace(/"/g, '\\"')}"\n` +
+        `domain = ${JSON.stringify(r.domain)}\n` +
+        `dimension = ${JSON.stringify(r.dimension)}\n` +
         `files_scanned = ${String(r.filesScanned)}\n` +
         `findings = ${String(r.findings)}\n` +
         `executed = ${r.executed ? "true" : "false"}\n`,
     );
   return `${COVERAGE_HEADER}\n${tables.join("\n")}`;
+}
+
+/** Read back a quoted value written by `JSON.stringify`; a hand-edited one that fails to parse is
+ *  kept without its quotes. */
+function unquote(quoted: string): string {
+  try {
+    return String(JSON.parse(quoted));
+  } catch {
+    return quoted.slice(1, -1);
+  }
 }
 
 export function parseCoverage(toml: string): CoverageRow[] {
@@ -81,8 +91,10 @@ export function parseCoverage(toml: string): CoverageRow[] {
       cur = {};
       continue;
     }
-    const m = line.match(/^(\w+)\s*=\s*(?:"(.*)"|(\S+))$/);
-    if (m && cur && m[1] !== undefined) cur[m[1]] = m[2] ?? m[3] ?? "";
+    const m = line.match(/^(\w+)\s*=\s*(?:(".*")|(\S+))$/);
+    if (m && cur && m[1] !== undefined) {
+      cur[m[1]] = m[2] === undefined ? (m[3] ?? "") : unquote(m[2]);
+    }
   }
   flush();
   return out;

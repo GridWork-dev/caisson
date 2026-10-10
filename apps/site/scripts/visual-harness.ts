@@ -453,7 +453,7 @@ async function shootOne(
       }
       if (!res || !res.ok())
         throw new Error(`HTTP ${res?.status() ?? "no response"}`);
-      if (page.url().includes("cloudflareaccess.com"))
+      if (new URL(page.url()).hostname.endsWith(".cloudflareaccess.com"))
         throw new Error("bounced to the Cloudflare Access interstitial");
       await page.evaluate((theme) => {
         document.documentElement.setAttribute("data-theme", theme);
