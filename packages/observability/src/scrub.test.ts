@@ -414,6 +414,24 @@ describe("scrubPath", () => {
   test("leaves a clean static path unchanged", () => {
     expect(scrubPath("/api/users/list")).toBe("/api/users/list");
   });
+
+  test("the email shape: a dot is needed after the first domain character", () => {
+    expect(scrubPath("/u/a@b.c.d")).toBe("/u/:id");
+    expect(scrubPath("/u/a@.b.c")).toBe("/u/:id");
+    expect(scrubPath("/u/a@..c")).toBe("/u/:id");
+    expect(scrubPath("/u/a@.c")).toBe("/u/a@.c");
+    expect(scrubPath("/u/a@b.")).toBe("/u/a@b.");
+    expect(scrubPath("/u/a@b.c@d")).toBe("/u/a@b.c@d");
+    expect(scrubPath("/u/@b.c")).toBe("/u/@b.c");
+  });
+
+  test("a near-miss email segment is scanned in linear time", () => {
+    // Tens of seconds when the pattern retries at every one of the 200,000 dots.
+    const path = `/u/!@${"!.".repeat(200_000)}@`;
+    const started = performance.now();
+    expect(scrubPath(path)).toBe(path);
+    expect(performance.now() - started).toBeLessThan(2_000);
+  });
 });
 
 /** A minimal `SpanProcessor` double that records every span handed to `onEnd`. */

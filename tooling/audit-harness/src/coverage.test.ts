@@ -25,6 +25,7 @@ describe("coverage.toml round-trip (ADR-0233, task 4)", () => {
       row(),
       row({ dimension: "D2", filesScanned: 12, findings: 1 }),
       row({ round: 2, dimension: "D7", executed: false, filesScanned: 0 }),
+      row({ round: 3, domain: 'a "quoted" path\\with\\backslashes' }),
     ];
     const parsed = parseCoverage(serializeCoverage(rows));
     expect(parsed).toEqual(

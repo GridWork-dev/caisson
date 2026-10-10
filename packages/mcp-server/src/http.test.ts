@@ -222,6 +222,25 @@ describe("HTTP transport binding (ADR-0161)", () => {
     });
   });
 
+  test("the Authorization scheme: extra spaces are accepted, a wrong or unspaced scheme is 401", async () => {
+    const { server, url } = await listen();
+    openServers.push(server);
+
+    const statusFor = async (authorization: string): Promise<number> => {
+      const res = await fetchWithTimeout(url, {
+        method: "POST",
+        headers: { "content-type": "application/json", authorization },
+        body: "{}",
+      });
+      await res.text();
+      return res.status;
+    };
+    expect(await statusFor(`Bearer   ${TOKEN_A}`)).not.toBe(401);
+    expect(await statusFor(`bearer ${TOKEN_A}`)).toBe(401);
+    expect(await statusFor(`Bearer${TOKEN_A}`)).toBe(401);
+    expect(await statusFor("Bearer ")).toBe(401);
+  });
+
   test("security-floor headers are present on the authenticated SDK success path", async () => {
     const { server, url } = await listen();
     openServers.push(server);

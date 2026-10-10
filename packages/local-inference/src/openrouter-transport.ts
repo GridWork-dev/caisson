@@ -61,6 +61,13 @@ export function tokenQuantity(usage: z.infer<typeof wireUsageSchema>): number {
   return Math.floor(usage?.total_tokens ?? 0);
 }
 
+/** Drop trailing slashes with a plain scan; `/\/+$/` retries from every slash in a long run. */
+export function withoutTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value[end - 1] === "/") end -= 1;
+  return value.slice(0, end);
+}
+
 /** Config for the OpenRouter rented transport (ADR-0201). */
 export interface OpenRouterRentedTransportConfig {
   /** The egress guard — every request routes through `guard.fetchAs("rented-backend", …)`,
@@ -107,7 +114,7 @@ export function createOpenRouterRentedTransport(
       { received: dimensions },
     );
   }
-  const baseUrl = (config.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
+  const baseUrl = withoutTrailingSlashes(config.baseUrl ?? DEFAULT_BASE_URL);
   // Fail at composition, not first call: the endpoint must be sanctioned as a `rented-backend`
   // sink SPECIFICALLY (mirrors the RentedInferenceBackend construction gate — see the file header).
   config.guard.assertAllowedFor(baseUrl, "rented-backend");
