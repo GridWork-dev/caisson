@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/demo-registry",
-  "version": "0.2.17",
+  "version": "0.2.18",
   "private": true,
   "description": "A private cross-package component-demo registry: one Zod-typed catalog of every @caisson-sh/ui, @caisson-sh/ui-pro, and per-package ./ui surface, with sample data and a live demo renderer per entry. Never published; apps/site's /ui gallery reads it. Kept out of the registry index.",
   "license": "Apache-2.0",

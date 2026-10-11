@@ -1,5 +1,16 @@
 # @caisson-sh/trust-page
 
+## 0.3.7
+
+### Patch Changes
+
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/artifact-render@0.2.7
+  - @caisson-sh/compliance-core@0.7.4
+
 ## 0.3.6
 
 ### Patch Changes

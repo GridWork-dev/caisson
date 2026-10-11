@@ -1,5 +1,15 @@
 # @caisson-sh/agent-runner
 
+## 0.3.4
+
+### Patch Changes
+
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/agent-trajectory@0.6.3
+
 ## 0.3.3
 
 ### Patch Changes

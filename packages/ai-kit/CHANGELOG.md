@@ -1,5 +1,26 @@
 # @caisson-sh/ai-kit
 
+## 0.6.7
+
+### Patch Changes
+
+- 5ca14b4: Update the Model Context Protocol SDK used by the test suite to 1.31. Development-only: the
+  published package's runtime is unchanged.
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [304851a]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/field-crypto@1.1.4
+  - @caisson-sh/tenancy-rls@0.6.3
+  - @caisson-sh/agent-trajectory@0.6.3
+  - @caisson-sh/ai-config@0.3.12
+  - @caisson-sh/ai-meter@1.1.5
+  - @caisson-sh/credits@0.6.5
+  - @caisson-sh/guardrails@0.5.3
+  - @caisson-sh/jobs@0.7.6
+  - @caisson-sh/prompt-registry@1.1.4
+
 ## 0.6.6
 
 ### Patch Changes

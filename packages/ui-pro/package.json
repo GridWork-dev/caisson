@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/ui-pro",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "description": "Advanced data-ops and compliance UI components layered on the @caisson-sh/ui base: an advanced data grid, a virtualized tree, an operations matrix, a hash-chain audit timeline, a redaction-aware payload viewer, a type-to-confirm dialog, an advanced date-range picker, a dependency-free charts pack, a command palette, a redaction-aware diff viewer, and a kanban board.",
   "license": "Apache-2.0",
   "repository": {

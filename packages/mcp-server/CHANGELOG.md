@@ -1,5 +1,22 @@
 # @caisson-sh/mcp-server
 
+## 1.0.1
+
+### Patch Changes
+
+- e58ddc3: The HTTP transport reads the `Authorization` header with a prefix check instead of a regular
+  expression. The same headers are accepted and rejected as before.
+- 4954dc1: Fix the `create-caisson` and `caisson` commands and the local design-system discovery server doing
+  nothing on Node versions without `import.meta.main` (before 22.18, and 24.0 to 24.1): they exited 0
+  with no output. `@caisson-sh/kernel/node` now exports `isMainModule`, which these entries use to
+  tell that they were started directly.
+- 5ca14b4: Update the Model Context Protocol SDK to 1.31 for a security advisory.
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/ai-config@0.3.12
+
 ## 1.0.0
 
 ### Major Changes

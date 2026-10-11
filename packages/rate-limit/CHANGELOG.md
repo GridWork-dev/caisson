@@ -1,5 +1,19 @@
 # @caisson-sh/rate-limit
 
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies [e58ddc3]
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [304851a]
+- Updated dependencies [e58ddc3]
+- Updated dependencies [5ca14b4]
+  - @caisson-sh/mcp-server@1.0.1
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/tenancy-rls@0.6.3
+
 ## 0.2.2
 
 ### Patch Changes

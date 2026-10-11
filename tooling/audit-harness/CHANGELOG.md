@@ -1,5 +1,12 @@
 # @caisson-sh/audit-harness
 
+## 1.0.5
+
+### Patch Changes
+
+- 12c6867: The coverage gate ignores the repository's `.gridwork/project.toml`, a two-setting manifest read
+  by the maintainer's tooling. It holds no product code.
+
 ## 1.0.4
 
 ### Patch Changes
