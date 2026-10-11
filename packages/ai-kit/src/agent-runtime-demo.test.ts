@@ -386,8 +386,9 @@ describe("parent-SPEC demo — start/park/approve/resume/finish across the CLI +
       [runId],
     );
     expect(typeof rawParked[0]?.parked_state).toBe("string");
+    // Whole phrases only: a bare three-letter code turns up in base64 ciphertext by chance.
     expect(rawParked[0]?.parked_state as string).not.toContain("book_flight");
-    expect(rawParked[0]?.parked_state as string).not.toContain("SFO");
+    expect(rawParked[0]?.parked_state as string).not.toContain("flight to SFO");
 
     // --- approve: caisson run approve (direct DB, no MCP round-trip, S3 lock) -----------------
     const { jobs, enqueued } = capturingJobs();
