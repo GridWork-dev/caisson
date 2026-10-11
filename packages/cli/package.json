@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/cli",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "create-caisson generator: composes a tailored repo from the versioned module catalog; agent-drivable.",
   "license": "Apache-2.0",
   "repository": {

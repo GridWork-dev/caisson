@@ -1,5 +1,12 @@
 # @caisson-sh/standards-gate
 
+## 0.1.7
+
+### Patch Changes
+
+- Updated dependencies [304851a]
+  - @caisson-sh/tenancy-rls@0.6.3
+
 ## 0.1.6
 
 ### Patch Changes

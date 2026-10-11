@@ -1,5 +1,16 @@
 # @caisson-sh/auth
 
+## 0.4.7
+
+### Patch Changes
+
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [304851a]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/tenancy-rls@0.6.3
+
 ## 0.4.6
 
 ### Patch Changes

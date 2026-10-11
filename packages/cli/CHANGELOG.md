@@ -1,5 +1,30 @@
 # @caisson-sh/cli
 
+## 0.9.1
+
+### Patch Changes
+
+- 4954dc1: Fix the `create-caisson` and `caisson` commands and the local design-system discovery server doing
+  nothing on Node versions without `import.meta.main` (before 22.18, and 24.0 to 24.1): they exited 0
+  with no output. `@caisson-sh/kernel/node` now exports `isMainModule`, which these entries use to
+  tell that they were started directly.
+- 4ce1f03: Export the generator's `main(argv)` from `@caisson-sh/cli/create`, so another package can start
+  `create-caisson` programmatically under Node or Bun. Running the `create-caisson` bin is unchanged.
+- 304851a: Correct first-contact documentation: generated projects now tell you to run `bun run test` (bare `bun test` also picks up built output), the WORM retention copy states that GOVERNANCE mode can be bypassed by a principal with the bypass-governance permission while COMPLIANCE mode cannot, and package READMEs no longer refer to product editions or call the drizzle-orm `.forceRLS()` change an issue.
+- bd2f5aa: Fix the documented generator command. `bunx @caisson-sh/cli` starts the package's first bin,
+  `caisson`, which rejects the generator flags, so the README and the docs now run the generator as
+  `bunx --package @caisson-sh/cli create-caisson` (or `npx --package @caisson-sh/cli create-caisson`
+  under Node). The pinned-install example now uses versions that exist on npm.
+- 5ca14b4: Update the Model Context Protocol SDK to 1.31 and the generated Next.js starter to Next.js 16.3.8, both for security advisories.
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [304851a]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/tenancy-rls@0.6.3
+  - @caisson-sh/jobs@0.7.6
+  - @caisson-sh/migrate@0.2.16
+
 ## 0.9.0
 
 ### Minor Changes
