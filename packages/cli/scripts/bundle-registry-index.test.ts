@@ -7,7 +7,11 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { loadRegistryIndexFromFile } from "@caisson-sh/registry-schema";
-import { BUNDLED_INDEX, PACKAGES_DIR } from "./bundle-registry-index.ts";
+import {
+  BUNDLED_INDEX,
+  NOT_A_MODULE,
+  PACKAGES_DIR,
+} from "./bundle-registry-index.ts";
 
 function workspaceVersions(): Record<string, string> {
   const out: Record<string, string> = {};
@@ -19,7 +23,8 @@ function workspaceVersions(): Record<string, string> {
       version: string;
       private?: boolean;
     };
-    if (pkg.private !== true) out[pkg.name] = pkg.version;
+    if (pkg.private !== true && !NOT_A_MODULE.has(pkg.name))
+      out[pkg.name] = pkg.version;
   }
   return out;
 }

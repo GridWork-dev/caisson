@@ -83,6 +83,9 @@ function extendsBaseTsconfig(absDir: string): boolean {
   return false;
 }
 
+/** Published unscoped on purpose: `npm create caisson` resolves the bare name `create-caisson`. */
+const UNSCOPED_ALIASES = new Set(["create-caisson"]);
+
 function checkPackage(rel: string): {
   violations: Violation[];
   status: "ok" | "skip";
@@ -118,7 +121,7 @@ function checkPackage(rel: string): {
       detail: "has .ts source but no tsconfig.json",
     });
   }
-  if (!name.startsWith("@caisson-sh/")) {
+  if (!name.startsWith("@caisson-sh/") && !UNSCOPED_ALIASES.has(name)) {
     v.push({
       pkg: name,
       rule: "naming",
