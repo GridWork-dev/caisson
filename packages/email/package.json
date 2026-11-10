@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "@caisson-sh/kernel": "workspace:*",
-    "nodemailer": "^10.0.13",
+    "nodemailer": "^10.1.4",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-email": "^6.0.0"
