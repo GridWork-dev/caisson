@@ -1,5 +1,45 @@
 # @caisson-sh/demos
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [304851a]
+- Updated dependencies [e58ddc3]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/audit-worm@2.2.6
+  - @caisson-sh/field-crypto@1.1.4
+  - @caisson-sh/alerting@0.3.4
+  - @caisson-sh/local-inference@0.2.3
+  - @caisson-sh/access-review@0.3.7
+  - @caisson-sh/agent-kernel@0.8.2
+  - @caisson-sh/agent-runner@0.3.4
+  - @caisson-sh/agent-trajectory@0.6.3
+  - @caisson-sh/ai-meter@1.1.5
+  - @caisson-sh/artifact-render@0.2.7
+  - @caisson-sh/auth@0.4.7
+  - @caisson-sh/billing@0.6.11
+  - @caisson-sh/billing-orchestration@0.4.4
+  - @caisson-sh/compliance-core@0.7.4
+  - @caisson-sh/credits@0.6.5
+  - @caisson-sh/frameworks-pack@0.8.4
+  - @caisson-sh/guardrails@0.5.3
+  - @caisson-sh/local-privacy@0.2.3
+  - @caisson-sh/local-store@1.1.4
+  - @caisson-sh/local-sync@0.2.4
+  - @caisson-sh/org-controls@0.4.4
+  - @caisson-sh/oscal-spine@0.2.4
+  - @caisson-sh/prompt-registry@1.1.4
+  - @caisson-sh/retention-runner@0.2.4
+  - @caisson-sh/risk-register@0.3.7
+  - @caisson-sh/signing-primitive@0.4.4
+  - @caisson-sh/tool-exec@0.4.2
+  - @caisson-sh/trust-page@0.3.7
+  - @caisson-sh/ai-evals@0.5.4
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/artifact-render",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Shared render primitive for public-facing compliance artifacts: a readiness-language claim filter, allowlist-based field redaction, and citation-row rendering — the seam the ISO 27001 SoA generator and the trust-page generator both render through.",
   "license": "Apache-2.0",
   "repository": {

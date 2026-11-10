@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/local-privacy",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Local-first privacy gate: strict zero-egress policy parsing and the EgressGuard wrapper over the kernel fetchWithTimeout chokepoint.",
   "license": "Apache-2.0",
   "repository": {

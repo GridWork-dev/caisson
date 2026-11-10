@@ -1,5 +1,18 @@
 # @caisson-sh/demo-registry
 
+## 0.2.18
+
+### Patch Changes
+
+- Updated dependencies [12c6867]
+- Updated dependencies [304851a]
+  - @caisson-sh/audit-harness@1.0.5
+  - @caisson-sh/audit-worm@2.2.6
+  - @caisson-sh/ai-meter@1.1.5
+  - @caisson-sh/local-store@1.1.4
+  - @caisson-sh/prompt-registry@1.1.4
+  - @caisson-sh/ui-pro@0.3.10
+
 ## 0.2.17
 
 ### Patch Changes

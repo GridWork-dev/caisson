@@ -1,5 +1,17 @@
 # @caisson-sh/jobs
 
+## 0.7.6
+
+### Patch Changes
+
+- 5deb2d6: Require `@trigger.dev/sdk` 4.8.3 or newer, which fixes published security advisories. The README now warns that Inngest checks request signatures only in cloud mode.
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [304851a]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/tenancy-rls@0.6.3
+
 ## 0.7.5
 
 ### Patch Changes
