@@ -55,6 +55,24 @@ describe("renderEmailTemplate", () => {
     expect(rendered.html).toContain("2027-07-06");
     expect(rendered.text).toContain("burn first");
   });
+
+  // The plain-text fallback comes from html-to-text through react-email, so a dependency move can
+  // change what recipients read while every substring check above stays green.
+  const FOOTER =
+    "----------------------------------------\n\nCaisson, fail-closed by construction. This is a transactional email triggered by an action on your account, not a marketing message.";
+  const PLAIN_TEXT: { [K in EmailTemplateId]: string } = {
+    "magic-link": `Caisson\n\n\nSIGN IN TO CAISSON\n\nClick below to sign in. This link expires shortly and can only be used once.\n\nSign in ${URL}\n\nIf you didn't request this, you can safely ignore this email.\n\n${FOOTER}`,
+    "password-reset": `Caisson\n\n\nRESET YOUR PASSWORD\n\nSomeone requested a password reset for your Caisson account.\n\nReset password ${URL}\n\nIf you didn't request this, you can ignore this email and your password stays unchanged.\n\n${FOOTER}`,
+    "verify-email": `Caisson\n\n\nVERIFY YOUR EMAIL\n\nConfirm this is your email address to finish setting up password sign-in for your Caisson account.\n\nVerify email ${URL}\n\nIf you didn't create a Caisson account, you can ignore this email.\n\n${FOOTER}`,
+    "credits-expiring": `Caisson\n\n\nCREDITS EXPIRING SOON\n\n120 credits expire on 2027-07-06. They burn first automatically; top up or use them before then.\n\nView your credits ${URL}\n\nCredits roll over and each grant lives 12 months from issue. Anything unused on the expiry date is removed from your balance.\n\n${FOOTER}`,
+  };
+
+  for (const id of EMAIL_TEMPLATE_IDS) {
+    test(`${id}: plain-text fallback matches byte for byte`, async () => {
+      const rendered = await renderEmailTemplate(id, SAMPLE[id]);
+      expect(rendered.text).toBe(PLAIN_TEXT[id]);
+    });
+  }
 });
 
 describe("tryRenderEmailTemplate", () => {

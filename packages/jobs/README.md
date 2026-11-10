@@ -32,4 +32,7 @@ bun add @caisson-sh/jobs
   Inngest v4 singleton `skip` covers only already-executing runs, not the port's stronger queued-or-
   active guarantee, so this adapter throws whenever `singletonKey` is supplied. The caller serves
   `client.funcs` through its framework adapter. This package never reads `INNGEST_EVENT_KEY` or any
-  other ambient credential.
+  other ambient credential. Run the client in cloud mode on any endpoint others can reach: Inngest
+  checks request signatures only in cloud mode, so in dev mode anyone who can reach the endpoint
+  can send it requests, and Inngest parses them with zod 3, which has no limit on array issues
+  (CVE-2023-54404).

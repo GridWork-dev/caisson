@@ -32,6 +32,24 @@
 #                      batch), dev-only via jsdom + miniflare's exact 7.28.0 pin             -> >=7.29.0
 #   ip-address         GHSA-mwp4-54f8-5fhr / GHSA-22jq-vg5j-6vgg / GHSA-4xrf-jv44-h6hh (SSRF /
 #                      trust-boundary parse bypasses), runtime via express-rate-limit        -> >=10.3.1
+#   @react-email/render CVE-2026-93753 (deepmerge, through html-to-text 9), via react-email  -> >=2.2.0
+#                      Drop the override once react-email resolves to 6.11.6 or newer, which
+#                      declares this floor itself.
+#   body-parser        GHSA-27r3-jxmh-p828 (trailing-bytes DoS), via express                 -> >=2.4.0
+#                      Drop the override once express's own range starts at 2.4.0 or newer.
+#   qs                 GHSA-6pq8-jhm2-2vcw (stringify TypeError), via express                -> >=6.16.1
+#                      Drop the override once express's own range starts at 6.16.1 or newer.
+#   glob               GHSA-3g3m-2fjr-6pw4 (AbortSignal bypass), fixed only in the 14.x major -> >=14.0.2
+#                      Forces a new major on react-email, rimraf and
+#                      @joshwooding/vite-plugin-react-docgen-typescript. Drop the override once
+#                      each of them allows 14.x or has left the tree.
+#   minimatch          GHSA-g3hv-75wg-m249 (globparts DoS), fixed only in the 11.x major     -> >=11.0.1
+#                      Forces a new major on eslint, @eslint/config-array and
+#                      @typescript-eslint/typescript-estree. Drop the override once each of
+#                      them allows 11.x.
+#   launch-editor      GHSA-587h-7wmj-h5pm / GHSA-698v-4r3x-3vcv / GHSA-r825-w8mm-5pxw
+#                      (Windows argument handling), via @changesets/cli                      -> >=2.14.2
+#                      Drop the override once @changesets/cli's own range starts at 2.14.2 or newer.
 #
 # Every id below carries its reason and a dated review inline.
 
