@@ -1,5 +1,17 @@
 # @caisson-sh/observability
 
+## 0.3.11
+
+### Patch Changes
+
+- e58ddc3: `scrubPath` now checks a path segment for the email shape in linear time. A long segment with many
+  dots that was almost an email address used to take quadratic time. The same segments are replaced
+  with `:id` as before.
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+
 ## 0.3.10
 
 ### Patch Changes

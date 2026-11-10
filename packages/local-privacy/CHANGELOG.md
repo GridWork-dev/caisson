@@ -1,5 +1,14 @@
 # @caisson-sh/local-privacy
 
+## 0.2.3
+
+### Patch Changes
+
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+
 ## 0.2.2
 
 ### Patch Changes

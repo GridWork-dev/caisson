@@ -1,6 +1,6 @@
 {
   "name": "@caisson-sh/ai-evals",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Eval harness (defineEval) + grader taxonomy (exact / regex / json-shape / schema / model-graded + a fail-closed injection class) + a regression-vs-committed-baseline gate. Offline + deterministic (cassette-replayed judge).",
   "license": "Apache-2.0",
   "repository": {

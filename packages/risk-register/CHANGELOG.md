@@ -1,5 +1,17 @@
 # @caisson-sh/risk-register
 
+## 0.3.7
+
+### Patch Changes
+
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [304851a]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+  - @caisson-sh/audit-worm@2.2.6
+  - @caisson-sh/frameworks-pack@0.8.4
+
 ## 0.3.6
 
 ### Patch Changes

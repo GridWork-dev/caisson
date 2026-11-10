@@ -1,5 +1,14 @@
 # @caisson-sh/migrate
 
+## 0.2.16
+
+### Patch Changes
+
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+
 ## 0.2.15
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @caisson-sh/field-crypto
 
+## 1.1.4
+
+### Patch Changes
+
+- 304851a: Correct first-contact documentation: generated projects now tell you to run `bun run test` (bare `bun test` also picks up built output), the WORM retention copy states that GOVERNANCE mode can be bypassed by a principal with the bypass-governance permission while COMPLIANCE mode cannot, and package READMEs no longer refer to product editions or call the drizzle-orm `.forceRLS()` change an issue.
+- Updated dependencies [4954dc1]
+- Updated dependencies [fa815fc]
+- Updated dependencies [e58ddc3]
+  - @caisson-sh/kernel@0.10.2
+
 ## 1.1.3
 
 ### Patch Changes
