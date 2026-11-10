@@ -36,15 +36,6 @@
 # Every id below carries its reason and a dated review inline.
 
 [[IgnoredVulns]]
-id = "CVE-2026-54285"
-reason = "@opentelemetry/core 2.0.1, transitive under @trigger.dev/core's pinned OTel instrumentation (the main OTel suite is already on the fixed 2.8.0). Header-propagator over-allocation, practically bounded by Node's 16KB max-http-header-size; forcing the trigger.dev-nested core to 2.8.0 risks breaking trigger.dev runtime telemetry. Accepted 2026-07-10."
-
-[[IgnoredVulns]]
 id = "CVE-2023-54404"
 ignoreUntil = 2027-02-10
-reason = "zod 3.25.76, held by inngest's own ^3.25.0 dependency (still current in inngest 4.26). No fixed 3.x release exists. inngest imports only zod/v3, and the advisory's vulnerable function (handleArrayResult in $ZodArray) ships only under zod/v4/core. Every other zod in the tree is at or past the 4.6.6 fix. Accepted 2026-11-10; drop when inngest allows zod 4."
-
-[[IgnoredVulns]]
-id = "CVE-2026-93753"
-ignoreUntil = 2027-02-10
-reason = "deepmerge 4.3.1, through html-to-text under @react-email/render. No fixed release exists. html-to-text merges only its own defaults and the options passed by the caller, not message content, so attacker-supplied objects do not reach mergeObject. Accepted 2026-11-10."
+reason = "zod 3.25.76, held by inngest's own ^3.25.0 dependency (still current in inngest 4.26). zod/v3 is affected: ZodArray reports one issue per failing element with no cap, and no fixed 3.x release exists. In this repo inngest uses it only to parse Inngest Event API responses and signed Inngest requests, and caisson mounts no inngest serve handler. inngest moving to zod 4, or a root override, would only hide this, because zod 4.6.6 still ships the unfixed ./v3 export; re-check those inngest code paths at expiry. This ignore matches the advisory ID across the whole tree, so it would also hide any other zod below 4.6.6 that enters the lockfile. Accepted 2026-11-10."
